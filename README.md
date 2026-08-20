@@ -1,13 +1,13 @@
 # RTK Java Version
 
-Port Java SE dari **RTK-Server** (RetroTK / NexusTK-style MMO server).
+Port Java SE dari server MMO **RetroTK** (bergaya NexusTK), yang aslinya
+ditulis dalam C — sumbernya: [unkmc/RTK-Server](https://github.com/unkmc/RTK-Server).
 
-> Catatan penting tentang kode aslinya: walaupun repo asli sering disebut
-> "server Lua", inti servernya sebenarnya ditulis dalam **C**
-> (`RTK-Server/rtk/src/`) — Lua (`RTK-Server/rtklua/`, 907 file) hanya
-> dipakai sebagai bahasa *scripting konten game* (quest, spell, NPC, mob)
-> yang dijalankan oleh map server lewat binding `sl.c`.
-> Port ini menerjemahkan inti server C tersebut ke Java, dan menjalankan
+> Catatan tentang project aslinya: walaupun sering disebut "server Lua",
+> inti servernya sebenarnya ditulis dalam **C** (login/char/map server) —
+> Lua (907 berkas) hanya dipakai sebagai bahasa *scripting konten game*
+> (quest, spell, NPC, mob) yang dijalankan map server lewat binding `sl.c`.
+> Project ini menerjemahkan inti server C tersebut ke Java, dan menjalankan
 > konten Lua-nya **tanpa diubah** lewat LuaJ.
 
 ## Prasyarat
@@ -19,18 +19,17 @@ Port Java SE dari **RTK-Server** (RetroTK / NexusTK-style MMO server).
 - **MySQL** dengan database `RTK` (untuk login/char server; map server
   bisa hidup tanpa DB dengan fungsi terbatas).
 
-Project ini **mandiri** — data game sudah ada di dalamnya:
+Project ini **mandiri** — seluruh data game sudah ada di dalam repo, jadi
+setelah clone tidak perlu mengunduh apa pun lagi:
 
-| Folder | Isi | Asal |
-|---|---|---|
-| `maps/` | 3.544 berkas `.map` (~38 MB) | `RTK-Server/rtkmaps/Accepted/` |
-| `luascript/` | 907 skrip `.lua` (~6,8 MB) | `RTK-Server/rtklua/` |
-| `database/` | skema + dump MySQL (~13 MB) | `RTK-Server/database/` |
+| Folder | Isi |
+|---|---|
+| `maps/` | 3.544 berkas peta `.map` (~38 MB) |
+| `luascript/` | 907 skrip `.lua` (~6,8 MB) |
+| `database/` | skema + dump MySQL (~13 MB) |
 
-Repo **RTK-Server** hanya diperlukan sebagai rujukan sumber C dan bila
-ingin menarik pembaruan konten; server Java tidak lagi membacanya saat
-berjalan. Lokasi kedua folder di atas bisa diubah lewat `map_path` dan
-`lua_path` di `conf/map.conf`.
+Lokasi folder peta dan skrip bisa dipindah lewat `map_path` dan `lua_path`
+di `conf/map.conf`.
 
 ## Quick start
 
@@ -197,10 +196,11 @@ Yang perlu ada di server:
 /opt/rtk-java/
 ├── dist/          # hasil build NetBeans (jar + lib/)
 ├── conf/          # konfigurasi (login/char/inter/map/lang .conf)
+├── maps/          # berkas peta .map
+├── luascript/     # skrip Lua
 ├── meta/          # meta file yang dikirim ke klien
 ├── logs/          # dibuat otomatis; output & PID
-├── run.sh
-└── rtklua/        # tree skrip Lua (atau arahkan lua_path ke lokasi lain)
+└── run.sh
 ```
 
 ### 3. Jalankan dengan run.sh
@@ -235,7 +235,7 @@ menerima kedua nama jar dan memilih yang paling baru.
 - **Java SE untuk logika inti**, dengan library eksternal di
   [`extLib/`](extLib/README.md) (tanpa Maven): driver JDBC MySQL,
   **HikariCP** (pool koneksi), **Log4j2** (logging), dan **LuaJ**
-  (menjalankan skrip rtklua). MD5 (`java.security`), zlib/CRC32
+  (menjalankan skrip Lua). MD5 (`java.security`), zlib/CRC32
   (`java.util.zip`), dan networking (`java.nio`) memakai API Java SE standar.
 - Level bahasa: **Java 25** (`javac.source`/`javac.target` = 25 di
   `nbproject/project.properties`, `--release 25` di `build.sh`). Fitur
@@ -264,7 +264,7 @@ menerima kedua nama jar dan memilih yang paling baru.
 Nilai yang di versi C berupa hardcode (key enkripsi `ENCKEY`, key handshake
 `KruIn7inc`, URL patch, port default, ambang lockout brute-force, interval
 reconnect antar-server, tuning pool HikariCP, ukuran buffer socket, default
-path rtklua) sekarang berada di
+path skrip Lua) sekarang berada di
 [`resources/rtk-server.properties`](resources/rtk-server.properties).
 File ini dimuat dari **classpath** oleh `common/Props.java` (ikut ter-copy
 ke `build/classes` dan jar oleh target `resources`), dengan fallback ke
@@ -323,8 +323,7 @@ hasilnya, jalankan.
 3. Dari mesin lokal, salin hasil build dan pendukungnya:
 
    ```
-   rsync -av dist/ conf/ meta/ run.sh /opt/rtk-java/     # via scp/rsync ke server
-   # jangan lupa tree rtklua bila map server dipakai
+   rsync -av dist conf maps luascript meta run.sh rtk@server:/opt/rtk-java/
    sudo chown -R rtk:rtk /opt/rtk-java
    ```
 
@@ -435,7 +434,7 @@ untuk melihat log `DEBUG` (mis. hex dump paket tak dikenal di
 | **login server** (`login.c`, `clif.c`, `intif.c`) | `login/LoginServer.java`, `login/LoginClif.java`, `login/LoginIntif.java` | ✅ **penuh** — versi check, login, buat karakter, ganti password, meta file (zlib+CRC32), maintenance mode, require_reg, banned IP, brute-force lockout, redirect ke map server |
 | **char server** (`char.c`, `logif.c`, `mapif.c`, `char_db.c`) | `charserver/CharServer.java`, `Logif.java`, `Mapif.java`, `CharDb.java` | ✅ handshake login & map, autentikasi karakter, buat karakter, ganti password, routing map. ⚠️ blob `mmo_charstatus` (load/save karakter penuh, 0x3003/0x3004) & board/mail belum |
 | **map server** (`map.c`, `intif.c` + 33rb baris gameplay) | `map/MapServer.java`, `map/MapIntif.java` | ⚠️ **skeleton** — konek+auth ke char server, daftar map, terima routing pemain (0x3802→0x3002) sehingga alur login lengkap; gameplay belum |
-| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **arsitektur inti jalan via LuaJ** — seluruh 906 file rtklua asli termuat tanpa error; object model typel (__index: getattr→prototype→data table), dispatch `root.method`, coroutine `_async` + primitif dialog blocking (`menu`/`dialog`/`input`) teruji end-to-end lewat `Accepted/player.lua` asli. ⚠️ baru ±30 dari ±209 method player yang riil; sisanya stub warn-once menunggu port engine gameplay |
+| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **arsitektur inti jalan via LuaJ** — seluruh 906 skrip Lua asli termuat tanpa error; object model typel (__index: getattr→prototype→data table), dispatch `root.method`, coroutine `_async` + primitif dialog blocking (`menu`/`dialog`/`input`) teruji end-to-end lewat `Accepted/player.lua` asli. ⚠️ baru ±30 dari ±209 method player yang riil; sisanya stub warn-once menunggu port engine gameplay |
 | save server (`saveif.c` — di C pun sudah dinonaktifkan) | — | ❌ tidak diport (timer koneksinya di-comment di C) |
 
 ## Catatan desain
@@ -460,11 +459,11 @@ untuk melihat log `DEBUG` (mis. hex dump paket tak dikenal di
   `start_money` / `start_point` di `char.c` memakai `strcmpi(...) == 1`
   sehingga tidak pernah aktif; di port ini berfungsi normal.
 
-## Scripting engine (LuaJ) — menjalankan rtklua asli
+## Scripting engine (LuaJ) — menjalankan skrip Lua asli
 
 Paket `org.rtk.map.script` adalah port arsitektur `sl.c` di atas **LuaJ**
 (`extLib/luaj-jse-3.0.1.jar`, interpreter Lua murni Java), sehingga konten
-game rtklua (900+ file) berjalan **tanpa diubah**:
+game (900+ berkas di `luascript/`) berjalan **tanpa diubah**:
 
 - **Loading** meniru `sl_init`/`sl_reload`: `Developers/sys.lua` dimuat
   pertama, lalu seluruh `.lua` di `Accepted/` dan `Developers/` (rekursif,
@@ -485,7 +484,7 @@ game rtklua (900+ file) berjalan **tanpa diubah**:
   skrip tetap termuat dan setiap binding yang kurang muncul di log, bukan
   membuat loader crash.
 
-Uji: `./run.sh scripttest` — memuat seluruh rtklua lalu menjalankan
+Uji: `./run.sh scripttest` — memuat seluruh skrip lalu menjalankan
 interaksi NPC lengkap (klik → menu → pilih → dialog 2 halaman → pemberian
 item → tulis registry) melalui `player.lua` asli, dengan pemain tiruan.
 Path skrip diatur lewat `lua_path` di `conf/map.conf` (default
@@ -498,7 +497,7 @@ regresi utamanya adalah **`./run.sh scripttest`** (`map/script/ScriptTest.java`)
 yang harus selalu hijau:
 
 - **Fase 1** — memuat `sys.lua` + seluruh `Accepted/` dan `Developers/`
-  dari rtklua asli; **gagal bila ada satu file pun yang error**
+  dari `luascript/`; **gagal bila ada satu berkas pun yang error**
   (saat ini 906/906 OK).
 - **Fase 2** — menjalankan interaksi NPC lengkap dengan pemain tiruan
   melalui `Accepted/player.lua` asli: klik → yield di menu → resume pilihan
@@ -525,14 +524,14 @@ membutuhkan MySQL berisi database `RTK` dan klien RetroTK.
 
 Fondasi server-side sudah berdiri dan terverifikasi: login server port
 penuh, char server port inti, map server skeleton dengan routing pemain
-jalan ujung-ke-ujung, scripting engine memuat 906/906 skrip rtklua asli,
+jalan ujung-ke-ujung, scripting engine memuat 906/906 skrip Lua asli,
 plus infrastruktur (HikariCP, Log4j2, properties, build NetBeans/`build.sh`,
 deploy `run.sh`) dan arsitektur jaringan instance-per-server dengan IO
 thread terpisah.
 
 ### Tahap 2 — rencana berikutnya
 
-1. **Analisa `rtkmaps`** — ✅ **selesai**. Format `.map` sudah dibedah dan
+1. **Analisa berkas peta** — ✅ **selesai**. Format `.map` sudah dibedah dan
    ada pembacanya: [`map/data/MapFile.java`](src/org/rtk/map/data/MapFile.java),
    diperiksa lewat `./run.sh maptest`. Header `uint16 BE xs, ys`, lalu
    `xs*ys` × {`tile`, `pass`, `obj`} masing-masing `uint16` BE — cocok pada
@@ -540,7 +539,7 @@ thread terpisah.
    dilewati. Server hanya membaca `Accepted/`; `TKR Maps/` salinan lama.
    Metadata dari tabel `Maps` — 7.648 peta berbagi hanya 2.640 berkas
    geometri. Warp dari tabel `Warps`, bukan dari `warps.txt`.
-2. **Analisa `rtklua`** — skripnya sudah *berjalan*, tapi isinya belum
+2. **Analisa skrip Lua** (`luascript/`) — skripnya sudah *berjalan*, tapi isinya belum
    dipetakan. Analisa ini menentukan urutan port subsistem gameplay:
    dahulukan binding yang paling sering dipanggil (`sendMinitext` 2.902×,
    `dialogSeq` 2.343×, `sendStatus` 1.102×, `warp` 842×).
@@ -602,8 +601,8 @@ RTK-java-version/
 │   └── rtk-server.properties    # default teknis (crypt key, port, pool, buffer, lua path)
 ├── extLib/                      # 7 jar eksternal (JDBC, HikariCP, Log4j2+SLF4J, LuaJ) — tanpa Maven
 ├── conf/                        # file konfigurasi format C asli (menimpa properties)
-├── maps/                        # 3.544 berkas .map (salinan rtkmaps/Accepted, ~38 MB)
-├── luascript/                   # 907 skrip .lua (salinan rtklua Accepted+Developers, ~6,8 MB)
+├── maps/                        # 3.544 berkas peta .map (~38 MB)
+├── luascript/                   # 907 skrip .lua (~6,8 MB)
 ├── meta/                        # meta file yang dikirim ke klien
 ├── logs/                        # log server + console log + PID (.gitignore)
 ├── build/  dist/                # hasil build (.gitignore)
