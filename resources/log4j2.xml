@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Log4j2 configuration for RTK-java.
+
+    Every server component (login / char / map / common) writes to its own
+    daily-rolling log file under logs/, plus a shared console appender so
+    NetBeans' "Output" window still shows activity during development.
+
+    File layout:
+        logs/login.log     org.rtk.login.*
+        logs/char.log       org.rtk.charserver.*
+        logs/map.log        org.rtk.map.*
+        logs/common.log     org.rtk.common.* and anything else (root)
+
+    Rollover happens once a day at midnight (TimeBasedTriggeringPolicy,
+    interval=1 day), archived files are gzip-compressed, and files older
+    than 30 days are deleted on every rollover (DefaultRolloverStrategy's
+    Delete action, matched by last-modified time so retention stays correct
+    even across restarts or days the server was offline).
+-->
+<Configuration status="WARN" monitorInterval="30">
+    <Properties>
+        <Property name="LOG_DIR">logs</Property>
+        <Property name="PATTERN">%d{yyyy-MM-dd HH:mm:ss} %-5level [%t] %logger{1} - %msg%n</Property>
+        <Property name="RETENTION_DAYS">30d</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${PATTERN}"/>
+        </Console>
+
+        <RollingFile name="LoginFile" fileName="${LOG_DIR}/login.log"
+                     filePattern="${LOG_DIR}/login-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout pattern="${PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="login-*.log.gz"/>
+                    <IfLastModified age="${RETENTION_DAYS}"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="CharFile" fileName="${LOG_DIR}/char.log"
+                     filePattern="${LOG_DIR}/char-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout pattern="${PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="char-*.log.gz"/>
+                    <IfLastModified age="${RETENTION_DAYS}"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="MapFile" fileName="${LOG_DIR}/map.log"
+                     filePattern="${LOG_DIR}/map-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout pattern="${PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="map-*.log.gz"/>
+                    <IfLastModified age="${RETENTION_DAYS}"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="CommonFile" fileName="${LOG_DIR}/common.log"
+                     filePattern="${LOG_DIR}/common-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout pattern="${PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="common-*.log.gz"/>
+                    <IfLastModified age="${RETENTION_DAYS}"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="org.rtk.login" level="INFO" additivity="false">
+            <AppenderRef ref="LoginFile"/>
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <Logger name="org.rtk.charserver" level="INFO" additivity="false">
+            <AppenderRef ref="CharFile"/>
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <Logger name="org.rtk.map" level="INFO" additivity="false">
+            <AppenderRef ref="MapFile"/>
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <Root level="INFO">
+            <AppenderRef ref="CommonFile"/>
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
