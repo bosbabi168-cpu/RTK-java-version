@@ -21,8 +21,19 @@ public final class ScriptTest {
     private ScriptTest() {
     }
 
+    /** Baca lua_path dari conf/map.conf bila ada, jatuh ke lua.path di properties. */
+    private static String resolveLuaPath() {
+        String[] fromConf = {null};
+        org.rtk.common.Config.read("conf/map.conf", (k, v) -> {
+            if ("lua_path".equalsIgnoreCase(k)) {
+                fromConf[0] = v;
+            }
+        });
+        return fromConf[0] != null ? fromConf[0] : org.rtk.common.Props.get("lua.path", "luascript");
+    }
+
     public static void main(String[] args) {
-        String luaRoot = args.length > 0 ? args[0] : "../RTK-Server/rtklua";
+        String luaRoot = args.length > 0 ? args[0] : resolveLuaPath();
 
         log.info("=== Phase 1: loading original rtklua scripts from {} ===", luaRoot);
         ScriptEngine engine = new ScriptEngine();

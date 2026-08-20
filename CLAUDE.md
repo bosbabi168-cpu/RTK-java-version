@@ -16,21 +16,41 @@ apa adanya lewat LuaJ (keputusan desain, lihat README "Scripting engine").
 ## Lokasi & layout (PENTING)
 
 Project berada di `~/Documents/GitHub/RTK-java-version` — huruf "java"
-kecil, dan isi project ada **langsung di root repo** (tidak ada lagi
-subfolder `RTK-java/`; user memindahkannya naik satu level pada 19 Agustus
-2026). Repo asli C ada sebagai **tetangga**:
+kecil, dan isi project ada **langsung di root repo** (tidak ada subfolder
+`RTK-java/`). Repo sumber C ada sebagai tetangga:
 
 ```
 GitHub/
-├── RTK-Server/          # sumber C + rtklua (repo terpisah)
-└── RTK-java-version/    # project ini (repo sendiri, ada build.xml + nbproject/)
+├── RTK-Server/          # sumber C asli (rujukan; TIDAK dibaca saat runtime)
+└── RTK-java-version/    # project ini
 ```
 
-Konsekuensi: path relatif ke skrip Lua adalah **`../RTK-Server/rtklua`**
-(bukan `../../`). Nilai ini muncul di 4 tempat yang harus konsisten:
-`conf/map.conf` (`lua_path`), `resources/rtk-server.properties`
-(`lua.path`), default di `MapServer.java`, dan default argumen di
-`ScriptTest.java`. Kalau folder dipindah lagi, perbarui keempatnya.
+**Project ini mandiri sejak 20 Agustus 2026** — data game sudah disalin ke
+dalamnya, jadi server tidak lagi membaca `../RTK-Server` saat berjalan
+(sudah diuji dari folder terpisah tanpa RTK-Server sama sekali):
+
+| Folder | Isi | Asal | Default config |
+|---|---|---|---|
+| `maps/` | 3.544 `.map`, ~38 MB | `rtkmaps/Accepted/` | `map.path` / `map_path` |
+| `luascript/` | 907 `.lua`, ~6,8 MB | `rtklua/` (Accepted + Developers) | `lua.path` / `lua_path` |
+| `database/` | skema + dump MySQL, ~13 MB | `database/` | — (dipakai manual saat setup) |
+
+Keduanya memakai rantai prioritas yang sama:
+`rtk-server.properties` → `conf/map.conf` → argumen CLI. Kalau memindahkan
+folder data, cukup ubah `conf/map.conf`; **jangan** menanam path di kode.
+
+`database/` berisi 21 skrip migrasi (52 tabel) + dump lengkap
+(`*.sql.bak`: 7.974 baris `Maps`, 4.476 `Warps`). Jalankan lewat
+`database/migrate.sh`.
+
+`RTK-Server` **tetap disimpan** (keputusan user 20 Agustus 2026) sebagai
+rujukan kebenaran saat mem-port (`rtk/src/**.c` — masih ±2/3 pekerjaan
+tersisa) dan sumber bila konten diperbarui. Yang BELUM disalin dan masih
+hanya ada di sana: `rtk/src/` (sumber C), `rtk/SObj.tbl` (18.954 entri,
+wajib untuk klien libGDX), `rtk/decrypted/` (metadata item/char —
+kandidat untuk 4 berkas meta yang hilang; `login.conf` minta 5, `meta/`
+cuma punya `RidableAnimals`). Repo itu clone bersih dari
+`github.com/unkmc/RTK-Server` sehingga bisa di-clone ulang bila perlu.
 
 ## Build & test
 
@@ -151,7 +171,13 @@ java -cp "build/classes:$CP" org.rtk.map.script.ScriptTest
      desain, bukan kemalasan.
    - Uji lapisan ini dengan tes integrasi TCP sungguhan (accept, urutan
      paket, banyak koneksi paralel) — `ScriptTest` tidak menyentuh
-     `NetServer` sama sekali.
+     `NetServer` sama sekali. Cek pemisahan thread dengan
+     `jcmd <pid> Thread.print`: harus ada `rtk-io-<nama>` terpisah.
+   - Akibat refactor ini ketiga server **secara teknis sudah bisa jalan
+     dalam satu JVM**. Sisa penghalangnya tinggal satu: `ServerLog`
+     (`logFilename`/`dmpFilename`) masih statis — satu-satunya state
+     statis mutable yang tersisa di `common/`. `run.sh` tetap memakai tiga
+     proses demi isolasi restart & crash.
 9. **Jangan biarkan `extLib/*.jar` ter-gitignore.** `.gitignore` berbasis
    template Java GitHub mengabaikan `*.jar`; project ini sengaja tanpa
    Maven sehingga jar HARUS ikut ter-commit — baris `!extLib/*.jar` wajib
@@ -225,26 +251,51 @@ Fondasi server-side sudah berdiri dan terverifikasi:
 
 ### Tahap 2 — rencana berikutnya (urutan dari user)
 
-**1. Analisa `rtkmaps`** (`../RTK-Server/rtkmaps`, 7.082 file `.map`, 87 MB)
+**1. Analisa `rtkmaps` — SELESAI (20 Agustus 2026)**
 
-Format `.map` sudah diketahui dari `map.c` (baris ~1185–1220) dan
-terverifikasi pada `Accepted/256blank.map`:
+Format `.map` sudah dibedah, diverifikasi, dan **sudah ada pembacanya**:
+`map/data/MapFile.java` + pemeriksa `map/data/MapFileTest.java`
+(jalankan `./run.sh maptest`).
 
 ```
-header : uint16 BE xs, uint16 BE ys
-tiles  : xs*ys x { uint16 BE tile, uint16 BE pass, uint16 BE obj }
+offset 0 : uint16 BE xs        lebar
+offset 2 : uint16 BE ys        tinggi
+offset 4 : xs*ys x { uint16 BE tile, uint16 BE pass, uint16 BE obj }
+ukuran berkas = 4 + xs*ys*6
 ```
 
-Cek ukuran: 256×256 × 3 × 2 byte + 4 byte header = 393.220 byte = ukuran
-file sebenarnya. `pass` adalah data tabrakan (collision), `tile` layer
-lantai, `obj` layer objek. Metadata peta (nama, BGM, PvP, cahaya, cuaca,
-batas level, dsb.) TIDAK ada di file ini — datangnya dari tabel MySQL
-`Maps`, kolom `MapFile` menunjuk ke nama file `.map`.
-`rtkmaps/warps.txt` (1.329 baris) berformat
-`source,x,y,destination,x,y`. Target tahap ini: loader `.map` di Java +
-struktur data peta, prasyarat untuk gameplay maupun client.
+Temuan yang perlu diingat:
 
-**2. Analisa `rtklua`** (`../RTK-Server/rtklua`, 907 file, ~164rb baris)
+- Rumus ukuran cocok pada **3.544/3.544 berkas, nol pengecualian**.
+  6.710.724 petak total; 435 dimensi berbeda (terbanyak 30×30);
+  terbesar `600x600.map`. Waktu muat seluruhnya ±160 ms.
+- `pass` di berkas hanya **0 atau 1** — 0 bisa dilewati, bukan-0 tembok
+  (`map_canmove()` mengembalikan 1 = TIDAK bisa lewat). Saat runtime,
+  server C **memakai ulang** ladang ini untuk id objek yang sedang
+  menempati petak, jadi jangan anggap selalu boolean di luar berkas.
+- `tile` = id lantai (0..±31k, rujukan tileset klien);
+  `obj` = lapisan objek, ±12% petak berisi.
+- **Berkas peta kini ada di dalam project**: `maps/` (3.544 berkas, ~38 MB,
+  salinan byte-identik dari `rtkmaps/Accepted/` — sudah diverifikasi
+  3.544/3.544 identik). Struktur subfolder dipertahankan karena tabel
+  `Maps` merujuk mis. `games/sumo_war.map`. Lokasinya diatur
+  `map.path` (properties) → `map_path` (`conf/map.conf`) → argumen CLI.
+  Sumber aslinya di C: `map.c`:1145 → `../rtkmaps/Accepted/%s`. Folder
+  `rtkmaps/TKR Maps/` adalah salinan lama; **abaikan**.
+- Metadata peta ada di tabel MySQL `Maps` (33 kolom: nama, BGM, PvP,
+  cahaya, cuaca, batas level, dsb.), berkas ditunjuk kolom `MapFile`.
+  Di backup DB ada **7.648 baris peta** yang menunjuk hanya **2.640
+  berkas unik** — banyak peta **berbagi geometri yang sama** dan hanya
+  berbeda metadata. Semua berkas yang dirujuk ADA di disk (0 hilang);
+  652 berkas di disk tidak dipakai.
+- **Warp bukan dari berkas.** Server membaca tabel `Warps`
+  (`npc.c`:165, 6 kolom `SourceMapId,SourceX,SourceY,DestinationMapId,
+  DestinationX,DestinationY`, 4.476 baris di backup). `rtkmaps/warps.txt`
+  (852 baris, format sama) adalah data sumber/legacy, dan
+  `conf/warp_main.conf` menunjuk folder `../mithiamaps/` yang tidak ada
+  serta importnya dikomentari di `map.conf` — jangan tertipu.
+
+**2. Analisa `rtklua`** (sekarang di `luascript/`, 907 file, ~164rb baris)
 
 Sudah *berjalan* lewat LuaJ, tapi belum *dianalisa isinya*. Tujuannya
 memetakan binding apa saja yang benar-benar dibutuhkan konten: ±209 method
@@ -254,7 +305,52 @@ yang menentukan urutan port subsistem gameplay (`pc.c`, `mob.c`, `npc.c`,
 (`sendMinitext` 2.902×, `dialogSeq` 2.343×, `sendStatus` 1.102×,
 `warp` 842×, dst.).
 
-**3. Client game desktop: Java + libGDX**
+**3. Pelajari folder `Origin Nexia` — aset grafis klien (BERIKUTNYA)**
+
+Lokasi: `~/Documents/GitHub/Origin Nexia` (1,9 GB, klien NexusTK/Nexia asli;
+ada juga salinan di `~/Downloads/Origin Nexia`). **Survei awal sudah
+dilakukan 20 Agustus 2026 — jawabannya: YA, grafis peta bisa diambil dari
+sini.** Ini melengkapi kekurangan yang dicatat sebelumnya (berkas `.map`
+hanya menyimpan ID angka, tanpa gambar).
+
+Isi `Origin Nexia/Data/` — 253 arsip `.dat`, 1,9 GB:
+
+| Kelompok | Jumlah | Isi |
+|---|---|---|
+| `tile*.dat` + `tilec*.dat` | 52 (213 MB) | **grafis petak lantai/objek** — yang dirujuk `tile` & `obj` di `.map` |
+| `mon*.dat` | 70 | sprite monster |
+| `body/coat/helmet/hair/sword/…` | ±40 | sprite perlengkapan karakter |
+| `efx*.dat` | 40 | efek |
+| `mus*.dat`, `snd.dat` | 8 | audio |
+
+Format arsip `.dat` **sudah terbaca**: 4 byte jumlah entri (LE), lalu tiap
+entri 4 byte offset + 13 byte nama; entri terakhir sentinel (offset = akhir
+berkas, nama kosong). Contoh: `tilec0.dat` memuat `tilec0.epf` (4,2 MB).
+
+Isi seluruh arsip bila dipindai: **440 `.epf` (gambar), 170 `.pal`
+(palet), 14 `.tbl`, 26 `.lst`, 26 `.lsr`, 19 `.dsc`**, plus 246 `.wav` &
+66 `.mp3`. Jadi gambar DAN paletnya lengkap.
+
+Yang belum dikerjakan: **dekoder EPF** (EPF + PAL → gambar RGB) dan
+memetakan `tile`/`obj` id dari `.map` ke frame EPF yang benar — di sinilah
+`rtk/SObj.tbl` (18.954 entri, masih di RTK-Server) dipakai untuk `obj`.
+
+**4. Tools editor lokal: HTML + JavaScript**
+
+Aplikasi sederhana yang dijalankan di lokal (cukup buka berkas HTML, tanpa
+server/build), untuk:
+- **Edit peta** — memuat `.map` dari `maps/`, menampilkan grid `tile`/
+  `pass`/`obj`, menyunting, lalu menyimpan kembali ke format aslinya
+  (header uint16 BE xs/ys + xs*ys x 3 uint16 BE — lihat `MapFile.java`).
+- **Edit skrip Lua** — menyunting berkas di `luascript/`.
+
+Catatan teknis untuk nanti: JavaScript membaca berkas lokal lewat
+`<input type="file">` / File System Access API; endianness **big-endian**
+harus eksplisit (`DataView.getUint16(off, false)`). Bila mau menampilkan
+petaknya sebagai gambar, dekoder EPF dari langkah 3 jadi prasyarat —
+tanpa itu, tampilkan dulu sebagai grid berwarna berdasarkan id/pass.
+
+**5. Client game desktop: Java + libGDX**
 
 Menggantikan klien RetroTK asli (Windows/`RetroTK.exe`). Konsekuensi
 penting: begitu klien dibuat sendiri, **kewajiban byte-fidelity protokol
@@ -262,6 +358,7 @@ bisa ditinjau ulang** — tapi selama klien lama masih dipakai untuk
 pengujian, protokol wire tetap tidak boleh berubah (lihat Peringatan #2).
 libGDX = jar tambahan di `extLib/` (tetap tanpa Maven). Kemungkinan besar
 jadi project terpisah dari server, berbagi kode protokol/format map.
+Prasyarat: dekoder EPF (langkah 3).
 
 ### Trek paralel: melengkapi port server
 

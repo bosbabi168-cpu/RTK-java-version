@@ -96,10 +96,10 @@ case "${1:-}" in
         sleep 3
         start_one map
         ;;
-    scripttest)
+    scripttest|maptest)
         need_jar
-        shift
-        exec $JAVA ${JAVA_OPTS:-} -jar "$JAR" scripttest "$@"
+        mode="$1"; shift
+        exec $JAVA ${JAVA_OPTS:-} -jar "$JAR" "$mode" "$@"
         ;;
     stop)
         for s in map char login; do stop_one "$s"; done
@@ -109,7 +109,7 @@ case "${1:-}" in
         for s in login char map; do status_one "$s"; done
         ;;
     *)
-        echo "Usage: $0 {login|char|map|all|scripttest|status|stop}"
+        echo "Usage: $0 {login|char|map|all|scripttest|maptest|status|stop}"
         exit 1
         ;;
 esac

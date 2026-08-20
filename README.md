@@ -18,18 +18,19 @@ Port Java SE dari **RTK-Server** (RetroTK / NexusTK-style MMO server).
   `build.sh` untuk build cepat lewat `javac` saja.
 - **MySQL** dengan database `RTK` (untuk login/char server; map server
   bisa hidup tanpa DB dengan fungsi terbatas).
-- Repo **RTK-Server** asli sebagai tetangga folder, karena map server
-  membaca skrip Lua langsung dari sana:
 
-```
-GitHub/
-├── RTK-Server/              # repo C asli (sumber rtklua + database)
-└── RTK-java-version/        # project ini
-```
+Project ini **mandiri** — data game sudah ada di dalamnya:
 
-Jika tata letaknya berbeda, ubah `lua_path` di `conf/map.conf` atau
-`lua.path` di `resources/rtk-server.properties`
-(default: `../RTK-Server/rtklua`).
+| Folder | Isi | Asal |
+|---|---|---|
+| `maps/` | 3.544 berkas `.map` (~38 MB) | `RTK-Server/rtkmaps/Accepted/` |
+| `luascript/` | 907 skrip `.lua` (~6,8 MB) | `RTK-Server/rtklua/` |
+| `database/` | skema + dump MySQL (~13 MB) | `RTK-Server/database/` |
+
+Repo **RTK-Server** hanya diperlukan sebagai rujukan sumber C dan bila
+ingin menarik pembaruan konten; server Java tidak lagi membacanya saat
+berjalan. Lokasi kedua folder di atas bisa diubah lewat `map_path` dan
+`lua_path` di `conf/map.conf`.
 
 ## Quick start
 
@@ -54,7 +55,7 @@ Sama seperti versi C, server terdiri dari 3 proses yang saling terhubung
 lewat TCP:
 
 ```
-klien game ──► LoginServer (port 2000/2010)
+klien game ──► LoginServer (port 2000)
                    │  0x1000..0x1004 / 0x2001..0x2004
                    ▼
                CharServer  (port 2005)  ──► MySQL (database RTK)
@@ -62,6 +63,16 @@ klien game ──► LoginServer (port 2000/2010)
                    ▼
                MapServer   (port 2001)  ──► klien game (setelah redirect)
 ```
+
+Port di atas adalah nilai efektif dari `conf/` (`inter.conf` →
+`login_port: 2000`, `char_port: 2005`; `map.conf` → `map_port: 2001`), yang
+menimpa default di `rtk-server.properties`. Hanya port login dan map yang
+perlu terbuka ke publik.
+
+Sejak lapisan jaringan dibuat per-instance, ketiganya **secara teknis bisa
+dijalankan dalam satu JVM**; `run.sh` tetap menjalankannya sebagai tiga
+proses terpisah demi isolasi restart dan crash. Satu-satunya sisa state
+global adalah nama file di `ServerLog`.
 
 ## Model threading (lapisan jaringan)
 
@@ -234,8 +245,12 @@ menerima kedua nama jar dan memilih yang paling baru.
 
 ## Menjalankan
 
-1. Siapkan database MySQL `RTK` seperti pada repo asli
-   (`RTK-Server/database/migrate.sh` atau `docker-compose.yml`).
+1. Siapkan database MySQL `RTK` memakai `database/` di project ini:
+   `database/scripts/` berisi 21 skrip migrasi (52 tabel) yang dijalankan
+   berurutan oleh `database/migrate.sh`, dan
+   `database/2020-09-02-21-55-01_RTK.sql.bak` adalah dump lengkap berisi
+   data konten — antara lain **7.974 baris `Maps`** dan **4.476 baris
+   `Warps`** yang dipakai map server.
 2. Sesuaikan `conf/char.conf` (kredensial SQL), `conf/inter.conf`
    (id/pw antar-server), `conf/map.conf` (IP publik map server).
    Format file konfigurasi **identik dengan versi C** — file di folder
@@ -259,7 +274,18 @@ Urutan prioritas konfigurasi:
 
 1. **`rtk-server.properties`** — nilai default teknis saat start.
 2. **`conf/*.conf`** (format C asli) — dibaca setelahnya dan **menimpa**
-   nilai yang sama (mis. `login_port`, `char_port`, `map_port`, `lua_path`).
+   nilai yang sama (mis. `login_port`, `char_port`, `map_port`, `map_path`,
+   `lua_path`).
+
+Lokasi data game memakai pola yang sama, dari paling lemah ke paling kuat:
+
+| Data | properties | conf/map.conf | argumen CLI |
+|---|---|---|---|
+| Peta | `map.path=maps` | `map_path: maps` | `./run.sh maptest <path>` |
+| Skrip Lua | `lua.path=luascript` | `lua_path: luascript` | `./run.sh scripttest <path>` |
+
+Bawaannya menunjuk folder di dalam project ini, jadi server jalan tanpa
+konfigurasi tambahan.
 
 File/key yang hilang tidak pernah menghentikan server — setiap pembacaan
 punya nilai fallback bawaan yang identik dengan perilaku C asli.
@@ -401,9 +427,9 @@ untuk melihat log `DEBUG` (mis. hex dump paket tak dikenal di
 |---|---|---|
 | `common/crypt.c` | `common/Crypt.java` | ✅ penuh (XOR crypt, key table, packet indexes; round-trip teruji) |
 | `common/md5calc.c` | `common/Md5.java` | ✅ penuh (via MessageDigest) |
-| `common/socket.c` + macro RFIFO/WFIFO | `common/NetServer.java`, `common/Session.java` | ✅ penuh (java.nio selector; throttle + IP lockout) |
-| `common/timer.c` | `common/TimerSystem.java` | ✅ penuh |
-| `common/core.c` | `common/Core.java` | ✅ penuh (main loop sekuensial) |
+| `common/socket.c` + macro RFIFO/WFIFO | `common/NetServer.java`, `common/Session.java` | ✅ penuh — **instance per server**, java.nio selector di IO thread sendiri, serah terima paket lewat `ArrayBlockingQueue`; throttle + IP lockout |
+| `common/timer.c` | `common/TimerSystem.java` | ✅ penuh — **instance per server**, berjalan di logic thread |
+| `common/core.c` | `common/Core.java` | ✅ penuh — **instance per server**; logic thread yang mengonsumsi antrean paket (bukan lagi loop sekuensial global) |
 | `common/db_mysql.c` | `common/Sql.java` | ✅ via JDBC + PreparedStatement |
 | config reader (`config_read`) | `common/Config.java` | ✅ penuh |
 | **login server** (`login.c`, `clif.c`, `intif.c`) | `login/LoginServer.java`, `login/LoginClif.java`, `login/LoginIntif.java` | ✅ **penuh** — versi check, login, buat karakter, ganti password, meta file (zlib+CRC32), maintenance mode, require_reg, banned IP, brute-force lockout, redirect ke map server |
@@ -423,6 +449,10 @@ untuk melihat log `DEBUG` (mis. hex dump paket tak dikenal di
   ke char server dan menerimanya kembali).
 - **SQL injection** — versi C menyisipkan string langsung ke query;
   port ini memakai `PreparedStatement` dengan perilaku yang sama.
+- **Threading** — state jaringan global versi C diganti instance per
+  server, dan IO dipisah dari logika lewat antrean. Logika permainan
+  sengaja tetap satu thread per server (urutan paket + LuaJ tidak
+  thread-safe); lihat [Model threading](#model-threading-lapisan-jaringan).
 - Bug kecil versi C yang **sengaja dipertahankan** demi kompatibilitas:
   autentikasi antar-server hanya menolak bila id **dan** pw dua-duanya
   salah (`strcmp(a) && strcmp(b)`), dicatat di komentar kode.
@@ -458,8 +488,8 @@ game rtklua (900+ file) berjalan **tanpa diubah**:
 Uji: `./run.sh scripttest` — memuat seluruh rtklua lalu menjalankan
 interaksi NPC lengkap (klik → menu → pilih → dialog 2 halaman → pemberian
 item → tulis registry) melalui `player.lua` asli, dengan pemain tiruan.
-Path rtklua diatur lewat `lua_path` di `conf/map.conf`
-(default `../RTK-Server/rtklua`); `lua_enable: 0` mematikannya.
+Path skrip diatur lewat `lua_path` di `conf/map.conf` (default
+`luascript`, folder di dalam project); `lua_enable: 0` mematikannya.
 
 ## Pengujian
 
@@ -475,10 +505,19 @@ yang harus selalu hijau:
   → dialog 2 halaman ("next"/"next") → addItem → tulis registry → coroutine
   selesai → interaksi kedua. 14 assertion, exit code 1 bila ada yang gagal.
 
+> **Penting:** `ScriptTest` **tidak menyentuh lapisan jaringan sama sekali**.
+> Kalau mengubah `NetServer`/`Session`/`Core`, uji dengan tes integrasi TCP
+> sungguhan — buka listen port, sambungkan socket klien, lalu pastikan:
+> handler accept berjalan, beberapa paket berturut-turut diproses **sesuai
+> urutan**, timer tetap jalan, session ditutup dan slotnya dipakai ulang,
+> serta puluhan koneksi paralel semuanya benar. Pola ini sudah dipakai saat
+> refactor threading dan seluruhnya lolos.
+
 Uji manual lain yang berguna: jalankan map server tanpa MySQL — harus tetap
 hidup dengan peringatan (fallback map 0), dan log per komponen muncul di
-`logs/`. Alur login end-to-end membutuhkan MySQL berisi database `RTK` dan
-klien RetroTK.
+`logs/`. Cek pemisahan thread dengan `jcmd <pid> Thread.print` — harus ada
+thread `rtk-io-<nama>` terpisah dari thread logika. Alur login end-to-end
+membutuhkan MySQL berisi database `RTK` dan klien RetroTK.
 
 ## Status & roadmap
 
@@ -493,21 +532,32 @@ thread terpisah.
 
 ### Tahap 2 — rencana berikutnya
 
-1. **Analisa `rtkmaps`** — 7.082 file `.map` (87 MB). Formatnya sudah
-   dibedah dari `map.c` dan terverifikasi: header `uint16 BE xs, ys`, lalu
-   `xs*ys` × {`tile`, `pass`, `obj`} masing-masing `uint16` BE
-   (256×256×3×2 + 4 = 393.220 byte, persis ukuran `256blank.map`).
-   `pass` = data tabrakan. Metadata peta datang dari tabel MySQL `Maps`
-   (kolom `MapFile`), dan `warps.txt` (1.329 baris) berformat
-   `source,x,y,destination,x,y`. Target: loader `.map` di Java.
+1. **Analisa `rtkmaps`** — ✅ **selesai**. Format `.map` sudah dibedah dan
+   ada pembacanya: [`map/data/MapFile.java`](src/org/rtk/map/data/MapFile.java),
+   diperiksa lewat `./run.sh maptest`. Header `uint16 BE xs, ys`, lalu
+   `xs*ys` × {`tile`, `pass`, `obj`} masing-masing `uint16` BE — cocok pada
+   **3.544/3.544 berkas** (6,7 juta petak, muat ±160 ms). `pass` 0 = bisa
+   dilewati. Server hanya membaca `Accepted/`; `TKR Maps/` salinan lama.
+   Metadata dari tabel `Maps` — 7.648 peta berbagi hanya 2.640 berkas
+   geometri. Warp dari tabel `Warps`, bukan dari `warps.txt`.
 2. **Analisa `rtklua`** — skripnya sudah *berjalan*, tapi isinya belum
    dipetakan. Analisa ini menentukan urutan port subsistem gameplay:
    dahulukan binding yang paling sering dipanggil (`sendMinitext` 2.902×,
    `dialogSeq` 2.343×, `sendStatus` 1.102×, `warp` 842×).
-3. **Client game desktop dengan Java + libGDX** — menggantikan klien
+3. **Pelajari folder `Origin Nexia`** (klien NexusTK asli, 1,9 GB) — survei
+   awal sudah menjawab pertanyaan lama: **grafis peta memang ada di sana.**
+   `Data/` berisi 253 arsip `.dat`; 52 di antaranya (`tile*`, `tilec*`,
+   213 MB) adalah grafis petak yang dirujuk kolom `tile`/`obj` di `.map`.
+   Format arsipnya sudah terbaca, dan isinya mencakup **440 berkas `.epf`
+   (gambar) beserta 170 `.pal` (palet)**. Yang belum: dekoder EPF→gambar
+   dan pemetaan id petak ke frame yang benar.
+4. **Tools editor lokal berbasis HTML + JavaScript** — dijalankan langsung
+   di browser tanpa server/build, untuk menyunting berkas `.map` di
+   `maps/` dan skrip Lua di `luascript/`.
+5. **Client game desktop dengan Java + libGDX** — menggantikan klien
    RetroTK asli. libGDX ditaruh sebagai jar di `extLib/` (tetap tanpa
-   Maven), kemungkinan sebagai project terpisah yang berbagi kode protokol
-   dan format map dengan server.
+   Maven), kemungkinan project terpisah yang berbagi kode protokol dan
+   format map. Prasyarat: dekoder EPF dari langkah 3.
 
 ### Trek paralel: melengkapi port server
 
@@ -552,6 +602,8 @@ RTK-java-version/
 │   └── rtk-server.properties    # default teknis (crypt key, port, pool, buffer, lua path)
 ├── extLib/                      # 7 jar eksternal (JDBC, HikariCP, Log4j2+SLF4J, LuaJ) — tanpa Maven
 ├── conf/                        # file konfigurasi format C asli (menimpa properties)
+├── maps/                        # 3.544 berkas .map (salinan rtkmaps/Accepted, ~38 MB)
+├── luascript/                   # 907 skrip .lua (salinan rtklua Accepted+Developers, ~6,8 MB)
 ├── meta/                        # meta file yang dikirim ke klien
 ├── logs/                        # log server + console log + PID (.gitignore)
 ├── build/  dist/                # hasil build (.gitignore)

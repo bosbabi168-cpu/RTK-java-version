@@ -60,8 +60,11 @@ public final class MapServer {
     public static int charFd;
     public static int mapFd;
 
+    /** Folder berkas .map; nama dari tabel `Maps` dicari relatif ke sini. */
+    public static String mapPath = org.rtk.common.Props.get("map.path", "maps");
+
     public static int luaEnable = org.rtk.common.Props.getInt("lua.enable", 1);
-    public static String luaPath = org.rtk.common.Props.get("lua.path", "../RTK-Server/rtklua");
+    public static String luaPath = org.rtk.common.Props.get("lua.path", "luascript");
     public static org.rtk.map.script.ScriptEngine scriptEngine;
 
     public static final Sql sql = new Sql();
@@ -97,6 +100,7 @@ public final class MapServer {
                 case "char_id": charId = value; break;
                 case "char_pw": charPw = value; break;
                 case "serverid": serverId = Integer.parseInt(value); break;
+                case "map_path": mapPath = value; break;
                 case "lua_enable": luaEnable = Integer.parseInt(value); break;
                 case "lua_path": luaPath = value; break;
                 case "map_log": ServerLog.setLogfile(value); break;
@@ -215,6 +219,17 @@ public final class MapServer {
             log.warn("[MAP] WARNING: no database connection; running with map 0 only.");
         }
         loadMaps();
+
+        // Folder berkas .map. Geometri peta belum dimuat (map server masih
+        // skeleton), tapi path-nya sudah dikonfigurasi dan divalidasi di sini
+        // supaya salah setel ketahuan sejak start, bukan nanti saat dipakai.
+        java.nio.file.Path mapDir = java.nio.file.Paths.get(mapPath);
+        if (java.nio.file.Files.isDirectory(mapDir)) {
+            log.info("[MAP] Folder peta: {}", mapDir.toAbsolutePath().normalize());
+        } else {
+            log.warn("[MAP] Folder peta tidak ditemukan: {} (setel map_path di conf/map.conf)",
+                    mapDir.toAbsolutePath().normalize());
+        }
 
         // scripting subsystem (sl_init): load the original rtklua content
         if (luaEnable != 0) {
