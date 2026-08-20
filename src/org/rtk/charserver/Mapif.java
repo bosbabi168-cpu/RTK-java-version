@@ -1,7 +1,12 @@
 package org.rtk.charserver;
 
+import java.io.IOException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import org.rtk.common.mmo.CharStatus;
+import org.rtk.common.mmo.CharStatusCodec;
 
 import org.rtk.common.NetServer;
 import org.rtk.common.ServerLog;
@@ -28,6 +33,9 @@ public final class Mapif {
     // packet lengths for 0x3000 .. 0x3008 (board/mail packets 0x3009+ are
     // part of the not-yet-ported gameplay protocol)
     private static final int[] PACKET_LEN_TABLE = {72, -1, 20, 24, -1, 6, 255, -1, 28};
+
+    /** Panjang tetap balasan 0x3803 sebelum blob: opcode+len+fd. */
+    private static final int CHARLOAD_HEADER = 8;
 
     private Mapif() {
     }
@@ -175,6 +183,81 @@ public final class Mapif {
         return 0;
     }
 
+    /**
+     * mapif_parse_requestchar() (0x3003): map server minta data karakter.
+     * Balas dengan 0x3803 berisi blob {@link CharStatusCodec}.
+     *
+     * Tata letak: W(0)=0x3003, W(2)=fd klien, L(4)=id karakter, nama[16]@8.
+     */
+    static int parseRequestChar(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(2);
+        long charId = s.rfifoL(4) & 0xFFFFFFFFL;
+        String name = s.rfifoString(8, 16);
+
+        CharStatus c = CharPersistence.load(sql, charId);
+        if (c == null) {
+            log.error("[CHAR] permintaan karakter id={} ({}) tidak ditemukan di database", charId, name);
+            return 0;
+        }
+
+        byte[] blob;
+        try {
+            blob = CharStatusCodec.encode(c);
+        } catch (IOException e) {
+            log.error("[CHAR] gagal menyusun blob karakter {} ({})", charId, name, e);
+            return 0;
+        }
+
+        s.wfifoW(0, 0x3803);
+        s.wfifoL(2, CHARLOAD_HEADER + blob.length);
+        s.wfifoW(6, clientFd);
+        s.wfifoBytes(CHARLOAD_HEADER, blob);
+        s.wfifoSet(CHARLOAD_HEADER + blob.length);
+
+        log.info("[CHAR] kirim karakter {} (id={}) ke map server, {} byte", c.name, charId, blob.length);
+        return 0;
+    }
+
+    /**
+     * mapif_parse_savechar() (0x3004) dan mapif_parse_savecharlog() (0x3007).
+     *
+     * Tata letak: W(0)=opcode, L(2)=panjang total, blob@6.
+     *
+     * Catatan port: versi C membaca panjang blob dengan
+     * {@code RFIFOL(fd,1) - 6} padahal dispatcher-nya menulis/membaca panjang
+     * di offset 2 — meleset satu byte. Di sini dipakai offset 2 secara
+     * konsisten.
+     *
+     * @param alsoLogout true untuk 0x3007 (simpan lalu tandai offline)
+     */
+    static int parseSaveChar(int fd, boolean alsoLogout) {
+        Session s = net.session(fd);
+        int total = s.rfifoL(2);
+        int blobLen = total - 6;
+        if (blobLen <= 0 || blobLen > s.rfifoRest() - 6) {
+            log.error("[CHAR] panjang blob simpan tidak masuk akal: {} byte", blobLen);
+            return 0;
+        }
+
+        CharStatus c;
+        try {
+            c = CharStatusCodec.decode(s.rfifoBytes(6, blobLen));
+        } catch (IOException e) {
+            log.error("[CHAR] blob simpan rusak / tidak dikenal", e);
+            return 0;
+        }
+
+        boolean ok = CharPersistence.save(sql, c);
+        log.info("[CHAR] simpan karakter {} (id={}) {}{}", c.name, c.id,
+                ok ? "berhasil" : "GAGAL", alsoLogout ? " + logout" : "");
+
+        if (alsoLogout) {
+            CharDb.logindataDel((int) c.id);
+        }
+        return 0;
+    }
+
     /** mapif_parse_logout() (0x3005). */
     static int parseLogout(int fd) {
         Session s = net.session(fd);
@@ -226,9 +309,10 @@ public final class Mapif {
         switch (cmd) {
             case 0x3001: parseMapset(fd, id); break;
             case 0x3002: parseLogin(fd, id); break;
+            case 0x3003: parseRequestChar(fd); break;
+            case 0x3004: parseSaveChar(fd, false); break;
             case 0x3005: parseLogout(fd); break;
-            case 0x3003: // request char (compressed mmo_charstatus blob)
-            case 0x3004: // save char
+            case 0x3007: parseSaveChar(fd, true); break;
             default:
                 log.debug("[CHAR] Packet {} not ported yet (see README roadmap)", String.format("0x%04X", cmd));
                 break;

@@ -145,6 +145,59 @@ public final class Sql {
         }
     }
 
+    /** Penerima satu baris hasil query. */
+    public interface RowHandler {
+        void row(ResultSet rs) throws SQLException;
+    }
+
+    /**
+     * Jalankan query dan serahkan setiap baris ke handler.
+     * @return jumlah baris yang diproses, -1 bila gagal
+     */
+    public int forEachRow(String sql, RowHandler handler, Object... params) {
+        try (Connection c = getConnection();
+             PreparedStatement st = prepare(c, sql, params);
+             ResultSet rs = st.executeQuery()) {
+            int n = 0;
+            while (rs.next()) {
+                handler.row(rs);
+                n++;
+            }
+            return n;
+        } catch (SQLException e) {
+            showDebug(e);
+            return -1;
+        }
+    }
+
+    /**
+     * Jalankan satu perintah untuk banyak baris sekaligus (batch).
+     * @param rows tiap elemen = parameter untuk satu baris
+     * @return jumlah baris terpengaruh, -1 bila gagal
+     */
+    public int batch(String sql, java.util.List<Object[]> rows) {
+        if (rows.isEmpty()) {
+            return 0;
+        }
+        try (Connection c = getConnection();
+             PreparedStatement st = c.prepareStatement(sql)) {
+            for (Object[] r : rows) {
+                for (int i = 0; i < r.length; i++) {
+                    st.setObject(i + 1, r[i]);
+                }
+                st.addBatch();
+            }
+            int total = 0;
+            for (int n : st.executeBatch()) {
+                total += Math.max(n, 0);
+            }
+            return total;
+        } catch (SQLException e) {
+            showDebug(e);
+            return -1;
+        }
+    }
+
     /** Number of rows the query returns; -1 on error. */
     public int rowCount(String sql, Object... params) {
         try (Connection c = getConnection();

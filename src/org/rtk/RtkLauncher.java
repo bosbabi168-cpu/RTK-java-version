@@ -3,7 +3,9 @@ package org.rtk;
 import org.rtk.charserver.CharServer;
 import org.rtk.login.LoginServer;
 import org.rtk.map.MapServer;
+import org.rtk.common.mmo.CharStatusTest;
 import org.rtk.map.data.MapFileTest;
+import org.rtk.map.data.MapWorldTest;
 import org.rtk.map.script.ScriptTest;
 
 /**
@@ -47,6 +49,8 @@ public final class RtkLauncher {
             case "map" -> MapServer.main(rest);
             case "scripttest" -> ScriptTest.main(rest);
             case "maptest" -> MapFileTest.main(rest);
+            case "chartest" -> CharStatusTest.main(rest);
+            case "worldtest" -> MapWorldTest.main(rest);
             default -> {
                 System.err.println("Server tidak dikenal: " + args[0]);
                 usage();
@@ -63,6 +67,8 @@ public final class RtkLauncher {
         System.err.println("  java -jar <jar> map         [opsi]  jalankan map server");
         System.err.println("  java -jar <jar> scripttest  [opsi]  uji regresi scripting Lua");
         System.err.println("  java -jar <jar> maptest     [path]  baca & periksa seluruh berkas .map");
+        System.err.println("  java -jar <jar> chartest           uji serialisasi status karakter");
+        System.err.println("  java -jar <jar> worldtest    [path]  uji indeks spasial dunia peta");
         System.err.println();
         System.err.println("Opsi diteruskan ke server, mis. --conf conf/login.conf");
         System.err.println("Jalankan dari folder yang berisi conf/, meta/, dan logs/.");

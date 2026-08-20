@@ -61,12 +61,20 @@ proses build di server.
   `dist/RTK-java-version.jar` + `dist/lib/`.
 - **Build alternatif tanpa NetBeans:** `./build.sh` (javac `--release 25`)
   → `dist/RTK-java.jar`. Dipakai untuk uji cepat/headless.
-- **Menjalankan:** `./run.sh {login|char|map|all|scripttest|status|stop}`,
-  yang membungkus `java -jar <jar> <server> &`.
+- **Menjalankan:** `./run.sh {login|char|map|all|status|stop}`, yang
+  membungkus `java -jar <jar> <server> &`.
+- **Uji regresi** (semua wajib hijau sebelum selesai):
+  `./run.sh scripttest` (906 skrip Lua + coroutine dialog),
+  `./run.sh maptest` (3.544 berkas peta),
+  `./run.sh chartest` (serialisasi karakter, 29 assertion),
+  `./run.sh worldtest` (dunia peta + penempatan pemain, 52 assertion).
 
 ```
 ./build.sh            # atau build di NetBeans
-./run.sh scripttest   # GERBANG REGRESI UTAMA — wajib hijau sebelum selesai
+./run.sh scripttest   # GERBANG REGRESI — 906 skrip Lua
+./run.sh maptest      # GERBANG REGRESI — 3.544 berkas peta
+./run.sh chartest     # GERBANG REGRESI — serialisasi karakter
+./run.sh worldtest    # GERBANG REGRESI — dunia peta + pemain
 ```
 
 Perintah manual setara:
@@ -178,7 +186,50 @@ java -cp "build/classes:$CP" org.rtk.map.script.ScriptTest
      (`logFilename`/`dmpFilename`) masih statis — satu-satunya state
      statis mutable yang tersisa di `common/`. `run.sh` tetap memakai tiga
      proses demi isolasi restart & crash.
-9. **Jangan biarkan `extLib/*.jar` ter-gitignore.** `.gitignore` berbasis
+9. **Blob karakter memakai format sendiri, BUKAN dump struct C.**
+   Keputusan user 20 Agustus 2026, dengan alasan terukur:
+   `sizeof(struct mmo_charstatus)` = **3.171.352 byte** (dibuktikan dengan
+   mengompilasi header C-nya), **82% hanya array registry kosong**, dan
+   ukurannya **berbeda antar target**: 3.171.352 di 64-bit vs 3.168.952 bila
+   `unsigned long` = 4 byte (build 32-bit asli). Jadi tata letak biner C
+   bukan kontrak yang stabil. Kedua ujung paket 0x3003/0x3004 adalah kode
+   Java kita sendiri.
+   - Format ada di `common/mmo/CharStatusCodec`: magic `"RTKC"` + versi,
+     string panjang-berprefiks, koleksi hanya menulis entri terisi, hasil
+     akhir tetap dikompresi zlib (transport tidak berubah).
+     Hasil: karakter baru 27 byte, penuh 4.263 byte — **743× lebih kecil**.
+   - **Naikkan `CharStatusCodec.VERSION` bila tata letak berubah**, supaya
+     blob lama ditolak dengan pesan jelas, bukan salah baca diam-diam.
+   - Konsekuensi: char server C tidak bisa dipasangkan dengan map server
+     Java (dan sebaliknya). Itu diterima.
+10. **Endianness pada uji framing paket.** Protokol antar-server
+   (0x1000/0x2000/0x3000/0x3800) **little-endian** (`wfifoW`/`wfifoL`);
+   protokol klien big-endian. Pernah kejadian: uji framing ditulis dengan
+   helper big-endian sehingga **lolos tapi tidak menguji kode sebenarnya**.
+   Kalau menulis uji byte-level, helper-nya wajib meniru urutan byte yang
+   dipakai handler, bukan sekadar konsisten dengan dirinya sendiri.
+   Bug versi C yang sengaja TIDAK ditiru: handler simpan membaca panjang
+   dengan `RFIFOL(fd,1)-6` padahal dispatcher menulis di offset 2 —
+   meleset satu byte. Port ini konsisten di offset 2.
+11. **Aturan dunia peta (`map/data`, `map/Pc`).**
+   - **Indeks spasial** membagi peta jadi blok 8×8 (`BLOCK_SIZE`).
+     Benda didaftarkan lewat `MapData.addBlock()`; pemain dan mob disimpan
+     pada indeks terpisah, seperti `block[]` vs `block_mob[]` di C.
+   - **Area pandang klien = x±9, y±8** (AREAX_SIZE 18 x AREAY_SIZE 16).
+     Bila menembus tepi peta, area **digeser, bukan dipotong**, supaya
+     lebarnya tetap penuh. Ini ditiru persis dari `map_foreachinarea()`;
+     ada assertion khusus untuk batas x+9 vs x+10.
+   - **`Pc.setPos()` sengaja TIDAK menyentuh indeks blok** — sama seperti
+     `pc_setpos()` di C. Yang mendaftarkan pemain adalah `Pc.spawn()`
+     (di C: `clif_spawn` -> `map_addblock`). Jangan "rapikan" dengan
+     menggabungkan keduanya; ada alur yang memang menyetel posisi dulu.
+   - **Geometri peta di-cache per nama berkas** di `MapRegistry`, karena
+     7.648 baris `Maps` hanya menunjuk 2.640 berkas unik. Tiap peta tetap
+     dapat `MapData` sendiri (metadata & isinya berbeda).
+   - Tambahan yang **tidak ada di C**: bila posisi tersimpan pemain
+     ternyata tembok, `Pc.enterWorld()` mencari petak aman terdekat
+     (pencarian spiral) agar pemain tidak tersangkut di dinding.
+12. **Jangan biarkan `extLib/*.jar` ter-gitignore.** `.gitignore` berbasis
    template Java GitHub mengabaikan `*.jar`; project ini sengaja tanpa
    Maven sehingga jar HARUS ikut ter-commit — baris `!extLib/*.jar` wajib
    ada. Tanpa itu, clone di server CentOS menghasilkan `extLib/` kosong
@@ -209,6 +260,10 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
 | `char/*` | `org.rtk.charserver` | blob mmo_charstatus (0x3003/0x3004) belum |
 | `map/map.c,intif.c` | `org.rtk.map` | skeleton; handshake + routing login jalan |
 | `map/sl.c` | `org.rtk.map.script` | lihat bawah |
+| `common/mmo.h` (struct mmo_charstatus) | `org.rtk.common.mmo` | model + codec; **format sendiri**, bukan dump struct C (lihat Peringatan #10) |
+| `char_db.c` mmo_char_fromdb/todb | `charserver/CharPersistence` | muat/simpan 11 tabel MySQL |
+| `map/map.h` block_list, map_data | `map/data/BlockList`, `MapData`, `MapRegistry` | geometri + metadata + indeks spasial blok 8x8 |
+| `map/pc.c` (penempatan) | `map/User`, `map/Pc` | USER runtime, pc_setpos/warp/enterWorld |
 
 ## Scripting engine (org.rtk.map.script)
 
@@ -226,8 +281,9 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
   `ScriptEngine.resume(player, jawaban)`.
 - Binding yang belum ada = **stub warn-once** (global) atau error
   "attempt to call nil" yang tertangkap dispatcher (method) — jangan buat
-  loader crash. ±209 method player dipakai skrip; ±30 sudah riil di
-  `Bindings.java` terhadap `ScriptPlayer` in-memory.
+  loader crash. Angka terkini: 254 method dipanggil skrip, 12 punya
+  binding Java riil, 15 stub, 144 belum ada (lihat "Angka acuan binding
+  skrip" di roadmap).
 - Referensi kebenaran semantik binding: `RTK-Server/rtk/src/map/sl.c`
   (cari `pcl_*`, `bll_*`, `typel_extendproto`, `lua_register`).
 
@@ -249,125 +305,94 @@ Fondasi server-side sudah berdiri dan terverifikasi:
 - **Arsitektur jaringan**: instance per server + IO thread /
   ArrayBlockingQueue / logic thread (lihat Peringatan #8).
 
-### Tahap 2 — rencana berikutnya (urutan dari user)
+### Daftar pekerjaan berikutnya (disusun ulang 20 Agustus 2026)
 
-**1. Analisa `rtkmaps` — SELESAI (20 Agustus 2026)**
+Daftar lama dipecah jadi tiga trek karena ternyata **saling bergantung**,
+bukan satu antrean lurus. Trek A dan B bisa jalan paralel.
 
-Format `.map` sudah dibedah, diverifikasi, dan **sudah ada pembacanya**:
-`map/data/MapFile.java` + pemeriksa `map/data/MapFileTest.java`
-(jalankan `./run.sh maptest`).
+**Sudah selesai** (jangan diulang): analisa `rtkmaps` + pembaca `.map`;
+data game dipindah ke dalam project; serialisasi `mmo_charstatus` +
+`CharPersistence` + protokol 0x3003/0x3803/0x3004/0x3007; fondasi dunia
+peta (`MapData`, indeks spasial) + penempatan pemain (`User`, `Pc`);
+survei `Origin Nexia`.
 
-```
-offset 0 : uint16 BE xs        lebar
-offset 2 : uint16 BE ys        tinggi
-offset 4 : xs*ys x { uint16 BE tile, uint16 BE pass, uint16 BE obj }
-ukuran berkas = 4 + xs*ys*6
-```
+---
 
-Temuan yang perlu diingat:
+#### Trek A — sampai server bisa dimainkan (berurutan)
 
-- Rumus ukuran cocok pada **3.544/3.544 berkas, nol pengecualian**.
-  6.710.724 petak total; 435 dimensi berbeda (terbanyak 30×30);
-  terbesar `600x600.map`. Waktu muat seluruhnya ±160 ms.
-- `pass` di berkas hanya **0 atau 1** — 0 bisa dilewati, bukan-0 tembok
-  (`map_canmove()` mengembalikan 1 = TIDAK bisa lewat). Saat runtime,
-  server C **memakai ulang** ladang ini untuk id objek yang sedang
-  menempati petak, jadi jangan anggap selalu boolean di luar berkas.
-- `tile` = id lantai (0..±31k, rujukan tileset klien);
-  `obj` = lapisan objek, ±12% petak berisi.
-- **Berkas peta kini ada di dalam project**: `maps/` (3.544 berkas, ~38 MB,
-  salinan byte-identik dari `rtkmaps/Accepted/` — sudah diverifikasi
-  3.544/3.544 identik). Struktur subfolder dipertahankan karena tabel
-  `Maps` merujuk mis. `games/sumo_war.map`. Lokasinya diatur
-  `map.path` (properties) → `map_path` (`conf/map.conf`) → argumen CLI.
-  Sumber aslinya di C: `map.c`:1145 → `../rtkmaps/Accepted/%s`. Folder
-  `rtkmaps/TKR Maps/` adalah salinan lama; **abaikan**.
-- Metadata peta ada di tabel MySQL `Maps` (33 kolom: nama, BGM, PvP,
-  cahaya, cuaca, batas level, dsb.), berkas ditunjuk kolom `MapFile`.
-  Di backup DB ada **7.648 baris peta** yang menunjuk hanya **2.640
-  berkas unik** — banyak peta **berbagi geometri yang sama** dan hanya
-  berbeda metadata. Semua berkas yang dirujuk ADA di disk (0 hilang);
-  652 berkas di disk tidak dipakai.
-- **Warp bukan dari berkas.** Server membaca tabel `Warps`
-  (`npc.c`:165, 6 kolom `SourceMapId,SourceX,SourceY,DestinationMapId,
-  DestinationX,DestinationY`, 4.476 baris di backup). `rtkmaps/warps.txt`
-  (852 baris, format sama) adalah data sumber/legacy, dan
-  `conf/warp_main.conf` menunjuk folder `../mithiamaps/` yang tidak ada
-  serta importnya dikomentari di `map.conf` — jangan tertipu.
+**A1. Paket `clif_*` dasar: pemain masuk dan melihat dunia** ← MULAI DI SINI
+Pemain sudah "ada" di server tapi klien belum diberi tahu apa pun.
+Perlu: `clif_sendid`, `clif_sendmapinfo`, `clif_sendxy`, `clif_sendstatus`,
+`clif_getchararea`, `clif_spawn`, `clif_refresh`, `clif_sendtime`.
+Semua **wajib byte-exact** (klien RetroTK asli yang membaca) dan memakai
+**big-endian** (`wfifoWBE`), berbeda dari protokol antar-server.
+Verifikasi sesungguhnya butuh klien nyata.
 
-**2. Analisa `rtklua`** (sekarang di `luascript/`, 907 file, ~164rb baris)
+**A2. Gerakan** — `clif_parsewalk`: validasi tabrakan lewat
+`MapData.walkable()`, perbarui indeks blok (`moveBlock`), siarkan ke
+pemain lain dalam area pandang.
 
-Sudah *berjalan* lewat LuaJ, tapi belum *dianalisa isinya*. Tujuannya
-memetakan binding apa saja yang benar-benar dibutuhkan konten: ±209 method
-player dipakai skrip, baru ±30 yang riil di `Bindings.java`. Analisa ini
-yang menentukan urutan port subsistem gameplay (`pc.c`, `mob.c`, `npc.c`,
-`clif.c`) — implementasikan yang paling sering dipanggil lebih dulu
-(`sendMinitext` 2.902×, `dialogSeq` 2.343×, `sendStatus` 1.102×,
-`warp` 842×, dst.).
+**A3. Uji end-to-end dengan MySQL sungguhan** — sekaligus memvalidasi
+`CharPersistence` yang **sampai sekarang belum pernah dijalankan terhadap
+database hidup** (baru dicek lewat pencocokan 300 nama kolom).
 
-**3. Pelajari folder `Origin Nexia` — aset grafis klien (BERIKUTNYA)**
+**A4. NPC & dialog** — `clif_parsenpcdialog` menyambungkan engine Lua ke
+klien. Begitu ini jalan, 906 skrip yang sudah termuat mulai benar-benar
+berfungsi.
 
-Lokasi: `~/Documents/GitHub/Origin Nexia` (1,9 GB, klien NexusTK/Nexia asli;
-ada juga salinan di `~/Downloads/Origin Nexia`). **Survei awal sudah
-dilakukan 20 Agustus 2026 — jawabannya: YA, grafis peta bisa diambil dari
-sini.** Ini melengkapi kekurangan yang dicatat sebelumnya (berkas `.map`
-hanya menyimpan ID angka, tanpa gambar).
+**A5. Mob & pertarungan** — `mob.c` (2.411 baris): spawn, AI, kerusakan.
 
-Isi `Origin Nexia/Data/` — 253 arsip `.dat`, 1,9 GB:
+---
 
-| Kelompok | Jumlah | Isi |
-|---|---|---|
-| `tile*.dat` + `tilec*.dat` | 52 (213 MB) | **grafis petak lantai/objek** — yang dirujuk `tile` & `obj` di `.map` |
-| `mon*.dat` | 70 | sprite monster |
-| `body/coat/helmet/hair/sword/…` | ±40 | sprite perlengkapan karakter |
-| `efx*.dat` | 40 | efek |
-| `mus*.dat`, `snd.dat` | 8 | audio |
+#### Trek B — aset & tooling (paralel, tidak memblokir Trek A)
 
-Format arsip `.dat` **sudah terbaca**: 4 byte jumlah entri (LE), lalu tiap
-entri 4 byte offset + 13 byte nama; entri terakhir sentinel (offset = akhir
-berkas, nama kosong). Contoh: `tilec0.dat` memuat `tilec0.epf` (4,2 MB).
+**B1. Dekoder EPF** — EPF + PAL → gambar RGB, plus pemetaan id
+`tile`/`obj` ke frame. Untuk `obj` perlu `rtk/SObj.tbl` (18.954 entri,
+masih di RTK-Server, belum disalin). Ini prasyarat B2-visual dan B3.
 
-Isi seluruh arsip bila dipindai: **440 `.epf` (gambar), 170 `.pal`
-(palet), 14 `.tbl`, 26 `.lst`, 26 `.lsr`, 19 `.dsc`**, plus 246 `.wav` &
-66 `.mp3`. Jadi gambar DAN paletnya lengkap.
+**B2. Tools editor HTML + JavaScript** — edit `.map` dan skrip Lua,
+jalan langsung di browser. Bisa dimulai **sebelum** B1 dengan menampilkan
+grid berwarna dari id/`pass`; gambar aslinya menyusul.
+Ingat: `.map` **big-endian** → `DataView.getUint16(off, false)`.
 
-Yang belum dikerjakan: **dekoder EPF** (EPF + PAL → gambar RGB) dan
-memetakan `tile`/`obj` id dari `.map` ke frame EPF yang benar — di sinilah
-`rtk/SObj.tbl` (18.954 entri, masih di RTK-Server) dipakai untuk `obj`.
+**B3. Client desktop Java + libGDX** — prasyarat B1.
 
-**4. Tools editor lokal: HTML + JavaScript**
+---
 
-Aplikasi sederhana yang dijalankan di lokal (cukup buka berkas HTML, tanpa
-server/build), untuk:
-- **Edit peta** — memuat `.map` dari `maps/`, menampilkan grid `tile`/
-  `pass`/`obj`, menyunting, lalu menyimpan kembali ke format aslinya
-  (header uint16 BE xs/ys + xs*ys x 3 uint16 BE — lihat `MapFile.java`).
-- **Edit skrip Lua** — menyunting berkas di `luascript/`.
+#### Trek C — utang teknis (kecil, kerjakan saat menyentuh area terkait)
 
-Catatan teknis untuk nanti: JavaScript membaca berkas lokal lewat
-`<input type="file">` / File System Access API; endianness **big-endian**
-harus eksplisit (`DataView.getUint16(off, false)`). Bila mau menampilkan
-petaknya sebagai gambar, dekoder EPF dari langkah 3 jadi prasyarat —
-tanpa itu, tampilkan dulu sebagai grid berwarna berdasarkan id/pass.
+- **C1.** Sambungkan `ScriptPlayer` ke `CharStatus` supaya registry yang
+  ditulis skrip ikut tersimpan (sisi penyimpanan sudah ada).
+- **C2.** 4 berkas meta hilang: `login.conf` meminta 5
+  (`RidableAnimals`, `CharicInfo0/1`, `ItemInfo0/1`), `meta/` hanya punya
+  `RidableAnimals`. Kandidat sumber ada di `RTK-Server/rtk/decrypted/`.
+  Inilah sebab tooltip item hilang (README asli langkah 11).
+- **C3.** Perpindahan **antar map server** (di C: lookup `MapServer` di
+  tabel `Maps`); sekarang ditolak dengan pesan jelas.
+- **C4.** Papan pesan & surat (char server 0x3009-0x300F).
 
-**5. Client game desktop: Java + libGDX**
+---
 
-Menggantikan klien RetroTK asli (Windows/`RetroTK.exe`). Konsekuensi
-penting: begitu klien dibuat sendiri, **kewajiban byte-fidelity protokol
-bisa ditinjau ulang** — tapi selama klien lama masih dipakai untuk
-pengujian, protokol wire tetap tidak boleh berubah (lihat Peringatan #2).
-libGDX = jar tambahan di `extLib/` (tetap tanpa Maven). Kemungkinan besar
-jadi project terpisah dari server, berbagi kode protokol/format map.
-Prasyarat: dekoder EPF (langkah 3).
+#### Angka acuan binding skrip (diukur 20 Agustus 2026)
 
-### Trek paralel: melengkapi port server
+Ini **mengoreksi** angka lama "±30 dari ±209" yang beredar di catatan
+sebelumnya:
 
-1. Serialisasi `mmo_charstatus` + load/save karakter (char server
-   0x3003/0x3803/0x3004) — prasyarat gameplay.
-2. Gameplay map server — tiap subsistem selesai langsung mengisi stub
-   `Bindings.java`.
-3. Persistensi registry skrip ke tabel `Registry`/`RegistryString`/
-   `NPCRegistry`/`QuestRegistry` via `CharDb`.
+| | jumlah |
+|---|---|
+| method dipanggil skrip (unik) | **254** |
+| disediakan `player.lua` sendiri (lapisan Lua) | 110 |
+| binding Java riil | **12** |
+| binding Java stub (no-op) | 15 |
+| **belum ada implementasi sama sekali** | **144** |
+
+Paling sering dipakai yang belum ada: `calcStat` (232×),
+`hasLegend` (229×), `sendSide` (183×), `getObjectsInMap` (177×),
+`hasDuration` (171×), `getEquippedItem` (166×), `killCount` (143×),
+`addLegend` (136×), `getInventoryItem` (133×), `swingTarget` (129×).
+Urutan ini yang menentukan prioritas port subsistem di Trek A.
+Perintah untuk menghitung ulang ada di riwayat sesi — ulangi bila
+`Bindings.java` berubah banyak.
 
 ## Kebiasaan project
 
@@ -376,5 +401,8 @@ Prasyarat: dekoder EPF (langkah 3).
 - Selesai mengubah kode: compile bersih (`-Xlint:all` boleh 1 warning
   try-with-resources di Sql), jalankan `./run.sh scripttest`, bersihkan
   `build/`/`dist/`/`logs/` (sudah di .gitignore).
-- Update README.md + `extLib/README.md` bila menambah dependensi atau
-  mengubah perilaku yang terdokumentasi.
+- **README ada dua bahasa:** `README.md` (Bahasa Indonesia, utama) dan
+  `README.en.md` (Inggris). Keduanya bercermin — struktur bagiannya sama
+  persis. Kalau mengubah salah satu, **perbarui yang lain di sesi yang
+  sama**, jangan ditunda. Juga perbarui `extLib/README.md` bila menambah
+  dependensi.

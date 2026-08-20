@@ -67,6 +67,10 @@ public final class MapServer {
     public static String luaPath = org.rtk.common.Props.get("lua.path", "luascript");
     public static org.rtk.map.script.ScriptEngine scriptEngine;
 
+    /** Pemain yang sedang online, dikunci fd klien. */
+    public static final java.util.Map<Integer, User> onlineChars =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
     public static final Sql sql = new Sql();
 
     /** Lapisan jaringan + timer milik map server sendiri. */
@@ -74,6 +78,9 @@ public final class MapServer {
     public static final TimerSystem timers = new TimerSystem();
     private static Core core;
     static final List<Integer> loadedMaps = new ArrayList<>();
+
+    /** Dunia: seluruh peta milik server ini beserta isinya. */
+    public static final org.rtk.map.data.MapRegistry world = new org.rtk.map.data.MapRegistry();
 
     private MapServer() {
     }
@@ -115,33 +122,24 @@ public final class MapServer {
         });
     }
 
-    /** map_load: which maps does this server host? */
+    /**
+     * map_read(): muat seluruh peta milik server ini — metadata dari tabel
+     * `Maps` dan geometri dari berkas .map di {@link #mapPath}.
+     *
+     * Bila database tidak tersedia, server tetap hidup dengan daftar peta
+     * kosong; kelemahan itu dilaporkan supaya tidak terlihat seperti sukses.
+     */
     static void loadMaps() {
         loadedMaps.clear();
-        // Read the map list from the `Maps` table like map_db_load() does.
-        List<Integer> ids = queryMapIds();
-        if (ids.isEmpty()) {
-            log.warn("[MAP] No maps found for ServerId {} - registering map 0 only.", serverId);
-            loadedMaps.add(0);
-        } else {
-            loadedMaps.addAll(ids);
+        int n = world.load(sql, serverId, mapPath);
+        if (n == 0) {
+            log.warn("[MAP] tidak ada peta yang dimuat untuk ServerId {} "
+                    + "(database belum siap, atau kolom MapServer tidak cocok)", serverId);
         }
-        log.info("[MAP] Hosting {} map(s).", loadedMaps.size());
-    }
-
-    private static List<Integer> queryMapIds() {
-        List<Integer> ids = new ArrayList<>();
-        Integer probe = sql.queryInt("SELECT COUNT(*) FROM `Maps` WHERE `MapServer` = ?", serverId);
-        if (probe == null || probe == 0) {
-            return ids;
+        loadedMaps.addAll(world.mapIds());
+        if (world.missingFiles() > 0) {
+            log.warn("[MAP] {} berkas peta tidak ditemukan di {}", world.missingFiles(), mapPath);
         }
-        Object[] row;
-        int offset = 0;
-        while ((row = sql.queryRow("SELECT `MapId` FROM `Maps` WHERE `MapServer` = ? ORDER BY `MapId` LIMIT 1 OFFSET " + offset, 1, serverId)) != null) {
-            ids.add(((Number) row[0]).intValue());
-            offset++;
-        }
-        return ids;
     }
 
     /** check_connect_char(): (re)establish the char-server link. */

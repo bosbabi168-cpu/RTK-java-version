@@ -1,7 +1,12 @@
 package org.rtk.map;
 
+import java.io.IOException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import org.rtk.common.mmo.CharStatus;
+import org.rtk.common.mmo.CharStatusCodec;
 
 import org.rtk.common.NetServer;
 import org.rtk.common.ServerLog;
@@ -62,11 +67,102 @@ public final class MapIntif {
         log.info("[MAP] Incoming player: {} (id {}) from {}", name, charIdNum, Session.ipToString(ip));
 
         // acknowledge so the char server tells login to redirect the client
+        int clientFd = s.rfifoW(2);
         s.wfifoW(0, 0x3002);
-        s.wfifoW(2, s.rfifoW(2));
+        s.wfifoW(2, clientFd);
         s.wfifoZero(4, 16);
         s.wfifoStringFixed(4, name, 16);
         s.wfifoSet(20);
+
+        // sekaligus minta data karakternya (0x3003); balasannya 0x3803
+        requestChar(clientFd, charIdNum, name);
+        return 0;
+    }
+
+    /**
+     * intif_load() — minta data karakter ke char server (0x3003).
+     *
+     * Tata letak: W(0)=0x3003, W(2)=fd klien, L(4)=id karakter, nama[16]@8.
+     */
+    public static int requestChar(int clientFd, long charId, String name) {
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa minta karakter: belum terhubung ke char server");
+            return -1;
+        }
+        s.wfifoW(0, 0x3003);
+        s.wfifoW(2, clientFd);
+        s.wfifoL(4, (int) charId);
+        s.wfifoStringFixed(8, name, 16);
+        s.wfifoSet(24);
+        log.info("[MAP] minta data karakter {} (id={}) ke char server", name, charId);
+        return 0;
+    }
+
+    /**
+     * intif_parse_charload() (0x3803): char server mengirim data karakter.
+     * Tata letak: W(0)=0x3803, L(2)=panjang total, W(6)=fd klien, blob@8.
+     */
+    static int parseCharLoad(int fd) {
+        Session s = net.session(fd);
+        int total = s.rfifoL(2);
+        int clientFd = s.rfifoW(6);
+        int blobLen = total - 8;
+        if (blobLen <= 0) {
+            log.error("[MAP] blob karakter kosong (panjang {})", blobLen);
+            return 0;
+        }
+
+        CharStatus c;
+        try {
+            c = CharStatusCodec.decode(s.rfifoBytes(8, blobLen));
+        } catch (IOException e) {
+            log.error("[MAP] blob karakter rusak / tidak dikenal", e);
+            return 0;
+        }
+
+        // bangun pemain runtime lalu tempatkan di dunia (pc_setpos + clif_spawn)
+        org.rtk.map.User sd = new org.rtk.map.User(clientFd, c);
+        MapServer.onlineChars.put(clientFd, sd);
+
+        log.info("[MAP] karakter dimuat: {} (level {}, {} barang) untuk fd {}",
+                c.name, c.level, c.inventory.size(), clientFd);
+
+        if (!org.rtk.map.Pc.enterWorld(MapServer.world, sd)) {
+            log.error("[MAP] {} gagal ditempatkan di dunia — koneksi ditutup", c.name);
+            MapServer.onlineChars.remove(clientFd);
+            Session cs = net.session(clientFd);
+            if (cs != null) {
+                cs.eof = true;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * intif_save() / intif_savequit() — kirim karakter untuk disimpan.
+     * Tata letak: W(0)=opcode, L(2)=panjang total, blob@6.
+     *
+     * @param quit true memakai 0x3007 (simpan + logout), false 0x3004
+     */
+    public static int saveChar(CharStatus c, boolean quit) {
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa menyimpan {}: belum terhubung ke char server", c.name);
+            return -1;
+        }
+        byte[] blob;
+        try {
+            blob = CharStatusCodec.encode(c);
+        } catch (IOException e) {
+            log.error("[MAP] gagal menyusun blob karakter {}", c.name, e);
+            return -1;
+        }
+        s.wfifoW(0, quit ? 0x3007 : 0x3004);
+        s.wfifoL(2, 6 + blob.length);
+        s.wfifoBytes(6, blob);
+        s.wfifoSet(6 + blob.length);
+        log.info("[MAP] simpan karakter {} ({} byte){}", c.name, blob.length, quit ? " + logout" : "");
         return 0;
     }
 
@@ -115,6 +211,7 @@ public final class MapIntif {
         switch (cmd) {
             case 0x3800: parseAccept(fd); break;
             case 0x3802: parseAuthAdd(fd); break;
+            case 0x3803: parseCharLoad(fd); break;
             case 0x3804: parseCheckOnline(fd); break;
             default:
                 log.debug("[MAP] Packet {} not ported yet (see README roadmap)", String.format("0x%04X", cmd));

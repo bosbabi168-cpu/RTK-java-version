@@ -1,5 +1,7 @@
 # RTK Java Version
 
+*Bahasa Indonesia · [English](README.en.md)*
+
 Port Java SE dari server MMO **RetroTK** (bergaya NexusTK), yang aslinya
 ditulis dalam C — sumbernya: [unkmc/RTK-Server](https://github.com/unkmc/RTK-Server).
 
@@ -39,8 +41,11 @@ Di mesin pengembangan:
 # 1. build di NetBeans: Run > Clean and Build Project
 #    (atau tanpa NetBeans: ./build.sh)
 
-# 2. uji regresi scripting - harus ALL TESTS PASSED
+# 2. uji regresi - semuanya harus lolos
 ./run.sh scripttest
+./run.sh maptest
+./run.sh chartest
+./run.sh worldtest
 
 # 3. jalankan ketiga server
 ./run.sh all          # login -> char -> map
@@ -156,6 +161,9 @@ java -jar RTK-java-version.jar login       # login server
 java -jar RTK-java-version.jar char        # char server
 java -jar RTK-java-version.jar map         # map server
 java -jar RTK-java-version.jar scripttest  # uji regresi scripting
+java -jar RTK-java-version.jar maptest     # uji regresi berkas peta
+java -jar RTK-java-version.jar chartest    # uji serialisasi karakter
+java -jar RTK-java-version.jar worldtest   # uji dunia peta / penempatan pemain
 ```
 
 Argumen berikutnya diteruskan apa adanya ke server, jadi opsi asli tetap
@@ -420,6 +428,74 @@ untuk melihat log `DEBUG` (mis. hex dump paket tak dikenal di
 > dan merupakan mekanisme logging *game event* terpisah yang formatnya
 > sengaja dibuat identik dengan versi C, bukan log diagnostik server.
 
+## Penyimpanan karakter (mmo_charstatus)
+
+Seluruh keadaan pemain berpindah antara char server dan map server lewat
+paket 0x3003 (minta) → 0x3803 (kirim), lalu 0x3004 (simpan) atau 0x3007
+(simpan + logout). Penyimpanan sebenarnya tetap MySQL, ditangani
+[`CharPersistence`](src/org/rtk/charserver/CharPersistence.java) yang
+memuat/menyimpan 11 tabel (`Character`, `Inventory`, `Equipment`, `Banks`,
+`SpellBook`, `Aethers`, `Legends`, `Kills`, `Registry`, `RegistryString`,
+`NPCRegistry`, `QuestRegistry`).
+
+**Formatnya sengaja berbeda dari versi C.** Di C, isi struct dikirim
+sebagai dump memori mentah. Setelah header C-nya dikompilasi untuk
+memastikan, angkanya: **3.171.352 byte per karakter**, dengan **82% hanya
+array registry yang nyaris selalu kosong** — dan ukuran itu **berbeda antar
+target kompilasi** (3.171.352 di 64-bit, 3.168.952 pada build 32-bit asli,
+gara-gara `unsigned long`). Jadi tata letak biner C bukan kontrak yang
+stabil, sementara kedua ujung paket ini sama-sama kode Java kita sendiri.
+
+[`CharStatusCodec`](src/org/rtk/common/mmo/CharStatusCodec.java) memakai
+format ringkas berversi: magic `"RTKC"` + nomor versi, string
+panjang-berprefiks, koleksi hanya menulis entri yang terisi, dan hasil
+akhirnya tetap dikompresi zlib sehingga lapisan transportasi tidak berubah.
+
+| | struct C | format ini |
+|---|---|---|
+| karakter baru | 3.171.352 byte | **27 byte** |
+| karakter terisi penuh | 3.171.352 byte | **4.263 byte** (743× lebih kecil) |
+
+Konsekuensinya: char server C tidak bisa dipasangkan dengan map server Java
+(dan sebaliknya) — trade-off yang diambil sadar. Bila tata letak berubah,
+naikkan `CharStatusCodec.VERSION` supaya blob lama ditolak dengan pesan
+jelas, bukan salah dibaca diam-diam.
+
+## Dunia peta & pemain
+
+Map server memuat seluruh peta miliknya saat start: metadata dari tabel
+`Maps` (disaring `MapServer = ServerId`) digabung geometri dari berkas
+`.map`. Karena 7.648 baris `Maps` hanya menunjuk 2.640 berkas unik,
+geometrinya di-cache per nama berkas — peta yang bentuknya sama tidak
+dibaca berulang dari disk, tapi tetap punya isi (pemain, mob) sendiri.
+
+**Indeks spasial.** Tiap peta dibagi menjadi blok 8×8 petak; setiap blok
+menyimpan daftar benda di dalamnya. Pertanyaan "siapa saja di sekitar
+sini" jadi hanya menyentuh beberapa blok, bukan menyapu seluruh peta
+(Kugnae saja 48.400 petak). Pemain dan mob disimpan pada indeks terpisah,
+seperti `block[]` dan `block_mob[]` di versi C.
+
+**Area pandang klien** adalah x±9, y±8 (18×16 petak). Bila menembus tepi
+peta, area itu **digeser, bukan dipotong**, supaya pemain yang berdiri di
+pinggir tetap melihat sejauh biasanya — perilaku ini ditiru persis dari
+`map_foreachinarea()`.
+
+**Pemain.** [`User`](src/org/rtk/map/User.java) adalah port `USER`
+(`struct map_sessiondata`): ia *adalah* sebuah benda di peta
+(`BlockList`), menyimpan [`CharStatus`](src/org/rtk/common/mmo/CharStatus.java)
+sebagai data persisten, dan menaruh nilai turunan (maxHp, might, …) di
+ladangnya sendiri. [`Pc`](src/org/rtk/map/Pc.java) menyediakan `setPos`,
+`spawn`/`despawn`, `warp`, dan `enterWorld`.
+
+> `Pc.setPos()` sengaja **tidak** menyentuh indeks blok — persis seperti
+> `pc_setpos()` di C, yang hanya mengubah koordinat. Yang membuat pemain
+> terlihat adalah `Pc.spawn()` (di C: `clif_spawn` → `map_addblock`).
+
+Satu tambahan yang tidak ada di versi C: bila posisi tersimpan seorang
+pemain ternyata berada di dalam tembok (mis. petanya diubah setelah ia
+terakhir keluar), `enterWorld` mencari petak aman terdekat alih-alih
+membiarkannya tersangkut.
+
 ## Status port
 
 | Komponen C | File Java | Status |
@@ -432,9 +508,12 @@ untuk melihat log `DEBUG` (mis. hex dump paket tak dikenal di
 | `common/db_mysql.c` | `common/Sql.java` | ✅ via JDBC + PreparedStatement |
 | config reader (`config_read`) | `common/Config.java` | ✅ penuh |
 | **login server** (`login.c`, `clif.c`, `intif.c`) | `login/LoginServer.java`, `login/LoginClif.java`, `login/LoginIntif.java` | ✅ **penuh** — versi check, login, buat karakter, ganti password, meta file (zlib+CRC32), maintenance mode, require_reg, banned IP, brute-force lockout, redirect ke map server |
-| **char server** (`char.c`, `logif.c`, `mapif.c`, `char_db.c`) | `charserver/CharServer.java`, `Logif.java`, `Mapif.java`, `CharDb.java` | ✅ handshake login & map, autentikasi karakter, buat karakter, ganti password, routing map. ⚠️ blob `mmo_charstatus` (load/save karakter penuh, 0x3003/0x3004) & board/mail belum |
-| **map server** (`map.c`, `intif.c` + 33rb baris gameplay) | `map/MapServer.java`, `map/MapIntif.java` | ⚠️ **skeleton** — konek+auth ke char server, daftar map, terima routing pemain (0x3802→0x3002) sehingga alur login lengkap; gameplay belum |
-| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **arsitektur inti jalan via LuaJ** — seluruh 906 skrip Lua asli termuat tanpa error; object model typel (__index: getattr→prototype→data table), dispatch `root.method`, coroutine `_async` + primitif dialog blocking (`menu`/`dialog`/`input`) teruji end-to-end lewat `Accepted/player.lua` asli. ⚠️ baru ±30 dari ±209 method player yang riil; sisanya stub warn-once menunggu port engine gameplay |
+| **char server** (`char.c`, `logif.c`, `mapif.c`, `char_db.c`) | `charserver/CharServer.java`, `Logif.java`, `Mapif.java`, `CharDb.java`, `CharPersistence.java` | ✅ handshake login & map, autentikasi karakter, buat karakter, ganti password, routing map, **muat/simpan karakter penuh (0x3003/0x3803/0x3004/0x3007)**. ⚠️ board/mail belum; lapisan database belum diuji ke MySQL sungguhan |
+| `common/mmo.h` (`struct mmo_charstatus`) | `common/mmo/CharStatus.java`, `CharStatusCodec.java`, + `Item`/`Legend`/`SkillInfo`/`BankItem`/`Point` | ✅ model 67 kolom `Character` + koleksi, dengan format serialisasi sendiri (lihat di bawah) |
+| **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ konek+auth ke char server, memuat geometri peta, terima routing pemain, minta & terima data karakter (0x3003/0x3803) |
+| dunia peta (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometri + metadata + indeks spasial blok 8×8, area pandang x±9/y±8 |
+| **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c` ±22rb baris) | `map/User.java`, `map/Pc.java` | ⚠️ **baru penempatan pemain** (USER, `setPos`/`warp`/`enterWorld`). Paket `clif_*` ke klien, pertarungan, mob, dan NPC belum |
+| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **arsitektur inti jalan via LuaJ** — seluruh 906 skrip Lua asli termuat tanpa error; object model typel (__index: getattr→prototype→data table), dispatch `root.method`, coroutine `_async` + primitif dialog blocking (`menu`/`dialog`/`input`) teruji end-to-end lewat `Accepted/player.lua` asli. ⚠️ dari 254 method yang dipanggil skrip: 110 disediakan `player.lua` sendiri, **12 punya binding Java riil**, 15 stub, dan 144 belum ada implementasinya |
 | save server (`saveif.c` — di C pun sudah dinonaktifkan) | — | ❌ tidak diport (timer koneksinya di-comment di C) |
 
 ## Catatan desain
@@ -492,9 +571,17 @@ Path skrip diatur lewat `lua_path` di `conf/map.conf` (default
 
 ## Pengujian
 
-Belum ada framework unit test (sengaja, agar tetap Java SE murni); gerbang
-regresi utamanya adalah **`./run.sh scripttest`** (`map/script/ScriptTest.java`),
-yang harus selalu hijau:
+Belum ada framework unit test (sengaja, agar tetap Java SE murni). Ada tiga
+gerbang regresi yang harus selalu hijau:
+
+| Perintah | Menguji |
+|---|---|
+| `./run.sh scripttest` | 906 skrip Lua termuat + coroutine dialog NPC |
+| `./run.sh maptest` | 3.544 berkas peta terbaca sesuai format |
+| `./run.sh chartest` | serialisasi karakter (29 assertion) |
+| `./run.sh worldtest` | dunia peta + penempatan pemain (52 assertion) |
+
+**`./run.sh scripttest`** (`map/script/ScriptTest.java`):
 
 - **Fase 1** — memuat `sys.lua` + seluruh `Accepted/` dan `Developers/`
   dari `luascript/`; **gagal bila ada satu berkas pun yang error**
@@ -503,6 +590,19 @@ yang harus selalu hijau:
   melalui `Accepted/player.lua` asli: klik → yield di menu → resume pilihan
   → dialog 2 halaman ("next"/"next") → addItem → tulis registry → coroutine
   selesai → interaksi kedua. 14 assertion, exit code 1 bila ada yang gagal.
+
+**`./run.sh chartest`** (`common/mmo/CharStatusTest.java`) menguji round-trip
+seluruh field karakter — termasuk kasus tepi seperti unsigned 32-bit di atas
+4 miliar, nilai bertanda negatif, float, dan teks UTF-8 — memastikan blob
+rusak **ditolak** dengan pesan jelas alih-alih salah baca diam-diam, lalu
+memeriksa tata letak byte paket 0x3803/0x3004 per-offset.
+
+**`./run.sh worldtest`** (`map/data/MapWorldTest.java`) menguji indeks
+spasial dan penempatan pemain di atas **peta Kugnae asli**, termasuk kasus
+batas: benda di x+9 terlihat sedangkan x+10 tidak, pindah lintas blok
+memperbarui indeks, pemain yang tersimpan di dalam tembok dipindahkan ke
+petak yang bisa dilewati, dan warp ke peta yang tidak dimuat ditolak tanpa
+menghilangkan pemain.
 
 > **Penting:** `ScriptTest` **tidak menyentuh lapisan jaringan sama sekali**.
 > Kalau mengubah `NetServer`/`Session`/`Core`, uji dengan tes integrasi TCP
@@ -529,47 +629,51 @@ plus infrastruktur (HikariCP, Log4j2, properties, build NetBeans/`build.sh`,
 deploy `run.sh`) dan arsitektur jaringan instance-per-server dengan IO
 thread terpisah.
 
-### Tahap 2 — rencana berikutnya
+### Pekerjaan berikutnya
 
-1. **Analisa berkas peta** — ✅ **selesai**. Format `.map` sudah dibedah dan
-   ada pembacanya: [`map/data/MapFile.java`](src/org/rtk/map/data/MapFile.java),
-   diperiksa lewat `./run.sh maptest`. Header `uint16 BE xs, ys`, lalu
-   `xs*ys` × {`tile`, `pass`, `obj`} masing-masing `uint16` BE — cocok pada
-   **3.544/3.544 berkas** (6,7 juta petak, muat ±160 ms). `pass` 0 = bisa
-   dilewati. Server hanya membaca `Accepted/`; `TKR Maps/` salinan lama.
-   Metadata dari tabel `Maps` — 7.648 peta berbagi hanya 2.640 berkas
-   geometri. Warp dari tabel `Warps`, bukan dari `warps.txt`.
-2. **Analisa skrip Lua** (`luascript/`) — skripnya sudah *berjalan*, tapi isinya belum
-   dipetakan. Analisa ini menentukan urutan port subsistem gameplay:
-   dahulukan binding yang paling sering dipanggil (`sendMinitext` 2.902×,
-   `dialogSeq` 2.343×, `sendStatus` 1.102×, `warp` 842×).
-3. **Pelajari folder `Origin Nexia`** (klien NexusTK asli, 1,9 GB) — survei
-   awal sudah menjawab pertanyaan lama: **grafis peta memang ada di sana.**
-   `Data/` berisi 253 arsip `.dat`; 52 di antaranya (`tile*`, `tilec*`,
-   213 MB) adalah grafis petak yang dirujuk kolom `tile`/`obj` di `.map`.
-   Format arsipnya sudah terbaca, dan isinya mencakup **440 berkas `.epf`
-   (gambar) beserta 170 `.pal` (palet)**. Yang belum: dekoder EPF→gambar
-   dan pemetaan id petak ke frame yang benar.
-4. **Tools editor lokal berbasis HTML + JavaScript** — dijalankan langsung
-   di browser tanpa server/build, untuk menyunting berkas `.map` di
-   `maps/` dan skrip Lua di `luascript/`.
-5. **Client game desktop dengan Java + libGDX** — menggantikan klien
-   RetroTK asli. libGDX ditaruh sebagai jar di `extLib/` (tetap tanpa
-   Maven), kemungkinan project terpisah yang berbagi kode protokol dan
-   format map. Prasyarat: dekoder EPF dari langkah 3.
+Daftar ini disusun ulang 20 Agustus 2026 menjadi tiga trek, karena
+butir-butirnya ternyata saling bergantung — bukan satu antrean lurus.
+Trek A dan B bisa berjalan paralel.
 
-### Trek paralel: melengkapi port server
+**Trek A — sampai server bisa dimainkan** (berurutan)
 
-1. **Serialisasi `mmo_charstatus`** (`mmo.h`, `char_db.c` 1.700 baris) —
-   load/save karakter penuh sebagai blob terkompresi zlib (0x3003/0x3803,
-   0x3004). Prasyarat untuk gameplay.
-2. **Gameplay map server** (`map.c`, `pc.c`, `mob.c`, `npc.c`, `clif.c`
-   ±33.000 baris). Setiap subsistem yang selesai langsung mengisi binding
-   stub di `map/script/Bindings.java` (±209 method player dipakai skrip;
-   ±30 sudah riil).
-3. **Persistensi registry skrip** — `player.registry` dkk. saat ini
-   in-memory; sambungkan ke tabel `Registry`/`RegistryString`/
-   `NPCRegistry`/`QuestRegistry` via `CharDb`.
+1. **Paket `clif_*` dasar** ← mulai di sini. Pemain sudah "ada" di server
+   tapi klien belum diberi tahu apa pun: `clif_sendid`, `sendmapinfo`,
+   `sendxy`, `sendstatus`, `getchararea`, `spawn`, `refresh`, `sendtime`.
+   Semuanya wajib byte-exact dan **big-endian** (protokol klien).
+2. **Gerakan** — `clif_parsewalk`: validasi tabrakan, perbarui indeks
+   blok, siarkan ke pemain lain dalam area pandang.
+3. **Uji end-to-end dengan MySQL sungguhan** — sekaligus memvalidasi
+   `CharPersistence` yang belum pernah dijalankan terhadap database hidup.
+4. **NPC & dialog** — `clif_parsenpcdialog` menyambungkan engine Lua ke
+   klien; begitu jalan, 906 skrip yang sudah termuat mulai berfungsi.
+5. **Mob & pertarungan** — `mob.c` (2.411 baris).
+
+**Trek B — aset & tooling** (paralel, tidak memblokir Trek A)
+
+1. **Dekoder EPF** — EPF + PAL → gambar RGB, plus pemetaan id `tile`/`obj`
+   ke frame (untuk `obj` perlu `SObj.tbl`, 18.954 entri). Prasyarat B3.
+2. **Tools editor HTML + JavaScript** — edit `.map` dan skrip Lua langsung
+   di browser. Bisa dimulai sebelum dekoder EPF selesai, dengan grid
+   berwarna dari id/`pass` lebih dulu.
+3. **Client desktop Java + libGDX** — prasyarat: dekoder EPF.
+
+**Trek C — utang teknis** (kerjakan sambil lalu saat menyentuh areanya)
+
+- Sambungkan `ScriptPlayer` ke `CharStatus` agar registry yang ditulis
+  skrip ikut tersimpan (sisi penyimpanan sudah ada).
+- Empat berkas meta yang hilang — `login.conf` meminta 5, `meta/` hanya
+  punya `RidableAnimals`. Inilah sebab tooltip item tidak muncul.
+- Perpindahan antar map server (sekarang ditolak dengan pesan jelas).
+- Papan pesan & surat (char server).
+
+**Acuan prioritas binding skrip** (diukur ulang 20 Agustus 2026): dari
+**254** method yang dipanggil skrip, 110 disediakan `player.lua` sendiri,
+**12** punya binding Java riil, 15 masih stub, dan **144 belum ada
+implementasinya sama sekali**. Yang paling sering dipakai dan belum ada:
+`calcStat` (232×), `hasLegend` (229×), `sendSide` (183×),
+`getObjectsInMap` (177×), `hasDuration` (171×), `getEquippedItem` (166×).
+Urutan itulah yang menentukan prioritas port subsistem di Trek A.
 
 ## Struktur folder
 
@@ -587,15 +691,18 @@ RTK-java-version/
 │   └── private/                 #   setelan lokal per-mesin (.gitignore)
 ├── CLAUDE.md                    # panduan untuk pengembangan berbantuan AI
 ├── src/org/rtk/
-│   ├── RtkLauncher.java         # Main-Class jar: dispatcher login/char/map/scripttest
+│   ├── RtkLauncher.java         # Main-Class jar: dispatcher login/char/map + uji
 │   ├── common/                  # port rtk/src/common: Crypt, Session/NetServer,
-│   │                            #   TimerSystem, Core, Config, Sql (HikariCP),
-│   │                            #   ServerLog, Props, Md5
+│   │   │                        #   TimerSystem, Core, Config, Sql (HikariCP),
+│   │   │                        #   ServerLog, Props, Md5
+│   │   └── mmo/                 # port mmo.h: CharStatus + codec (blob karakter)
 │   ├── login/                   # port rtk/src/login (LoginServer, LoginClif, LoginIntif)
-│   ├── charserver/              # port rtk/src/char (CharServer, Logif, Mapif, CharDb)
-│   └── map/                     # port (skeleton) rtk/src/map (MapServer, MapIntif)
-│       └── script/              # port sl.c di atas LuaJ (ScriptEngine, ScriptClass,
-│                                #   ScriptInstance, Bindings, ScriptPlayer, ScriptTest)
+│   ├── charserver/              # port rtk/src/char (CharServer, Logif, Mapif,
+│   │                            #   CharDb, CharPersistence)
+│   └── map/                     # port rtk/src/map (MapServer, MapIntif, User, Pc)
+│       ├── data/                #   dunia: MapFile, MapData, BlockList, MapRegistry
+│       └── script/              #   port sl.c di atas LuaJ (ScriptEngine, ScriptClass,
+│                                #     ScriptInstance, Bindings, ScriptPlayer)
 ├── resources/
 │   ├── log4j2.xml               # konfigurasi logging (rolling harian, retensi 30 hari)
 │   └── rtk-server.properties    # default teknis (crypt key, port, pool, buffer, lua path)
