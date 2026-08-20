@@ -67,7 +67,8 @@ proses build di server.
   `./run.sh scripttest` (906 skrip Lua + coroutine dialog),
   `./run.sh maptest` (3.544 berkas peta),
   `./run.sh chartest` (serialisasi karakter, 29 assertion),
-  `./run.sh worldtest` (dunia peta + penempatan pemain, 52 assertion).
+  `./run.sh worldtest` (dunia peta + penempatan pemain, 53 assertion),
+  `./run.sh cliftest` (paket klien, gerakan, portal — 87 assertion).
 
 ```
 ./build.sh            # atau build di NetBeans
@@ -75,6 +76,7 @@ proses build di server.
 ./run.sh maptest      # GERBANG REGRESI — 3.544 berkas peta
 ./run.sh chartest     # GERBANG REGRESI — serialisasi karakter
 ./run.sh worldtest    # GERBANG REGRESI — dunia peta + pemain
+./run.sh cliftest     # GERBANG REGRESI — paket klien + gerakan + portal
 ```
 
 Perintah manual setara:
@@ -229,7 +231,27 @@ java -cp "build/classes:$CP" org.rtk.map.script.ScriptTest
    - Tambahan yang **tidak ada di C**: bila posisi tersimpan pemain
      ternyata tembok, `Pc.enterWorld()` mencari petak aman terdekat
      (pencarian spiral) agar pemain tidak tersangkut di dinding.
-12. **Jangan biarkan `extLib/*.jar` ter-gitignore.** `.gitignore` berbasis
+13. **Jebakan pada `clif_parsewalk` (map/Clif).** Tiga hal yang sudah
+   pernah salah dan ditutup dengan uji di `cliftest`:
+   - **`direction` TIDAK boleh di-mask `& 0x03`.** C memakai `switch`
+     tanpa `default`, jadi arah di luar 0..3 tidak menggeser apa pun.
+     Dengan mask, arah 4 berubah jadi "ke atas". Karena alasan yang sama,
+     cabang arah 3 di `updateCamera` harus `case 3`, **bukan** `default` —
+     kalau tidak, arah tak sah ikut menggeser kamera.
+   - **Diri sendiri tidak boleh menghalangi langkah.** Di tepi peta
+     koordinat tujuan dijepit sehingga sama dengan posisi sekarang;
+     tanpa cek `bl.id == sd.id` pemain tertahan di seluruh tepi peta.
+     Di C ini dijaga oleh `bl->id != sd->bl.id` dalam `clif_canmove_sub`.
+   - **Ladang tipe pada paket 0x0A little-endian.** C menulisnya dengan
+     `WFIFOW` tanpa `SWAP16`, berbeda dari ladang lain di protokol klien.
+     Ditiru apa adanya — jangan "diseragamkan" jadi big-endian.
+
+   Juga faithful-port yang sengaja dipertahankan: rantai pesan penolakan
+   masuk peta di `entryRejection` punya tiga cabang terakhir yang **tidak
+   pernah tercapai** (sama seperti C), sehingga kekurangan mark/path pun
+   dilaporkan sebagai kekurangan level.
+
+14. **Jangan biarkan `extLib/*.jar` ter-gitignore.** `.gitignore` berbasis
    template Java GitHub mengabaikan `*.jar`; project ini sengaja tanpa
    Maven sehingga jar HARUS ikut ter-commit — baris `!extLib/*.jar` wajib
    ada. Tanpa itu, clone di server CentOS menghasilkan `extLib/` kosong
@@ -258,12 +280,14 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
 | `common/db_mysql.c` | `common/Sql` | HikariCP pool + PreparedStatement (bukan interpolasi string) |
 | `login/*` | `org.rtk.login` | port penuh |
 | `char/*` | `org.rtk.charserver` | blob mmo_charstatus (0x3003/0x3004) belum |
-| `map/map.c,intif.c` | `org.rtk.map` | skeleton; handshake + routing login jalan |
+| `map/map.c,intif.c` | `org.rtk.map` | handshake, routing login, dispatcher paket klien, simpan saat keluar |
 | `map/sl.c` | `org.rtk.map.script` | lihat bawah |
 | `common/mmo.h` (struct mmo_charstatus) | `org.rtk.common.mmo` | model + codec; **format sendiri**, bukan dump struct C (lihat Peringatan #10) |
 | `char_db.c` mmo_char_fromdb/todb | `charserver/CharPersistence` | muat/simpan 11 tabel MySQL |
 | `map/map.h` block_list, map_data | `map/data/BlockList`, `MapData`, `MapRegistry` | geometri + metadata + indeks spasial blok 8x8 |
 | `map/pc.c` (penempatan) | `map/User`, `map/Pc` | USER runtime, pc_setpos/warp/enterWorld |
+| `map/clif.c` (paket klien) | `map/Clif` | paket keluar + `parseWalk`; big-endian, dua jalur kunci |
+| `map/npc.c` (pemuat `Warps`) | `map/data/MapRegistry.loadWarps` | portal, diindeks per blok 8x8 |
 
 ## Scripting engine (org.rtk.map.script)
 
@@ -296,7 +320,7 @@ Fondasi server-side sudah berdiri dan terverifikasi:
 - **Login server**: port penuh (login, buat karakter, ganti password, meta
   file, maintenance mode, banned IP, brute-force lockout, redirect ke map).
 - **Char server**: handshake login & map, autentikasi karakter, routing map.
-- **Map server**: skeleton — handshake + routing pemain jalan ujung-ke-ujung.
+- **Map server**: handshake + routing pemain jalan ujung-ke-ujung.
 - **Scripting engine**: 906/906 file rtklua asli termuat 0 error; dialog
   coroutine teruji lewat `Accepted/player.lua` asli.
 - **Infrastruktur**: HikariCP, Log4j2 (rolling harian, retensi 30 hari),
@@ -320,20 +344,27 @@ survei `Origin Nexia`.
 
 #### Trek A — sampai server bisa dimainkan (berurutan)
 
-**A1. Paket `clif_*` dasar: pemain masuk dan melihat dunia** ← MULAI DI SINI
-Pemain sudah "ada" di server tapi klien belum diberi tahu apa pun.
-Perlu: `clif_sendid`, `clif_sendmapinfo`, `clif_sendxy`, `clif_sendstatus`,
-`clif_getchararea`, `clif_spawn`, `clif_refresh`, `clif_sendtime`.
-Semua **wajib byte-exact** (klien RetroTK asli yang membaca) dan memakai
-**big-endian** (`wfifoWBE`), berbeda dari protokol antar-server.
-Verifikasi sesungguhnya butuh klien nyata.
+**A1. Paket `clif_*` dasar — SELESAI (20 Agustus 2026).**
+`org.rtk.map.Clif`: `sendId` (0x05), `sendMapInfo` (0x15), `sendXy` (0x04),
+`sendTime` (0x20), `sendAck` (0x1E), `sendRefreshTrigger` (0x22),
+`blockMovement` (0x51), `sendWorldEntry`, `refresh`. Semua big-endian
+(`wfifoWBE`), berbeda dari protokol antar-server.
+**Belum ada:** `clif_sendstatus`, `clif_getchararea`, `clif_sendmapdata`
+(cabang redraw `0x06`) dan `clif_*look_sub` — pemain lain belum digambar
+ulang saat masuk area pandang.
+Verifikasi akhir tetap butuh klien nyata; `cliftest` menutupi tata letak
+byte-nya (paket dibangun, **didekripsi balik**, diperiksa per-offset).
 
-**A2. Gerakan** — `clif_parsewalk`: validasi tabrakan lewat
-`MapData.walkable()`, perbarui indeks blok (`moveBlock`), siarkan ke
-pemain lain dalam area pandang.
+**A2. Gerakan — SELESAI (20 Agustus 2026).**
+`Clif.parseWalk` (opcode 0x06): deteksi desinkron → tarik balik, tabrakan
+lewat `MapData.walkable()` + `blocksMovement`, kamera (`viewX`/`viewY`),
+konfirmasi 0x26 ke pemain, siaran 0x0C ke sekitar (AREA_WOS), `moveBlock`,
+kait skrip, lalu **petak portal**. Ikut diport: tabel `Warps`
+(`MapRegistry.loadWarps` → `MapData.addWarp`/`warpAt`), syarat masuk peta
++ pesan penolakan, `clif_pushback`, `clif_sendmsg`/`sendMiniText` (0x0A).
 
-**A3. Uji end-to-end dengan MySQL sungguhan** — sekaligus memvalidasi
-`CharPersistence` yang **sampai sekarang belum pernah dijalankan terhadap
+**A3. Uji end-to-end dengan MySQL sungguhan** ← MULAI DI SINI
+Sekaligus memvalidasi `CharPersistence` yang **sampai sekarang belum pernah dijalankan terhadap
 database hidup** (baru dicek lewat pencocokan 300 nama kolom).
 
 **A4. NPC & dialog** — `clif_parsenpcdialog` menyambungkan engine Lua ke

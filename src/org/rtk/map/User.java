@@ -32,6 +32,13 @@ public final class User extends BlockList {
     /** Data yang tersimpan ke database (dikirim/diterima lewat 0x3003/0x3004). */
     public final CharStatus status;
 
+    /**
+     * Tabel kunci enkripsi sesi, diturunkan dari nama karakter.
+     * Setara {@code sd->EncHash} yang diisi {@code populate_table()} di C;
+     * dipakai {@link org.rtk.map.Clif#encrypt} untuk sebagian besar paket.
+     */
+    public final String encHash;
+
     // ---- nilai turunan (dihitung ulang saat masuk, tidak disimpan) ----
     public long maxHp;
     public long maxMp;
@@ -48,6 +55,35 @@ public final class User extends BlockList {
     public int speed;
     public int direction;
 
+    /**
+     * Posisi kamera klien dalam petak layar (0..16 / 0..14).
+     * Setara {@code sd->viewx} / {@code sd->viewy} di C: server ikut
+     * melacaknya karena nilai ini dikirim balik pada tiap langkah.
+     */
+    public int viewX = 8;
+    public int viewY = 7;
+
+    /** true bila langkah terakhir tertahan (setara {@code sd->canmove} di C). */
+    public boolean blocked;
+
+    /**
+     * Bendera pilihan sesaat ({@code sd->optFlags} di C, enum optFlag_*).
+     * Baru dua yang dipakai; sisanya menyusul bersama subsistemnya.
+     */
+    public int optFlags;
+
+    /** optFlag_stealth: GM tak terlihat, tidak menghalangi langkah. */
+    public static final int OPT_STEALTH = 32;
+
+    /** optFlag_ghosts: pemain ini bisa melihat (dan tertahan oleh) hantu. */
+    public static final int OPT_GHOSTS = 256;
+
+    /** status.state == 1: pemain sedang jadi hantu (mati). */
+    public static final int STATE_GHOST = 1;
+
+    /** status.state == -1: pemain disembunyikan sepenuhnya. */
+    public static final int STATE_HIDDEN = -1;
+
     /** Peta & posisi tujuan saat berpindah, sebelum benar-benar sampai. */
     public int destMap = -1;
     public int destX;
@@ -60,6 +96,7 @@ public final class User extends BlockList {
         this.type = Type.PC;
         this.graphicId = status.disguise;
         this.graphicColor = status.disguiseColor;
+        this.encHash = org.rtk.common.Crypt.populateTable(status.name);
     }
 
     /** Nama karakter — dipakai luas oleh log dan skrip. */

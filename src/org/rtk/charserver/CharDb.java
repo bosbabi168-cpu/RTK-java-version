@@ -1,5 +1,8 @@
 package org.rtk.charserver;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import org.rtk.common.Md5;
 
 import static org.rtk.charserver.CharServer.*;
@@ -13,12 +16,16 @@ import static org.rtk.charserver.CharServer.*;
  */
 public final class CharDb {
 
+    private static final Logger log = LogManager.getLogger(CharDb.class);
+
     private CharDb() {
     }
 
     /** char_db_init() */
     public static void init() {
         if (!sql.connect(sqlId, sqlPw, sqlIp, sqlPort, sqlDb)) {
+            log.error("Char server berhenti: tidak bisa terhubung ke database {}@{}:{}/{}",
+                    sqlId, sqlIp, sqlPort, sqlDb);
             System.exit(1);
         }
     }

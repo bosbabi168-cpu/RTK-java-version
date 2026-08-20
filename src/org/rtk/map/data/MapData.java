@@ -79,6 +79,20 @@ public final class MapData {
     /** Jumlah pemain yang sedang berada di peta ini (map[m].user di C). */
     public int users;
 
+    /**
+     * Satu petak portal: berdiri di ({@link #x},{@link #y}) memindahkan
+     * pemain ke peta {@code tm} pada ({@code tx},{@code ty}).
+     * Setara {@code struct warp_list} di map.h.
+     */
+    public record Warp(int x, int y, int tm, int tx, int ty) {
+    }
+
+    /**
+     * Portal, diindeks per blok 8x8 seperti {@code map[m].warp[]} di C.
+     * Dibuat malas: sebagian besar peta tidak punya portal sama sekali.
+     */
+    private List<Warp>[] warps;
+
     @SuppressWarnings("unchecked")
     public MapData(int id, MapFile geometry) {
         this.id = id;
@@ -190,6 +204,59 @@ public final class MapData {
         bl.x = nx;
         bl.y = ny;
         return true;
+    }
+
+    /**
+     * Daftarkan satu petak portal. Port dari pemuat {@code Warps} di
+     * npc.c: daftarnya diindeks per blok, bukan per petak.
+     */
+    @SuppressWarnings("unchecked")
+    public void addWarp(int x, int y, int tm, int tx, int ty) {
+        if (!inBounds(x, y)) {
+            return;
+        }
+        if (warps == null) {
+            warps = new List[bxs * bys];
+        }
+        int b = (x / BLOCK_SIZE) + (y / BLOCK_SIZE) * bxs;
+        if (warps[b] == null) {
+            warps[b] = new ArrayList<>(4);
+        }
+        warps[b].add(new Warp(x, y, tm, tx, ty));
+    }
+
+    /**
+     * Portal tepat di petak ini, atau null. Meniru penelusuran di
+     * {@code clif_parsewalk}: cari dalam blok yang memuat petak tersebut.
+     */
+    public Warp warpAt(int x, int y) {
+        if (warps == null || !inBounds(x, y)) {
+            return null;
+        }
+        List<Warp> list = warps[(x / BLOCK_SIZE) + (y / BLOCK_SIZE) * bxs];
+        if (list == null) {
+            return null;
+        }
+        for (Warp w : list) {
+            if (w.x == x && w.y == y) {
+                return w;
+            }
+        }
+        return null;
+    }
+
+    /** Jumlah portal terdaftar di peta ini. */
+    public int warpCount() {
+        if (warps == null) {
+            return 0;
+        }
+        int n = 0;
+        for (List<Warp> l : warps) {
+            if (l != null) {
+                n += l.size();
+            }
+        }
+        return n;
     }
 
     /** Benda apa saja yang tepat berada di petak ini (kedua indeks). */

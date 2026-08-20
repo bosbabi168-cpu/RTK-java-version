@@ -155,6 +155,59 @@ public final class MapRegistry {
     }
 
     /**
+     * Muat petak portal dari tabel {@code Warps}.
+     *
+     * Port dari pemuat warp di {@code map/npc.c}. Seperti versi C, baris
+     * yang peta asal ATAU tujuannya tidak dimuat di server ini dilewati —
+     * portal ke peta milik map server lain baru bisa dipakai setelah
+     * perpindahan antar map server diport (roadmap C3).
+     *
+     * @return jumlah portal yang berhasil didaftarkan
+     */
+    public int loadWarps(org.rtk.common.Sql sql) {
+        long t0 = System.currentTimeMillis();
+        int[] stat = new int[3]; // 0=terdaftar, 1=peta tak dimuat, 2=di luar batas
+        int rows = sql.forEachRow(
+                "SELECT `SourceMapId`, `SourceX`, `SourceY`, "
+                + "`DestinationMapId`, `DestinationX`, `DestinationY` FROM `Warps`",
+                rs -> {
+                    int mm = rs.getInt(1);
+                    int mx = rs.getInt(2);
+                    int my = rs.getInt(3);
+                    int tm = rs.getInt(4);
+                    int tx = rs.getInt(5);
+                    int ty = rs.getInt(6);
+
+                    MapData src = maps.get(mm);
+                    MapData dst = maps.get(tm);
+                    if (src == null || dst == null) {
+                        stat[1]++;
+                        return;
+                    }
+                    if (mx > src.xs - 1 || my > src.ys - 1
+                            || tx > dst.xs - 1 || ty > dst.ys - 1) {
+                        stat[2]++;
+                        if (stat[2] <= 5) {
+                            log.warn("[MAP] portal di luar batas: {}:{},{} -> {}:{},{}",
+                                    mm, mx, my, tm, tx, ty);
+                        }
+                        return;
+                    }
+                    src.addWarp(mx, my, tm, tx, ty);
+                    stat[0]++;
+                });
+
+        if (rows < 0) {
+            log.error("[MAP] gagal membaca tabel Warps");
+            return 0;
+        }
+        log.info("[MAP] {} portal dimuat dari {} baris `Warps` ({} peta tak dimuat, "
+                + "{} di luar batas) dalam {} ms",
+                stat[0], rows, stat[1], stat[2], System.currentTimeMillis() - t0);
+        return stat[0];
+    }
+
+    /**
      * Muat peta langsung dari berkas tanpa database — untuk pengujian dan
      * agar map server tetap bisa hidup saat MySQL belum tersedia.
      */

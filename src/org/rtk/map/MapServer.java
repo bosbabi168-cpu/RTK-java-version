@@ -140,6 +140,9 @@ public final class MapServer {
         if (world.missingFiles() > 0) {
             log.warn("[MAP] {} berkas peta tidak ditemukan di {}", world.missingFiles(), mapPath);
         }
+        if (n > 0) {
+            world.loadWarps(sql);
+        }
     }
 
     /** check_connect_char(): (re)establish the char-server link. */
@@ -164,8 +167,11 @@ public final class MapServer {
     }
 
     /**
-     * Client connections on map_port. Gameplay is not ported yet, so this
-     * only logs and keeps the socket open.
+     * clif_parse(): paket dari klien permainan.
+     *
+     * Setiap paket berbentuk 0xAA + panjang big-endian + opcode. Sebelum
+     * pemain terautentikasi ({@code session_data} masih kosong), hanya
+     * opcode 0x10 yang dilayani — persis seperti versi C.
      */
     static int clientParse(int fd) {
         Session s = net.session(fd);
@@ -173,15 +179,88 @@ public final class MapServer {
             return 0;
         }
         if (s.eof) {
+            handleDisconnect(fd);
             net.sessionEof(fd);
             return 0;
         }
-        if (s.rfifoRest() > 0) {
-            log.debug("[MAP] Received {} byte(s) from client {} - gameplay protocol not ported yet, discarding.",
-                    s.rfifoRest(), s.clientIpString());
-            s.rfifoSkip(s.rfifoRest());
+
+        // buang byte sampah sampai penanda paket ditemukan
+        if (s.rfifoRest() > 0 && s.rfifoB(0) != 0xAA) {
+            log.warn("[MAP] byte tak dikenal dari {} — koneksi ditutup", s.clientIpString());
+            s.eof = true;
+            return 0;
+        }
+        if (s.rfifoRest() < 3) {
+            return 0;
+        }
+        int len = s.rfifoWBE(1) + 3;
+        if (s.rfifoRest() < len) {
+            return 0;
+        }
+
+        User sd = onlineChars.get(fd);
+        Clif.decrypt(s, sd);
+        int opcode = s.rfifoB(3);
+
+        if (sd == null) {
+            // belum login: hanya paket perkenalan yang diterima
+            if (opcode == 0x10) {
+                clientAuth(fd, s);
+            } else {
+                log.debug("[MAP] opcode 0x{} diabaikan: klien belum terautentikasi",
+                        String.format("%02X", opcode));
+            }
+        } else {
+            switch (opcode) {
+                case 0x06, 0x32 -> Clif.parseWalk(sd);
+                default -> log.debug("[MAP] opcode 0x{} belum diport (dari {})",
+                        String.format("%02X", opcode), sd.name());
+            }
+        }
+
+        if (net.session(fd) != null && s.rfifoRest() >= len) {
+            s.rfifoSkip(len);
         }
         return 0;
+    }
+
+    /**
+     * clif_accept2(): klien memperkenalkan diri setelah dialihkan dari
+     * login server. Namanya dicari di database, lalu datanya diminta ke
+     * char server lewat 0x3003.
+     */
+    private static void clientAuth(int fd, Session s) {
+        int nameLen = s.rfifoB(15);
+        if (nameLen <= 0 || nameLen > 16) {
+            log.warn("[MAP] panjang nama tidak masuk akal ({}) dari {}", nameLen, s.clientIpString());
+            s.eof = true;
+            return;
+        }
+        String name = s.rfifoString(16, nameLen);
+
+        Integer charId = sql.queryInt("SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", name);
+        if (charId == null || charId == 0) {
+            log.warn("[MAP] karakter '{}' dari {} tidak ada di database", name, s.clientIpString());
+            s.eof = true;
+            return;
+        }
+        s.name = name;
+        log.info("[MAP] klien {} memperkenalkan diri sebagai '{}' (id {})",
+                s.clientIpString(), name, charId);
+        MapIntif.requestChar(fd, charId, name);
+    }
+
+    /** Pemain terputus: simpan lalu lepaskan dari dunia. */
+    static void handleDisconnect(int fd) {
+        User sd = onlineChars.remove(fd);
+        if (sd == null) {
+            return;
+        }
+        Pc.despawn(world, sd);
+        // simpan + tandai offline lewat char server (0x3007)
+        sd.status.lastPos = new org.rtk.common.mmo.Point(sd.m, sd.x, sd.y);
+        MapIntif.saveChar(sd.status, true);
+        log.info("[MAP] {} keluar dari dunia", sd.name());
     }
 
     static int clientAccept(int fd) {

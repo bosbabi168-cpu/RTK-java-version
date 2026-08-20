@@ -139,6 +139,7 @@ public final class CharServer {
         });
         if (!ok) {
             ServerLog.addLog("CFG_ERR: Configuration file (%s) not found.%n", cfgFile);
+            log.error("Char server berhenti: berkas konfigurasi {} tidak ditemukan", cfgFile);
             System.exit(1);
         }
     }

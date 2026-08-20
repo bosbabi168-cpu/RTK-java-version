@@ -180,6 +180,20 @@ public final class NetServer {
         sessions.set(fd, null);
     }
 
+    /**
+     * Buat sesi tanpa socket pada fd tertentu, untuk menyusun paket di luar
+     * jaringan — dipakai uji tata letak byte dan perkakas rekam/putar-ulang
+     * paket. Sesi lama pada fd itu (bila ada) digantikan.
+     */
+    public Session openTestSession(int fd) {
+        Session s = new Session(this, fd, null);
+        sessions.set(fd, s);
+        if (fd >= fdMax) {
+            fdMax = fd + 1;
+        }
+        return s;
+    }
+
     /** Dipanggil dari logic thread saat ada data siap kirim. */
     void wantWrite(Session s) {
         writeInterest.add(s);

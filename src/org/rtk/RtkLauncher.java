@@ -1,10 +1,14 @@
 package org.rtk;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import org.rtk.charserver.CharServer;
 import org.rtk.login.LoginServer;
 import org.rtk.map.MapServer;
 import org.rtk.common.mmo.CharStatusTest;
 import org.rtk.map.data.MapFileTest;
+import org.rtk.map.ClifTest;
 import org.rtk.map.data.MapWorldTest;
 import org.rtk.map.script.ScriptTest;
 
@@ -30,6 +34,8 @@ import org.rtk.map.script.ScriptTest;
  */
 public final class RtkLauncher {
 
+    private static final Logger log = LogManager.getLogger(RtkLauncher.class);
+
     private RtkLauncher() {
     }
 
@@ -51,26 +57,35 @@ public final class RtkLauncher {
             case "maptest" -> MapFileTest.main(rest);
             case "chartest" -> CharStatusTest.main(rest);
             case "worldtest" -> MapWorldTest.main(rest);
+            case "cliftest" -> ClifTest.main(rest);
             default -> {
-                System.err.println("Server tidak dikenal: " + args[0]);
+                log.error("Server tidak dikenal: {}", args[0]);
                 usage();
                 System.exit(1);
             }
         }
     }
 
+    /**
+     * Tampilkan cara pakai. Sengaja lewat Log4j2, bukan System.err, supaya
+     * salah panggil (mis. unit systemd dengan argumen keliru) ikut tercatat
+     * di `logs/common.log` — bukan cuma hilang di stderr.
+     */
     private static void usage() {
-        System.err.println("RTK server launcher");
-        System.err.println();
-        System.err.println("  java -jar <jar> login       [opsi]  jalankan login server");
-        System.err.println("  java -jar <jar> char        [opsi]  jalankan char server");
-        System.err.println("  java -jar <jar> map         [opsi]  jalankan map server");
-        System.err.println("  java -jar <jar> scripttest  [opsi]  uji regresi scripting Lua");
-        System.err.println("  java -jar <jar> maptest     [path]  baca & periksa seluruh berkas .map");
-        System.err.println("  java -jar <jar> chartest           uji serialisasi status karakter");
-        System.err.println("  java -jar <jar> worldtest    [path]  uji indeks spasial dunia peta");
-        System.err.println();
-        System.err.println("Opsi diteruskan ke server, mis. --conf conf/login.conf");
-        System.err.println("Jalankan dari folder yang berisi conf/, meta/, dan logs/.");
+        for (String line : new String[]{
+            "RTK server launcher",
+            "  java -jar <jar> login       [opsi]  jalankan login server",
+            "  java -jar <jar> char        [opsi]  jalankan char server",
+            "  java -jar <jar> map         [opsi]  jalankan map server",
+            "  java -jar <jar> scripttest  [opsi]  uji regresi scripting Lua",
+            "  java -jar <jar> maptest     [path]  baca & periksa seluruh berkas .map",
+            "  java -jar <jar> chartest            uji serialisasi status karakter",
+            "  java -jar <jar> worldtest   [path]  uji indeks spasial dunia peta",
+            "  java -jar <jar> cliftest    [path]  uji tata letak byte paket klien",
+            "Opsi diteruskan ke server, mis. --conf conf/login.conf",
+            "Jalankan dari folder yang berisi conf/, meta/, dan logs/.",
+        }) {
+            log.error(line);
+        }
     }
 }

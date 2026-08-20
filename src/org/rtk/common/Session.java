@@ -306,6 +306,27 @@ public class Session {
         net.wantWrite(this);
     }
 
+    /**
+     * Isi buffer baca seolah byte ini baru tiba dari socket. Pasangan
+     * {@link #takeOutbound()} untuk menguji parser tanpa jaringan.
+     */
+    public void feedInbound(byte[] data) {
+        appendRead(java.nio.ByteBuffer.wrap(data), data.length);
+    }
+
+    /**
+     * Ambil seluruh byte yang menunggu kirim dan kosongkan antreannya.
+     * Dipakai untuk memeriksa paket yang dihasilkan tanpa socket sungguhan.
+     */
+    public byte[] takeOutbound() {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        byte[] p;
+        while ((p = outbox.poll()) != null) {
+            out.write(p, 0, p.length);
+        }
+        return out.toByteArray();
+    }
+
     /** Direct access for Crypt on outbound packets (WFIFOP(fd,0)). */
     public byte[] wbuf() {
         return wdata;

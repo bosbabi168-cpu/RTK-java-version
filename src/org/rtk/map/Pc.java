@@ -115,6 +115,9 @@ public final class Pc {
             return false;
         }
 
+        // gambar ulang dunia di sisi klien setelah berpindah
+        Clif.refresh(sd);
+
         if (mapChanged) {
             fireScript(sd, "mapEnter");
         }
@@ -159,6 +162,9 @@ public final class Pc {
         if (!spawn(world, sd)) {
             return false;
         }
+        // beri tahu klien: id, peta, posisi, waktu (clif.c saat pemain masuk)
+        Clif.sendWorldEntry(sd);
+
         fireScript(sd, "mapEnter");
         log.info("[PC] {} masuk dunia di {} ({}:{},{}), vita {}/{} mana {}/{}",
                 sd.name(), map.title, m, x, y, sd.status.hp, sd.maxHp, sd.status.mp, sd.maxMp);
@@ -199,7 +205,7 @@ public final class Pc {
             return;
         }
         try {
-            MapServer.scriptEngine.doScript(event, event, MapServer.scriptEngine.playerRef(scriptPlayer(sd)));
+            MapServer.scriptEngine.doScript(event, event, MapServer.scriptEngine.playerRef(scriptPlayerOf(sd)));
         } catch (RuntimeException e) {
             log.error("[PC] kaitan skrip '{}' gagal untuk {}", event, sd.name(), e);
         }
@@ -211,7 +217,7 @@ public final class Pc {
      * skrip langsung menulis ke {@link org.rtk.common.mmo.CharStatus}
      * (butir roadmap "sambungkan registry skrip ke karakter").
      */
-    private static org.rtk.map.script.ScriptPlayer scriptPlayer(User sd) {
+    static org.rtk.map.script.ScriptPlayer scriptPlayerOf(User sd) {
         org.rtk.map.script.ScriptPlayer p =
                 new org.rtk.map.script.ScriptPlayer((int) sd.id, sd.status.name);
         p.level = sd.status.level;

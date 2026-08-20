@@ -46,6 +46,7 @@ Di mesin pengembangan:
 ./run.sh maptest
 ./run.sh chartest
 ./run.sh worldtest
+./run.sh cliftest
 
 # 3. jalankan ketiga server
 ./run.sh all          # login -> char -> map
@@ -164,6 +165,7 @@ java -jar RTK-java-version.jar scripttest  # uji regresi scripting
 java -jar RTK-java-version.jar maptest     # uji regresi berkas peta
 java -jar RTK-java-version.jar chartest    # uji serialisasi karakter
 java -jar RTK-java-version.jar worldtest   # uji dunia peta / penempatan pemain
+java -jar RTK-java-version.jar cliftest    # uji paket klien, gerakan, portal
 ```
 
 Argumen berikutnya diteruskan apa adanya ke server, jadi opsi asli tetap
@@ -407,7 +409,7 @@ rolling-nya sendiri di `logs/`, sambil tetap tampil di console NetBeans:
 |---|---|---|
 | `org.rtk.login.*` | `logs/login.log` | Login server (clif, intif) |
 | `org.rtk.charserver.*` | `logs/char.log` | Char server (logif, mapif, char_db) |
-| `org.rtk.map.*` | `logs/map.log` | Map server (skeleton + intif) |
+| `org.rtk.map.*` | `logs/map.log` | Map server (dunia, paket klien, intif, scripting) |
 | `org.rtk.common.*` + root (termasuk log internal HikariCP) | `logs/common.log` | Socket, timer, config, SQL/HikariCP |
 
 File roll otomatis **setiap hari (tengah malam)**, diarsip sebagai
@@ -491,6 +493,13 @@ ladangnya sendiri. [`Pc`](src/org/rtk/map/Pc.java) menyediakan `setPos`,
 > `pc_setpos()` di C, yang hanya mengubah koordinat. Yang membuat pemain
 > terlihat adalah `Pc.spawn()` (di C: `clif_spawn` → `map_addblock`).
 
+**Portal.** Tabel `Warps` (4.476 baris) dimuat ke daftar per blok pada tiap
+peta. Ketika pemain melangkah ke petak portal, syarat masuk peta tujuan
+(level, vita/mana, mark, path) diperiksa dulu; kalau gagal ia didorong
+mundur dua petak disertai pesan penolakan — `MapRejectMsg` peta itu bila
+diisi, atau kalimat bawaan dari versi C. Portal ke peta milik map server
+lain belum bisa dilalui (lihat roadmap C3).
+
 Satu tambahan yang tidak ada di versi C: bila posisi tersimpan seorang
 pemain ternyata berada di dalam tembok (mis. petanya diubah setelah ia
 terakhir keluar), `enterWorld` mencari petak aman terdekat alih-alih
@@ -512,7 +521,7 @@ membiarkannya tersangkut.
 | `common/mmo.h` (`struct mmo_charstatus`) | `common/mmo/CharStatus.java`, `CharStatusCodec.java`, + `Item`/`Legend`/`SkillInfo`/`BankItem`/`Point` | ✅ model 67 kolom `Character` + koleksi, dengan format serialisasi sendiri (lihat di bawah) |
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ konek+auth ke char server, memuat geometri peta, terima routing pemain, minta & terima data karakter (0x3003/0x3803) |
 | dunia peta (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometri + metadata + indeks spasial blok 8×8, area pandang x±9/y±8 |
-| **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c` ±22rb baris) | `map/User.java`, `map/Pc.java` | ⚠️ **baru penempatan pemain** (USER, `setPos`/`warp`/`enterWorld`). Paket `clif_*` ke klien, pertarungan, mob, dan NPC belum |
+| **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c` ±22rb baris) | `map/User.java`, `map/Pc.java`, `map/Clif.java` | ⚠️ **penempatan + gerakan pemain**: USER, `setPos`/`warp`/`enterWorld`, paket masuk-dunia (0x05/0x15/0x04/0x20/0x1E/0x22), `parseWalk` dengan tabrakan & siaran, petak portal + syarat masuk peta, pesan 0x0A. Pertarungan, mob, NPC/dialog, dan penggambaran ulang pemain lain (`clif_sendmapdata`/`*look_sub`) belum |
 | **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **arsitektur inti jalan via LuaJ** — seluruh 906 skrip Lua asli termuat tanpa error; object model typel (__index: getattr→prototype→data table), dispatch `root.method`, coroutine `_async` + primitif dialog blocking (`menu`/`dialog`/`input`) teruji end-to-end lewat `Accepted/player.lua` asli. ⚠️ dari 254 method yang dipanggil skrip: 110 disediakan `player.lua` sendiri, **12 punya binding Java riil**, 15 stub, dan 144 belum ada implementasinya |
 | save server (`saveif.c` — di C pun sudah dinonaktifkan) | — | ❌ tidak diport (timer koneksinya di-comment di C) |
 
@@ -571,7 +580,7 @@ Path skrip diatur lewat `lua_path` di `conf/map.conf` (default
 
 ## Pengujian
 
-Belum ada framework unit test (sengaja, agar tetap Java SE murni). Ada tiga
+Belum ada framework unit test (sengaja, agar tetap Java SE murni). Ada lima
 gerbang regresi yang harus selalu hijau:
 
 | Perintah | Menguji |
@@ -579,7 +588,8 @@ gerbang regresi yang harus selalu hijau:
 | `./run.sh scripttest` | 906 skrip Lua termuat + coroutine dialog NPC |
 | `./run.sh maptest` | 3.544 berkas peta terbaca sesuai format |
 | `./run.sh chartest` | serialisasi karakter (29 assertion) |
-| `./run.sh worldtest` | dunia peta + penempatan pemain (52 assertion) |
+| `./run.sh worldtest` | dunia peta + penempatan pemain (53 assertion) |
+| `./run.sh cliftest` | paket klien, gerakan, portal (87 assertion) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
 
@@ -604,6 +614,16 @@ memperbarui indeks, pemain yang tersimpan di dalam tembok dipindahkan ke
 petak yang bisa dilewati, dan warp ke peta yang tidak dimuat ditolak tanpa
 menghilangkan pemain.
 
+**`./run.sh cliftest`** (`map/ClifTest.java`) menguji paket yang dibaca
+klien RetroTK. Karena klien asli tidak tersedia di sini, tiap paket
+**dibangun, didekripsi balik, lalu diperiksa per-offset** — itu yang
+membuktikan jalur kunci (statis vs kunci sesi) dipilih dengan benar, bukan
+sekadar bahwa byte-nya keluar. Selain tata letak, yang diuji: gerakan
+(konfirmasi 0x26, siaran 0x0C ke sekitar, desinkron ditarik balik,
+tabrakan tembok/pemain, GM menembus, arah tidak sah), aturan tepi peta,
+benda tak terlihat (hantu, GM ber-stealth), serta petak portal beserta
+syarat masuk peta dan pesan penolakannya.
+
 > **Penting:** `ScriptTest` **tidak menyentuh lapisan jaringan sama sekali**.
 > Kalau mengubah `NetServer`/`Session`/`Core`, uji dengan tes integrasi TCP
 > sungguhan — buka listen port, sambungkan socket klien, lalu pastikan:
@@ -623,8 +643,8 @@ membutuhkan MySQL berisi database `RTK` dan klien RetroTK.
 ### Tahap 1 — selesai
 
 Fondasi server-side sudah berdiri dan terverifikasi: login server port
-penuh, char server port inti, map server skeleton dengan routing pemain
-jalan ujung-ke-ujung, scripting engine memuat 906/906 skrip Lua asli,
+penuh, char server port inti, map server dengan routing pemain jalan
+ujung-ke-ujung, scripting engine memuat 906/906 skrip Lua asli,
 plus infrastruktur (HikariCP, Log4j2, properties, build NetBeans/`build.sh`,
 deploy `run.sh`) dan arsitektur jaringan instance-per-server dengan IO
 thread terpisah.
@@ -637,14 +657,17 @@ Trek A dan B bisa berjalan paralel.
 
 **Trek A — sampai server bisa dimainkan** (berurutan)
 
-1. **Paket `clif_*` dasar** ← mulai di sini. Pemain sudah "ada" di server
-   tapi klien belum diberi tahu apa pun: `clif_sendid`, `sendmapinfo`,
-   `sendxy`, `sendstatus`, `getchararea`, `spawn`, `refresh`, `sendtime`.
-   Semuanya wajib byte-exact dan **big-endian** (protokol klien).
-2. **Gerakan** — `clif_parsewalk`: validasi tabrakan, perbarui indeks
-   blok, siarkan ke pemain lain dalam area pandang.
-3. **Uji end-to-end dengan MySQL sungguhan** — sekaligus memvalidasi
-   `CharPersistence` yang belum pernah dijalankan terhadap database hidup.
+1. ~~**Paket `clif_*` dasar**~~ — **selesai 20 Agustus 2026.** Klien kini
+   diberi tahu id, peta, posisi, dan waktu saat pemain masuk
+   (0x05/0x15/0x04/0x20/0x1E/0x22). Yang masih kurang: `clif_sendstatus`,
+   `clif_getchararea`, dan penggambaran ulang pemain lain
+   (`clif_sendmapdata` + `*look_sub`).
+2. ~~**Gerakan**~~ — **selesai 20 Agustus 2026.** `clif_parsewalk` dengan
+   deteksi desinkron, tabrakan, kamera, konfirmasi ke pemain, siaran ke
+   sekitar, ditambah petak portal beserta syarat masuk peta.
+3. **Uji end-to-end dengan MySQL sungguhan** ← mulai di sini. Sekaligus
+   memvalidasi `CharPersistence` yang belum pernah dijalankan terhadap
+   database hidup — dan kini juga pemuat `Warps`.
 4. **NPC & dialog** — `clif_parsenpcdialog` menyambungkan engine Lua ke
    klien; begitu jalan, 906 skrip yang sudah termuat mulai berfungsi.
 5. **Mob & pertarungan** — `mob.c` (2.411 baris).
@@ -699,7 +722,8 @@ RTK-java-version/
 │   ├── login/                   # port rtk/src/login (LoginServer, LoginClif, LoginIntif)
 │   ├── charserver/              # port rtk/src/char (CharServer, Logif, Mapif,
 │   │                            #   CharDb, CharPersistence)
-│   └── map/                     # port rtk/src/map (MapServer, MapIntif, User, Pc)
+│   └── map/                     # port rtk/src/map (MapServer, MapIntif, User, Pc,
+│       │                        #   Clif = paket klien + gerakan)
 │       ├── data/                #   dunia: MapFile, MapData, BlockList, MapRegistry
 │       └── script/              #   port sl.c di atas LuaJ (ScriptEngine, ScriptClass,
 │                                #     ScriptInstance, Bindings, ScriptPlayer)

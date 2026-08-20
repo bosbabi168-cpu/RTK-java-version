@@ -48,6 +48,7 @@ On a development machine:
 ./run.sh maptest
 ./run.sh chartest
 ./run.sh worldtest
+./run.sh cliftest
 
 # 3. run the three servers
 ./run.sh all          # login -> char -> map
@@ -165,6 +166,7 @@ java -jar RTK-java-version.jar scripttest  # scripting regression
 java -jar RTK-java-version.jar maptest     # map file regression
 java -jar RTK-java-version.jar chartest    # character serialisation
 java -jar RTK-java-version.jar worldtest   # world / player placement
+java -jar RTK-java-version.jar cliftest    # client packets, movement, warps
 ```
 
 Remaining arguments are passed straight through, so the original options
@@ -410,7 +412,7 @@ NetBeans console:
 |---|---|---|
 | `org.rtk.login.*` | `logs/login.log` | Login server (clif, intif) |
 | `org.rtk.charserver.*` | `logs/char.log` | Char server (logif, mapif, char_db) |
-| `org.rtk.map.*` | `logs/map.log` | Map server (world, intif, scripting) |
+| `org.rtk.map.*` | `logs/map.log` | Map server (world, client packets, intif, scripting) |
 | `org.rtk.common.*` and root (incl. HikariCP's own logging) | `logs/common.log` | Sockets, timers, config, SQL/HikariCP |
 
 Files roll over **daily at midnight**, archived as `login-2026-08-20.log.gz`
@@ -494,6 +496,14 @@ fields. [`Pc`](src/org/rtk/map/Pc.java) provides `setPos`,
 > like C's `pc_setpos()`, which only changes coordinates. What makes a
 > player visible is `Pc.spawn()` (in C: `clif_spawn` → `map_addblock`).
 
+**Warp tiles.** The `Warps` table (4,476 rows) is loaded into a per-block
+list on each map. When a player steps onto a warp tile, the destination
+map's entry requirements (level, vita/mana, mark, path) are checked first;
+if they fail, the player is pushed back two tiles with a rejection message
+— that map's `MapRejectMsg` when set, otherwise the stock wording from the
+C version. Warps into a map owned by another map server cannot be used yet
+(see roadmap C3).
+
 One addition that the C version lacks: if a player's stored position turns
 out to be inside a wall (for instance because the map was edited after they
 last logged out), `enterWorld` finds the nearest walkable tile instead of
@@ -515,7 +525,7 @@ leaving them stuck.
 | `common/mmo.h` (`struct mmo_charstatus`) | `common/mmo/CharStatus.java`, `CharStatusCodec.java`, + `Item`/`Legend`/`SkillInfo`/`BankItem`/`Point` | ✅ 67 `Character` columns + collections, with its own serialisation format (see above) |
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ connects and authenticates to the char server, loads map geometry, accepts routed players, requests and receives character data |
 | map world (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometry + metadata + 8×8 spatial index, x±9/y±8 view area |
-| **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c`, ~22k lines) | `map/User.java`, `map/Pc.java` | ⚠️ **player placement only** (USER, `setPos`/`warp`/`enterWorld`). `clif_*` packets to the client, combat, mobs and NPCs are still missing |
+| **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c`, ~22k lines) | `map/User.java`, `map/Pc.java`, `map/Clif.java` | ⚠️ **player placement and movement**: USER, `setPos`/`warp`/`enterWorld`, world-entry packets (0x05/0x15/0x04/0x20/0x1E/0x22), `parseWalk` with collision and broadcast, warp tiles + map entry requirements, 0x0A messages. Combat, mobs, NPCs/dialogs, and redrawing other players (`clif_sendmapdata` / `*look_sub`) are still missing |
 | **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **core architecture working via LuaJ** — all 906 original Lua scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines + blocking dialog primitives tested end-to-end through the original `Accepted/player.lua`. ⚠️ of the 254 methods scripts call: 110 come from `player.lua` itself, **12 have real Java bindings**, 15 are stubs, and 144 have no implementation yet |
 | save server (`saveif.c` — already disabled in C) | — | ❌ not ported (its connection timer is commented out in C) |
 
@@ -574,14 +584,15 @@ The script path is set by `lua_path` in `conf/map.conf` (default
 ## Testing
 
 There is no unit-test framework on purpose (to stay pure Java SE). Instead
-there are four regression gates, all of which must stay green:
+there are five regression gates, all of which must stay green:
 
 | Command | What it covers |
 |---|---|
 | `./run.sh scripttest` | 906 Lua scripts load + NPC dialog coroutines |
 | `./run.sh maptest` | 3,544 map files parse correctly |
 | `./run.sh chartest` | character serialisation (29 assertions) |
-| `./run.sh worldtest` | map world + player placement (52 assertions) |
+| `./run.sh worldtest` | map world + player placement (53 assertions) |
+| `./run.sh cliftest` | client packets, movement, warps (87 assertions) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
 
@@ -606,6 +617,17 @@ boundary cases: something at x+9 is visible while x+10 is not, moving
 across block boundaries updates the index, a player stored inside a wall is
 relocated to a walkable tile, and a warp to an unloaded map is rejected
 without losing the player.
+
+**`./run.sh cliftest`** (`map/ClifTest.java`) covers the packets the
+RetroTK client reads. Since the real client is not available here, every
+packet is **built, decrypted back, and then checked offset by offset** —
+that is what proves the right key path (static vs per-session key) was
+chosen, rather than merely that some bytes came out. Beyond layout it
+covers movement (the 0x26 confirmation, the 0x0C broadcast to nearby
+players, desync snap-back, collision against walls and other players, GM
+bypass, invalid directions), map-edge rules, invisible things (ghosts,
+stealthed GMs), and warp tiles together with map entry requirements and
+their rejection messages.
 
 > **Important:** `ScriptTest` **does not touch the networking layer at
 > all**. When changing `NetServer` / `Session` / `Core`, test with a real
@@ -641,15 +663,18 @@ A and B can run in parallel.
 
 **Track A — getting to a playable server** (sequential)
 
-1. **Core `clif_*` packets** ← start here. Players already exist on the
-   server, but the client is never told anything: `clif_sendid`,
-   `sendmapinfo`, `sendxy`, `sendstatus`, `getchararea`, `spawn`,
-   `refresh`, `sendtime`. All must be byte-exact and **big-endian** (the
-   client protocol).
-2. **Movement** — `clif_parsewalk`: collision checks, block-index updates,
-   and broadcasting to other players within the view area.
-3. **End-to-end test against a real MySQL** — which also validates
-   `CharPersistence`, never yet exercised against a live database.
+1. ~~**Core `clif_*` packets**~~ — **done, 20 August 2026.** The client is
+   now told its id, map, position and time on entry
+   (0x05/0x15/0x04/0x20/0x1E/0x22). Still missing: `clif_sendstatus`,
+   `clif_getchararea`, and redrawing other players (`clif_sendmapdata` +
+   `*look_sub`).
+2. ~~**Movement**~~ — **done, 20 August 2026.** `clif_parsewalk` with
+   desync detection, collision, camera tracking, confirmation to the
+   walker, broadcast to nearby players, plus warp tiles and map entry
+   requirements.
+3. **End-to-end test against a real MySQL** ← start here. It also validates
+   `CharPersistence`, never yet exercised against a live database — and now
+   the `Warps` loader as well.
 4. **NPCs and dialogs** — `clif_parsenpcdialog` connects the Lua engine to
    the client; once it works, the 906 already-loaded scripts come alive.
 5. **Mobs and combat** — `mob.c` (2,411 lines).
@@ -704,7 +729,8 @@ RTK-java-version/
 │   │   └── mmo/                 #   port of mmo.h: CharStatus + codec
 │   ├── login/                   # port of rtk/src/login
 │   ├── charserver/              # port of rtk/src/char (+ CharPersistence)
-│   └── map/                     # port of rtk/src/map (MapServer, MapIntif, User, Pc)
+│   └── map/                     # port of rtk/src/map (MapServer, MapIntif, User, Pc,
+│       │                        #   Clif = client packets + movement)
 │       ├── data/                #   world: MapFile, MapData, BlockList, MapRegistry
 │       └── script/              #   port of sl.c on LuaJ
 ├── resources/
