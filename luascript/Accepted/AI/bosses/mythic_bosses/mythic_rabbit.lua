@@ -9,10 +9,6 @@
 
 -- [ RABBIT 1 KEY BOSS ] --
 mythic_hare = {
-	after_death = function(mob)
-		setMapRegistry(mob.m, "lastDeath", os.time())
-	end,
-
 	on_healed = function(mob, healer)
 		mob_ai_basic.on_healed(mob, healer)
 	end,
@@ -29,16 +25,13 @@ mythic_hare = {
 		mob_ai_mythic.attack(mob, target, 2)
 	end,
 	after_death = function(mob)
+		setMapRegistry(mob.m, "lastDeath", os.time())
 		mob_ai_mythic.after_death(mob)
 	end
 }
 
 -- [ RABBIT 1 ITEM BOSS ] --
 hare_witch = {
-	after_death = function(mob)
-		setMapRegistry(mob.m, "lastDeath", os.time())
-	end,
-
 	on_healed = function(mob, healer)
 		mob_ai_basic.on_healed(mob, healer)
 	end,
@@ -55,16 +48,13 @@ hare_witch = {
 		mob_ai_mythic.attack(mob, target, 2)
 	end,
 	after_death = function(mob)
+		setMapRegistry(mob.m, "lastDeath", os.time())
 		mob_ai_mythic.after_death(mob)
 	end
 }
 
 -- [ RABBIT 2 KEY BOSS ] --
 divine_rabbit = {
-	after_death = function(mob)
-		setMapRegistry(mob.m, "lastDeath", os.time())
-	end,
-
 	on_healed = function(mob, healer)
 		mob_ai_basic.on_healed(mob, healer)
 	end,
@@ -81,16 +71,13 @@ divine_rabbit = {
 		mob_ai_mythic.attack(mob, target, 0)
 	end,
 	after_death = function(mob)
+		setMapRegistry(mob.m, "lastDeath", os.time())
 		mob_ai_mythic.after_death(mob)
 	end
 }
 
 -- [ RABBIT 2 ITEM BOSS ] --
 rabbit_witch = {
-	after_death = function(mob)
-		setMapRegistry(mob.m, "lastDeath", os.time())
-	end,
-
 	on_healed = function(mob, healer)
 		mob_ai_basic.on_healed(mob, healer)
 	end,
@@ -107,16 +94,13 @@ rabbit_witch = {
 		mob_ai_mythic.attack(mob, target, 0)
 	end,
 	after_death = function(mob)
+		setMapRegistry(mob.m, "lastDeath", os.time())
 		mob_ai_mythic.after_death(mob)
 	end
 }
 
 -- [ RABBIT 3 KEY BOSS ] --
 spirit_rabbit = {
-	after_death = function(mob)
-		setMapRegistry(mob.m, "lastDeath", os.time())
-	end,
-
 	on_healed = function(mob, healer)
 		mob_ai_basic.on_healed(mob, healer)
 	end,
@@ -133,16 +117,13 @@ spirit_rabbit = {
 		mob_ai_mythic.attack(mob, target, 0)
 	end,
 	after_death = function(mob)
+		setMapRegistry(mob.m, "lastDeath", os.time())
 		mob_ai_mythic.after_death(mob)
 	end
 }
 
 -- [ RABBIT 3 ITEM BOSS ] --
 rabbit_avenger = {
-	after_death = function(mob)
-		setMapRegistry(mob.m, "lastDeath", os.time())
-	end,
-
 	on_healed = function(mob, healer)
 		mob_ai_basic.on_healed(mob, healer)
 	end,
@@ -159,6 +140,7 @@ rabbit_avenger = {
 		mob_ai_mythic.attack(mob, target, 0)
 	end,
 	after_death = function(mob)
+		setMapRegistry(mob.m, "lastDeath", os.time())
 		mob_ai_mythic.after_death(mob)
 	end
 }

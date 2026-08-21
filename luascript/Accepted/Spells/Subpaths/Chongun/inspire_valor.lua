@@ -37,7 +37,7 @@ inspire_valor = {
 	end,
 
 	recast = function(block)
-		block.might = might.might + 3
+		block.might = block.might + 3
 		block:sendStatus()
 	end,
 

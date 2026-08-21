@@ -525,7 +525,7 @@ RabbitInvasionNpc = {
 	getNewPlayer = function(npc)
 		local empty = true
 		for x = 10, 24 do
-			local obj = npc:getObjectInCell(npc.m, x, 21, BL_PC)
+			local obj = npc:getObjectsInCell(npc.m, x, 21, BL_PC)
 			if #obj > 0 then
 				empty = false
 			end

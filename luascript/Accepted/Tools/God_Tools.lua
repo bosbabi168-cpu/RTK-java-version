@@ -411,9 +411,9 @@ god_tools = {
 			elseif sum == "Npc" then
 				npc = player:input("Enter Npc ID: ")
 				if tonumber(npc) > 0 then
-					if Npc(tonumber(npc)) ~= nil then
-						Npc(tonumber(npc)):warp(player.m, player.x, player.y)
-						Npc(tonumber(npc)):talk(2, "Watzuppp boss?")
+					if NPC(tonumber(npc)) ~= nil then
+						NPC(tonumber(npc)):warp(player.m, player.x, player.y)
+						NPC(tonumber(npc)):talk(2, "Watzuppp boss?")
 						player:sendAnimation(16)
 						player:playSound(29)
 					else

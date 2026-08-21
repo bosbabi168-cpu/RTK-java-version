@@ -17,7 +17,7 @@ cure_paralysis_poet = {
 		target:sendAnimation(10)
 		target:sendStatus()
 		player:sendStatus()
-		taget:sendAction(6, 35)
+		target:sendAction(6, 35)
 	end,
 	requirements = function(player)
 		local level = 34
@@ -47,7 +47,7 @@ release_binds_poet = {
 		target:sendAnimation(70)
 		target:sendStatus()
 		player:sendStatus()
-		taget:sendAction(6, 35)
+		target:sendAction(6, 35)
 	end,
 	requirements = function(player)
 		local level = 34
@@ -77,7 +77,7 @@ return_movement_poet = {
 		target:sendAnimation(57)
 		target:sendStatus()
 		player:sendStatus()
-		taget:sendAction(6, 35)
+		target:sendAction(6, 35)
 	end,
 	requirements = function(player)
 		local level = 34
@@ -106,7 +106,7 @@ free_movement_poet = {
 		target:sendAnimation(108)
 		target:sendStatus()
 		player:sendStatus()
-		taget:sendAction(6, 35)
+		target:sendAction(6, 35)
 	end,
 	requirements = function(player)
 		local level = 34

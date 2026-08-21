@@ -62,7 +62,7 @@ tripwire = {
 	recast = function(target)
 		target.armor = target.armor + 30
 		target.cursed = 1
-		target:SendStatus()
+		target:sendStatus()
 	end,
 
 	uncast = function(target)

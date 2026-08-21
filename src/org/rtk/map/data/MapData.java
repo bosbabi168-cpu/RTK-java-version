@@ -134,6 +134,14 @@ public final class MapData {
         return geometry.obj(x, y);
     }
 
+    /**
+     * read_pass(): nilai penghalang mentah. Berbeda dari {@link #walkable},
+     * paket gambar ulang peta mengirim angkanya apa adanya ke klien.
+     */
+    public int pass(int x, int y) {
+        return geometry.pass(x, y);
+    }
+
     // ------------------------------------------------------------------
     // indeks spasial (map_addblock / map_delblock / map_foreachinarea)
     // ------------------------------------------------------------------
@@ -228,6 +236,15 @@ public final class MapData {
     /**
      * Portal tepat di petak ini, atau null. Meniru penelusuran di
      * {@code clif_parsewalk}: cari dalam blok yang memuat petak tersebut.
+     *
+     * <p><b>Ditelusuri dari belakang, dan itu disengaja.</b> Data asli punya
+     * 61 petak yang terdaftar lebih dari sekali — 26 di antaranya dengan
+     * tujuan yang <i>berbeda</i>. Versi C menyimpan portal dalam linked list
+     * yang disisipi <i>di depan</i> ({@code war->next = head; head = war})
+     * lalu mengambil kecocokan pertama, sehingga <b>baris terakhir yang
+     * menang</b>. Daftar di sini diisi dengan {@code add()} (urutan sisip),
+     * jadi penelusuran mundur memberi hasil yang sama dengan C.
+     * Menelusuri maju akan mengirim pemain ke tujuan yang salah di 26 petak.</p>
      */
     public Warp warpAt(int x, int y) {
         if (warps == null || !inBounds(x, y)) {
@@ -237,7 +254,8 @@ public final class MapData {
         if (list == null) {
             return null;
         }
-        for (Warp w : list) {
+        for (int i = list.size() - 1; i >= 0; i--) {
+            Warp w = list.get(i);
             if (w.x == x && w.y == y) {
                 return w;
             }
@@ -278,6 +296,44 @@ public final class MapData {
         for (BlockList b : list) {
             if (b.x == x && b.y == y) {
                 out.add(b);
+            }
+        }
+    }
+
+    /**
+     * map_foreachinblock(): sapu benda dalam persegi panjang mentah.
+     *
+     * <p>Bedanya dengan {@link #foreachInArea}: yang ini <b>memotong</b>
+     * persegi di tepi peta, tidak menggesernya. Dipakai saat klien meminta
+     * gambar ulang sepetak wilayah (cabang 0x06 pada paket langkah), di mana
+     * wilayahnya ditentukan klien — bukan area pandang baku.</p>
+     */
+    public void foreachInBlock(int x0, int y0, int x1, int y1,
+                               BlockList.Type type, Consumer<BlockList> action) {
+        if (x0 < 0) {
+            x0 = 0;
+        }
+        if (y0 < 0) {
+            y0 = 0;
+        }
+        if (x1 >= xs) {
+            x1 = xs - 1;
+        }
+        if (y1 >= ys) {
+            y1 = ys - 1;
+        }
+        if (x1 < x0 || y1 < y0) {
+            return;
+        }
+
+        for (int by = y0 / BLOCK_SIZE; by <= y1 / BLOCK_SIZE; by++) {
+            for (int bx = x0 / BLOCK_SIZE; bx <= x1 / BLOCK_SIZE; bx++) {
+                int i = bx + by * bxs;
+                if (i < 0 || i >= blocks.length) {
+                    continue;
+                }
+                scan(blocks[i], x0, y0, x1, y1, type, action);
+                scan(blocksMob[i], x0, y0, x1, y1, type, action);
             }
         }
     }

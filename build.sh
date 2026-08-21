@@ -46,4 +46,4 @@ EOF
 
 echo
 echo "Build OK: dist/RTK-java.jar"
-echo "Jalankan dengan: ./run.sh {login|char|map|all|scripttest|maptest|chartest|worldtest|cliftest}"
+echo "Jalankan dengan: ./run.sh {login|char|map|all|scripttest|maptest|chartest|worldtest|cliftest|dbtest|luaaudit}"

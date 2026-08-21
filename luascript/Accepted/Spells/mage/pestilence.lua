@@ -59,7 +59,7 @@ pestilence_mage = {
 	uncast = function(target)
 		target.armor = target.armor - 5
 		target.cursed = 0
-		target:SendStatus()
+		target:sendStatus()
 	end,
 
 	requirements = function(player)

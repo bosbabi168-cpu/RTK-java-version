@@ -162,6 +162,11 @@ public final class MapRegistry {
      * portal ke peta milik map server lain baru bisa dipakai setelah
      * perpindahan antar map server diport (roadmap C3).
      *
+     * <p>Query sengaja <b>tanpa ORDER BY</b>, sama seperti C. Urutan baris
+     * ikut menentukan hasil pada petak yang terdaftar ganda — lihat catatan
+     * di {@link MapData#warpAt}. Jangan menambahkan ORDER BY tanpa memutuskan
+     * perubahan perilaku itu memang diinginkan.</p>
+     *
      * @return jumlah portal yang berhasil didaftarkan
      */
     public int loadWarps(org.rtk.common.Sql sql) {

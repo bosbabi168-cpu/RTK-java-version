@@ -212,21 +212,13 @@ public final class Pc {
     }
 
     /**
-     * Jembatan sementara ke model pemain milik engine skrip.
-     * TODO: satukan {@link User} dan {@code ScriptPlayer} supaya registry
-     * skrip langsung menulis ke {@link org.rtk.common.mmo.CharStatus}
-     * (butir roadmap "sambungkan registry skrip ke karakter").
+     * Objek pemain milik mesin skrip — satu per pemain, bukan salinan baru
+     * tiap panggilan (lihat {@link User#scriptPlayer()}).
+     *
+     * TODO(C1): registry yang ditulis skrip belum mengalir balik ke
+     * {@link org.rtk.common.mmo.CharStatus}, jadi belum ikut tersimpan.
      */
     static org.rtk.map.script.ScriptPlayer scriptPlayerOf(User sd) {
-        org.rtk.map.script.ScriptPlayer p =
-                new org.rtk.map.script.ScriptPlayer((int) sd.id, sd.status.name);
-        p.level = sd.status.level;
-        p.sex = sd.status.sex;
-        p.path = sd.status.charClass;
-        p.gmLevel = sd.status.gmLevel;
-        p.m = sd.m;
-        p.x = sd.x;
-        p.y = sd.y;
-        return p;
+        return sd.scriptPlayer();
     }
 }

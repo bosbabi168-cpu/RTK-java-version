@@ -49,6 +49,8 @@ On a development machine:
 ./run.sh chartest
 ./run.sh worldtest
 ./run.sh cliftest
+./run.sh dbtest       # needs MySQL (see "Running")
+./run.sh luaaudit     # helper: static checker for the Lua scripts
 
 # 3. run the three servers
 ./run.sh all          # login -> char -> map
@@ -167,6 +169,8 @@ java -jar RTK-java-version.jar maptest     # map file regression
 java -jar RTK-java-version.jar chartest    # character serialisation
 java -jar RTK-java-version.jar worldtest   # world / player placement
 java -jar RTK-java-version.jar cliftest    # client packets, movement, warps
+java -jar RTK-java-version.jar dbtest      # database layer (needs MySQL)
+java -jar RTK-java-version.jar luaaudit    # static checker for Lua scripts
 ```
 
 Remaining arguments are passed straight through, so the original options
@@ -256,12 +260,31 @@ either jar name and picks the newer one.
 
 ## Running
 
-1. Prepare the `RTK` MySQL database using this project's `database/`
-   folder: `database/scripts/` holds 21 migration scripts (52 tables) run
-   in order by `database/migrate.sh`, and
-   `database/2020-09-02-21-55-01_RTK.sql.bak` is a full dump containing the
-   content data — among it **7,974 `Maps` rows** and **4,476 `Warps` rows**
-   used by the map server.
+1. Prepare the `RTK` MySQL database using this project's `database/` folder.
+   `database/2020-09-02-21-55-01_RTK.sql.bak` is a full dump (54 tables)
+   containing the content data — among it **9,850 `Maps` rows** and
+   **4,476 `Warps` rows** used by the map server. `database/scripts/` holds
+   21 migration scripts run in order by `database/migrate.sh`, useful when
+   you want to follow the schema history.
+
+   > **Gotcha on Ubuntu/Pop!_OS:** MySQL's `root` uses the `auth_socket`
+   > plugin rather than an empty password — it is reachable only through
+   > `sudo mysql`. The symptom is `ERROR 1698 (28000)`, not `1045`. Create
+   > the `rtk` user that `conf/char.conf` already expects, so no config
+   > change is needed:
+
+   ```bash
+   sudo mysql -e "CREATE USER IF NOT EXISTS 'rtk'@'localhost' IDENTIFIED BY '50LM8U8Poq5uX2AZJVKs'; \
+     GRANT ALL PRIVILEGES ON *.* TO 'rtk'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+
+   mysql -h 127.0.0.1 -u rtk -p < database/2020-09-02-21-55-01_RTK.sql.bak
+   ```
+
+   The dump already contains `CREATE DATABASE RTK`, so there is nothing to
+   create first. **Note:** its first statement is `DROP DATABASE IF EXISTS
+   RTK` — check what an existing `RTK` database holds before re-importing.
+   The dump was taken on MySQL 5.7 and imports into 8.0.46 unchanged. Once
+   it is in place, `./run.sh dbtest` should be green.
 2. Adjust `conf/char.conf` (SQL credentials), `conf/inter.conf`
    (inter-server id/password) and `conf/map.conf` (the map server's public
    IP). The configuration file format is **identical to the C version** —
@@ -470,7 +493,7 @@ instead of being silently misread.
 
 The map server loads all of its maps at startup: metadata from the `Maps`
 table (filtered by `MapServer = ServerId`) combined with geometry from the
-`.map` files. Because 7,648 `Maps` rows reference only 2,640 unique files,
+`.map` files. Because 9,850 `Maps` rows reference only 2,919 unique files,
 geometry is cached per filename — identically shaped maps are not re-read
 from disk, yet each still has its own contents (players, mobs).
 
@@ -496,8 +519,17 @@ fields. [`Pc`](src/org/rtk/map/Pc.java) provides `setPos`,
 > like C's `pc_setpos()`, which only changes coordinates. What makes a
 > player visible is `Pc.spawn()` (in C: `clif_spawn` → `map_addblock`).
 
+**NPCs.** 385 NPCs are loaded from the `NPCs<serverId>` table along with
+their equipment and placed into the block index. Besides the spatial index
+there is an id index (C's `map_id2bl`), because the client sends a **block
+id** back when a player clicks something. That id is not `NpcId` as-is but
+`NPC_START_NUM + NpcId - 2` — an odd offset that has to be preserved
+because it is part of the protocol.
+
 **Warp tiles.** The `Warps` table (4,476 rows) is loaded into a per-block
-list on each map. When a player steps onto a warp tile, the destination
+list on each map. The real data contains **61 tiles listed more than once**,
+26 of them with different destinations; the C version lets the **last row**
+win, so the lookup here walks its list backwards to match. When a player steps onto a warp tile, the destination
 map's entry requirements (level, vita/mana, mark, path) are checked first;
 if they fail, the player is pushed back two tiles with a rejection message
 — that map's `MapRejectMsg` when set, otherwise the stock wording from the
@@ -584,7 +616,7 @@ The script path is set by `lua_path` in `conf/map.conf` (default
 ## Testing
 
 There is no unit-test framework on purpose (to stay pure Java SE). Instead
-there are five regression gates, all of which must stay green:
+there are six regression gates, all of which must stay green:
 
 | Command | What it covers |
 |---|---|
@@ -592,7 +624,8 @@ there are five regression gates, all of which must stay green:
 | `./run.sh maptest` | 3,544 map files parse correctly |
 | `./run.sh chartest` | character serialisation (29 assertions) |
 | `./run.sh worldtest` | map world + player placement (53 assertions) |
-| `./run.sh cliftest` | client packets, movement, warps (87 assertions) |
+| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs (218 assertions) |
+| `./run.sh dbtest` | database layer against live MySQL (111 assertions) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
 
@@ -629,6 +662,59 @@ bypass, invalid directions), map-edge rules, invisible things (ghosts,
 stealthed GMs), and warp tiles together with map entry requirements and
 their rejection messages.
 
+**`./run.sh dbtest`** (`charserver/DbTest.java`) is the only gate that needs
+a live MySQL. Three phases:
+
+1. **SQL audit** — every SQL statement in the ported code is read out of its
+   source file and `prepare`d against the server. MySQL resolves table and
+   column names at prepare time, so a single wrong name fails immediately.
+   This replaces checking hundreds of column names by hand, and cannot go
+   stale: the test reads whatever the code currently says. Two statements
+   build their table name at runtime and so cannot be prepared as-is; they
+   are deliberately skipped here and covered by the round-trip in phase 3 —
+   the skipped count is reported so nothing looks checked when it isn't.
+2. **World data** — 9,850 maps and 4,476 warps are loaded from the real
+   tables, then every warp tile is checked to make sure it points at a tile
+   that actually exists on the destination map.
+3. **Character round-trip** — a test character is filled with extreme values
+   (full unsigned 32-bit, 9-billion bigints, negative signed columns, float
+   karma), saved, read back, and compared field by field including
+   inventory, bank, legends, aethers, spellbook and every registry.
+
+The test **never touches existing data** — it only writes to the character
+it creates, and deletes it again on the way out, including on failure.
+
+### Lua script audit (`./run.sh luaaudit`)
+
+`scripttest` proves the 906 scripts **load**; it cannot prove they are
+correct. Lua checks nothing until a line actually runs, so a misspelled
+function name only blows up when a player touches that NPC. `luaaudit`
+closes the gap without running the scripts: every file is parsed with the
+**same LuaJ parser** the runtime uses, then checked for duplicate table
+keys, duplicate definitions, and names used but never defined.
+
+The set of "names that exist" is not guessed — the script engine is started
+first, then its globals table and the `Player`/`NPC`/`Mob` prototypes are
+read.
+
+The output separates two things that are easy to confuse:
+
+- **"AKAN MELEDAK" (will blow up)** — undefined globals that are *called or
+  indexed*. Merely reading an undefined global is legal in Lua (it yields
+  nil, and plenty of scripts check exactly that), so only uses that really
+  do throw are listed here.
+- **"not yet ported" vs "does not exist anywhere"** — names are
+  cross-referenced against the C `sl.c`. Present there means a known
+  porting gap; absent everywhere means a typo or dead code.
+
+The first audit (21 August 2026) found 13 files needing fixes plus two Lua
+5.1/5.2 compatibility gaps in the script engine. All of it is recorded in
+[`luascript/PERUBAHAN.md`](luascript/PERUBAHAN.md).
+
+> **Important:** because of those fixes, `luascript/` is **no longer
+> byte-identical** to upstream's `rtklua/`. Read `PERUBAHAN.md` before
+> copying content over from there.
+
 > **Important:** `ScriptTest` **does not touch the networking layer at
 > all**. When changing `NetServer` / `Session` / `Core`, test with a real
 > TCP integration test — open a listening port, connect a client socket,
@@ -663,20 +749,31 @@ A and B can run in parallel.
 
 **Track A — getting to a playable server** (sequential)
 
-1. ~~**Core `clif_*` packets**~~ — **done, 20 August 2026.** The client is
-   now told its id, map, position and time on entry
-   (0x05/0x15/0x04/0x20/0x1E/0x22). Still missing: `clif_sendstatus`,
-   `clif_getchararea`, and redrawing other players (`clif_sendmapdata` +
-   `*look_sub`).
+1. ~~**Core `clif_*` packets**~~ — **done; the deferred parts were closed on
+   21 August 2026.** A player is now told its id, map, position, time and
+   **stat panel** on entry, and then **sees other players and NPCs** around
+   it (packet 0x33). Map tiles are also redrawn while walking, with a
+   checksum so tiles the client already holds are not resent. Only mob
+   rendering remains — that waits for A5.
 2. ~~**Movement**~~ — **done, 20 August 2026.** `clif_parsewalk` with
    desync detection, collision, camera tracking, confirmation to the
    walker, broadcast to nearby players, plus warp tiles and map entry
    requirements.
-3. **End-to-end test against a real MySQL** ← start here. It also validates
-   `CharPersistence`, never yet exercised against a live database — and now
-   the `Warps` loader as well.
-4. **NPCs and dialogs** — `clif_parsenpcdialog` connects the Lua engine to
-   the client; once it works, the 906 already-loaded scripts come alive.
+3. ~~**End-to-end test against a real MySQL**~~ — **done, 21 August 2026.**
+   `./run.sh dbtest`, 82 assertions. It turned up one real bug: which warp
+   wins on tiles that are listed more than once.
+4. **NPCs and dialogs** — mostly working since 21 August 2026: clicking an
+   NPC (0x43), dialog and menu boxes (0x30 / 0x2F) and the player's reply
+   (0x3A) are wired to the Lua engine, so NPC scripts actually run. Replies arrive on two
+   opcodes: 0x39 for `menu`/`input`, 0x3A for `dialog`/`menuSeq`/`inputSeq`.
+   The NPC-as-character dialog variant and NPC
+   timers (`move`/`action` hooks) are in as well. The item bindings
+   (`addItem`/`removeItem`/`hasItem`) now write to the real inventory and are
+   persisted, stacking rules included. Shops are complete — buying and selling — and scripts
+   now receive the NPC object as their second argument, so they can read
+   `npc.yname` and friends. Banking and repair turned out to be entirely
+   Lua behaviour rather than server code, so they came along once the NPC
+   attributes were exposed.
 5. **Mobs and combat** — `mob.c` (2,411 lines).
 
 **Track B — assets and tooling** (parallel, does not block Track A)
@@ -691,8 +788,10 @@ A and B can run in parallel.
 
 **Track C — technical debt** (do it while touching the relevant area)
 
-- Point `ScriptPlayer` at `CharStatus` so registry values written by
-  scripts are persisted (the storage side already exists).
+- ~~Point `ScriptPlayer` at `CharStatus`~~ — **done, 21 August 2026.** The
+  script registries and the character registries are now the same objects,
+  so anything a script writes is persisted automatically. Proven all the way
+  to the `Registry` table in `dbtest`.
 - The four missing meta files — `login.conf` asks for 5, `meta/` only has
   `RidableAnimals`. This is why item tooltips do not appear.
 - Cross-map-server warping (currently rejected with a clear message).

@@ -58,6 +58,8 @@ public final class RtkLauncher {
             case "chartest" -> CharStatusTest.main(rest);
             case "worldtest" -> MapWorldTest.main(rest);
             case "cliftest" -> ClifTest.main(rest);
+            case "dbtest" -> org.rtk.charserver.DbTest.main(rest);
+            case "luaaudit" -> org.rtk.map.script.LuaAudit.main(rest);
             default -> {
                 log.error("Server tidak dikenal: {}", args[0]);
                 usage();

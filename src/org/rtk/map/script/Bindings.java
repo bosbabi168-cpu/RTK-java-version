@@ -31,6 +31,30 @@ final class Bindings {
     // Player (playerl_staticinit)
     // ------------------------------------------------------------------
 
+    /** Tabel Lua 1-basis -> daftar String. */
+    private static java.util.List<String> luaListString(LuaValue t) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        if (t == null || !t.istable()) {
+            return out;
+        }
+        for (int i = 1; i <= t.length(); i++) {
+            out.add(t.get(i).tojstring());
+        }
+        return out;
+    }
+
+    /** Tabel Lua 1-basis -> daftar Integer. */
+    private static java.util.List<Integer> luaListInt(LuaValue t) {
+        java.util.List<Integer> out = new java.util.ArrayList<>();
+        if (t == null || !t.istable()) {
+            return out;
+        }
+        for (int i = 1; i <= t.length(); i++) {
+            out.add(t.get(i).toint());
+        }
+        return out;
+    }
+
     static void definePlayer(ScriptEngine engine, ScriptClass player) {
         player.getter = (self, attr) -> {
             ScriptPlayer p = (ScriptPlayer) self;
@@ -70,18 +94,39 @@ final class Bindings {
                 case "mapRegistry":
                     return engine.mapRegistryUdata;
                 default:
-                    return null; // fall through to prototype / data table
+                    // Atribut karakter yang tersimpan (money, health, ...)
+                    // dijawab pemiliknya; null berarti belum diport, jadi
+                    // pencarian lanjut ke prototype / data table.
+                    if (p.owner instanceof ScriptPlayer.Owner o) {
+                        Long v = o.scriptGetAttr(attr);
+                        if (v != null) {
+                            return LuaValue.valueOf(v.doubleValue());
+                        }
+                    }
+                    return null;
             }
         };
         player.setter = (self, attr, value) -> {
             ScriptPlayer p = (ScriptPlayer) self;
             switch (attr) {
-                case "level": p.level = value.toint(); return true;
-                case "x": p.x = value.toint(); return true;
-                case "y": p.y = value.toint(); return true;
-                case "m": case "map": p.m = value.toint(); return true;
+                case "level":
+                    p.level = value.toint();
+                    if (p.owner instanceof ScriptPlayer.Owner o) {
+                        o.scriptSetLevel(p.level);   // tembus ke CharStatus
+                    }
+                    return true;
+                // Catatan kesetiaan: `pcl_setattr` di C punya 164 atribut yang
+                // bisa ditulis, dan x/y/m BUKAN salah satunya. Setter posisi
+                // pernah ada di port ini dan salah: menulis koordinat langsung
+                // membuat pemain berpindah TANPA memperbarui indeks blok peta,
+                // sehingga ia hilang dari pandangan pemain lain. Skrip
+                // memindahkan pemain lewat method warp(), bukan atribut.
                 default:
-                    return false; // fall through to the data table
+                    if (p.owner instanceof ScriptPlayer.Owner o
+                            && o.scriptSetAttr(attr, (long) value.todouble())) {
+                        return true;
+                    }
+                    return false; // jatuh ke data table
             }
         };
 
@@ -156,19 +201,73 @@ final class Bindings {
         player.addMethod("getObjectsInCell", (self, args) -> new LuaTable());
 
         // ---- items (in-memory until the item engine is ported) ----
+        // Untuk pemain sungguhan, ketiga method barang ini menembus ke
+        // CharStatus.inventory lewat ScriptPlayer.Owner — jadi barang yang
+        // diberikan skrip ikut tersimpan dan terlihat klien. Peta `p.items`
+        // hanya dipakai pemain tiruan di uji.
+        /**
+         * pcl_buy(dialog, namaBarang, harga, namaAsli): tampilkan daftar
+         * jualan lalu tunggu pilihan pemain.
+         *
+         * <p>Klien membalas dengan <b>nama tampilan</b> barang, bukan
+         * indeks — itulah yang dikembalikan ke skrip.</p>
+         */
+        player.addMethod("buy", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            String dialog = args.optjstring(2, "");
+            java.util.List<String> nama = luaListString(args.arg(3));
+            java.util.List<Integer> harga = luaListInt(args.arg(4));
+            var d = new ScriptPlayer.PendingDialog("buy", dialog, nama);
+            d.prices = harga;
+            return engine.yieldBlocking(p, d);
+        });
+
+        /**
+         * pcl_sell(dialog, daftarBarang): tampilkan barang pemain yang
+         * boleh dijual, lalu tunggu pilihannya.
+         *
+         * <p>Argumennya nama barang; yang dikirim ke klien adalah
+         * <b>nomor slot</b> tempat barang itu berada di inventaris, dan
+         * jawabannya juga berupa nomor slot.</p>
+         */
+        player.addMethod("sell", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            String dialog = args.optjstring(2, "");
+            java.util.List<String> nama = luaListString(args.arg(3));
+            java.util.List<Integer> slots = new java.util.ArrayList<>();
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                slots = o.scriptItemSlots(nama);
+            }
+            var d = new ScriptPlayer.PendingDialog("sell", dialog, nama);
+            d.prices = slots;   // dipakai ulang sebagai daftar slot
+            return engine.yieldBlocking(p, d);
+        });
+
         player.addMethod("addItem", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
-            p.items.merge(args.optjstring(2, ""), Math.max(1, args.optint(3, 1)), Integer::sum);
+            String name = args.optjstring(2, "");
+            int qty = Math.max(1, args.optint(3, 1));
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptAddItem(name, qty));
+            }
+            p.items.merge(name, qty, Integer::sum);
             return LuaValue.TRUE;
         });
         player.addMethod("hasItem", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
-            return LuaValue.valueOf(p.items.getOrDefault(args.optjstring(2, ""), 0));
+            String name = args.optjstring(2, "");
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptCountItem(name));
+            }
+            return LuaValue.valueOf(p.items.getOrDefault(name, 0));
         });
         player.addMethod("removeItem", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
             String name = args.optjstring(2, "");
             int qty = Math.max(1, args.optint(3, 1));
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptRemoveItem(name, qty));
+            }
             int have = p.items.getOrDefault(name, 0);
             if (have <= qty) {
                 p.items.remove(name);
@@ -195,6 +294,15 @@ final class Bindings {
 
     static void defineBlockList(ScriptEngine engine, ScriptClass klass) {
         klass.getter = (self, attr) -> {
+            // NPC sungguhan: atribut dibaca dari objeknya lewat penyedia.
+            // Skrip memakai `npc.yname` 565x dan `npc.name` ribuan kali,
+            // jadi ini jalur panas, bukan pelengkap.
+            if (self instanceof ScriptAttrs a) {
+                LuaValue v = a.scriptAttr(attr);
+                if (v != null) {
+                    return v;
+                }
+            }
             if (self instanceof ScriptEngine.GameObject && "id".equals(attr)) {
                 ScriptEngine.GameObject o = (ScriptEngine.GameObject) self;
                 if (o.ctorArgs.narg() >= 1 && o.ctorArgs.arg1().isnumber()) {

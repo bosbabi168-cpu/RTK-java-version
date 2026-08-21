@@ -58,12 +58,12 @@ vex_mage = {
 	recast = function(target)
 		target.armor = target.armor + 30
 		target.cursed = 1
-		target:SendStatus()
+		target:sendStatus()
 	end,
 	uncast = function(target)
 		target.armor = target.armor - 30
 		target.cursed = 0
-		target:SendStatus()
+		target:sendStatus()
 	end,
 
 	requirements = function(player)
@@ -135,12 +135,12 @@ deaths_face_mage = {
 	recast = function(target)
 		target.armor = target.armor + 30
 		target.cursed = 1
-		target:SendStatus()
+		target:sendStatus()
 	end,
 	uncast = function(target)
 		target.armor = target.armor - 30
 		target.cursed = 0
-		target:SendStatus()
+		target:sendStatus()
 	end,
 
 	requirements = function(player)
@@ -212,12 +212,12 @@ unnatural_selection_mage = {
 	recast = function(target)
 		target.armor = target.armor + 30
 		target.cursed = 1
-		target:SendStatus()
+		target:sendStatus()
 	end,
 	uncast = function(target)
 		target.armor = target.armor - 30
 		target.cursed = 0
-		target:SendStatus()
+		target:sendStatus()
 	end,
 
 	requirements = function(player)
@@ -289,12 +289,12 @@ flaw_mage = {
 	recast = function(target)
 		target.armor = target.armor + 30
 		target.cursed = 1
-		target:SendStatus()
+		target:sendStatus()
 	end,
 	uncast = function(target)
 		target.armor = target.armor - 30
 		target.cursed = 0
-		target:SendStatus()
+		target:sendStatus()
 	end,
 
 	requirements = function(player)

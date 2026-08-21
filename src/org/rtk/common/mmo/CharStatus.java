@@ -137,6 +137,23 @@ public final class CharStatus {
     /** Kills: id mob -> jumlah */
     public final Map<Long, Long> killReg = new LinkedHashMap<>();
 
+    /**
+     * pc_isequip(): barang di slot perlengkapan tertentu, atau null.
+     *
+     * <p>Di C {@code status.equip[]} adalah array berindeks slot; di sini
+     * koleksinya berupa daftar, dan slot disimpan pada {@link Item#pos}
+     * (kolom {@code EqpSlot}). Pencarian dibuat eksplisit supaya tidak ada
+     * yang salah mengira urutan daftar = urutan slot.</p>
+     */
+    public Item equipAt(int slot) {
+        for (Item it : equip) {
+            if (it != null && it.pos == slot && it.id > 0) {
+                return it;
+            }
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         return "CharStatus{id=" + id + ", name='" + name + "', level=" + level

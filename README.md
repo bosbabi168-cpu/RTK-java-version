@@ -47,6 +47,8 @@ Di mesin pengembangan:
 ./run.sh chartest
 ./run.sh worldtest
 ./run.sh cliftest
+./run.sh dbtest       # butuh MySQL (lihat bagian "Menjalankan")
+./run.sh luaaudit     # alat bantu: pemeriksa statis skrip Lua
 
 # 3. jalankan ketiga server
 ./run.sh all          # login -> char -> map
@@ -166,6 +168,8 @@ java -jar RTK-java-version.jar maptest     # uji regresi berkas peta
 java -jar RTK-java-version.jar chartest    # uji serialisasi karakter
 java -jar RTK-java-version.jar worldtest   # uji dunia peta / penempatan pemain
 java -jar RTK-java-version.jar cliftest    # uji paket klien, gerakan, portal
+java -jar RTK-java-version.jar dbtest      # uji lapisan database (butuh MySQL)
+java -jar RTK-java-version.jar luaaudit    # pemeriksa statis skrip Lua
 ```
 
 Argumen berikutnya diteruskan apa adanya ke server, jadi opsi asli tetap
@@ -255,12 +259,31 @@ menerima kedua nama jar dan memilih yang paling baru.
 
 ## Menjalankan
 
-1. Siapkan database MySQL `RTK` memakai `database/` di project ini:
-   `database/scripts/` berisi 21 skrip migrasi (52 tabel) yang dijalankan
-   berurutan oleh `database/migrate.sh`, dan
-   `database/2020-09-02-21-55-01_RTK.sql.bak` adalah dump lengkap berisi
-   data konten — antara lain **7.974 baris `Maps`** dan **4.476 baris
-   `Warps`** yang dipakai map server.
+1. Siapkan database MySQL `RTK` memakai `database/` di project ini.
+   `database/2020-09-02-21-55-01_RTK.sql.bak` adalah dump lengkap (54 tabel)
+   berisi data konten — antara lain **9.850 baris `Maps`** dan **4.476 baris
+   `Warps`** yang dipakai map server. `database/scripts/` berisi 21 skrip
+   migrasi yang dijalankan berurutan oleh `database/migrate.sh`, berguna
+   bila ingin menelusuri riwayat perubahan skema.
+
+   > **Jebakan di Ubuntu/Pop!_OS:** `root` MySQL memakai plugin
+   > `auth_socket`, **bukan** password kosong — hanya bisa diakses lewat
+   > `sudo mysql`. Gejalanya `ERROR 1698 (28000)`, bukan `1045`. Buat user
+   > `rtk` yang sudah tertulis di `conf/char.conf` supaya konfigurasi tidak
+   > perlu diubah:
+
+   ```bash
+   sudo mysql -e "CREATE USER IF NOT EXISTS 'rtk'@'localhost' IDENTIFIED BY '50LM8U8Poq5uX2AZJVKs'; \
+     GRANT ALL PRIVILEGES ON *.* TO 'rtk'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+
+   mysql -h 127.0.0.1 -u rtk -p < database/2020-09-02-21-55-01_RTK.sql.bak
+   ```
+
+   Dump-nya sudah memuat `CREATE DATABASE RTK`, jadi tidak perlu membuatnya
+   lebih dulu. **Perhatikan:** baris pertamanya `DROP DATABASE IF EXISTS
+   RTK` — periksa dulu isi database `RTK` yang ada sebelum mengimpor ulang.
+   Dump dibuat di MySQL 5.7 dan terbukti terimpor ke 8.0.46 tanpa
+   penyesuaian. Setelah selesai, `./run.sh dbtest` harus hijau.
 2. Sesuaikan `conf/char.conf` (kredensial SQL), `conf/inter.conf`
    (id/pw antar-server), `conf/map.conf` (IP publik map server).
    Format file konfigurasi **identik dengan versi C** — file di folder
@@ -467,7 +490,7 @@ jelas, bukan salah dibaca diam-diam.
 
 Map server memuat seluruh peta miliknya saat start: metadata dari tabel
 `Maps` (disaring `MapServer = ServerId`) digabung geometri dari berkas
-`.map`. Karena 7.648 baris `Maps` hanya menunjuk 2.640 berkas unik,
+`.map`. Karena 9.850 baris `Maps` hanya menunjuk 2.919 berkas unik,
 geometrinya di-cache per nama berkas — peta yang bentuknya sama tidak
 dibaca berulang dari disk, tapi tetap punya isi (pemain, mob) sendiri.
 
@@ -493,8 +516,17 @@ ladangnya sendiri. [`Pc`](src/org/rtk/map/Pc.java) menyediakan `setPos`,
 > `pc_setpos()` di C, yang hanya mengubah koordinat. Yang membuat pemain
 > terlihat adalah `Pc.spawn()` (di C: `clif_spawn` → `map_addblock`).
 
+**NPC.** 385 NPC dimuat dari tabel `NPCs<serverId>` beserta perlengkapannya
+dan ditempatkan ke indeks blok. Selain indeks spasial, ada indeks id
+(padanan `map_id2bl` di C) karena klien mengirim balik **id blok** saat
+pemain mengklik sesuatu. Id itu bukan `NpcId` apa adanya melainkan
+`NPC_START_NUM + NpcId - 2` — pergeseran aneh yang harus dipertahankan
+karena ikut protokol.
+
 **Portal.** Tabel `Warps` (4.476 baris) dimuat ke daftar per blok pada tiap
-peta. Ketika pemain melangkah ke petak portal, syarat masuk peta tujuan
+peta. Data aslinya punya **61 petak yang terdaftar ganda**, 26 di antaranya
+dengan tujuan berbeda; versi C memenangkan **baris terakhir**, jadi
+pencarian di sini menelusuri daftarnya dari belakang agar hasilnya sama. Ketika pemain melangkah ke petak portal, syarat masuk peta tujuan
 (level, vita/mana, mark, path) diperiksa dulu; kalau gagal ia didorong
 mundur dua petak disertai pesan penolakan — `MapRejectMsg` peta itu bila
 diisi, atau kalimat bawaan dari versi C. Portal ke peta milik map server
@@ -580,7 +612,7 @@ Path skrip diatur lewat `lua_path` di `conf/map.conf` (default
 
 ## Pengujian
 
-Belum ada framework unit test (sengaja, agar tetap Java SE murni). Ada lima
+Belum ada framework unit test (sengaja, agar tetap Java SE murni). Ada enam
 gerbang regresi yang harus selalu hijau:
 
 | Perintah | Menguji |
@@ -589,7 +621,8 @@ gerbang regresi yang harus selalu hijau:
 | `./run.sh maptest` | 3.544 berkas peta terbaca sesuai format |
 | `./run.sh chartest` | serialisasi karakter (29 assertion) |
 | `./run.sh worldtest` | dunia peta + penempatan pemain (53 assertion) |
-| `./run.sh cliftest` | paket klien, gerakan, portal (87 assertion) |
+| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC (218 assertion) |
+| `./run.sh dbtest` | lapisan database ke MySQL hidup (111 assertion) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
 
@@ -624,6 +657,59 @@ tabrakan tembok/pemain, GM menembus, arah tidak sah), aturan tepi peta,
 benda tak terlihat (hantu, GM ber-stealth), serta petak portal beserta
 syarat masuk peta dan pesan penolakannya.
 
+**`./run.sh dbtest`** (`charserver/DbTest.java`) satu-satunya gerbang yang
+membutuhkan MySQL hidup. Tiga tahap:
+
+1. **Audit SQL** — setiap pernyataan SQL di kode port diambil dari berkas
+   sumbernya lalu di-`prepare` ke server. MySQL memvalidasi nama tabel dan
+   kolom saat prepare, jadi satu nama salah langsung ketahuan. Cara ini
+   menggantikan pencocokan ratusan nama kolom secara manual, dan tidak bisa
+   basi: ujinya membaca kode yang sedang berlaku. Dua pernyataan yang nama
+   tabelnya disusun saat runtime tidak bisa di-`prepare`, jadi sengaja
+   dilewati di sini dan diuji lewat round-trip di tahap 3 — jumlahnya ikut
+   dilaporkan supaya tidak terlihat lolos padahal tidak diperiksa.
+2. **Data dunia** — 9.850 peta dan 4.476 portal dimuat dari tabel asli, lalu
+   tiap petak portal diperiksa apakah benar menunjuk petak yang ada di peta
+   tujuan.
+3. **Round-trip karakter** — karakter uji diisi nilai ekstrem (unsigned
+   32-bit penuh, bigint 9 miliar, kolom bertanda negatif, float karma),
+   disimpan, dibaca ulang, dan dibandingkan ladang per ladang termasuk
+   inventaris, bank, legenda, aether, buku mantra, dan seluruh registry.
+
+Uji ini **tidak menyentuh data yang sudah ada** — ia hanya menulis pada
+karakter buatannya sendiri, dan menghapusnya kembali di akhir maupun saat
+gagal.
+
+### Audit skrip Lua (`./run.sh luaaudit`)
+
+`scripttest` membuktikan 906 skrip **termuat**; ia tidak bisa membuktikan
+skripnya benar. Lua baru memeriksa apa pun saat barisnya dijalankan, jadi
+salah ketik nama fungsi baru meledak ketika pemain menyentuh NPC-nya.
+`luaaudit` menutup celah itu tanpa menjalankan skripnya: seluruh berkas
+diparse dengan **parser LuaJ yang sama** dengan runtime, lalu diperiksa
+kunci tabel ganda, definisi ganda, dan nama yang dipakai tapi tidak ada.
+
+Daftar "nama yang ada" tidak ditebak — mesin skrip dinyalakan lebih dulu,
+lalu tabel global dan prototipe `Player`/`NPC`/`Mob` dibaca isinya.
+
+Keluarannya memisahkan dua hal yang mudah tertukar:
+
+- **"AKAN MELEDAK"** — global tak terdefinisi yang *dipanggil atau
+  diindeks*. Sekadar membaca global tak terdefinisi itu sah di Lua
+  (hasilnya nil, dan banyak skrip memang mengeceknya), jadi hanya yang
+  benar-benar berakibat error yang masuk daftar ini.
+- **"belum diport" vs "tidak ada di mana pun"** — nama disilangkan ke
+  `sl.c` versi C. Yang ada di sana berarti celah port yang sudah diketahui;
+  yang tidak ada di mana pun berarti salah ketik atau kode mati.
+
+Audit pertama (21 Agustus 2026) menemukan 13 berkas yang perlu diperbaiki
+dan dua celah kompatibilitas Lua 5.1/5.2 di mesin skrip. Semuanya tercatat
+di [`luascript/PERUBAHAN.md`](luascript/PERUBAHAN.md).
+
+> **Penting:** karena perbaikan itu, `luascript/` **tidak lagi
+> byte-identik** dengan `rtklua/` milik upstream. Baca `PERUBAHAN.md`
+> sebelum menyalin ulang konten dari sana.
+
 > **Penting:** `ScriptTest` **tidak menyentuh lapisan jaringan sama sekali**.
 > Kalau mengubah `NetServer`/`Session`/`Core`, uji dengan tes integrasi TCP
 > sungguhan — buka listen port, sambungkan socket klien, lalu pastikan:
@@ -657,19 +743,29 @@ Trek A dan B bisa berjalan paralel.
 
 **Trek A — sampai server bisa dimainkan** (berurutan)
 
-1. ~~**Paket `clif_*` dasar**~~ — **selesai 20 Agustus 2026.** Klien kini
-   diberi tahu id, peta, posisi, dan waktu saat pemain masuk
-   (0x05/0x15/0x04/0x20/0x1E/0x22). Yang masih kurang: `clif_sendstatus`,
-   `clif_getchararea`, dan penggambaran ulang pemain lain
-   (`clif_sendmapdata` + `*look_sub`).
+1. ~~**Paket `clif_*` dasar**~~ — **selesai; bagian tertunda ditutup
+   21 Agustus 2026.** Pemain kini diberi tahu id, peta, posisi, waktu, dan
+   **panel status** saat masuk, lalu **melihat pemain lain dan NPC** di
+   sekitarnya (paket 0x33). Petak peta juga digambar ulang saat
+   berjalan, dengan checksum sehingga petak yang sudah dipegang klien tidak
+   dikirim ulang. Yang tersisa hanya penggambaran mob — menunggu A5.
 2. ~~**Gerakan**~~ — **selesai 20 Agustus 2026.** `clif_parsewalk` dengan
    deteksi desinkron, tabrakan, kamera, konfirmasi ke pemain, siaran ke
    sekitar, ditambah petak portal beserta syarat masuk peta.
 3. **Uji end-to-end dengan MySQL sungguhan** ← mulai di sini. Sekaligus
    memvalidasi `CharPersistence` yang belum pernah dijalankan terhadap
    database hidup — dan kini juga pemuat `Warps`.
-4. **NPC & dialog** — `clif_parsenpcdialog` menyambungkan engine Lua ke
-   klien; begitu jalan, 906 skrip yang sudah termuat mulai berfungsi.
+4. **NPC & dialog** — sebagian besar jalan sejak 21 Agustus 2026: klik NPC
+   (0x43), kotak dialog dan menu (0x30 / 0x2F), serta jawaban pemain (0x3A)
+   sudah tersambung ke mesin Lua, jadi skrip NPC benar-benar berjalan.
+   Jawaban pemain masuk lewat dua opcode: 0x39 untuk `menu`/`input`, 0x3A
+   untuk `dialog`/`menuSeq`/`inputSeq`. NPC berwujud karakter dan timer NPC
+   (kait `move`/`action`) juga sudah ada. Binding barang (`addItem`/`removeItem`/`hasItem`) kini
+   menulis ke inventaris sungguhan dan ikut tersimpan, lengkap dengan
+   aturan tumpukan. Toko lengkap — beli dan jual — dan skrip kini menerima
+   objek NPC sebagai argumen kedua, sehingga bisa membaca `npc.yname` dan
+   sejenisnya. Bank dan reparasi ternyata seluruhnya perilaku Lua, bukan
+   kode server, jadi ikut selesai begitu atribut NPC diekspos.
 5. **Mob & pertarungan** — `mob.c` (2.411 baris).
 
 **Trek B — aset & tooling** (paralel, tidak memblokir Trek A)
@@ -683,8 +779,10 @@ Trek A dan B bisa berjalan paralel.
 
 **Trek C — utang teknis** (kerjakan sambil lalu saat menyentuh areanya)
 
-- Sambungkan `ScriptPlayer` ke `CharStatus` agar registry yang ditulis
-  skrip ikut tersimpan (sisi penyimpanan sudah ada).
+- ~~Sambungkan `ScriptPlayer` ke `CharStatus`~~ — **selesai 21 Agustus
+  2026.** Registry skrip dan registry karakter kini objek yang sama, jadi
+  apa pun yang ditulis skrip langsung ikut tersimpan. Terbukti sampai ke
+  tabel `Registry` di `dbtest`.
 - Empat berkas meta yang hilang — `login.conf` meminta 5, `meta/` hanya
   punya `RidableAnimals`. Inilah sebab tooltip item tidak muncul.
 - Perpindahan antar map server (sekarang ditolak dengan pesan jelas).

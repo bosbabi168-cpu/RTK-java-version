@@ -82,8 +82,20 @@ public final class ScriptEngine {
 
     public ScriptEngine() {
         globals = JsePlatform.standardGlobals();
-        // Lua 5.1 compatibility shims for the original scripts (LuaJ is 5.2)
+
+        // Pustaka debug tidak ikut standardGlobals(), padahal
+        // Developers/sys.lua memakai debug.traceback() di _errhandler —
+        // tanpa ini penangan error justru ikut meledak.
+        globals.load(new org.luaj.vm2.lib.DebugLib());
+
+        // Shim kompatibilitas Lua 5.1: skrip aslinya ditulis untuk 5.1,
+        // sedangkan LuaJ 3.0.1 mengikuti 5.2.
+        //   unpack     -> table.unpack
+        //   loadstring -> load   (dipakai 12x, antara lain oleh daftar
+        //                 syarat mantra dan TOKO NPC di checkShop.lua;
+        //                 tanpa shim ini toko NPC langsung error)
         globals.load("unpack = unpack or table.unpack").call();
+        globals.load("loadstring = loadstring or load").call();
         buildInstanceMeta();
         registerClasses();
         registerGlobals();
@@ -221,6 +233,13 @@ public final class ScriptEngine {
     // ------------------------------------------------------------------
 
     private void registerGlobals() {
+        // Konstanta slot perlengkapan. Di C dipasang lewat makro
+        // SL_EXPOSE_ENUM; skrip memakainya sebagai global biasa
+        // (EQ_ARMOR, EQ_WEAP, ...) di ratusan tempat.
+        for (int i = 0; i < org.rtk.map.data.Equip.NAMES.length; i++) {
+            globals.set(org.rtk.map.data.Equip.NAMES[i], LuaValue.valueOf(i));
+        }
+
         set("_async", args -> {
             ScriptPlayer p = toPlayer(args.arg1());
             if (p == null || !args.arg(2).isfunction()) {
@@ -471,6 +490,19 @@ public final class ScriptEngine {
         handleResume(p, thread.resume(LuaValue.NONE));
     }
 
+    /**
+     * sl_async_freeco(): buang coroutine yang sedang menunggu.
+     *
+     * <p>Dipakai saat pemain menutup kotak dialog, dan saat ia mengklik
+     * sesuatu yang baru — di C setiap klik memulai interaksi dari nol,
+     * jadi sisa dialog lama harus dilepas dulu supaya {@link #async} tidak
+     * menolaknya dengan alasan "sedang sibuk".</p>
+     */
+    public void cancel(ScriptPlayer p) {
+        p.coroutine = null;
+        p.pendingDialog = null;
+    }
+
     /** sl_async_resume(): the client answered - continue the script. */
     public void resume(ScriptPlayer p, Varargs answer) {
         LuaThread thread = p.coroutine;
@@ -510,6 +542,18 @@ public final class ScriptEngine {
     // ------------------------------------------------------------------
     // helpers
     // ------------------------------------------------------------------
+
+    /**
+     * Bungkus benda permainan (NPC, nanti mob) jadi objek Lua.
+     *
+     * <p>Berbeda dari {@link #playerRef}, identitasnya tidak di-cache di
+     * objeknya sendiri — NPC tidak menyimpan keadaan skrip seperti pemain,
+     * jadi membuat pembungkus baru tiap panggilan aman dan menghindari
+     * ladang tambahan di kelas peta.</p>
+     */
+    public LuaValue objectRef(Object obj) {
+        return newInstance(npcClass, obj);
+    }
 
     /** The stable userdata for a player (identity matters to scripts). */
     public LuaValue playerRef(ScriptPlayer p) {

@@ -1,0 +1,144 @@
+package org.rtk.map.data;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import org.rtk.common.Sql;
+
+/**
+ * Port sebagian dari itemdb.c — hanya bagian yang dibutuhkan untuk
+ * menggambar karakter: {@code itemdb_look()} dan {@code itemdb_lookcolor()}.
+ *
+ * <p>Di C, {@code item_db} dulunya berkas teks; sekarang isinya datang dari
+ * tabel {@code Items} (konstanta {@code ITEMDB_FILE} di header tinggal
+ * peninggalan). Sisa ladang item — harga, syarat, efek — menyusul bersama
+ * subsistem barang; yang dimuat di sini sengaja dibatasi supaya paket gambar
+ * bisa jalan lebih dulu tanpa menunggu itu.</p>
+ */
+public final class ItemDb {
+
+    private static final Logger log = LogManager.getLogger(ItemDb.class);
+
+    /** Tampilan satu jenis barang. */
+    public record Look(int look, int lookColor, int icon, int iconColor) {
+    }
+
+    /**
+     * Data satu jenis barang yang dibutuhkan skrip dan toko.
+     *
+     * @param stackAmount berapa banyak muat dalam satu slot; 0 atau 1 berarti
+     *                    tidak menumpuk sehingga tiap keping memakan slot
+     * @param maxAmount   batas total yang boleh dimiliki; 0 = tanpa batas
+     */
+    public record Info(long id, String name, String display, String buyText,
+                       int type, int buyPrice, int sellPrice,
+                       int stackAmount, int maxAmount, Look look) {
+
+        /** Nama yang dilihat pemain; jatuh ke nama skrip bila kosong. */
+        public String tampilan() {
+            return display == null || display.isEmpty() ? name : display;
+        }
+    }
+
+    private static final Look KOSONG = new Look(0, 0, 0, 0);
+    private static final Info TIDAK_DIKENAL =
+            new Info(0, "", "", "", 0, 0, 0, 1, 0, KOSONG);
+
+    private final Map<Long, Look> byId = new HashMap<>();
+    private final Map<Long, Info> infoById = new HashMap<>();
+
+    /** Nama barang (huruf kecil) -&gt; data; nama di skrip tidak peka besar-kecil. */
+    private final Map<String, Info> infoByName = new HashMap<>();
+
+    /** Data barang menurut id, atau entri kosong bila tak dikenal. */
+    public Info info(long itemId) {
+        return infoById.getOrDefault(itemId, TIDAK_DIKENAL);
+    }
+
+    /** Data barang menurut nama, atau null bila tak dikenal. */
+    public Info infoByName(String name) {
+        return name == null ? null : infoByName.get(name.toLowerCase());
+    }
+
+    /**
+     * itemdb_id(): id barang dari namanya, atau 0 bila tak dikenal.
+     * Dipakai skrip dan toko, yang menyebut barang dengan nama.
+     */
+    public long idOf(String name) {
+        Info i = infoByName(name);
+        return i == null ? 0 : i.id();
+    }
+
+    /** itemdb_stackamount(): berapa muat dalam satu slot (minimal 1). */
+    public int stackAmountOf(long itemId) {
+        return Math.max(1, info(itemId).stackAmount());
+    }
+
+    /**
+     * itemdb_search(): tampilan barang, atau nilai nol bila id tak dikenal.
+     * Versi C mengembalikan entri kosong yang baru dibuat, jadi pemanggilnya
+     * tidak pernah melihat null — ditiru di sini.
+     */
+    public Look look(long itemId) {
+        return byId.getOrDefault(itemId, KOSONG);
+    }
+
+    /** itemdb_look(). */
+    public int lookOf(long itemId) {
+        return look(itemId).look();
+    }
+
+    /** itemdb_lookcolor(). */
+    public int lookColorOf(long itemId) {
+        return look(itemId).lookColor();
+    }
+
+    public int count() {
+        return byId.size();
+    }
+
+    /** Muat tampilan seluruh barang dari tabel `Items`. */
+    public int load(Sql sql) {
+        long t0 = System.currentTimeMillis();
+        byId.clear();
+        infoById.clear();
+        infoByName.clear();
+        int rows = sql.forEachRow(
+                "SELECT `ItmId`,`ItmIdentifier`,`ItmType`,`ItmLook`,`ItmLookColor`,"
+                + "`ItmIcon`,`ItmIconColor`,`ItmBuyPrice`,`ItmSellPrice`,"
+                + "`ItmStackAmount`,`ItmMaximumAmount`,`ItmDescription`,`ItmBuyText` "
+                + "FROM `Items`",
+                rs -> {
+                    long id = rs.getLong("ItmId");
+                    Look look = new Look(rs.getInt("ItmLook"), rs.getInt("ItmLookColor"),
+                            rs.getInt("ItmIcon"), rs.getInt("ItmIconColor"));
+                    String nama = rs.getString("ItmIdentifier");
+                    String tampil = rs.getString("ItmDescription");
+                    String buyText = rs.getString("ItmBuyText");
+                    Info info = new Info(id, nama == null ? "" : nama,
+                            tampil == null ? "" : tampil,
+                            buyText == null ? "" : buyText,
+                            rs.getInt("ItmType"),
+                            rs.getInt("ItmBuyPrice"), rs.getInt("ItmSellPrice"),
+                            rs.getInt("ItmStackAmount"), rs.getInt("ItmMaximumAmount"),
+                            look);
+                    byId.put(id, look);
+                    infoById.put(id, info);
+                    if (!info.name().isEmpty()) {
+                        // nama pertama menang bila ada duplikat, sama seperti
+                        // pencarian berurutan di C
+                        infoByName.putIfAbsent(info.name().toLowerCase(), info);
+                    }
+                });
+        if (rows < 0) {
+            log.error("[ITEM] gagal membaca tabel Items");
+            return 0;
+        }
+        log.info("[ITEM] {} barang dimuat ({} nama unik) dalam {} ms",
+                byId.size(), infoByName.size(), System.currentTimeMillis() - t0);
+        return byId.size();
+    }
+}

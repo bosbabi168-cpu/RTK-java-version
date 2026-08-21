@@ -682,7 +682,7 @@ instance_boss = {
 			)
 
 			if #fronttarget == 1 then
-				if fronttargets[1].state == 0 then
+				if fronttarget[1].state == 0 then
 					fronttarget[1]:sendAnimation(202)
 					fronttarget[1]:playSound(48)
 					fronttarget[1]:removeHealthExtend(

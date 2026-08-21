@@ -63,6 +63,9 @@ public final class MapServer {
     /** Folder berkas .map; nama dari tabel `Maps` dicari relatif ke sini. */
     public static String mapPath = org.rtk.common.Props.get("map.path", "maps");
 
+    /** Folder berkas data teks (level_db.txt, guide_db.txt). */
+    public static String dbPath = org.rtk.common.Props.get("db.path", "db");
+
     public static int luaEnable = org.rtk.common.Props.getInt("lua.enable", 1);
     public static String luaPath = org.rtk.common.Props.get("lua.path", "luascript");
     public static org.rtk.map.script.ScriptEngine scriptEngine;
@@ -72,6 +75,15 @@ public final class MapServer {
             new java.util.concurrent.ConcurrentHashMap<>();
 
     public static final Sql sql = new Sql();
+
+    /** NPC di server ini + indeks id global (padanan `id_db` di C). */
+    public static final NpcRegistry npcs = new NpcRegistry();
+
+    /** Tampilan barang (itemdb_look / itemdb_lookcolor). */
+    public static final org.rtk.map.data.ItemDb itemDb = new org.rtk.map.data.ItemDb();
+
+    /** Tabel pengalaman per path, dari db/level_db.txt. */
+    public static final org.rtk.map.data.ClassDb classDb = new org.rtk.map.data.ClassDb();
 
     /** Lapisan jaringan + timer milik map server sendiri. */
     public static final NetServer net = new NetServer("map");
@@ -108,6 +120,7 @@ public final class MapServer {
                 case "char_pw": charPw = value; break;
                 case "serverid": serverId = Integer.parseInt(value); break;
                 case "map_path": mapPath = value; break;
+                case "db_path": dbPath = value; break;
                 case "lua_enable": luaEnable = Integer.parseInt(value); break;
                 case "lua_path": luaPath = value; break;
                 case "map_log": ServerLog.setLogfile(value); break;
@@ -142,7 +155,10 @@ public final class MapServer {
         }
         if (n > 0) {
             world.loadWarps(sql);
+            npcs.load(sql, serverId, world);
+            itemDb.load(sql);
         }
+        classDb.load(dbPath);
     }
 
     /** check_connect_char(): (re)establish the char-server link. */
@@ -213,6 +229,9 @@ public final class MapServer {
         } else {
             switch (opcode) {
                 case 0x06, 0x32 -> Clif.parseWalk(sd);
+                case 0x43 -> Clif.parseClick(sd);
+                case 0x39 -> Clif.parseMenuInput(sd);
+                case 0x3A -> Clif.parseNpcDialog(sd);
                 default -> log.debug("[MAP] opcode 0x{} belum diport (dari {})",
                         String.format("%02X", opcode), sd.name());
             }
@@ -334,6 +353,9 @@ public final class MapServer {
         mapFd = net.makeListenPort(mapPort);
 
         timers.insert(1000, RECONNECT_MS, (a, b) -> checkConnectChar(), 0, 0);
+        // npc_runtimers(): tik 100 ms untuk kait `move` dan `action` milik NPC
+        timers.insert(NpcRegistry.TICK_MS, NpcRegistry.TICK_MS,
+                (a, b) -> npcs.runTimers(scriptEngine), 0, 0);
 
         log.info("RetroTK Map Server (Java skeleton) is ready! Listening at {}.", mapPort);
         ServerLog.addLog("Server Ready! Listening at %d.%n", mapPort);

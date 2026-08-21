@@ -36,7 +36,7 @@ scourge = {
 	recast = function(target)
 		target.armor = target.armor + 50
 		target.cursed = 1
-		target:SendStatus()
+		target:sendStatus()
 	end,
 
 	uncast = function(target)
