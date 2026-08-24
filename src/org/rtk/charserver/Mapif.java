@@ -290,7 +290,8 @@ public final class Mapif {
             // Board/mail/charstatus packets from the un-ported part of the
             // protocol: drop what we can measure, otherwise resync is
             // impossible and the link must be closed.
-            log.warn("[CHAR] Unhandled inter-server packet {} from map server #{}", String.format("0x%04X", cmd), id);
+            log.warn("[CHAR] Unhandled inter-server packet {} from map server #{}",
+                    String.format("0x%04X", cmd), id);
             s.eof = true;
             return 0;
         }

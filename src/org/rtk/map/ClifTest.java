@@ -195,12 +195,443 @@ public final class ClifTest {
         check("status (0x08) dikirim saat masuk dunia",
                 seq.stream().anyMatch(o -> o[0] == 0x08));
 
+        bufferTest(sd);
+        mobTest(map, sd);
         dialogTest(map, sd);
         mapDataTest(map, sd);
         statusTest(sd);
         lookTest(map, sd);
 
         walkTest(map, sd);
+    }
+
+    /**
+     * Paket yang lebih besar dari buffer awal sesi harus tetap utuh.
+     *
+     * <p>Pernah kejadian dan <b>tidak terlihat sama sekali di uji</b>:
+     * saat buffer tulis tumbuh, hanya bagian yang sudah dikirim yang
+     * disalin, sedangkan byte yang sedang disusun ada di belakangnya —
+     * sehingga ikut terbuang. Akibatnya paket daftar peta 19.708 byte
+     * terkirim sebagai 19.708 byte NOL, dan tautan map-char putus-nyambung
+     * tiap 10 detik. Uji ini menjaga agar tidak terulang.</p>
+     */
+    private static void bufferTest(User sd) {
+        log.info("=== buffer tulis lebih besar dari ukuran awal ===");
+
+        org.rtk.common.Session s = MapServer.net.openTestSession(sd.fd);
+        drain(s);
+
+        // buffer awal 4096 byte; tulis jauh melewatinya
+        final int n = 20000;
+        for (int i = 0; i < n; i++) {
+            s.wfifoB(i, (i % 251) + 1);   // hindari 0 supaya nol = kerusakan
+        }
+        s.wfifoSet(n);
+
+        byte[] keluar = drain(s);
+        check("paket besar terkirim utuh panjangnya", keluar.length == n);
+
+        int rusak = -1;
+        for (int i = 0; i < Math.min(n, keluar.length); i++) {
+            if ((keluar[i] & 0xFF) != (i % 251) + 1) {
+                rusak = i;
+                break;
+            }
+        }
+        check("seluruh isi paket besar utuh setelah buffer tumbuh"
+                + (rusak >= 0 ? " (rusak mulai byte " + rusak + ")" : ""), rusak < 0);
+
+        // byte awal paling rawan: itu yang hilang pada bug aslinya
+        check("byte-byte awal tidak ikut terbuang saat buffer tumbuh",
+                keluar.length > 0 && (keluar[0] & 0xFF) == 1);
+    }
+
+    /** Uji paket gambar mob (0x33) dan aturan siapa yang digambar. */
+    private static void mobTest(MapData map, User sd) {
+        log.info("=== mob (clif_cmoblook_sub 0x33) ===");
+
+        int px = -1;
+        int py = -1;
+        for (int y = 1; y < map.ys - 1 && px < 0; y++) {
+            for (int x = 1; x < map.xs - 2; x++) {
+                if (map.walkable(x, y) && map.walkable(x + 1, y)) {
+                    px = x;
+                    py = y;
+                    break;
+                }
+            }
+        }
+        placeAt(map, sd, px, py);
+
+        MobData jenis = new MobData();
+        jenis.id = 42;
+        jenis.yname = "squirrel";      // nama SKRIP
+        jenis.name = "Tupai";          // nama TAMPILAN
+        jenis.mobType = 1;             // digambar sebagai karakter
+        jenis.vita = 18;
+        jenis.mana = 5;
+        jenis.sex = 1;
+        jenis.face = 3;
+        jenis.hair = 4;
+        jenis.hairColor = 5;
+        jenis.faceColor = 6;
+        jenis.skinColor = 7;
+        jenis.look = 200;
+
+        Mob mb = new Mob();
+        mb.data = jenis;
+        mb.id = Mob.MOB_START_NUM + 1;
+        mb.m = 0;
+        mb.x = px + 1;
+        mb.y = py;
+        MobRegistry.resetStats(mb);
+        map.addBlock(mb);
+
+        check("mob: nama skrip dari yname", mb.scriptName().equals("squirrel"));
+        check("mob: nama tampilan dari name", mb.displayName().equals("Tupai"));
+        check("mob: nyawa awal dari jenisnya", mb.currentVita == 18 && mb.maxVita == 18);
+        check("mob: lahir dalam keadaan hidup", mb.isAlive());
+
+        drain(MapServer.net.session(sd.fd));
+        Clif.sendMobLook(sd, mb);
+        byte[] raw = drain(MapServer.net.session(sd.fd));
+        check("mob: paket terkirim", raw.length > 0);
+        byte[] p = decrypt(raw, sd);
+        check("mob: opcode 0x33", (p[3] & 0xFF) == 0x33);
+        check("mob: posisi di [5],[7]", be16(p, 5) == px + 1 && be16(p, 7) == py);
+        check("mob: id blok di [10]", (be32(p, 10) & 0xFFFFFFFFL) == mb.id);
+        check("mob: sex di [14]", be16(p, 14) == 1);
+        check("mob: kecepatan tetap 80 di [19]", (p[19] & 0xFF) == 80);
+        check("mob: wajah/rambut di [21]..[25]",
+                (p[21] & 0xFF) == 3 && (p[22] & 0xFF) == 4 && (p[23] & 0xFF) == 5);
+        check("mob: tanpa senjata 0xFFFF di [29]",
+                (be16(p, 29) & 0xFFFF) == 0xFFFF);
+        int nl = p[59] & 0xFF;
+        check("mob: panjang nama TAMPILAN di [59]", nl == "Tupai".length());
+        check("mob: nama tampilan di [60..]", new String(p, 60, nl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Tupai"));
+        check("mob: ladang panjang = len + 60 + 3", be16(p, 1) == nl + 63);
+
+        // mob mati tidak digambar
+        mb.state = MobData.MOB_DEAD;
+        drain(MapServer.net.session(sd.fd));
+        Clif.sendMobLook(sd, mb);
+        check("mob mati tidak digambar",
+                drain(MapServer.net.session(sd.fd)).length == 0);
+        mb.state = MobData.MOB_ALIVE;
+
+        // mob bukan karakter tidak digambar lewat paket ini
+        jenis.mobType = 0;
+        drain(MapServer.net.session(sd.fd));
+        Clif.sendMobLook(sd, mb);
+        check("mob non-karakter tidak digambar lewat 0x33",
+                drain(MapServer.net.session(sd.fd)).length == 0);
+        jenis.mobType = 1;
+
+        // sapuan area ikut menggambar mob
+        drain(MapServer.net.session(sd.fd));
+        Clif.getCharArea(sd);
+        List<int[]> seen = splitPackets(drain(MapServer.net.session(sd.fd)));
+        check("getCharArea ikut menggambar mob",
+                seen.stream().anyMatch(o -> o[0] == 0x33));
+
+        // resetStats mengembalikan nyawa penuh setelah mati
+        mb.currentVita = 1;
+        mb.state = MobData.MOB_DEAD;
+        MobRegistry.resetStats(mb);
+        check("resetStats memulihkan nyawa dan menghidupkan kembali",
+                mb.currentVita == 18 && mb.isAlive());
+
+        // --- AI mob: tik 50 ms, tabel menurut MobAI ---
+        org.rtk.map.script.ScriptEngine mobEngine = new org.rtk.map.script.ScriptEngine();
+        mobEngine.globals().load(
+                "MOVE_BASIC = 0\n"
+              + "ATK_BASIC = 0\n"
+              + "MOVE_SENDIRI = 0\n"
+              + "mob_ai_basic = { move = function() MOVE_BASIC = MOVE_BASIC + 1 end,\n"
+              + "                 attack = function() ATK_BASIC = ATK_BASIC + 1 end }\n"
+              + "squirrel = { move = function() MOVE_SENDIRI = MOVE_SENDIRI + 1 end }\n").call();
+
+        MobRegistry reg = new MobRegistry();
+        reg.useIdIndex(MapServer.npcs);   // mob harus bisa dicari lewat id
+        jenis.moveTime = 150;      // tiga tik
+        jenis.attackTime = 100;    // dua tik
+        jenis.subtype = 0;         // -> mob_ai_basic
+        jenis.type = MobData.MOB_NORMAL;
+        jenis.spawnTime = 1;
+        mb.state = MobData.MOB_ALIVE;
+        mb.moveTimer = 0;
+        mb.attackTimer = 0;
+        mb.target = 0;
+        map.addBlock(mb);
+        reg.add(mb);
+        map.users = 1;             // ada pemain: AI berjalan
+
+        for (int i = 0; i < 2; i++) {
+            reg.runTimers(mobEngine, MapServer.world);
+        }
+        check("AI: belum mencapai ambang gerak",
+                mobEngine.globals().get("MOVE_BASIC").toint() == 0);
+        reg.runTimers(mobEngine, MapServer.world);
+        check("AI: kait move terpicu di ambang (mob_ai_basic)",
+                mobEngine.globals().get("MOVE_BASIC").toint() == 1);
+
+        // dengan sasaran, serangan menggantikan gerakan
+        mb.target = 12345;
+        mb.attackTimer = 0;
+        for (int i = 0; i < 2; i++) {
+            reg.runTimers(mobEngine, MapServer.world);
+        }
+        check("AI: kait attack terpicu saat ada sasaran",
+                mobEngine.globals().get("ATK_BASIC").toint() == 1);
+        mb.target = 0;
+
+        // MobAI 4 memakai skrip mob itu sendiri (yname)
+        jenis.subtype = 4;
+        mb.moveTimer = 0;
+        for (int i = 0; i < 3; i++) {
+            reg.runTimers(mobEngine, MapServer.world);
+        }
+        check("AI: MobAI 4 memanggil skrip mob sendiri (yname)",
+                mobEngine.globals().get("MOVE_SENDIRI").toint() == 1);
+        jenis.subtype = 0;
+
+        // peta tanpa pemain: AI dilewati
+        map.users = 0;
+        int sebelumAi = mobEngine.globals().get("MOVE_BASIC").toint();
+        mb.moveTimer = 0;
+        for (int i = 0; i < 10; i++) {
+            reg.runTimers(mobEngine, MapServer.world);
+        }
+        check("AI: peta tanpa pemain dilewati",
+                mobEngine.globals().get("MOVE_BASIC").toint() == sebelumAi);
+        map.users = 1;
+
+        // mob diam tidak pernah bergerak
+        jenis.type = MobData.MOB_STATIONARY;
+        mb.moveTimer = 0;
+        for (int i = 0; i < 10; i++) {
+            reg.runTimers(mobEngine, MapServer.world);
+        }
+        check("AI: mob diam tidak pernah bergerak",
+                mobEngine.globals().get("MOVE_BASIC").toint() == sebelumAi);
+        jenis.type = MobData.MOB_NORMAL;
+
+        // --- mati lalu lahir ulang di titik awal ---
+        mb.startM = 0;
+        mb.startX = px;
+        mb.startY = py;
+        map.moveBlock(mb, px + 4, py + 2);   // dipancing menjauh
+        reg.kill(mb, MapServer.world);
+        check("mati: keadaan MOB_DEAD dan nyawa 0",
+                !mb.isAlive() && mb.currentVita == 0);
+        check("mati: dicabut dari indeks peta",
+                !map.objectsAt(px + 4, py + 2).contains(mb));
+
+        mb.lastDeath = 0;   // paksa jeda kelahiran ulang sudah lewat
+        reg.runTimers(mobEngine, MapServer.world);
+        check("lahir ulang: kembali hidup", mb.isAlive());
+        check("lahir ulang: nyawa penuh", mb.currentVita == mb.maxVita);
+        check("lahir ulang: kembali ke TITIK AWAL, bukan tempat mati",
+                mb.x == px && mb.y == py);
+        check("lahir ulang: masuk lagi ke indeks peta",
+                map.objectsAt(px, py).contains(mb));
+
+        // --- pertarungan: skrip menemukan mob lalu melukainya ---
+        MapServer.scriptEngine = mobEngine;
+        // Pemain TERSENDIRI untuk uji ini: `ScriptPlayer.udata` di-cache,
+        // jadi satu objek pemain hanya boleh dipakai oleh SATU
+        // ScriptEngine. Memakai `sd` di sini akan merusak uji dialog yang
+        // memakai engine lain.
+        CharStatus stm = new CharStatus();
+        stm.id = 7777;
+        stm.name = "Petarung";
+        stm.baseHp = 100;
+        stm.lastPos = new Point(0, px, py);
+        User sdm = new User(21, stm);
+        sdm.m = 0;
+        sdm.x = px;
+        sdm.y = py;
+        map.addBlock(sdm);
+        MapServer.net.openTestSession(sdm.fd);
+        var pm = sdm.scriptPlayer();
+        mb.state = MobData.MOB_ALIVE;
+        MobRegistry.resetStats(mb);
+        map.moveBlock(mb, px + 1, py);
+        map.users = 1;
+        placeAt(map, sd, px, py);
+
+        check("BL_MOB terdaftar sebagai global Lua",
+                mobEngine.globals().get("BL_MOB").toint()
+                        == org.rtk.map.data.BlockList.BL_MOB);
+
+        mobEngine.globals().load(
+                "CARI = function(pl)\n"
+              + "  local t = pl:getObjectsInCell(pl.m, pl.x + 1, pl.y, BL_MOB)\n"
+              + "  return #t\n"
+              + "end\n"
+              + "PUKUL = function(pl, n)\n"
+              + "  local t = pl:getObjectsInCell(pl.m, pl.x + 1, pl.y, BL_MOB)\n"
+              + "  if #t == 0 then return -1 end\n"
+              + "  local m = t[1]\n"
+              + "  m.health = m.health - n\n"
+              + "  return m.health\n"
+              + "end\n"
+              + "NAMA_MOB = function(pl)\n"
+              + "  local t = pl:getObjectsInCell(pl.m, pl.x + 1, pl.y, BL_MOB)\n"
+              + "  return t[1].yname\n"
+              + "end\n").call();
+
+        var jml = mobEngine.globals().get("CARI").call(mobEngine.playerRef(pm));
+        check("skrip menemukan mob di petak sebelah", jml.toint() == 1);
+
+        var nm = mobEngine.globals().get("NAMA_MOB").call(mobEngine.playerRef(pm));
+        check("skrip membaca yname mob", "squirrel".equals(nm.tojstring()));
+
+        // saring jenis: mencari PC di petak mob tidak menemukan apa pun
+        mobEngine.globals().load(
+                "CARI_PC = function(pl)\n"
+              + "  return #pl:getObjectsInCell(pl.m, pl.x + 1, pl.y, BL_PC)\n"
+              + "end\n").call();
+        check("penyaringan BL_ bekerja: tidak ada PC di petak mob",
+                mobEngine.globals().get("CARI_PC").call(mobEngine.playerRef(pm)).toint() == 0);
+
+        long nyawaAwal = mb.currentVita;
+        var sisa = mobEngine.globals().get("PUKUL")
+                .call(mobEngine.playerRef(pm), org.luaj.vm2.LuaValue.valueOf(5));
+        check("skrip melukai mob (nyawa berkurang)",
+                mb.currentVita == nyawaAwal - 5 && sisa.toint() == mb.currentVita);
+
+        // pukulan mematikan -> mob mati pada tik berikutnya
+        mobEngine.globals().load("MATIKAN = function(pl)\n"
+              + "  local t = pl:getObjectsInCell(pl.m, pl.x + 1, pl.y, BL_MOB)\n"
+              + "  t[1].health = 0\n"
+              + "end\n"
+              + "MATI_TERPANGGIL = 0\n"
+              + "squirrel.on_death = function() MATI_TERPANGGIL = 1 end\n").call();
+        mobEngine.globals().get("MATIKAN").call(mobEngine.playerRef(pm));
+        check("nyawa mob nol tapi belum ditandai mati", mb.isAlive());
+
+        reg.runTimers(mobEngine, MapServer.world);
+        check("tik berikutnya menandai mob mati", !mb.isAlive());
+        check("kait on_death terpanggil",
+                mobEngine.globals().get("MATI_TERPANGGIL").toint() == 1);
+        check("mob mati dicabut dari indeks peta",
+                !map.objectsAt(px + 1, py).contains(mb));
+        check("skrip tidak lagi menemukan mob yang mati",
+                mobEngine.globals().get("CARI").call(mobEngine.playerRef(pm)).toint() == 0);
+
+        // --- tabel ancaman & jatuhan barang ---
+        MobRegistry.resetStats(mb);
+        mb.state = MobData.MOB_ALIVE;
+        mb.threat.clear();
+        mb.attacker = 0;
+        map.addBlock(mb);
+        MapServer.onlineChars.put(sdm.fd, sdm);
+
+        mobEngine.globals().load(
+                "ANCAM = function(pl, n)\n"
+              + "  local t = pl:getObjectsInCell(pl.m, pl.x + 1, pl.y, BL_MOB)\n"
+              + "  pl:addThreat(t[1].id, n)\n"
+              + "end\n"
+              + "DROP_DIPANGGIL = 0\n"
+              + "DEATH_ARG2 = 0\n"
+              + "HandleMobDrops = function(pl, mob) DROP_DIPANGGIL = 1 end\n"
+              + "squirrel.on_death = function(mob, pl)\n"
+              + "  if pl ~= nil then DEATH_ARG2 = 1 end\n"
+              + "end\n").call();
+
+        mobEngine.globals().get("ANCAM").call(mobEngine.playerRef(pm),
+                org.luaj.vm2.LuaValue.valueOf(7));
+        check("addThreat mencatat ancaman", mb.threat.get(sdm.id) == 7L);
+        mobEngine.globals().get("ANCAM").call(mobEngine.playerRef(pm),
+                org.luaj.vm2.LuaValue.valueOf(3));
+        check("ancaman diakumulasi, bukan ditimpa", mb.threat.get(sdm.id) == 10L);
+        check("penyerang terakhir tercatat", mb.attacker == sdm.id);
+        check("pemegang ancaman terbesar adalah pemain itu",
+                mb.topThreat() == sdm.id);
+
+        mb.currentVita = 0;
+        reg.runTimers(mobEngine, MapServer.world);
+        check("mati: HandleMobDrops dipanggil",
+                mobEngine.globals().get("DROP_DIPANGGIL").toint() == 1);
+        check("mati: on_death menerima pembunuh sebagai argumen kedua",
+                mobEngine.globals().get("DEATH_ARG2").toint() == 1);
+        check("mati: tabel ancaman dibersihkan", mb.threat.isEmpty());
+        check("mati: penyerang direset", mb.attacker == 0);
+
+        MapServer.onlineChars.remove(sdm.fd);
+
+        // --- addNPC: skrip melahirkan NPC sementara ---
+        mobEngine.globals().load(
+                "SPAWN_DIPANGGIL = 0\n"
+              + "AKHIR_DIPANGGIL = 0\n"
+              + "TrapNpc = {}\n"
+              + "TrapNpc.on_spawn = function() SPAWN_DIPANGGIL = 1 end\n"
+              + "TrapNpc.endAction = function() AKHIR_DIPANGGIL = 1 end\n"
+              + "PASANG = function(pl)\n"
+              + "  pl:addNPC('TrapNpc', pl.m, pl.x, pl.y, 0, 0, 150, 0, 0)\n"
+              + "end\n").call();
+
+        int npcSebelum = MapServer.npcs.count();
+        mobEngine.globals().get("PASANG").call(mobEngine.playerRef(pm));
+        check("addNPC melahirkan NPC sementara",
+                MapServer.npcs.count() == npcSebelum + 1);
+        check("kait on_spawn terpanggil",
+                mobEngine.globals().get("SPAWN_DIPANGGIL").toint() == 1);
+
+        Npc temp = MapServer.npcs.byName("TrapNpc");
+        check("NPC sementara memakai rentang id terpisah",
+                temp != null && temp.id >= Npc.NPCT_START_NUM);
+        check("NPC sementara ditandai temporary", temp != null && temp.temporary);
+        check("NPC sementara bisa dicari lewat indeks id",
+                temp != null && MapServer.npcs.byId(temp.id) == temp);
+
+        // durasi habis -> endAction lalu dicabut
+        for (int i = 0; i < 3; i++) {
+            MapServer.npcs.runTimers(mobEngine);
+        }
+        check("durasi habis: kait endAction terpanggil",
+                mobEngine.globals().get("AKHIR_DIPANGGIL").toint() == 1);
+        check("NPC sementara dicabut setelah durasinya habis",
+                MapServer.npcs.count() == npcSebelum);
+        check("NPC sementara hilang dari indeks id",
+                temp != null && MapServer.npcs.byId(temp.id) == null);
+
+        // --- callBase: mob memanggil kait skripnya sendiri ---
+        mobEngine.globals().load(
+                "BASE_DIPANGGIL = 0\n"
+              + "BASE_ARG2 = 0\n"
+              + "squirrel.on_attacked = function(mb, lawan)\n"
+              + "  BASE_DIPANGGIL = 1\n"
+              + "  if lawan ~= nil then BASE_ARG2 = 1 end\n"
+              + "end\n"
+              + "PANGGIL_BASE = function(pl)\n"
+              + "  local t = pl:getObjectsInCell(pl.m, pl.x + 1, pl.y, BL_MOB)\n"
+              + "  return t[1]:callBase('on_attacked')\n"
+              + "end\n").call();
+
+        MobRegistry.resetStats(mb);
+        mb.state = MobData.MOB_ALIVE;
+        map.addBlock(mb);
+        MapServer.onlineChars.put(sdm.fd, sdm);
+        mb.attacker = sdm.id;
+
+        var hasilBase = mobEngine.globals().get("PANGGIL_BASE")
+                .call(mobEngine.playerRef(pm));
+        check("callBase mengembalikan true", hasilBase.toboolean());
+        check("callBase memanggil kait skrip mob",
+                mobEngine.globals().get("BASE_DIPANGGIL").toint() == 1);
+        check("callBase mengirim penyerang sebagai argumen kedua",
+                mobEngine.globals().get("BASE_ARG2").toint() == 1);
+        MapServer.onlineChars.remove(sdm.fd);
+        map.delBlock(mb);
+
+        MapServer.scriptEngine = null;
+        map.delBlock(sdm);
+        map.users = 0;
+        map.delBlock(mb);
+        placeAt(map, sd, px, py);
     }
 
     /**
@@ -1086,6 +1517,57 @@ public final class ClifTest {
         List<int[]> mine = splitPackets(drain(MapServer.net.session(sd.fd)));
         check("pengirim tidak menerima siarannya sendiri",
                 mine.stream().noneMatch(o -> o[0] == 0x0C));
+
+        // --- clif_sendside (0x11): arah hadap disiarkan ke sekitar ---
+        // Kait paling sering dipakai skrip AI NPC (13 dari 21 error di
+        // map.log sebelum diport). Dua aturan yang mudah salah: panjangnya
+        // ditentukan ladang [1..2]=0x08 (bukan 32 byte yang disusun C),
+        // dan PEMAIN memakai AREA (menerima siarannya sendiri) sedangkan
+        // NPC/mob memakai AREA_WOS.
+        drain(MapServer.net.session(sd.fd));
+        drain(MapServer.net.session(other.fd));
+        sd.status.side = 3;
+        Clif.sendSide(sd);
+
+        byte[] sideRaw = drain(MapServer.net.session(other.fd));
+        check("sendSide: tetangga menerima paket", sideRaw.length > 0);
+        check("sendSide: header 0xAA", (sideRaw[0] & 0xFF) == 0xAA);
+        check("sendSide: ladang panjang 0x08+3 setelah indeks kunci",
+                be16(sideRaw, 1) == 0x08 + 3);
+        check("sendSide: total 14 byte", sideRaw.length == 14);
+        check("sendSide: opcode 0x11", (sideRaw[3] & 0xFF) == 0x11);
+        byte[] sideDec = decrypt(sideRaw, other);
+        check("sendSide: id pengirim big-endian di [5]",
+                be32(sideDec, 5) == (int) sd.id);
+        check("sendSide: arah hadap di [9]", (sideDec[9] & 0xFF) == 3);
+        check("sendSide: [10] selalu nol", (sideDec[10] & 0xFF) == 0);
+
+        // AREA (bukan WOS): pemain ikut menerima kabar arah hadapnya sendiri
+        check("sendSide: pemain menerima siarannya sendiri (AREA)",
+                splitPackets(drain(MapServer.net.session(sd.fd)))
+                        .stream().anyMatch(o -> o[0] == 0x11));
+
+        // NPC memakai AREA_WOS — tidak ada pemain yang dilewati di sini,
+        // jadi yang diuji: NPC pun menyiarkan, dan idnya id blok NPC.
+        Npc uji = new Npc();
+        uji.name = "uji_side";
+        uji.npcId = 2;
+        uji.id = Npc.blockIdFor(uji.npcId);
+        uji.m = 0;
+        uji.x = other.x;
+        uji.y = other.y;
+        uji.side = 1;
+        map.addBlock(uji);
+        drain(MapServer.net.session(other.fd));
+        Clif.sendSide(uji);
+        byte[] npcRaw = drain(MapServer.net.session(other.fd));
+        check("sendSide: NPC juga menyiarkan", npcRaw.length == 14);
+        byte[] npcDec = decrypt(npcRaw, other);
+        check("sendSide: id NPC = id blok, bukan NpcId",
+                be32(npcDec, 5) == (int) Npc.blockIdFor(2));
+        check("sendSide: arah NPC di [9]", (npcDec[9] & 0xFF) == 1);
+        map.delBlock(uji);
+        drain(MapServer.net.session(sd.fd));
 
         // --- langkah 0x06 memicu gambar ulang petak peta ---
         map.delBlock(sd);

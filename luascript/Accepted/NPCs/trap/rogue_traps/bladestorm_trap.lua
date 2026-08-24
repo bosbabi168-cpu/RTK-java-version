@@ -7,8 +7,8 @@ BladestormTrapNpc = {
 			else
 				player.magic = player.magic - 5000
 			end
+			player:sendStatus()
 		end
-		player:sendStatus()
 	end,
 	click = function(block, npc)
 		local damage = 0

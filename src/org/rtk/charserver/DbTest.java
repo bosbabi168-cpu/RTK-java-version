@@ -510,6 +510,7 @@ public final class DbTest {
         eq("baris Inventory di database sesuai jumlah barang", c.inventory.size(), invRows);
         scriptRegistryTest(sql, id);
         scriptItemTest(sql, id);
+        bindingTest(sql, id);
 
         int regRows = sql.rowCount("SELECT COUNT(*) FROM `Registry` WHERE `RegChaId` = ?", id);
         eq("baris Registry di database sesuai jumlah entri", c.registry.size(), regRows);
@@ -677,6 +678,146 @@ public final class DbTest {
                 .call(engine.playerRef(p));
         check("inventaris penuh: addItem mengembalikan false", !hasil.toboolean());
         eq("tidak ada slot yang dipaksakan", 1, c.inventory.size());
+    }
+
+    /**
+     * Binding prioritas atas: {@code calcStat}, {@code addSpell},
+     * {@code bankDeposit}/{@code bankWithdraw} — semuanya lewat data hidup.
+     */
+    private static void bindingTest(Sql sql, long charId) {
+        log.info("  -- binding prioritas: calcStat, addSpell, bank --");
+
+        org.rtk.map.MapServer.itemDb.load(sql);
+        org.rtk.map.MapServer.spellDb.load(sql);
+        var db = org.rtk.map.MapServer.itemDb;
+        check("tabel mantra termuat", org.rtk.map.MapServer.spellDb.count() > 0);
+
+        CharStatus c = CharPersistence.load(sql, charId);
+        if (c == null) {
+            check("karakter uji terbaca", false);
+            return;
+        }
+        c.inventory.clear();
+        c.equip.clear();
+        c.banks.clear();
+        c.spells = new int[0];
+        c.maxInv = 27;
+        c.baseHp = 100;
+        c.baseMp = 50;
+        c.baseMight = 3;
+        c.baseWill = 4;
+        c.baseGrace = 5;
+        c.baseArmor = 10;
+
+        org.rtk.map.User sd = new org.rtk.map.User(9997, c);
+        var p = sd.scriptPlayer();
+        var engine = new org.rtk.map.script.ScriptEngine();
+
+        // --- calcStat tanpa perlengkapan: nilai turunan = nilai dasar ---
+        engine.globals().load("HITUNG = function(pl) pl:calcStat() end\n"
+                + "STAT = function(pl) return pl.might, pl.maxHealth end\n").call();
+        engine.globals().get("HITUNG").call(engine.playerRef(p));
+        eq("calcStat tanpa perlengkapan: might = baseMight", 3, sd.might);
+        eq("calcStat tanpa perlengkapan: maxHp = baseHp", 100L, sd.maxHp);
+
+        // --- cari barang berstat, kenakan, hitung ulang ---
+        org.rtk.map.data.ItemDb.Info berstat = null;
+        for (long i = 1; i < 3000 && berstat == null; i++) {
+            var info = db.info(i);
+            if (info.id() != 0 && (info.stats().might() > 0 || info.stats().vita() > 0)) {
+                berstat = info;
+            }
+        }
+        if (berstat == null) {
+            log.info("    (tidak ada barang berstat di database — bagian ini dilewati)");
+        } else {
+            var eq = new org.rtk.common.mmo.Item();
+            eq.id = berstat.id();
+            eq.amount = 1;
+            eq.pos = org.rtk.map.data.Equip.ARMOR;
+            c.equip.add(eq);
+            engine.globals().get("HITUNG").call(engine.playerRef(p));
+            eq("calcStat menambahkan might dari perlengkapan",
+                    3 + berstat.stats().might(), sd.might);
+            eq("calcStat menambahkan vita dari perlengkapan",
+                    100L + berstat.stats().vita(), sd.maxHp);
+
+            // lepas lagi: nilai kembali ke dasar, tidak menumpuk
+            c.equip.clear();
+            engine.globals().get("HITUNG").call(engine.playerRef(p));
+            eq("calcStat tidak menumpuk: kembali ke nilai dasar", 3, sd.might);
+        }
+
+        // --- addSpell ---
+        String namaMantra = org.rtk.map.MapServer.spellDb.nameOf(1);
+        if (namaMantra.isEmpty()) {
+            namaMantra = "heal";
+        }
+        engine.globals().load(
+                "AJAR = function(pl, n) return pl:addSpell(n) end\n"
+              + "PUNYA = function(pl, n) return pl:hasSpell(n) end\n").call();
+        var hasil = engine.globals().get("AJAR")
+                .call(engine.playerRef(p), org.luaj.vm2.LuaValue.valueOf(namaMantra));
+        check("addSpell dengan nama berhasil", hasil.toboolean());
+        check("hasSpell menemukan mantra itu",
+                engine.globals().get("PUNYA")
+                        .call(engine.playerRef(p),
+                              org.luaj.vm2.LuaValue.valueOf(namaMantra)).toboolean());
+        var lagi = engine.globals().get("AJAR")
+                .call(engine.playerRef(p), org.luaj.vm2.LuaValue.valueOf(namaMantra));
+        check("mantra yang sudah dimiliki tidak ditambah dua kali", !lagi.toboolean());
+        check("mantra tak dikenal ditolak",
+                !engine.globals().get("AJAR")
+                        .call(engine.playerRef(p),
+                              org.luaj.vm2.LuaValue.valueOf("mantra_tidak_ada")).toboolean());
+
+        // --- bank ---
+        engine.globals().load(
+                "TITIP = function(pl, n, j) return pl:bankDeposit(n, j) end\n"
+              + "AMBIL = function(pl, n, j) return pl:bankWithdraw(n, j) end\n"
+              + "PUNYA_BRG = function(pl, n) return pl:hasItem(n) end\n").call();
+        var LV = org.luaj.vm2.LuaValue.class;
+        engine.globals().load("BERI2 = function(pl, n) pl:addItem('fox_fur', n) end").call();
+        engine.globals().get("BERI2").call(engine.playerRef(p),
+                org.luaj.vm2.LuaValue.valueOf(10));
+        eq("punya 10 sebelum menitipkan", 10,
+                engine.globals().get("PUNYA_BRG").call(engine.playerRef(p),
+                        org.luaj.vm2.LuaValue.valueOf("fox_fur")).toint());
+
+        check("bankDeposit berhasil",
+                engine.globals().get("TITIP").call(engine.playerRef(p),
+                        org.luaj.vm2.LuaValue.valueOf("fox_fur"),
+                        org.luaj.vm2.LuaValue.valueOf(4)).toboolean());
+        eq("inventaris berkurang setelah menitipkan", 6,
+                engine.globals().get("PUNYA_BRG").call(engine.playerRef(p),
+                        org.luaj.vm2.LuaValue.valueOf("fox_fur")).toint());
+        eq("bank berisi 4", 1, c.banks.size());
+        eq("jumlah di bank benar", 4L, c.banks.get(0).amount);
+
+        var diambil = engine.globals().get("AMBIL").call(engine.playerRef(p),
+                org.luaj.vm2.LuaValue.valueOf("fox_fur"),
+                org.luaj.vm2.LuaValue.valueOf(3));
+        eq("bankWithdraw mengembalikan jumlah yang diambil", 3, diambil.toint());
+        eq("inventaris bertambah lagi", 9,
+                engine.globals().get("PUNYA_BRG").call(engine.playerRef(p),
+                        org.luaj.vm2.LuaValue.valueOf("fox_fur")).toint());
+        eq("sisa di bank benar", 1L, c.banks.get(0).amount);
+
+        // --- semuanya tersimpan ke database ---
+        check("simpan setelah mantra & bank", CharPersistence.save(sql, c));
+        CharStatus r = CharPersistence.load(sql, charId);
+        if (r == null) {
+            check("karakter terbaca ulang", false);
+            return;
+        }
+        boolean adaMantra = false;
+        for (int sp : r.spells) {
+            if (sp > 0) {
+                adaMantra = true;
+            }
+        }
+        check("mantra tersimpan di database", adaMantra);
+        check("isi bank tersimpan di database", !r.banks.isEmpty());
     }
 
     /** Karakter dengan nilai ekstrem yang sah untuk kolom unsigned. */

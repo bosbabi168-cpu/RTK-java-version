@@ -105,6 +105,33 @@ end
 Berkas `mythic_*` lain tidak terdampak (masing-masing hanya punya satu
 `after_death` per tabel).
 
+## 8. `player:sendStatus()` di luar penjaga nil — `bladestorm_trap.lua`
+
+**24 Agustus 2026.** `Accepted/NPCs/trap/rogue_traps/bladestorm_trap.lua`
+baris 11. `Player(npc.owner)` mengembalikan **nil** bila pemilik jebakan
+tidak sedang online, dan pemanggilan `player:sendStatus()` berada di luar
+`if player ~= nil then` sehingga selalu meledak pada kasus itu:
+
+```lua
+-- sebelum
+		if player ~= nil then
+			...
+		end
+		player:sendStatus()
+-- sesudah
+		if player ~= nil then
+			...
+			player:sendStatus()
+		end
+```
+
+Ini bug yang sama di repo asli — versi C pun `lua_pushnil` saat
+`map_id2sd()` gagal, jadi C juga error di baris itu. Ditemukan dari
+`map.log` server yang benar-benar berjalan, bukan dari audit statis: baris
+ini hanya dieksekusi ketika timer `action` jebakan menyala.
+
+---
+
 ---
 
 ## Dilaporkan, belum diperbaiki

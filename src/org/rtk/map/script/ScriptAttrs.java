@@ -20,4 +20,14 @@ public interface ScriptAttrs {
      * sering menambahkan ladangnya sendiri ke objek.</p>
      */
     LuaValue scriptAttr(String name);
+
+    /**
+     * Setel atribut dari skrip; false berarti atribut itu tidak dikenal.
+     *
+     * <p>Bawaannya menolak semua — benda yang memang bisa diubah skrip
+     * (mob: {@code health}, {@code target}, …) menimpanya.</p>
+     */
+    default boolean scriptSetAttr(String name, LuaValue value) {
+        return false;
+    }
 }

@@ -79,8 +79,14 @@ public final class MapServer {
     /** NPC di server ini + indeks id global (padanan `id_db` di C). */
     public static final NpcRegistry npcs = new NpcRegistry();
 
+    /** Jenis mob + mob yang hidup di server ini. */
+    public static final MobRegistry mobs = new MobRegistry();
+
     /** Tampilan barang (itemdb_look / itemdb_lookcolor). */
     public static final org.rtk.map.data.ItemDb itemDb = new org.rtk.map.data.ItemDb();
+
+    /** Nama mantra -> id (magicdb_id). */
+    public static final org.rtk.map.data.SpellDb spellDb = new org.rtk.map.data.SpellDb();
 
     /** Tabel pengalaman per path, dari db/level_db.txt. */
     public static final org.rtk.map.data.ClassDb classDb = new org.rtk.map.data.ClassDb();
@@ -157,8 +163,68 @@ public final class MapServer {
             world.loadWarps(sql);
             npcs.load(sql, serverId, world);
             itemDb.load(sql);
+            spellDb.load(sql);
+            mobs.loadTypes(sql);
+            mobs.useIdIndex(npcs);   // mob ikut indeks id global (map_addiddb)
+            mobs.loadSpawns(sql, serverId, world);
         }
         classDb.load(dbPath);
+    }
+
+    /**
+     * map_id2bl(): cari benda dari id blok. Indeks idnya kebetulan tinggal
+     * di {@link NpcRegistry} — namanya menyesatkan, isinya NPC <b>dan</b>
+     * mob. Pemain dicari terpisah karena tidak masuk indeks itu.
+     */
+    public static org.rtk.map.data.BlockList blockById(long id) {
+        if (npcs != null) {
+            org.rtk.map.data.BlockList bl = npcs.byId(id);
+            if (bl != null) {
+                return bl;
+            }
+        }
+        for (User u : onlineChars.values()) {
+            if (u.id == id || u.status.id == id) {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * map_foreachinarea(..., SAMEMAP, ...): seluruh benda sejenis di satu
+     * peta. Dipakai skrip lewat {@code getObjectsInMap}.
+     */
+    public static java.util.List<Object> objectsInMap(int m, int type) {
+        java.util.List<Object> out = new java.util.ArrayList<>();
+        var map = world.get(m);
+        if (map == null) {
+            return out;
+        }
+        int flags = type <= 0 ? org.rtk.map.data.BlockList.BL_ALL : type;
+
+        if ((flags & org.rtk.map.data.BlockList.BL_PC) != 0) {
+            for (User u : onlineChars.values()) {
+                if (u.m == m) {
+                    out.add(u);
+                }
+            }
+        }
+        if ((flags & org.rtk.map.data.BlockList.BL_NPC) != 0) {
+            for (Npc nd : npcs.all()) {
+                if (nd.m == m) {
+                    out.add(nd);
+                }
+            }
+        }
+        if ((flags & org.rtk.map.data.BlockList.BL_MOB) != 0) {
+            for (Mob mb : mobs.all()) {
+                if (mb.m == m && mb.isAlive()) {
+                    out.add(mb);
+                }
+            }
+        }
+        return out;
     }
 
     /** check_connect_char(): (re)establish the char-server link. */
@@ -331,6 +397,29 @@ public final class MapServer {
         if (luaEnable != 0) {
             try {
                 scriptEngine = new org.rtk.map.script.ScriptEngine();
+                // map_id2sd / map_name2sd untuk konstruktor Player(id).
+                scriptEngine.setPlayerLookup(
+                        new org.rtk.map.script.ScriptEngine.PlayerLookup() {
+                    @Override
+                    public org.rtk.map.script.ScriptPlayer byId(long id) {
+                        for (User u : onlineChars.values()) {
+                            if (u.id == id || u.status.id == id) {
+                                return u.scriptPlayer();
+                            }
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public org.rtk.map.script.ScriptPlayer byName(String name) {
+                        for (User u : onlineChars.values()) {
+                            if (u.status.name.equalsIgnoreCase(name)) {
+                                return u.scriptPlayer();
+                            }
+                        }
+                        return null;
+                    }
+                });
                 int errors = scriptEngine.init(luaPath);
                 if (errors < 0) {
                     log.warn("[MAP] Lua scripting disabled: rtklua not found at {} (set lua_path in map.conf)", luaPath);
@@ -356,6 +445,9 @@ public final class MapServer {
         // npc_runtimers(): tik 100 ms untuk kait `move` dan `action` milik NPC
         timers.insert(NpcRegistry.TICK_MS, NpcRegistry.TICK_MS,
                 (a, b) -> npcs.runTimers(scriptEngine), 0, 0);
+        // mob_timer_spawns(): tik 50 ms untuk AI mob dan kelahiran ulang
+        timers.insert(MobRegistry.TICK_MS, MobRegistry.TICK_MS,
+                (a, b) -> mobs.runTimers(scriptEngine, world), 0, 0);
 
         log.info("RetroTK Map Server (Java skeleton) is ready! Listening at {}.", mapPort);
         ServerLog.addLog("Server Ready! Listening at %d.%n", mapPort);

@@ -65,9 +65,31 @@ public final class ScriptEngine {
 
     /** Server-wide registries (game / map scope). */
     public final java.util.Map<String, Integer> gameRegistry = new java.util.HashMap<>();
-    public final java.util.Map<String, Integer> mapRegistry = new java.util.HashMap<>();
+    /**
+     * map[m].registry: registry <b>per peta</b>, bukan satu untuk seluruh
+     * dunia. Kuncinya dicocokkan {@code strcmpi} di C, jadi di sini
+     * dinormalkan ke huruf kecil.
+     */
+    public final java.util.Map<Integer, java.util.Map<String, Integer>> mapRegistries =
+            new java.util.HashMap<>();
+
+    /** map_readglobalreg/map_setglobalreg: registry milik satu peta. */
+    public java.util.Map<String, Integer> mapReg(int m) {
+        return mapRegistries.computeIfAbsent(m, k -> new java.util.HashMap<>());
+    }
+
+    /** Peta tempat sebuah benda skrip berada, untuk registry per-peta. */
+    static int mapIdOf(Object self) {
+        if (self instanceof ScriptPlayer p) {
+            return p.owner instanceof org.rtk.map.data.BlockList bl ? bl.m : p.m;
+        }
+        if (self instanceof org.rtk.map.data.BlockList bl) {
+            return bl.m;
+        }
+        return -1;
+    }
     LuaValue gameRegistryUdata;
-    LuaValue mapRegistryUdata;
+    public ScriptClass mapRegistryClass;
 
     /** Generic Java object behind script types with no engine backing yet. */
     public static final class GameObject {
@@ -149,6 +171,23 @@ public final class ScriptEngine {
         });
     }
 
+    /**
+     * map_id2sd() / map_name2sd(): cara mesin skrip menemukan pemain online.
+     * Disuntik oleh map server; pada uji unit dibiarkan null sehingga
+     * {@code Player(id)} mengembalikan nil, bukan meledak.
+     */
+    public interface PlayerLookup {
+        ScriptPlayer byId(long id);
+
+        ScriptPlayer byName(String name);
+    }
+
+    private PlayerLookup playerLookup;
+
+    public void setPlayerLookup(PlayerLookup lookup) {
+        this.playerLookup = lookup;
+    }
+
     /** typel_pushinst(): wrap a Java object for Lua. */
     public ScriptInstance newInstance(ScriptClass klass, Object self) {
         return new ScriptInstance(klass, self, instanceMeta);
@@ -163,6 +202,15 @@ public final class ScriptEngine {
                 public Varargs invoke(Varargs args) {
                     // args: (classTable, ctorArgs...)
                     Object self = klass.ctor.create(args.subargs(2));
+                    // C mengembalikan nil bila id/nama tidak ketemu
+                    // (`lua_pushnil` di pcl_ctor & npcl_ctor), bukan error —
+                    // skrip mengandalkan itu untuk mengecek `if p then`.
+                    if (self == null) {
+                        return LuaValue.NIL;
+                    }
+                    if (self instanceof ScriptPlayer sp) {
+                        return playerRef(sp);
+                    }
                     return newInstance(klass, self);
                 }
             });
@@ -177,6 +225,22 @@ public final class ScriptEngine {
 
     private void registerClasses() {
         Bindings.definePlayer(this, playerClass);
+        // pcl_ctor: Player(id) / Player(nama) mencari pemain yang SEDANG
+        // online (map_id2sd / map_name2sd). Dipakai antara lain oleh
+        // `bladestorm_trap.lua` untuk menemukan pemilik jebakan lewat
+        // `npc.owner`. Tanpa ini Lua gagal dengan "attempt to call table".
+        playerClass.ctor = args -> {
+            if (playerLookup == null) {
+                return null;
+            }
+            if (args.isnumber(1)) {
+                return playerLookup.byId((long) args.todouble(1));
+            }
+            if (args.isstring(1)) {
+                return playerLookup.byName(args.tojstring(1));
+            }
+            return null;
+        };
         registerClass(playerClass);
 
         npcClass.ctor = args -> new GameObject("NPC", args);
@@ -205,18 +269,18 @@ public final class ScriptEngine {
                 (p, k, v) -> ((ScriptPlayer) p).questReg.put(k, v.toint()));
         registerClass(questClass);
 
-        // server-wide registries (gameregl / mapregl in sl.c). TODO: split
-        // mapRegistry per map id once map.c is ported.
+        // Registry sisi server: gameregl global, mapregl PER PETA
+        // (map_readglobalreg(m, ...) di C) — bukan satu tabel bersama.
         ScriptClass gameReg = Bindings.defineRegistry(this, "Gameregistry",
                 (s, k) -> LuaValue.valueOf(gameRegistry.getOrDefault(k, 0)),
                 (s, k, v) -> gameRegistry.put(k, v.toint()));
         registerClass(gameReg);
         gameRegistryUdata = newInstance(gameReg, gameRegistry);
-        ScriptClass mapReg = Bindings.defineRegistry(this, "Mapregistry",
-                (s, k) -> LuaValue.valueOf(mapRegistry.getOrDefault(k, 0)),
-                (s, k, v) -> mapRegistry.put(k, v.toint()));
-        registerClass(mapReg);
-        mapRegistryUdata = newInstance(mapReg, mapRegistry);
+        mapRegistryClass = Bindings.defineRegistry(this, "Mapregistry",
+                (s, k) -> LuaValue.valueOf(
+                        mapReg(mapIdOf(s)).getOrDefault(k.toLowerCase(), 0)),
+                (s, k, v) -> mapReg(mapIdOf(s)).put(k.toLowerCase(), v.toint()));
+        registerClass(mapRegistryClass);
 
         // remaining typel classes: constructible placeholders until their
         // engine subsystems are ported
@@ -238,6 +302,24 @@ public final class ScriptEngine {
         // (EQ_ARMOR, EQ_WEAP, ...) di ratusan tempat.
         for (int i = 0; i < org.rtk.map.data.Equip.NAMES.length; i++) {
             globals.set(org.rtk.map.data.Equip.NAMES[i], LuaValue.valueOf(i));
+        }
+        // Keadaan mob (enum di map/mob.h). Skrip AI membandingkan
+        // `mob.state` dengan konstanta ini 44x; tanpa mereka perbandingan
+        // selalu dengan nil dan tidak pernah benar — mob "mati" tidak
+        // pernah terdeteksi mati oleh skrip.
+        String[] mobState = {"MOB_ALIVE", "MOB_DEAD", "MOB_PARA",
+            "MOB_BLIND", "MOB_HIT", "MOB_ESCAPE"};
+        for (int i = 0; i < mobState.length; i++) {
+            globals.set(mobState[i], LuaValue.valueOf(i));
+        }
+        // Id NPC F1 — satu-satunya yang tidak mengikuti rumus id blok biasa.
+        globals.set("F1_NPC", LuaValue.valueOf((double) org.rtk.map.Npc.F1_NPC));
+
+        // Bendera BL_* — dipakai skrip 1.500+ kali untuk menyaring
+        // pencarian benda. Nilainya BIT, bukan nomor urut.
+        for (int i = 0; i < org.rtk.map.data.BlockList.BL_NAMES.length; i++) {
+            globals.set(org.rtk.map.data.BlockList.BL_NAMES[i],
+                    LuaValue.valueOf(org.rtk.map.data.BlockList.BL_VALUES[i]));
         }
 
         set("_async", args -> {
@@ -275,6 +357,83 @@ public final class ScriptEngine {
         set("curServer", args -> LuaValue.valueOf(0));
 
         set("timeMS", args -> LuaValue.valueOf(System.currentTimeMillis()));
+        // getWarp(m, x, y): apakah petak ini portal? Mengembalikan
+        // boolean, bukan tujuannya. Koordinat dijepit ke batas peta dulu,
+        // persis seperti di C.
+        set("getWarp", args -> {
+            var md = org.rtk.map.MapServer.world.get(args.optint(1, -1));
+            if (md == null) {
+                return LuaValue.FALSE;
+            }
+            int x = Math.max(0, Math.min(args.optint(2, 0), md.xs - 1));
+            int y = Math.max(0, Math.min(args.optint(3, 0), md.ys - 1));
+            return LuaValue.valueOf(md.warpAt(x, y) != null);
+        });
+
+        // getPass / getObject / getTile: baca geometri peta apa adanya.
+        // getPass mengembalikan 1 (= terhalang) untuk koordinat di luar
+        // peta, seperti di C — bukan 0, supaya skrip kelahiran mob tidak
+        // menaruh apa pun di luar batas.
+        set("getPass", args -> {
+            var md = org.rtk.map.MapServer.world.get(args.optint(1, -1));
+            if (md == null) {
+                return LuaValue.NONE;
+            }
+            int x = args.optint(2, 0);
+            int y = args.optint(3, 0);
+            if (x > md.xs - 1 || y > md.ys - 1) {
+                return LuaValue.valueOf(1);
+            }
+            return LuaValue.valueOf(md.pass(x, y));
+        });
+        set("getObject", args -> {
+            var md = org.rtk.map.MapServer.world.get(args.optint(1, -1));
+            if (md == null) {
+                return LuaValue.NONE;
+            }
+            return LuaValue.valueOf(md.obj(args.optint(2, 0), args.optint(3, 0)));
+        });
+        set("getTile", args -> {
+            var md = org.rtk.map.MapServer.world.get(args.optint(1, -1));
+            if (md == null) {
+                return LuaValue.NONE;
+            }
+            return LuaValue.valueOf(md.tile(args.optint(2, 0), args.optint(3, 0)));
+        });
+
+        // sl_getMapRegistry / sl_setMapRegistry: registry per peta.
+        // Peta yang tidak termuat membuat C `return 0` tanpa mendorong
+        // nilai apa pun — di Lua itu terbaca nil, dan skrip yang langsung
+        // menjumlahkannya akan gagal. Ditiru apa adanya.
+        set("getMapRegistry", args -> {
+            int m = args.optint(1, -1);
+            if (org.rtk.map.MapServer.world.get(m) == null) {
+                return LuaValue.NONE;
+            }
+            return LuaValue.valueOf(
+                    mapReg(m).getOrDefault(args.optjstring(2, "").toLowerCase(), 0));
+        });
+        set("setMapRegistry", args -> {
+            int m = args.optint(1, -1);
+            if (org.rtk.map.MapServer.world.get(m) == null) {
+                return LuaValue.NONE;
+            }
+            mapReg(m).put(args.optjstring(2, "").toLowerCase(), args.optint(3, 0));
+            return LuaValue.NONE;
+        });
+
+        // getMapXMax/getMapYMax: indeks petak TERBESAR yang sah, bukan
+        // ukuran peta — C mengembalikan `map[m].xs - 1`. Peta yang tidak
+        // termuat menghasilkan 0, bukan error.
+        set("getMapXMax", args -> {
+            var md = org.rtk.map.MapServer.world.get(args.optint(1, -1));
+            return LuaValue.valueOf(md == null ? 0 : md.xs - 1);
+        });
+        set("getMapYMax", args -> {
+            var md = org.rtk.map.MapServer.world.get(args.optint(1, -1));
+            return LuaValue.valueOf(md == null ? 0 : md.ys - 1);
+        });
+
         set("getTick", args -> LuaValue.valueOf(org.rtk.common.TimerSystem.gettick()));
         set("msleep", args -> {
             try {
@@ -309,20 +468,29 @@ public final class ScriptEngine {
             "getAuctions", "getClanBankSlots", "getClanName", "getClanRoster",
             "getClanTribute", "getFreeMapModifierId", "getKanDonationPoints",
             "getMapAttribute", "getMapIsLoaded", "getMapModifiers", "getMapPvP",
-            "getMapRegistry", "getMapTitle", "getMapUsers", "getMapXMax", "getMapYMax",
-            "getMobAttributes", "getObject", "getObjectsMap", "getOfflineID", "getPass",
-            "getPoems", "getSetItems", "getSpellLevel", "getTile", "getWarp", "getWarps",
+            "getMapTitle", "getMapUsers",
+            "getMobAttributes", "getObjectsMap", "getOfflineID",
+            "getPoems", "getSetItems", "getSpellLevel", "getWarps",
             "getWeather", "getWeatherM", "getWisdomStarMultiplier", "guitext",
             "listAuction", "processKanDonations", "removeAuction", "removeClanMember",
             "removeMapModifier", "removeMapModifierId", "removePathMember", "saveMap",
             "selectBulletinBoard", "sendMeta", "setClanBankSlots", "setClanName",
             "setClanTribute", "setKanDonationPoints", "setLight", "setMap",
-            "setMapAttribute", "setMapPvP", "setMapRegistry", "setMapTitle", "setObject",
+            "setMapAttribute", "setMapPvP", "setMapTitle", "setObject",
             "setOfflinePlayerRegistry", "setPass", "setPostColor", "setTile", "setWarps",
             "setWeather", "setWeatherM", "setWisdomStarMultiplier",
             "updateClanMemberRank", "updateClanMemberTitle"
         };
+        // Loop ini berjalan SETELAH binding sungguhan didaftarkan, jadi
+        // tanpa penjaga di bawah sebuah nama yang baru diport akan
+        // tertimpa stub-nya sendiri dan tetap mengembalikan nil — persis
+        // yang sempat terjadi pada getMapXMax. Jangan hapus penjaganya.
         for (String name : stubs) {
+            if (!globals.get(name).isnil()) {
+                log.warn("[LUA] '{}' sudah diport tetapi masih terdaftar "
+                        + "sebagai stub — hapus dari daftar stubs", name);
+                continue;
+            }
             globals.set(name, stub(name));
         }
     }
@@ -340,12 +508,33 @@ public final class ScriptEngine {
         });
     }
 
-    private VarArgFunction stub(String name) {
+    /**
+     * Stub warn-once untuk global yang belum diport.
+     *
+     * <p>⚠️ <b>Namanya WAJIB disalin ke variabel lain.</b> {@code LibFunction}
+     * milik LuaJ punya field {@code protected String name}, dan di dalam
+     * subclass anonim {@code name} merujuk <b>field warisan itu</b>, bukan
+     * parameter method ini — javac bahkan tidak membuat penangkapnya.
+     * Akibatnya sebelum diperbaiki: pesan log selalu berbunyi
+     * {@code null()} sehingga binding yang hilang tidak bisa dikenali,
+     * <b>dan</b> {@code warnedStubs.add(null)} berhasil sekali saja
+     * sehingga <b>hanya global pertama yang pernah dilaporkan</b> — sisanya
+     * gagal diam-diam. Ditemukan 24 Agustus 2026 dari `map.log`.</p>
+     */
+    private VarArgFunction stub(String namaBinding) {
+        java.util.Objects.requireNonNull(namaBinding, "nama stub null");
         return new VarArgFunction() {
+            {
+                // Isi field nama milik LuaJ (protected, hanya bisa disentuh
+                // dari dalam subclass) supaya pesan error Lua menyebut nama
+                // fungsinya, bukan "?".
+                this.name = namaBinding;
+            }
+
             @Override
             public Varargs invoke(Varargs args) {
-                if (warnedStubs.add(name)) {
-                    log.warn("Lua binding not implemented yet: {}()", name);
+                if (warnedStubs.add(namaBinding)) {
+                    log.warn("Lua binding not implemented yet: {}()", namaBinding);
                 }
                 return NIL;
             }
@@ -470,9 +659,49 @@ public final class ScriptEngine {
         } catch (LuaError e) {
             // sys.lua's _errhandler adds a traceback; LuaJ already includes
             // one in the message when the debug lib is loaded
-            log.error("script error in {}.{}: {}", root, method, e.getMessage());
+            reportScriptError(root, method, e);
             return true;
         }
+    }
+
+    /** Sudah berapa kali tiap kesalahan skrip yang sama muncul. */
+    private final java.util.Map<String, Integer> scriptErrorCount =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Catat kesalahan skrip, tetapi <b>hanya sekali per kesalahan unik</b>.
+     *
+     * <p>Kait skrip NPC dan mob dipanggil tiap tik timer (100 ms dan 50 ms),
+     * jadi satu binding yang belum diport menghasilkan ribuan baris log
+     * identik: 74.809 baris dalam beberapa menit pernah terjadi, dan log
+     * jadi tidak terpakai justru saat paling dibutuhkan. Kesalahan pertama
+     * dicatat lengkap; sisanya hanya dihitung.</p>
+     *
+     * <p>Jumlah totalnya bisa dilihat lewat {@link #scriptErrorSummary()},
+     * jadi tidak ada informasi yang hilang — hanya pengulangannya yang
+     * ditekan.</p>
+     */
+    private void reportScriptError(String root, String method, LuaError e) {
+        String kunci = root + "." + method + ": " + firstLine(String.valueOf(e.getMessage()));
+        int n = scriptErrorCount.merge(kunci, 1, Integer::sum);
+        if (n == 1) {
+            log.error("script error in {}.{}: {}", root, method, e.getMessage());
+        } else if (n == 100 || n == 1000 || n % 10000 == 0) {
+            // sesekali beri tanda bahwa ini masih berulang, tanpa membanjiri
+            log.warn("script error in {}.{} sudah terjadi {}x (pesan sama, "
+                    + "hanya dicatat sekali)", root, method, n);
+        }
+    }
+
+    /**
+     * Ringkasan kesalahan skrip yang pernah terjadi, terurut dari yang
+     * paling sering. Dipakai saat mematikan server dan oleh alat diagnosa.
+     */
+    public java.util.List<String> scriptErrorSummary() {
+        return scriptErrorCount.entrySet().stream()
+                .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+                .map(e -> e.getValue() + "x  " + e.getKey())
+                .toList();
     }
 
     // ------------------------------------------------------------------
@@ -552,6 +781,23 @@ public final class ScriptEngine {
      * ladang tambahan di kelas peta.</p>
      */
     public LuaValue objectRef(Object obj) {
+        if (obj == null) {
+            return LuaValue.NIL;
+        }
+        // Bungkus menurut jenis benda sesungguhnya. Sebelumnya SEMUA benda
+        // dibungkus `npcClass`; itu tidak terasa untuk mob (prototipe NPC
+        // dan Mob memang berisi method yang sama) tetapi **salah** untuk
+        // pemain — skrip yang menerima hasil `getObjectsInCell(..., BL_PC)`
+        // memanggil method pemain dan mendapat "attempt to call nil".
+        if (obj instanceof org.rtk.map.User u) {
+            return playerRef(u.scriptPlayer());
+        }
+        if (obj instanceof ScriptPlayer p) {
+            return playerRef(p);
+        }
+        if (obj instanceof org.rtk.map.Mob) {
+            return newInstance(mobClass, obj);
+        }
         return newInstance(npcClass, obj);
     }
 

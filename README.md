@@ -553,8 +553,8 @@ membiarkannya tersangkut.
 | `common/mmo.h` (`struct mmo_charstatus`) | `common/mmo/CharStatus.java`, `CharStatusCodec.java`, + `Item`/`Legend`/`SkillInfo`/`BankItem`/`Point` | ✅ model 67 kolom `Character` + koleksi, dengan format serialisasi sendiri (lihat di bawah) |
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ konek+auth ke char server, memuat geometri peta, terima routing pemain, minta & terima data karakter (0x3003/0x3803) |
 | dunia peta (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometri + metadata + indeks spasial blok 8×8, area pandang x±9/y±8 |
-| **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c` ±22rb baris) | `map/User.java`, `map/Pc.java`, `map/Clif.java` | ⚠️ **penempatan + gerakan pemain**: USER, `setPos`/`warp`/`enterWorld`, paket masuk-dunia (0x05/0x15/0x04/0x20/0x1E/0x22), `parseWalk` dengan tabrakan & siaran, petak portal + syarat masuk peta, pesan 0x0A. Pertarungan, mob, NPC/dialog, dan penggambaran ulang pemain lain (`clif_sendmapdata`/`*look_sub`) belum |
-| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **arsitektur inti jalan via LuaJ** — seluruh 906 skrip Lua asli termuat tanpa error; object model typel (__index: getattr→prototype→data table), dispatch `root.method`, coroutine `_async` + primitif dialog blocking (`menu`/`dialog`/`input`) teruji end-to-end lewat `Accepted/player.lua` asli. ⚠️ dari 254 method yang dipanggil skrip: 110 disediakan `player.lua` sendiri, **12 punya binding Java riil**, 15 stub, dan 144 belum ada implementasinya |
+| **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c` ±22rb baris) | `map/User.java`, `map/Pc.java`, `map/Clif.java`, `map/Npc*.java`, `map/Mob*.java` | ✅ **Trek A selesai** — masuk dunia + panggambaran sekitar (0x33), gerakan & portal, dialog/menu/input NPC (0x30/0x2F/0x39/0x3A), toko beli-jual, NPC & timernya, mob: 716 jenis + 1.175 spawn, AI (tik 50 ms), pertarungan, kematian & jatuhan barang. ⚠️ belum pernah diuji dengan klien RetroTK asli |
+| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **jalan via LuaJ** — 906 skrip asli termuat tanpa error; object model typel, dispatch `root.method`, coroutine `_async` + dialog blocking, registry & inventaris tersambung ke `CharStatus`. ⚠️ dari ±258 method yang dipanggil skrip, **100 masih ada di `sl.c` tapi belum diport**; yang paling sering dipakai sudah ditutup (`calcStat`, `addNPC`, `addSpell`, `callBase`, bank, `sendStatus`, `npc:move()`, `sendSide`). Angka terkini: `./run.sh luaaudit` |
 | save server (`saveif.c` — di C pun sudah dinonaktifkan) | — | ❌ tidak diport (timer koneksinya di-comment di C) |
 
 ## Catatan desain
@@ -621,8 +621,8 @@ gerbang regresi yang harus selalu hijau:
 | `./run.sh maptest` | 3.544 berkas peta terbaca sesuai format |
 | `./run.sh chartest` | serialisasi karakter (29 assertion) |
 | `./run.sh worldtest` | dunia peta + penempatan pemain (53 assertion) |
-| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC (218 assertion) |
-| `./run.sh dbtest` | lapisan database ke MySQL hidup (111 assertion) |
+| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap (294 assertion) |
+| `./run.sh dbtest` | lapisan database ke MySQL hidup (132 assertion) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
 
@@ -735,38 +735,123 @@ plus infrastruktur (HikariCP, Log4j2, properties, build NetBeans/`build.sh`,
 deploy `run.sh`) dan arsitektur jaringan instance-per-server dengan IO
 thread terpisah.
 
+### Status terakhir — 24 Agustus 2026
+
+Titik berangkat untuk sesi berikutnya.
+
+| | |
+|---|---|
+| Gerbang regresi | 6/6 hijau (`cliftest` 294 assertion) |
+| `logs/map.log` server hidup | **0 ERROR / 0 WARN**, stabil ~6 menit runtime |
+| Ketiga server | jalan berdampingan (`./run.sh all`), tautan map↔char stabil |
+| Binding skrip | 173 tersedia; **100 belum diport**; global belum diport **1** |
+| Skrip Lua | 906/906 termuat, 0 error |
+| **Klien RetroTK asli** | ⚠️ **belum pernah berhasil login** |
+
+Memastikan keadaan ini masih berlaku:
+
+```bash
+./build.sh
+for t in scripttest maptest chartest worldtest cliftest dbtest; do ./run.sh $t; done
+./run.sh stop && rm -f logs/map.log && ./run.sh all
+sleep 240 && grep -c ERROR logs/map.log     # harus 0
+```
+
+> ⚠️ **Jangan menjalankan gerbang regresi sementara server hidup** —
+> `cliftest` dan `luaaudit` menulis ke `logs/map.log` yang sama, sehingga
+> hitungan ERROR tercemar oleh baris yang memang diharapkan uji.
+
+#### Pekerjaan lanjutan setelah uji ujung-ke-ujung
+
+**1. Uji dengan klien RetroTK asli — satu-satunya penghambat nyata.**
+Tidak ada kode baru yang perlu ditulis; semua persiapan sudah beres
+(`127.0.0.1`, `version: 750`, Wine 9.0 i386, `ddraw.dll` asli).
+Sampai pemain sungguhan masuk dunia, **seluruh Trek A tetap berstatus
+"diverifikasi offline"**.
+
+**2. Binding yang masih stub — tidak melempar error, tapi juga tidak
+berfungsi.** Kategori berbahaya justru karena `map.log` tetap bersih: stub
+hanya menulis WARN sekali lalu mengembalikan nil.
+
+| Method | Pemakaian | Keadaan |
+|---|---|---|
+| `sendAction` | 905x | stub |
+| `talk` | 698x | pemain: `outbox` di memori; NPC/Mob: `log.debug` — **belum ada paket 0x0D** |
+| `playSound` | 632x | stub |
+| `updateState` | 434x | stub |
+| `setDuration` | 423x | stub |
+| `spawn` | 381x | stub (NPC/Mob) |
+| `setAether` | 225x | stub |
+| `msg` | 133x | seperti `talk` |
+| `delete` | 109x | stub (NPC/Mob) |
+| `dropItem` | 24x | butuh subsistem barang di lantai (BL_ITEM) |
+
+`talk`/`msg` paling berdampak — tanpa keduanya NPC tidak pernah benar-benar
+bersuara di layar.
+
+**3. BL_ITEM (barang di lantai) belum ada sama sekali** — prasyarat
+`dropItem`, penyaring `...WithTraps` yang sungguhan, dan jatuhan mob yang
+terlihat di tanah.
+
+**4. Sisa Trek C** — C2 (berkas meta), C3 (warp antar map server),
+C4 (papan pesan & surat, paling bebas hambatan).
+
+**Bug yang ditemukan dan sudah ditutup pada putaran ini:** daftar stub
+menimpa binding baru; field `name` LuaJ membuat pelaporan stub lumpuh
+sehingga hanya binding hilang *pertama* yang pernah dilaporkan;
+`objectRef()` membungkus pemain sebagai NPC; `bladestorm_trap.lua`
+memanggil method pada nil.
+
 ### Pekerjaan berikutnya
 
-Daftar ini disusun ulang 20 Agustus 2026 menjadi tiga trek, karena
-butir-butirnya ternyata saling bergantung — bukan satu antrean lurus.
-Trek A dan B bisa berjalan paralel.
+Dipecah tiga trek karena butir-butirnya saling bergantung, bukan satu
+antrean lurus. Trek B dan C bisa berjalan paralel.
 
-**Trek A — sampai server bisa dimainkan** (berurutan)
+**Trek A — SELESAI (21 Agustus 2026).** Server kini bisa dimainkan
+ujung-ke-ujung dari sisi logika:
 
-1. ~~**Paket `clif_*` dasar**~~ — **selesai; bagian tertunda ditutup
-   21 Agustus 2026.** Pemain kini diberi tahu id, peta, posisi, waktu, dan
-   **panel status** saat masuk, lalu **melihat pemain lain dan NPC** di
-   sekitarnya (paket 0x33). Petak peta juga digambar ulang saat
-   berjalan, dengan checksum sehingga petak yang sudah dipegang klien tidak
-   dikirim ulang. Yang tersisa hanya penggambaran mob — menunggu A5.
-2. ~~**Gerakan**~~ — **selesai 20 Agustus 2026.** `clif_parsewalk` dengan
-   deteksi desinkron, tabrakan, kamera, konfirmasi ke pemain, siaran ke
-   sekitar, ditambah petak portal beserta syarat masuk peta.
-3. **Uji end-to-end dengan MySQL sungguhan** ← mulai di sini. Sekaligus
-   memvalidasi `CharPersistence` yang belum pernah dijalankan terhadap
-   database hidup — dan kini juga pemuat `Warps`.
-4. **NPC & dialog** — sebagian besar jalan sejak 21 Agustus 2026: klik NPC
-   (0x43), kotak dialog dan menu (0x30 / 0x2F), serta jawaban pemain (0x3A)
-   sudah tersambung ke mesin Lua, jadi skrip NPC benar-benar berjalan.
-   Jawaban pemain masuk lewat dua opcode: 0x39 untuk `menu`/`input`, 0x3A
-   untuk `dialog`/`menuSeq`/`inputSeq`. NPC berwujud karakter dan timer NPC
-   (kait `move`/`action`) juga sudah ada. Binding barang (`addItem`/`removeItem`/`hasItem`) kini
-   menulis ke inventaris sungguhan dan ikut tersimpan, lengkap dengan
-   aturan tumpukan. Toko lengkap — beli dan jual — dan skrip kini menerima
-   objek NPC sebagai argumen kedua, sehingga bisa membaca `npc.yname` dan
-   sejenisnya. Bank dan reparasi ternyata seluruhnya perilaku Lua, bukan
-   kode server, jadi ikut selesai begitu atribut NPC diekspos.
-5. **Mob & pertarungan** — `mob.c` (2.411 baris).
+1. **Paket `clif_*` dasar** — pemain masuk dunia, menerima id/peta/posisi/
+   waktu/panel status, lalu **melihat sekelilingnya**: pemain lain, NPC,
+   dan mob (paket 0x33). Petak peta digambar ulang saat berjalan, dengan
+   checksum agar petak yang sudah dipegang klien tidak dikirim ulang.
+2. **Gerakan** — deteksi desinkron, tabrakan, kamera, siaran ke sekitar,
+   dan petak portal beserta syarat masuk peta.
+3. **Uji end-to-end dengan MySQL sungguhan** — `./run.sh dbtest`, yang juga
+   memvalidasi `CharPersistence` dan pemuat `Warps`.
+4. **NPC & dialog** — klik NPC (0x43), kotak dialog/menu/input
+   (0x30 / 0x2F), jawaban pemain lewat 0x39 dan 0x3A, NPC berwujud
+   karakter, timer NPC, dan **toko lengkap** (beli dan jual). Binding
+   barang menulis ke inventaris sungguhan dan ikut tersimpan.
+5. **Mob & pertarungan** — 716 jenis mob dan 1.175 spawn dari database,
+   AI dengan tik 50 ms, pertarungan lewat skrip, tabel ancaman, kematian
+   dengan `on_death` dan jatuhan barang.
+
+**Putaran perbaikan dari server hidup (24 Agustus 2026).** Menjalankan
+ketiga server dan membaca `logs/map.log` menutup **21 error skrip unik
+menjadi 0 ERROR / 0 WARN**. Semuanya kait timer NPC — kode yang baru
+berjalan ketika server benar-benar hidup, sehingga tidak satu pun dari 6
+gerbang regresi maupun `luaaudit` menyentuhnya. Sejak itu `map.log` bersih
+dijadikan syarat setelah menyentuh binding atau kait skrip.
+
+> ⚠️ **Semua itu masih diverifikasi secara offline.** Paket dibangun,
+> didekripsi balik, dan diperiksa per-offset — tapi belum satu pun pernah
+> dibaca klien RetroTK asli.
+
+**Prioritas sekarang**, diurutkan menurut apa yang menghambat:
+
+1. **Uji dengan klien asli.** Ubah `map_ip` di `conf/map.conf` lalu
+   `./run.sh all`. Inilah satu-satunya cara memeriksa hal yang tidak bisa
+   diperiksa uji buatan sendiri — dan sekadar **menjalankan ketiga server**
+   sudah membuktikan nilainya: dua bug yang lolos dari seluruh gerbang
+   regresi baru ketahuan di sana (buffer tulis yang membuang isinya saat
+   tumbuh, dan kait timer NPC yang dipanggil tanpa argumen).
+   Klien `Origin Nexia.exe` adalah PE32 32-bit, jadi bisa dicoba lewat Wine
+   sebelum menyiapkan VM Windows.
+2. **Binding yang paling sering dipakai** — `calcStat` (249×), `addNPC`,
+   `addSpell`, `bankDeposit`/`bankWithdraw`. Tidak ada hambatan.
+3. **Papan pesan & surat (C4)** — murni protokol, bisa diuji offline.
+4. **Berkas meta (C2) dan warp antar-map-server (C3)** — bisa dibangun,
+   tapi tidak bisa dibuktikan benar tanpa klien.
 
 **Trek B — aset & tooling** (paralel, tidak memblokir Trek A)
 
@@ -777,24 +862,48 @@ Trek A dan B bisa berjalan paralel.
    berwarna dari id/`pass` lebih dulu.
 3. **Client desktop Java + libGDX** — prasyarat: dekoder EPF.
 
-**Trek C — utang teknis** (kerjakan sambil lalu saat menyentuh areanya)
+**Trek C — utang teknis**
 
 - ~~Sambungkan `ScriptPlayer` ke `CharStatus`~~ — **selesai 21 Agustus
   2026.** Registry skrip dan registry karakter kini objek yang sama, jadi
   apa pun yang ditulis skrip langsung ikut tersimpan. Terbukti sampai ke
   tabel `Registry` di `dbtest`.
-- Empat berkas meta yang hilang — `login.conf` meminta 5, `meta/` hanya
+- **Empat berkas meta yang hilang** — `login.conf` meminta 5, `meta/` hanya
   punya `RidableAnimals`. Inilah sebab tooltip item tidak muncul.
-- Perpindahan antar map server (sekarang ditolak dengan pesan jelas).
-- Papan pesan & surat (char server).
+  Kandidatnya **ada** di `RTK-Server/rtk/decrypted/` (29 berkas) dan
+  formatnya sekeluarga, tapi namanya tidak cocok persis (`ItemInfo0C.dat`
+  vs `ItemInfo0`) dan `RideableAnimals.dat` bukan pasangan berkas yang
+  sedang dipakai. Perlu klien untuk memastikan mana yang benar.
+- **Perpindahan antar map server** — sekarang ditolak dengan pesan jelas;
+  butuh dua map server berjalan untuk mengujinya.
+- **Papan pesan & surat** (char server) — paling bebas hambatan di trek
+  ini: protokol dan tabelnya sudah ada, bisa diuji offline.
 
-**Acuan prioritas binding skrip** (diukur ulang 20 Agustus 2026): dari
-**254** method yang dipanggil skrip, 110 disediakan `player.lua` sendiri,
-**12** punya binding Java riil, 15 masih stub, dan **144 belum ada
-implementasinya sama sekali**. Yang paling sering dipakai dan belum ada:
-`calcStat` (232×), `hasLegend` (229×), `sendSide` (183×),
-`getObjectsInMap` (177×), `hasDuration` (171×), `getEquippedItem` (166×).
-Urutan itulah yang menentukan prioritas port subsistem di Trek A.
+**Acuan prioritas binding skrip.** Dari ±258 method yang dipanggil skrip,
+**100 masih ada di `sl.c` tapi belum diport** (dari 110), dan tinggal
+**1 global** (`lock`) yang belum ada — turun dari 6.
+
+Sudah selesai 21 Agustus 2026 — yang paling sering dipakai lebih dulu:
+`calcStat` (**249×**), `addNPC` (54×), `addSpell` (28×), `callBase` (12×),
+`hasSpell`, `bankDeposit`/`bankWithdraw`. Dengan itu bank berfungsi dan
+skrip bisa melahirkan NPC sementara (jebakan, dekorasi) yang hilang sendiri
+setelah durasinya habis.
+
+**Putaran 24 Agustus 2026 memakai patokan berbeda: `map.log` dari server
+yang benar-benar berjalan**, bukan jumlah pemakaian di korpus. Hasilnya
+`sendSide`, `npc:move()`/`warp()`, seluruh keluarga `getObjects*`
+(`InCell`/`InArea`/`InSameMap`/`InMap` + varian `Alive` + `getBlock` +
+`getUsers`, 178 pemakaian gabungan), `getMapXMax`/`getMapYMax`, `getMapRegistry`/`setMapRegistry`
+(**per peta**, bukan satu tabel global), `getPass`/`getObject`/`getTile`/`getWarp`,
+konstruktor `Player(id)`, `sendAnimation`/`sendAnimationXY`, konstanta
+`MOB_*` dan `F1_NPC` — plus `player:sendStatus()` yang ternyata masih stub
+padahal paketnya sudah ada sejak A1.
+
+Sisanya tidak ada lagi yang menonjol jauh — `hasLegend`,
+`getEquippedItem`, dan `killCount` ada di kisaran 100–200 pemakaian.
+Angka ini berubah setiap kali binding ditambah, jadi jalankan
+`./run.sh luaaudit` untuk hitungan terkini alih-alih mengandalkan yang
+tertulis di sini.
 
 ## Struktur folder
 

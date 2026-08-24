@@ -557,8 +557,8 @@ leaving them stuck.
 | `common/mmo.h` (`struct mmo_charstatus`) | `common/mmo/CharStatus.java`, `CharStatusCodec.java`, + `Item`/`Legend`/`SkillInfo`/`BankItem`/`Point` | ✅ 67 `Character` columns + collections, with its own serialisation format (see above) |
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ connects and authenticates to the char server, loads map geometry, accepts routed players, requests and receives character data |
 | map world (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometry + metadata + 8×8 spatial index, x±9/y±8 view area |
-| **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c`, ~22k lines) | `map/User.java`, `map/Pc.java`, `map/Clif.java` | ⚠️ **player placement and movement**: USER, `setPos`/`warp`/`enterWorld`, world-entry packets (0x05/0x15/0x04/0x20/0x1E/0x22), `parseWalk` with collision and broadcast, warp tiles + map entry requirements, 0x0A messages. Combat, mobs, NPCs/dialogs, and redrawing other players (`clif_sendmapdata` / `*look_sub`) are still missing |
-| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **core architecture working via LuaJ** — all 906 original Lua scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines + blocking dialog primitives tested end-to-end through the original `Accepted/player.lua`. ⚠️ of the 254 methods scripts call: 110 come from `player.lua` itself, **12 have real Java bindings**, 15 are stubs, and 144 have no implementation yet |
+| **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c`, ~22k lines) | `map/User.java`, `map/Pc.java`, `map/Clif.java`, `map/Npc*.java`, `map/Mob*.java` | ✅ **Track A complete** — world entry plus rendering of everything nearby (0x33), movement and warps, NPC dialog/menu/input (0x30/0x2F/0x39/0x3A), shops (buy and sell), NPCs and their timers, mobs: 716 types and 1,175 spawns, AI on a 50 ms tick, combat, death and drops. ⚠️ never yet tested against a real RetroTK client |
+| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **working via LuaJ** — all 906 original scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines with blocking dialogs, registries and inventory wired through to `CharStatus`. ⚠️ of the ~258 methods scripts call, **100 exist in `sl.c` but are not ported yet**; the most-used ones are now covered (`calcStat`, `addNPC`, `addSpell`, `callBase`, banking, `sendStatus`, `npc:move()`, `sendSide`). For current numbers: `./run.sh luaaudit` |
 | save server (`saveif.c` — already disabled in C) | — | ❌ not ported (its connection timer is commented out in C) |
 
 ## Design notes
@@ -624,8 +624,8 @@ there are six regression gates, all of which must stay green:
 | `./run.sh maptest` | 3,544 map files parse correctly |
 | `./run.sh chartest` | character serialisation (29 assertions) |
 | `./run.sh worldtest` | map world + player placement (53 assertions) |
-| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs (218 assertions) |
-| `./run.sh dbtest` | database layer against live MySQL (111 assertions) |
+| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing (294 assertions) |
+| `./run.sh dbtest` | database layer against live MySQL (132 assertions) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
 
@@ -741,40 +741,115 @@ the infrastructure (HikariCP, Log4j2, properties, NetBeans/`build.sh`
 builds, `run.sh` deployment) and the per-server networking architecture
 with its dedicated I/O thread.
 
+### Latest status — 24 August 2026
+
+The starting point for the next session.
+
+| | |
+|---|---|
+| Regression gates | 6/6 green (`cliftest` 294 assertions) |
+| `logs/map.log` on a live server | **0 ERROR / 0 WARN**, stable across ~6 minutes of runtime |
+| All three servers | running side by side (`./run.sh all`), map↔char link stable |
+| Script bindings | 173 available; **100 not ported**; globals not ported: **1** |
+| Lua scripts | 906/906 loaded, 0 errors |
+| **Real RetroTK client** | ⚠️ **has never logged in successfully** |
+
+To confirm this still holds:
+
+```bash
+./build.sh
+for t in scripttest maptest chartest worldtest cliftest dbtest; do ./run.sh $t; done
+./run.sh stop && rm -f logs/map.log && ./run.sh all
+sleep 240 && grep -c ERROR logs/map.log     # must be 0
+```
+
+> ⚠️ **Do not run the regression gates while the servers are live** —
+> `cliftest` and `luaaudit` write to the same `logs/map.log`, so the ERROR
+> count gets polluted by lines the tests expect to produce.
+
+#### Follow-up work after the end-to-end test
+
+**1. Test with the real RetroTK client — the only genuine blocker.**
+No new code is needed; everything is prepared (`127.0.0.1`, `version: 750`,
+Wine 9.0 i386, original `ddraw.dll`). Until a real player enters the world,
+**all of Track A stays "verified offline"**.
+
+**2. Bindings that are still stubs — they do not throw, but they do not
+work either.** This category is dangerous precisely because `map.log` stays
+clean: a stub logs one WARN and returns nil.
+
+| Method | Call sites | State |
+|---|---|---|
+| `sendAction` | 905x | stub |
+| `talk` | 698x | player: in-memory `outbox`; NPC/Mob: `log.debug` — **no 0x0D packet yet** |
+| `playSound` | 632x | stub |
+| `updateState` | 434x | stub |
+| `setDuration` | 423x | stub |
+| `spawn` | 381x | stub (NPC/Mob) |
+| `setAether` | 225x | stub |
+| `msg` | 133x | same as `talk` |
+| `delete` | 109x | stub (NPC/Mob) |
+| `dropItem` | 24x | needs the floor-item subsystem (BL_ITEM) |
+
+`talk` / `msg` matter most — without them NPCs never actually speak
+on screen.
+
+**3. BL_ITEM (floor items) does not exist yet** — a prerequisite for
+`dropItem`, for a real `...WithTraps` filter, and for mob drops that are
+visible on the ground.
+
+**4. The rest of Track C** — C2 (meta files), C3 (cross-map-server warps),
+C4 (boards and mail, the least blocked).
+
+**Bugs found and closed in this round:** the stub list overwriting freshly
+ported bindings; LuaJ's `name` field crippling stub reporting so that only
+the *first* missing binding was ever reported; `objectRef()` wrapping
+players as NPCs; `bladestorm_trap.lua` calling a method on nil.
+
 ### What comes next
 
-Reorganised on 20 August 2026 into three tracks, because the items turned
-out to depend on each other rather than forming one straight queue. Tracks
-A and B can run in parallel.
+Split into three tracks because the items depend on each other rather than
+forming one straight queue. Tracks B and C can run in parallel.
 
-**Track A — getting to a playable server** (sequential)
+**Track A — COMPLETE (21 August 2026).** The server is now playable
+end-to-end as far as its logic goes:
 
-1. ~~**Core `clif_*` packets**~~ — **done; the deferred parts were closed on
-   21 August 2026.** A player is now told its id, map, position, time and
-   **stat panel** on entry, and then **sees other players and NPCs** around
-   it (packet 0x33). Map tiles are also redrawn while walking, with a
-   checksum so tiles the client already holds are not resent. Only mob
-   rendering remains — that waits for A5.
-2. ~~**Movement**~~ — **done, 20 August 2026.** `clif_parsewalk` with
-   desync detection, collision, camera tracking, confirmation to the
-   walker, broadcast to nearby players, plus warp tiles and map entry
-   requirements.
-3. ~~**End-to-end test against a real MySQL**~~ — **done, 21 August 2026.**
-   `./run.sh dbtest`, 82 assertions. It turned up one real bug: which warp
-   wins on tiles that are listed more than once.
-4. **NPCs and dialogs** — mostly working since 21 August 2026: clicking an
-   NPC (0x43), dialog and menu boxes (0x30 / 0x2F) and the player's reply
-   (0x3A) are wired to the Lua engine, so NPC scripts actually run. Replies arrive on two
-   opcodes: 0x39 for `menu`/`input`, 0x3A for `dialog`/`menuSeq`/`inputSeq`.
-   The NPC-as-character dialog variant and NPC
-   timers (`move`/`action` hooks) are in as well. The item bindings
-   (`addItem`/`removeItem`/`hasItem`) now write to the real inventory and are
-   persisted, stacking rules included. Shops are complete — buying and selling — and scripts
-   now receive the NPC object as their second argument, so they can read
-   `npc.yname` and friends. Banking and repair turned out to be entirely
-   Lua behaviour rather than server code, so they came along once the NPC
-   attributes were exposed.
-5. **Mobs and combat** — `mob.c` (2,411 lines).
+1. **Core `clif_*` packets** — a player enters the world, receives its
+   id/map/position/time/stat panel, then **sees everything around it**:
+   other players, NPCs and mobs (packet 0x33). Map tiles are redrawn while
+   walking, with a checksum so tiles the client already holds are not resent.
+2. **Movement** — desync detection, collision, camera tracking, broadcast to
+   nearby players, and warp tiles with map entry requirements.
+3. **End-to-end test against a real MySQL** — `./run.sh dbtest`, which also
+   validates `CharPersistence` and the `Warps` loader.
+4. **NPCs and dialogs** — clicking an NPC (0x43), dialog/menu/input boxes
+   (0x30 / 0x2F), replies over 0x39 and 0x3A, the NPC-as-character variant,
+   NPC timers, and **complete shops**. The item bindings write to the real
+   inventory and are persisted.
+5. **Mobs and combat** — 716 mob types and 1,175 spawns from the database,
+   AI on a 50 ms tick, script-driven combat, a threat table, and death with
+   `on_death` and drops.
+
+**Fix round driven by a live server (24 August 2026).** Running all three
+servers and reading `logs/map.log` took **21 unique script errors down to
+0 ERROR / 0 WARN**. Every one of them was an NPC timer hook — code that
+only runs once the server is actually alive, which is why none of the six
+regression gates nor `luaaudit` ever touched it. A clean `map.log` is now
+a requirement after touching any binding or script hook.
+
+> ⚠️ **All of it is still verified offline.** Packets are built, decrypted
+> back and checked offset by offset — but not one of them has ever been read
+> by a real RetroTK client.
+
+**Current priorities**, ordered by what is blocking rather than by size:
+
+1. **Test against a real client.** No new code needed; change `map_ip` in
+   `conf/map.conf` and run `./run.sh all`.
+2. **The most-used bindings** — `calcStat` (249×), `addNPC`, `addSpell`,
+   `bankDeposit`/`bankWithdraw`. Nothing blocks these.
+3. **Boards and mail (C4)** — pure protocol, testable offline.
+4. **Meta files (C2) and cross-map-server warps (C3)** — buildable, but not
+   provable without a client.
 
 **Track B — assets and tooling** (parallel, does not block Track A)
 
@@ -786,24 +861,47 @@ A and B can run in parallel.
    coloured grid derived from ids/`pass`.
 3. **Desktop client in Java + libGDX** — needs the EPF decoder first.
 
-**Track C — technical debt** (do it while touching the relevant area)
+**Track C — technical debt**
 
 - ~~Point `ScriptPlayer` at `CharStatus`~~ — **done, 21 August 2026.** The
   script registries and the character registries are now the same objects,
-  so anything a script writes is persisted automatically. Proven all the way
-  to the `Registry` table in `dbtest`.
-- The four missing meta files — `login.conf` asks for 5, `meta/` only has
-  `RidableAnimals`. This is why item tooltips do not appear.
-- Cross-map-server warping (currently rejected with a clear message).
-- Message boards and mail (char server).
+  so anything a script writes is persisted automatically.
+- **The four missing meta files** — `login.conf` asks for 5, `meta/` only
+  has `RidableAnimals`. This is why item tooltips are missing. Candidates
+  **do exist** in `RTK-Server/rtk/decrypted/` (29 files) in a related
+  format, but the names do not line up (`ItemInfo0C.dat` vs the requested
+  `ItemInfo0`) and `RideableAnimals.dat` is not the counterpart of the file
+  currently in use. A client is needed to tell which is right.
+- **Cross-map-server warps** — currently refused with a clear message;
+  testing needs two map servers running.
+- **Boards and mail** (char server) — the least blocked item in this track:
+  protocol and tables already exist, and it can be tested offline.
 
-**Script-binding priority reference** (re-measured 20 August 2026): of the
-**254** methods scripts call, 110 are provided by `player.lua` itself,
-**12** have real Java bindings, 15 are still stubs, and **144 have no
-implementation at all**. The most-used missing ones: `calcStat` (232×),
-`hasLegend` (229×), `sendSide` (183×), `getObjectsInMap` (177×),
-`hasDuration` (171×), `getEquippedItem` (166×). That ordering drives which
-subsystems get ported first in Track A.
+**Script-binding priority.** Of the ~258 methods scripts call, **100 exist
+in `sl.c` but are not ported yet** (down from 110), and only **1 global**
+(`lock`) is still missing — down from 6.
+
+Done on 21 August 2026, most-used first: `calcStat` (**249×**), `addNPC`
+(54×), `addSpell` (28×), `callBase` (12×), `hasSpell`, `bankDeposit` /
+`bankWithdraw`. Banking now works, and scripts can spawn temporary NPCs
+(traps, decorations) that remove themselves when their duration runs out.
+
+**The 24 August 2026 round used a different yardstick: `map.log` from a
+server that was actually running**, not usage counts across the corpus.
+That produced `sendSide`, `npc:move()` / `warp()`, the whole `getObjects*`
+family (`InCell` / `InArea` / `InSameMap` / `InMap`, each with an `Alive`
+variant, plus `getBlock` and `getUsers` — 178 combined call sites),
+`getMapXMax` / `getMapYMax`,
+`getMapRegistry` / `setMapRegistry` (**per map**, not one shared table),
+`getPass` / `getObject` / `getTile` / `getWarp`, the `Player(id)` constructor,
+`sendAnimation` / `sendAnimationXY`, and the `MOB_*` / `F1_NPC` constants —
+plus `player:sendStatus()`, which turned out to still be a stub even though
+its packet had existed since A1.
+
+Nothing left stands out as sharply — `hasLegend`, `getEquippedItem` and
+`killCount` sit in the 100–200 range. These numbers move every time a
+binding is added, so run `./run.sh luaaudit` for the current count rather
+than trusting what is written here.
 
 ## Folder layout
 

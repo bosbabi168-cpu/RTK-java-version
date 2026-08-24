@@ -352,15 +352,30 @@ public final class Clif {
      * memanggil {@code encrypt(i)} untuk tiap fd.
      */
     static void sendToAreaExceptSelf(User from, byte[] packet, int len) {
+        sendToArea(from, packet, len, false);
+    }
+
+    /**
+     * clif_send(..., AREA) / (..., AREA_WOS): siarkan ke pemain di area
+     * pandang sebuah benda. Sumbernya <b>benda apa pun</b> — NPC dan mob
+     * juga menyiarkan, bukan hanya pemain.
+     *
+     * @param includeSelf true = AREA (sumber ikut menerima bila ia pemain),
+     *                    false = AREA_WOS (sumber dilewati)
+     */
+    static void sendToArea(org.rtk.map.data.BlockList from, byte[] packet,
+                           int len, boolean includeSelf) {
         MapData map = MapServer.world.get(from.m);
         if (map == null) {
             return;
         }
         map.foreachInArea(from.x, from.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
-            if (bl == from || !(bl instanceof User)) {
+            if (!(bl instanceof User to)) {
                 return;
             }
-            User to = (User) bl;
+            if (!includeSelf && bl == from) {
+                return;
+            }
             Session ts = MapServer.net.session(to.fd);
             if (ts == null) {
                 return;
@@ -500,7 +515,11 @@ public final class Clif {
                 sendNpcLook(sd, nd);
             }
         });
-        // TODO(A5): sapuan BL_MOB -> clif_cmoblook_sub
+        map.foreachInBlock(x0, y0, x1, y1, org.rtk.map.data.BlockList.Type.MOB, bl -> {
+            if (bl instanceof Mob mb) {
+                sendMobLook(sd, mb);
+            }
+        });
 
         // LOOK_SEND: tampilkan diri kita kepada pemain lain di petak itu
         map.foreachInBlock(x0, y0, x1, y1, org.rtk.map.data.BlockList.Type.PC, bl -> {
@@ -1023,6 +1042,44 @@ public final class Clif {
         s.wfifoSet(encrypt(s, sd));
     }
 
+    /**
+     * clif_sendside(): beri tahu sekitar bahwa sebuah benda berganti arah
+     * hadap — opcode 0x11.
+     *
+     * <p>Dipakai skrip AI NPC setiap kali NPC berbelok, jadi ini salah satu
+     * kait yang paling sering dipanggil. Perhatikan bedanya: untuk
+     * <b>pemain</b> paket dikirim ke seluruh area <b>termasuk dirinya</b>
+     * (AREA), sedangkan NPC dan mob memakai AREA_WOS — mereka tidak perlu
+     * memberi tahu diri sendiri.</p>
+     */
+    public static void sendSide(org.rtk.map.data.BlockList bl) {
+        int side;
+        if (bl instanceof User u) {
+            side = u.status.side;
+        } else if (bl instanceof Npc nd) {
+            side = nd.side;
+        } else if (bl instanceof Mob mb) {
+            side = mb.side;
+        } else {
+            return;
+        }
+
+        byte[] buf = new byte[32];
+        buf[0] = (byte) 0xAA;
+        buf[1] = 0x00;
+        buf[2] = 0x08;
+        buf[3] = 0x11;
+        putBE32(buf, 5, (int) bl.id);
+        buf[9] = (byte) side;
+        buf[10] = 0;
+
+        // C menyusun 32 byte penuh (`clif_send(buf, 32, ...)`); yang
+        // benar-benar terkirim dipotong `encrypt()` menurut ladang panjang
+        // di [1..2] — 0x0008 + 3 = 14 byte.
+        // Pemain memakai AREA (ikut menerima), NPC & mob AREA_WOS.
+        sendToArea(bl, buf, buf.length, bl instanceof User);
+    }
+
     // ------------------------------------------------------------------
     // klik objek (clif_handle_clickgetinfo)
     // ------------------------------------------------------------------
@@ -1456,7 +1513,96 @@ public final class Clif {
                 sendNpcLook(sd, nd);
             }
         });
-        // TODO(A5): sapuan BL_MOB -> clif_cmoblook_sub
+        map.foreachInArea(sd.x, sd.y, org.rtk.map.data.BlockList.Type.MOB, bl -> {
+            if (bl instanceof Mob mb) {
+                sendMobLook(sd, mb);
+            }
+        });
+    }
+
+    /**
+     * clif_cmoblook_sub(): gambarkan satu mob di layar {@code sd} —
+     * opcode 0x33, sama seperti pemain dan NPC.
+     *
+     * <p>Hanya mob ber-{@code MobIsChar == 1} yang dikirim, dan mob yang
+     * sudah mati dilewati. Tata letaknya mengikuti paket NPC; perbedaannya
+     * mob tidak punya perlengkapan, jadi slot-slotnya selalu kosong.</p>
+     */
+    public static void sendMobLook(User sd, Mob mb) {
+        Session s = sessionOf(sd);
+        if (s == null || mb.m != sd.m || !mb.drawsAsCharacter()
+                || mb.state == org.rtk.map.MobData.MOB_DEAD) {
+            return;
+        }
+        var d = mb.data;
+
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x33);
+        s.wfifoWBE(5, mb.x);
+        s.wfifoWBE(7, mb.y);
+        s.wfifoB(9, mb.side);
+        s.wfifoLBE(10, (int) mb.id);
+
+        if (mb.charState < 4) {
+            s.wfifoWBE(14, d.sex);
+        } else {
+            s.wfifoB(14, 1);
+            s.wfifoB(15, 15);
+        }
+
+        s.wfifoB(16, mb.charState == 2 && sd.isGm() ? 5 : mb.charState);
+        s.wfifoB(19, 80);
+
+        if (mb.charState == 3) {
+            s.wfifoWBE(17, mb.look);
+        } else if (mb.charState == 4) {
+            s.wfifoWBE(17, mb.look + 32768);
+            s.wfifoB(19, mb.lookColor);
+        } else {
+            s.wfifoWBE(17, 0);
+        }
+
+        s.wfifoB(20, 0);
+        s.wfifoB(21, d.face);
+        s.wfifoB(22, d.hair);
+        s.wfifoB(23, d.hairColor);
+        s.wfifoB(24, d.faceColor);
+        s.wfifoB(25, d.skinColor);
+
+        // mob tidak berperlengkapan: zirah jatuh ke grafik dasar jenis
+        // kelamin, slot lain diisi penanda kosong
+        s.wfifoWBE(26, d.sex);
+        s.wfifoB(28, 0);
+        kosong(s, 29, 31);
+        kosong(s, 32, 34);
+        s.wfifoB(35, 0);
+        s.wfifoWBE(36, 0xFF);
+        kosong(s, 38, 40);
+        kosong(s, 41, 43);
+        kosong(s, 44, 46);
+        s.wfifoWBE(47, 0xFFFF);
+        s.wfifoB(49, 0xFF);
+        kosong(s, 50, 52);
+        s.wfifoWBE(53, d.sex);
+        s.wfifoB(55, 0);
+
+        s.wfifoB(56, 0);
+        s.wfifoB(57, 128);
+        s.wfifoB(58, 0);
+
+        String nama = mb.displayName();
+        int len = Math.min(nama.length(), 255);
+        s.wfifoB(59, len);
+        s.wfifoStringRaw(60, nama.substring(0, len));
+
+        s.wfifoWBE(1, len + 60);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /** Slot perlengkapan kosong: id 0xFFFF, warna 0. */
+    private static void kosong(Session s, int idOff, int colorOff) {
+        s.wfifoWBE(idOff, 0xFFFF);
+        s.wfifoB(colorOff, 0);
     }
 
     /**
@@ -2068,6 +2214,120 @@ public final class Clif {
         buf[13] = (byte) direction;
         buf[14] = 0x00;
         sendToAreaExceptSelf(sd, buf, 15);
+    }
+
+    /**
+     * FLAG_MAGIC (mmo.h): bendera setelan pemain "tampilkan efek sihir".
+     * Pemain yang mematikannya tidak menerima paket animasi sama sekali.
+     */
+    private static final int FLAG_MAGIC = 16;
+
+    /**
+     * clif_sendanimation(): mainkan animasi <b>pada sebuah benda</b>
+     * (opcode 0x29) untuk pemain di sekitarnya.
+     *
+     * <p>Penyaringnya ada di sisi <b>penerima</b>, bukan pengirim: tiap
+     * pemain yang mematikan FLAG_MAGIC dilewati satu per satu.</p>
+     */
+    public static void sendAnimation(org.rtk.map.data.BlockList src, int anim, int times) {
+        MapData map = MapServer.world.get(src.m);
+        if (map == null) {
+            return;
+        }
+        map.foreachInArea(src.x, src.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (!(bl instanceof User to)) {
+                return;
+            }
+            if ((to.status.settingFlags & FLAG_MAGIC) == 0) {
+                return;
+            }
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                return;
+            }
+            ts.wfifoB(0, 0xAA);
+            ts.wfifoWBE(1, 0x0A);
+            ts.wfifoB(3, 0x29);
+            ts.wfifoLBE(5, (int) src.id);
+            ts.wfifoWBE(9, anim);
+            ts.wfifoWBE(11, times);
+            ts.wfifoSet(encrypt(ts, to));
+        });
+    }
+
+    /**
+     * clif_sendanimation_xy(): mainkan animasi <b>pada sebuah petak</b>
+     * (opcode 0x29 dengan id 0 dan koordinat di ekor).
+     *
+     * <p>Berbeda dari {@link #sendAnimation}, versi ini <b>tidak</b>
+     * memeriksa FLAG_MAGIC — jebakan dan efek area tetap terlihat. Itu
+     * memang begitu di C, bukan kelalaian.</p>
+     */
+    public static void sendAnimationXy(org.rtk.map.data.BlockList src,
+                                       int anim, int times, int x, int y) {
+        MapData map = MapServer.world.get(src.m);
+        if (map == null) {
+            return;
+        }
+        map.foreachInArea(src.x, src.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (!(bl instanceof User to)) {
+                return;
+            }
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                return;
+            }
+            ts.wfifoB(0, 0xAA);
+            ts.wfifoWBE(1, 14);
+            ts.wfifoB(3, 0x29);
+            ts.wfifoLBE(5, 0);
+            ts.wfifoWBE(9, anim);
+            ts.wfifoWBE(11, times);
+            ts.wfifoWBE(13, x);
+            ts.wfifoWBE(15, y);
+            ts.wfifoSet(encrypt(ts, to));
+        });
+    }
+
+    /**
+     * clif_npc_move(): NPC melangkah — siarkan ke pemain di sekitarnya.
+     *
+     * <p>Isinya <b>petak asal</b> plus arah, bukan petak tujuan: klien yang
+     * memainkan animasi langkahnya. Sama persis dengan siaran 0x0C untuk
+     * pemain, hanya idnya id blok NPC.</p>
+     *
+     * <p><b>Penyimpangan yang disengaja:</b> versi C memanggil fungsi ini
+     * lewat {@code map_foreachinarea(..., BL_PC, ...)}, padahal isinya
+     * sendiri sudah menyiarkan ke seluruh area — jadi paket yang sama
+     * terkirim N x N kali bila ada N pemain berdekatan. Paketnya membawa
+     * posisi mutlak sehingga pengulangan tidak mengubah apa yang dilihat
+     * klien; di sini cukup satu kali siaran.</p>
+     */
+    public static void npcMove(Npc nd, int oldX, int oldY) {
+        byte[] buf = new byte[32];
+        buf[0] = (byte) 0xAA;
+        buf[1] = 0x00;
+        buf[2] = 0x0C;
+        buf[3] = 0x0C;
+        putBE32(buf, 5, (int) nd.id);
+        putBE16(buf, 9, oldX);
+        putBE16(buf, 11, oldY);
+        buf[13] = (byte) nd.side;
+        buf[14] = 0x00;
+        sendToArea(nd, buf, buf.length, false);
+    }
+
+    /**
+     * Gambar ulang jalur petak yang baru terbuka saat NPC melangkah
+     * ({@code map_foreachinblock(clif_cnpclook_sub / clif_object_look_sub,
+     * ...)} di {@code npc_move}).
+     */
+    static void npcRevealStrip(Npc nd, MapData map, int x0, int y0, int x1, int y1) {
+        map.foreachInBlock(x0, y0, x1, y1, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (bl instanceof User sd) {
+                sendNpcLook(sd, nd);
+            }
+        });
     }
 
     private static void putBE16(byte[] b, int o, int v) {

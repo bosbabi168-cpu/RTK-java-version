@@ -56,6 +56,9 @@ final class Bindings {
     }
 
     static void definePlayer(ScriptEngine engine, ScriptClass player) {
+        // bll_extendproto dipasang juga ke prototipe Player di C, jadi
+        // pemain punya keluarga getObjects* yang sama persis dengan NPC & mob.
+        defineObjectQueries(engine, player);
         player.getter = (self, attr) -> {
             ScriptPlayer p = (ScriptPlayer) self;
             switch (attr) {
@@ -92,7 +95,14 @@ final class Bindings {
                 case "gameRegistry":
                     return engine.gameRegistryUdata;
                 case "mapRegistry":
-                    return engine.mapRegistryUdata;
+                    // mapregl_pushinst(state, sd): terikat ke PEMAINNYA,
+                    // sehingga registry yang terbaca milik peta tempat ia
+                    // berdiri sekarang.
+                    if (p.mapRegistryUdata == null) {
+                        p.mapRegistryUdata =
+                                engine.newInstance(engine.mapRegistryClass, p);
+                    }
+                    return p.mapRegistryUdata;
                 default:
                     // Atribut karakter yang tersimpan (money, health, ...)
                     // dijawab pemiliknya; null berarti belum diport, jadi
@@ -198,7 +208,120 @@ final class Bindings {
             log.debug("[warp] {} -> map {} ({},{})", p.name, p.m, p.x, p.y);
             return LuaValue.NONE;
         });
-        player.addMethod("getObjectsInCell", (self, args) -> new LuaTable());
+        /**
+         * pcl_getobjectsincell(m, x, y, tipe): benda di satu petak.
+         *
+         * <p>Inilah cara skrip pertarungan menemukan lawan
+         * ({@code getObjectsInCell(..., BL_MOB)} di `swing.lua`), jadi
+         * mengembalikan tabel kosong berarti tidak ada yang bisa dipukul.
+         * Hasilnya tabel Lua 1-basis berisi objek aslinya, bukan salinan —
+         * skrip menulis balik ke situ.</p>
+         */
+        /**
+         * pcl_addthreat(idMob, kerusakan): catat ancaman pemain pada mob.
+         *
+         * <p>Dipakai skrip pertarungan setiap kali pukulan mendarat. Yang
+         * dicatat <b>akumulasi</b> kerusakan, bukan pukulan terakhir —
+         * itulah yang membuat mob mengejar penyerang terbesar, bukan yang
+         * kebetulan memukul paling akhir.</p>
+         */
+        /**
+         * pcl_calcstat(): hitung ulang nilai turunan pemain.
+         *
+         * <p>Dipanggil skrip **249 kali** — setiap kali perlengkapan atau
+         * buff berubah. Isinya: kembalikan nilai turunan ke nilai dasar
+         * lalu jumlahkan bonus seluruh perlengkapan yang dikenakan.</p>
+         */
+        /**
+         * bll_addnpc(nama, m, x, y, subtype, timer, durasi, owner, moveTime):
+         * lahirkan NPC sementara.
+         *
+         * <p>Argumen ke-9 di C dipakai <b>dua kali</b> — sebagai
+         * {@code movetime} bila angka, dan sebagai nama tampilan bila teks
+         * ({@code lua_tonumber} pada teks menghasilkan 0). Kelonggaran itu
+         * ditiru di sini supaya skrip lama tetap berjalan.</p>
+         */
+        player.addMethod("addNPC", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (!(p.owner instanceof ScriptPlayer.Owner o)) {
+                return LuaValue.NONE;
+            }
+            var arg9 = args.arg(10);   // arg(1) = self
+            long moveTime = arg9.isnumber() ? (long) arg9.todouble() : 0;
+            String namaTampilan = arg9.isstring() && !arg9.isnumber()
+                    ? arg9.tojstring() : "";
+            o.scriptAddNpc(args.optjstring(2, ""),
+                    args.optint(3, 0), args.optint(4, 0), args.optint(5, 0),
+                    args.optint(6, 0),
+                    (long) args.optdouble(7, 0), (long) args.optdouble(8, 0),
+                    (long) args.optdouble(9, 0), moveTime, namaTampilan);
+            return LuaValue.NONE;
+        });
+
+        // ---- mantra ----
+        player.addMethod("addSpell", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            String v = args.arg(2).isnumber()
+                    ? String.valueOf(args.optint(2, 0)) : args.optjstring(2, "");
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptAddSpell(v));
+            }
+            return LuaValue.FALSE;
+        });
+        player.addMethod("hasSpell", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            String v = args.arg(2).isnumber()
+                    ? String.valueOf(args.optint(2, 0)) : args.optjstring(2, "");
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptHasSpell(v));
+            }
+            return LuaValue.FALSE;
+        });
+
+        // ---- bank ----
+        player.addMethod("bankDeposit", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptBankDeposit(
+                        args.optjstring(2, ""), Math.max(1, args.optint(3, 1))));
+            }
+            return LuaValue.FALSE;
+        });
+        player.addMethod("bankWithdraw", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptBankWithdraw(
+                        args.optjstring(2, ""), Math.max(1, args.optint(3, 1))));
+            }
+            return LuaValue.valueOf(0);
+        });
+
+        player.addMethod("calcStat", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                o.scriptCalcStat();
+            }
+            return LuaValue.NONE;
+        });
+
+        player.addMethod("addThreat", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            long mobId = (long) args.optdouble(2, 0);
+            long dmg = (long) args.optdouble(3, 0);
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                o.scriptAddThreat(mobId, dmg);
+            }
+            return LuaValue.NONE;
+        });
+
+        player.addMethod("sendSide", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.data.BlockList bl) {
+                org.rtk.map.Clif.sendSide(bl);
+            }
+            return LuaValue.NONE;
+        });
+
 
         // ---- items (in-memory until the item engine is ported) ----
         // Untuk pemain sungguhan, ketiga method barang ini menembus ke
@@ -278,7 +401,40 @@ final class Bindings {
         });
 
         // ---- cosmetic packet methods: valid calls, nothing to show yet ----
-        for (String name : new String[]{"sendStatus", "sendAnimation", "sendAnimationXY",
+        player.addMethod("sendAnimation", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.data.BlockList bl) {
+                org.rtk.map.Clif.sendAnimation(bl, args.optint(2, 0), args.optint(3, 0));
+            }
+            return LuaValue.NONE;
+        });
+        player.addMethod("sendAnimationXY", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.data.BlockList bl) {
+                org.rtk.map.Clif.sendAnimationXy(bl, args.optint(2, 0),
+                        args.optint(5, 0), args.optint(3, 0), args.optint(4, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_sendstatus(): kirim ulang panel status ke klien.
+         *
+         * <p>Method skrip yang paling sering dipakai (1.100+ pemakaian) —
+         * setiap kali nyawa, emas, atau nilai apa pun berubah, skrip
+         * memanggil ini supaya angkanya ikut berganti di layar. Bendera
+         * yang dipakai sama dengan C:
+         * {@code SFLAG_FULLSTATS | SFLAG_HPMP | SFLAG_XPMONEY}.</p>
+         */
+        player.addMethod("sendStatus", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.User u) {
+                org.rtk.map.Clif.sendStatus(u, org.rtk.map.Clif.SFLAG_ALL);
+            }
+            return LuaValue.NONE;
+        });
+
+        for (String name : new String[]{
                 "sendAction", "playSound", "updateState", "setDuration", "setAether",
                 "sendSound", "sendHealth", "refresh", "updateStatus"}) {
             player.addMethod(name, (self, args) -> {
@@ -293,6 +449,7 @@ final class Bindings {
     // ------------------------------------------------------------------
 
     static void defineBlockList(ScriptEngine engine, ScriptClass klass) {
+        defineObjectQueries(engine, klass);
         klass.getter = (self, attr) -> {
             // NPC sungguhan: atribut dibaca dari objeknya lewat penyedia.
             // Skrip memakai `npc.yname` 565x dan `npc.name` ribuan kali,
@@ -303,6 +460,15 @@ final class Bindings {
                     return v;
                 }
             }
+            // mapregl_pushinst / gameregl_pushinst di npcl_getattr &
+            // mobl_getattr: NPC dan mob juga membaca registry peta tempat
+            // mereka berdiri (`npc.mapRegistry[...]` dipakai skrip event).
+            if ("mapRegistry".equals(attr)) {
+                return engine.newInstance(engine.mapRegistryClass, self);
+            }
+            if ("gameRegistry".equals(attr)) {
+                return engine.gameRegistryUdata;
+            }
             if (self instanceof ScriptEngine.GameObject && "id".equals(attr)) {
                 ScriptEngine.GameObject o = (ScriptEngine.GameObject) self;
                 if (o.ctorArgs.narg() >= 1 && o.ctorArgs.arg1().isnumber()) {
@@ -311,11 +477,83 @@ final class Bindings {
             }
             return null;
         };
+        klass.setter = (self, attr, value) -> {
+            // Mob mengubah nyawanya sendiri lewat sini — itulah cara skrip
+            // pertarungan melukai musuh.
+            return self instanceof ScriptAttrs a && a.scriptSetAttr(attr, value);
+        };
+        /**
+         * mobl_callbase(namaKait): panggil kait skrip milik mob ini,
+         * dengan mob dan <b>penyerangnya</b> sebagai argumen.
+         *
+         * <p>Dipakai `Accepted/Mobs/mob.lua` untuk MobAI tipe 4 — mob yang
+         * memakai skripnya sendiri sebagai AI. Bila tidak ada penyerang,
+         * C mengirim <b>mob itu sendiri</b> sebagai argumen kedua, bukan
+         * nil — ditiru di sini supaya skrip tidak perlu mengeceknya.</p>
+         */
+        /**
+         * npcl_move() -> npc_move(): NPC melangkah satu petak ke arah
+         * hadapnya. Mengembalikan 1 bila jadi berpindah, 0 bila tertahan —
+         * skrip AI memakai nilai itu untuk memutuskan berbelok.
+         */
+        klass.addMethod("move", (self, args) -> {
+            if (self instanceof org.rtk.map.Npc nd) {
+                return LuaValue.valueOf(org.rtk.map.NpcRegistry.move(nd) ? 1 : 0);
+            }
+            return LuaValue.valueOf(0);
+        });
+
+        /** npcl_warp(m, x, y) -> npc_warp(): pindahkan NPC seketika. */
+        klass.addMethod("warp", (self, args) -> {
+            if (self instanceof org.rtk.map.Npc nd) {
+                org.rtk.map.NpcRegistry.warp(nd, args.optint(2, nd.m),
+                        args.optint(3, nd.x), args.optint(4, nd.y));
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * clif_sendside(): benda ini berganti arah hadap — beri tahu
+         * sekitar. Dipanggil skrip AI NPC setiap kali berbelok.
+         */
+        klass.addMethod("sendSide", (self, args) -> {
+            if (self instanceof org.rtk.map.data.BlockList bl) {
+                org.rtk.map.Clif.sendSide(bl);
+            }
+            return LuaValue.NONE;
+        });
+
+        klass.addMethod("callBase", (self, args) -> {
+            if (!(self instanceof ScriptCallBase cb)) {
+                return LuaValue.FALSE;
+            }
+            return LuaValue.valueOf(cb.scriptCallBase(args.optjstring(2, "")));
+        });
         klass.addMethod("talk", (self, args) -> {
             log.debug("[{}:talk] {}", klass.name, args.optjstring(3, args.optjstring(2, "")));
             return LuaValue.NONE;
         });
-        for (String name : new String[]{"playSound", "sendAnimation", "sendAnimationXY",
+        /**
+         * bll_sendanim(anim, kali): mainkan animasi pada benda ini untuk
+         * pemain di sekitarnya.
+         */
+        klass.addMethod("sendAnimation", (self, args) -> {
+            if (self instanceof org.rtk.map.data.BlockList bl) {
+                org.rtk.map.Clif.sendAnimation(bl, args.optint(2, 0), args.optint(3, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        /** bll_sendanimxy(anim, x, y, kali): animasi pada sebuah petak. */
+        klass.addMethod("sendAnimationXY", (self, args) -> {
+            if (self instanceof org.rtk.map.data.BlockList bl) {
+                org.rtk.map.Clif.sendAnimationXy(bl, args.optint(2, 0),
+                        args.optint(5, 0), args.optint(3, 0), args.optint(4, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        for (String name : new String[]{"playSound",
                 "spawn", "delete", "deliddb"}) {
             klass.addMethod(name, (self, args) -> {
                 engine.warnStub(klass.name + ":" + name + "()");
@@ -349,6 +587,196 @@ final class Bindings {
     // ------------------------------------------------------------------
     // helpers
     // ------------------------------------------------------------------
+
+    /**
+     * map_foreachincell() + bll_getobjects_helper: benda pada satu petak,
+     * sebagai tabel Lua 1-basis.
+     *
+     * <p><b>Bedanya varian "Alive" bukan soal mob.</b> Kedua varian sama-sama
+     * melewati mob yang sudah mati dan pemain ber-stealth; yang <b>hanya</b>
+     * ada di {@code getAliveObjectsInCell} adalah melewati pemain yang
+     * sedang mati ({@code status.state == 1}) — lihat
+     * {@code bll_getaliveobjects_helper} di sl.c. Sempat salah dibaca
+     * sebagai penyaring mob.</p>
+     *
+     * @param hidupSaja true untuk varian {@code getAliveObjects*}
+     */
+    private static LuaValue objectsAtCell(ScriptEngine engine, int m, int x, int y,
+                                          int tipe, boolean hidupSaja) {
+        var map = org.rtk.map.MapServer.world.get(m);
+        if (map == null) {
+            return new LuaTable();
+        }
+        return collect(engine, map.objectsAt(x, y), tipe, hidupSaja);
+    }
+
+    /**
+     * bll_getobjects_helper / bll_getaliveobjects_helper: susun benda jadi
+     * tabel Lua 1-basis, dengan penyaring yang sama di semua varian
+     * {@code getObjects*}.
+     */
+    private static LuaValue collect(ScriptEngine engine,
+                                    Iterable<? extends org.rtk.map.data.BlockList> src,
+                                    int tipe, boolean hidupSaja) {
+        LuaTable t = new LuaTable();
+        int flags = tipe <= 0 ? org.rtk.map.data.BlockList.BL_ALL : tipe;
+        int i = 1;
+        for (org.rtk.map.data.BlockList bl : src) {
+            if ((flags & bl.blFlag()) == 0) {
+                continue;
+            }
+            if (bl instanceof org.rtk.map.Mob mb && !mb.isAlive()) {
+                continue;
+            }
+            if (bl instanceof org.rtk.map.User u) {
+                if ((u.optFlags & org.rtk.map.User.OPT_STEALTH) != 0) {
+                    continue;
+                }
+                if (hidupSaja && u.status.state == 1) {
+                    continue;
+                }
+            }
+            t.set(i++, engine.objectRef(bl));
+        }
+        return t;
+    }
+
+    /** map_foreachinarea(..., AREA, ...): benda di area pandang sebuah benda. */
+    private static LuaValue objectsInArea(ScriptEngine engine, Object self,
+                                          int tipe, boolean hidupSaja) {
+        org.rtk.map.data.BlockList src = blockOf(self);
+        if (src == null) {
+            return new LuaTable();
+        }
+        var map = org.rtk.map.MapServer.world.get(src.m);
+        if (map == null) {
+            return new LuaTable();
+        }
+        java.util.List<org.rtk.map.data.BlockList> hasil = new java.util.ArrayList<>();
+        for (org.rtk.map.data.BlockList.Type t : org.rtk.map.data.BlockList.Type.values()) {
+            map.foreachInArea(src.x, src.y, t, hasil::add);
+        }
+        return collect(engine, hasil, tipe, hidupSaja);
+    }
+
+    /** Benda skrip -&gt; benda peta; pemain lewat pemiliknya. */
+    private static org.rtk.map.data.BlockList blockOf(Object self) {
+        if (self instanceof org.rtk.map.data.BlockList bl) {
+            return bl;
+        }
+        if (self instanceof ScriptPlayer p
+                && p.owner instanceof org.rtk.map.data.BlockList bl) {
+            return bl;
+        }
+        return null;
+    }
+
+    /**
+     * Method yang di C dipasang lewat {@code bll_extendproto} — artinya
+     * <b>Player, NPC, dan Mob memiliki set yang sama persis</b>.
+     *
+     * <p>Ini pernah salah diasumsikan sebagai milik pemain saja, sehingga
+     * {@code npc:addNPC(...)} dan {@code npc:getObjectsInCell(...)} gagal
+     * dengan "attempt to call nil" — ditemukan dari `map.log` server yang
+     * berjalan. Kalau menambah binding, periksa dulu apakah namanya ada di
+     * {@code bll_extendproto} (sl.c ±4285) sebelum menaruhnya di
+     * {@code definePlayer}.</p>
+     */
+    static void defineObjectQueries(ScriptEngine engine, ScriptClass klass) {
+        /**
+         * bll_addnpc(): lahirkan NPC sementara. Isinya tidak ada yang
+         * khusus pemain — penangan kelahiran NPC memanggilnya dari NPC.
+         */
+        klass.addMethod("addNPC", (self, args) -> {
+            var arg9 = args.arg(10);   // arg(1) = self
+            long moveTime = arg9.isnumber() ? (long) arg9.todouble() : 0;
+            String namaTampilan = arg9.isstring() && !arg9.isnumber()
+                    ? arg9.tojstring() : "";
+            org.rtk.map.MapServer.npcs.addTemp(engine, org.rtk.map.MapServer.world,
+                    args.optjstring(2, ""), args.optint(3, 0), args.optint(4, 0),
+                    args.optint(5, 0), args.optint(6, 0),
+                    (long) args.optdouble(7, 0), (long) args.optdouble(8, 0),
+                    (long) args.optdouble(9, 0), moveTime, namaTampilan);
+            return LuaValue.NONE;
+        });
+
+        /**
+         * bll_objectcanmove() / bll_objectcanmovefrom() ->
+         * {@code clif_object_canmove()}.
+         *
+         * <p><b>Selalu false, dan itu benar.</b> Keduanya membaca
+         * {@code objectFlags[]}, dan baris yang mengisi tabel itu
+         * ({@code objectFlags[z] = flag;} di {@code object_flag_init},
+         * map.c:1766) <b>dikomentari</b> di sumber C — jadi pada build
+         * aslinya keduanya juga selalu mengembalikan 0. Mengembalikan
+         * nilai lain akan membuat perilaku port ini berbeda dari server
+         * yang ditirunya.</p>
+         */
+        klass.addMethod("objectCanMove", (self, args) -> LuaValue.valueOf(0));
+        klass.addMethod("objectCanMoveFrom", (self, args) -> LuaValue.valueOf(0));
+
+        klass.addMethod("getObjectsInCell", (self, args) -> objectsAtCell(engine,
+                args.optint(2, -1), args.optint(3, -1), args.optint(4, -1),
+                args.optint(5, -1), false));
+        klass.addMethod("getAliveObjectsInCell", (self, args) -> objectsAtCell(engine,
+                args.optint(2, -1), args.optint(3, -1), args.optint(4, -1),
+                args.optint(5, -1), true));
+        // Beda ...WithTraps hanya pada barang di lantai bertipe ITM_TRAPS;
+        // subsistem BL_ITEM belum diport, jadi untuk sekarang identik.
+        klass.addMethod("getObjectsInCellWithTraps", (self, args) -> objectsAtCell(engine,
+                args.optint(2, -1), args.optint(3, -1), args.optint(4, -1),
+                args.optint(5, -1), false));
+        klass.addMethod("getAliveObjectsInCellWithTraps", (self, args) -> objectsAtCell(engine,
+                args.optint(2, -1), args.optint(3, -1), args.optint(4, -1),
+                args.optint(5, -1), true));
+
+        klass.addMethod("getObjectsInArea", (self, args) ->
+                objectsInArea(engine, self, args.optint(2, -1), false));
+        klass.addMethod("getAliveObjectsInArea", (self, args) ->
+                objectsInArea(engine, self, args.optint(2, -1), true));
+
+        // SAMEMAP: seluruh peta tempat benda ini berada.
+        klass.addMethod("getObjectsInSameMap", (self, args) -> {
+            org.rtk.map.data.BlockList src = blockOf(self);
+            return src == null ? new LuaTable()
+                    : objectsOfMap(engine, src.m, args.optint(2, -1), false);
+        });
+        klass.addMethod("getAliveObjectsInSameMap", (self, args) -> {
+            org.rtk.map.data.BlockList src = blockOf(self);
+            return src == null ? new LuaTable()
+                    : objectsOfMap(engine, src.m, args.optint(2, -1), true);
+        });
+
+        klass.addMethod("getObjectsInMap", (self, args) ->
+                objectsOfMap(engine, args.optint(2, -1), args.optint(3, -1), false));
+        klass.addMethod("getAliveObjectsInMap", (self, args) ->
+                objectsOfMap(engine, args.optint(2, -1), args.optint(3, -1), true));
+
+        /** bll_getblock(id) -> map_id2bl(): cari benda dari id blok. */
+        klass.addMethod("getBlock", (self, args) -> {
+            org.rtk.map.data.BlockList bl =
+                    org.rtk.map.MapServer.blockById((long) args.optdouble(2, 0));
+            return bl == null ? LuaValue.NIL : engine.objectRef(bl);
+        });
+
+        /** bll_getusers(): SEMUA pemain online, bukan hanya sepeta. */
+        klass.addMethod("getUsers", (self, args) -> {
+            java.util.List<org.rtk.map.data.BlockList> semua =
+                    new java.util.ArrayList<>(org.rtk.map.MapServer.onlineChars.values());
+            return collect(engine, semua, org.rtk.map.data.BlockList.BL_PC, false);
+        });
+    }
+
+    private static LuaValue objectsOfMap(ScriptEngine engine, int m, int tipe,
+                                         boolean hidupSaja) {
+        java.util.List<org.rtk.map.data.BlockList> hasil = new java.util.ArrayList<>();
+        for (Object o : org.rtk.map.MapServer.objectsInMap(m, tipe)) {
+            if (o instanceof org.rtk.map.data.BlockList bl) {
+                hasil.add(bl);
+            }
+        }
+        return collect(engine, hasil, tipe, hidupSaja);
+    }
 
     /** Concatenates the string entries of a dialog table (or a bare string). */
     private static String flattenStrings(LuaValue v) {

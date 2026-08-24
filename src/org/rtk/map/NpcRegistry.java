@@ -198,6 +198,79 @@ public final class NpcRegistry {
         log.info("[NPC] {} perlengkapan NPC dimuat dari {} baris", n[0], rows);
     }
 
+    /** Id berikutnya untuk NPC sementara. */
+    private long nextTempId = Npc.NPCT_START_NUM;
+
+    /**
+     * bll_addnpc(): lahirkan NPC sementara dari skrip.
+     *
+     * <p>Dipakai 54× oleh konten — jebakan, dekorasi, dan NPC event.
+     * Idnya diambil dari rentang terpisah ({@link Npc#NPCT_START_NUM}) agar
+     * tidak bertabrakan dengan NPC tetap dari tabel, dan NPC-nya langsung
+     * masuk indeks blok <b>dan</b> indeks id.</p>
+     *
+     * <p>Setelah lahir, kait skrip {@code on_spawn} dipanggil — persis
+     * seperti di C.</p>
+     *
+     * @return NPC yang baru lahir, atau null bila petanya tidak dimuat
+     */
+    public Npc addTemp(org.rtk.map.script.ScriptEngine engine, MapRegistry world,
+                       String name, int m, int x, int y, int subtype,
+                       long actionTime, long duration, long ownerId, long moveTime,
+                       String displayName) {
+        MapData map = world.get(m);
+        if (map == null) {
+            log.warn("[NPC] skrip melahirkan '{}' di peta {} yang tidak dimuat", name, m);
+            return null;
+        }
+
+        Npc nd = new Npc();
+        nd.name = name == null ? "" : name;
+        nd.displayName = displayName == null || displayName.isEmpty() ? "nothing" : displayName;
+        nd.subtype = subtype;
+        nd.m = m;
+        nd.x = Math.min(Math.max(x, 0), map.xs - 1);
+        nd.y = Math.min(Math.max(y, 0), map.ys - 1);
+        nd.startM = nd.m;
+        nd.startX = nd.x;
+        nd.startY = nd.y;
+        nd.actionTime = actionTime;
+        nd.duration = duration;
+        nd.ownerId = ownerId;
+        nd.moveTime = moveTime;
+        nd.temporary = true;
+        nd.id = nextTempId++;
+
+        if (nd.occupiesTile() && !map.addBlock(nd)) {
+            log.warn("[NPC] '{}' gagal masuk indeks peta {} di ({},{})", nd.name, m, nd.x, nd.y);
+            return null;
+        }
+        npcs.add(nd);
+        byId.put(nd.id, nd);
+        byName.putIfAbsent(nd.name, nd);
+
+        if (engine != null) {
+            fire(engine, nd, "on_spawn");
+        }
+        return nd;
+    }
+
+    /**
+     * Cabut NPC sementara dari dunia. NPC tetap dari tabel tidak boleh
+     * dihapus lewat sini — mereka hidup selama server hidup.
+     */
+    public boolean removeTemp(Npc nd, MapRegistry world) {
+        if (nd == null || !nd.temporary) {
+            return false;
+        }
+        MapData map = world.get(nd.m);
+        if (map != null && nd.onMap) {
+            map.delBlock(nd);
+        }
+        byId.remove(nd.id);
+        return npcs.remove(nd);
+    }
+
     /**
      * npc_runtimers(): satu tik timer NPC — dipanggil tiap 100 ms.
      *
@@ -217,7 +290,25 @@ public final class NpcRegistry {
             return 0;
         }
         int fired = 0;
+        java.util.List<Npc> kedaluwarsa = null;
+
         for (Npc nd : npcs) {
+            // npc_duration(): NPC sementara berumur terbatas memicu
+            // `endAction` lalu dicabut dari dunia
+            if (nd.temporary && nd.duration > 0) {
+                nd.duraTimer += TICK_MS;
+                if (nd.duraTimer >= nd.duration) {
+                    nd.duraTimer = 0;
+                    if (fire(engine, nd, "endAction")) {
+                        fired++;
+                    }
+                    if (kedaluwarsa == null) {
+                        kedaluwarsa = new ArrayList<>();
+                    }
+                    kedaluwarsa.add(nd);
+                    continue;
+                }
+            }
             if (nd.actionTime > 0) {
                 nd.actionTimer += TICK_MS;
                 if (nd.actionTimer >= nd.actionTime) {
@@ -237,6 +328,12 @@ public final class NpcRegistry {
                 }
             }
         }
+
+        if (kedaluwarsa != null) {
+            for (Npc nd : kedaluwarsa) {
+                removeTemp(nd, MapServer.world);
+            }
+        }
         return fired;
     }
 
@@ -251,7 +348,22 @@ public final class NpcRegistry {
      */
     private boolean fire(org.rtk.map.script.ScriptEngine engine, Npc nd, String method) {
         try {
-            return engine.doScript(nd.name, method);
+            // C selalu mengirim NPC-nya sendiri sebagai argumen pertama, dan
+            // pemiliknya sebagai argumen kedua bila ada
+            // (`sl_doscript_blargs(nd->name, "move", 2, &nd->bl, &tsd->bl)`).
+            // Skrip memakainya langsung — `function(npc) ... npc.side ...` —
+            // jadi memanggil tanpa argumen membuat SETIAP kait timer error
+            // dengan "attempt to index nil". Pernah kejadian.
+            var npcRef = engine.objectRef(nd);
+            if (nd.ownerId != 0) {
+                for (User u : MapServer.onlineChars.values()) {
+                    if (u.id == nd.ownerId) {
+                        return engine.doScript(nd.name, method, npcRef,
+                                engine.playerRef(u.scriptPlayer()));
+                    }
+                }
+            }
+            return engine.doScript(nd.name, method, npcRef);
         } catch (RuntimeException e) {
             log.error("[NPC] kait '{}' pada {} gagal", method, nd.name, e);
             return false;
@@ -261,4 +373,288 @@ public final class NpcRegistry {
     private static String str(String v) {
         return v == null ? "" : v;
     }
+    // ------------------------------------------------------------------
+    // npc_move(): NPC melangkah satu petak ke arah hadapnya
+    // ------------------------------------------------------------------
+
+    /**
+     * Port of npc_move() (map/npc.c) — dipakai skrip lewat
+     * {@code npc:move()}, kait AI NPC yang paling sering dipanggil.
+     *
+     * <p>Alurnya: hitung petak tujuan dari {@code nd.side}, tolak bila
+     * tujuannya <b>portal</b> (NPC tidak boleh menginjak portal), tolak
+     * bila ada benda atau tembok yang menghalangi, lalu pindahkan dan
+     * siarkan. Sekalian dihitung jalur petak yang baru terbuka di depan
+     * NPC supaya pemain di situ melihatnya masuk.</p>
+     *
+     * <p><b>Dua pemeriksaan C yang sengaja tidak diport:</b>
+     * {@code clif_object_canmove()} dan {@code clif_object_canmove_from()}
+     * membaca tabel {@code objectFlags[]}. Tabel itu di-alokasi nol di
+     * {@code object_flag_init()} dan barisnya yang mengisi
+     * ({@code objectFlags[z] = flag;}) <b>dikomentari</b> di sumber aslinya
+     * — jadi keduanya selalu mengembalikan 0 pada build C yang sebenarnya.
+     * Meniru keduanya berarti menambah pembacaan {@code SObj.tbl} (18.954
+     * entri) yang efeknya nol.</p>
+     *
+     * @return true bila NPC benar-benar berpindah
+     */
+    public static boolean move(Npc nd) {
+        if (nd == null) {
+            return false;
+        }
+        org.rtk.map.data.MapData map = MapServer.world.get(nd.m);
+        if (map == null) {
+            return false;
+        }
+
+        final int backX = nd.x;
+        final int backY = nd.y;
+        final int direction = nd.side;
+        int dx = backX;
+        int dy = backY;
+
+        // Jalur petak yang baru terbuka di depan NPC. Angka-angka ini
+        // ditiru apa adanya dari C — tidak simetris, dan sengaja begitu:
+        // area pandang klien 19x17 dengan titik pandang tidak di tengah.
+        int x0 = backX;
+        int y0 = backY;
+        int x1 = 0;
+        int y1 = 0;
+        boolean nothingNew = false;
+
+        switch (direction) {
+            case 0 -> { // atas
+                if (backY > 0) {
+                    dy = backY - 1;
+                    x0 -= 9;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    y0 -= 9;
+                    y1 = 1;
+                    x1 = 19;
+                    if (y0 < 7) {
+                        nothingNew = true;
+                    }
+                    if (y0 == 7) {
+                        y1 += 7;
+                        y0 = 0;
+                    }
+                    if (x0 + 19 + 9 >= map.xs) {
+                        x1 += 9 - ((x0 + 19 + 9) - map.xs);
+                    }
+                    if (x0 <= 8) {
+                        x1 += x0;
+                        x0 = 0;
+                    }
+                }
+            }
+            case 1 -> { // kanan
+                if (backX < map.xs) {
+                    x0 += 10;
+                    y0 -= 8;
+                    if (y0 < 0) {
+                        y0 = 0;
+                    }
+                    dx = backX + 1;
+                    y1 = 17;
+                    x1 = 1;
+                    if (x0 > map.xs - 9) {
+                        nothingNew = true;
+                    }
+                    if (x0 == map.xs - 9) {
+                        x1 += 9;
+                    }
+                    if (y0 + 17 + 8 >= map.ys) {
+                        y1 += 8 - ((y0 + 17 + 8) - map.ys);
+                    }
+                    if (y0 <= 7) {
+                        y1 += y0;
+                        y0 = 0;
+                    }
+                }
+            }
+            case 2 -> { // bawah
+                if (backY < map.ys) {
+                    x0 -= 9;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    y0 += 9;
+                    dy = backY + 1;
+                    y1 = 1;
+                    x1 = 19;
+                    if (y0 + 8 > map.ys) {
+                        nothingNew = true;
+                    }
+                    if (y0 + 8 == map.ys) {
+                        y1 += 8;
+                    }
+                    if (x0 + 19 + 9 >= map.xs) {
+                        x1 += 9 - ((x0 + 19 + 9) - map.xs);
+                    }
+                    if (x0 <= 8) {
+                        x1 += x0;
+                        x0 = 0;
+                    }
+                }
+            }
+            case 3 -> { // kiri
+                if (backX > 0) {
+                    x0 -= 10;
+                    y0 -= 8;
+                    if (y0 < 0) {
+                        y0 = 0;
+                    }
+                    y1 = 17;
+                    x1 = 1;
+                    dx = backX - 1;
+                    if (x0 < 8) {
+                        nothingNew = true;
+                    }
+                    if (x0 == 8) {
+                        x0 = 0;
+                        x1 += 8;
+                    }
+                    if (y0 + 17 + 8 >= map.ys) {
+                        y1 += 8 - ((y0 + 17 + 8) - map.ys);
+                    }
+                    if (y0 <= 7) {
+                        y1 += y0;
+                        y0 = 0;
+                    }
+                }
+            }
+            default -> {
+                // Arah di luar 0..3 tidak menggeser apa pun — sama seperti
+                // `switch` tanpa default di C. Lihat Peringatan #13.
+            }
+        }
+
+        if (dx >= map.xs) {
+            dx = map.xs - 1;
+        }
+        if (dy >= map.ys) {
+            dy = map.ys - 1;
+        }
+
+        // NPC tidak boleh menginjak portal.
+        if (map.warpAt(dx, dy) != null) {
+            return false;
+        }
+
+        if (blockedBy(map, dx, dy, nd)) {
+            return false;
+        }
+
+        if (!map.walkable(dx, dy)) {
+            return false;
+        }
+
+        if (x0 > map.xs) {
+            x0 = map.xs - 1;
+        }
+        if (y0 > map.ys) {
+            y0 = map.ys - 1;
+        }
+        if (x0 < 0) {
+            x0 = 0;
+        }
+        if (y0 < 0) {
+            y0 = 0;
+        }
+        if (dx >= map.xs || dx < 0) {
+            dx = backX;
+        }
+        if (dy >= map.ys || dy < 0) {
+            dy = backY;
+        }
+
+        if (dx == backX && dy == backY) {
+            return false;
+        }
+
+        map.moveBlock(nd, dx, dy);
+
+        if (!nothingNew && x1 > 0 && y1 > 0) {
+            Clif.npcRevealStrip(nd, map, x0, y0, x0 + (x1 - 1), y0 + (y1 - 1));
+        }
+
+        Clif.npcMove(nd, backX, backY);
+        return true;
+    }
+
+    /**
+     * Port of npc_warp() (map/npc.c) — pindahkan NPC seketika ke peta lain.
+     *
+     * <p>Penjaga yang ikut diport: hanya NPC ber-id di atas
+     * {@code NPC_START_NUM} yang boleh dipindah. Setelah pindah, wujudnya
+     * digambar ulang untuk pemain di area tujuan.</p>
+     */
+    public static void warp(Npc nd, int m, int x, int y) {
+        if (nd == null || nd.id < Npc.NPC_START_NUM) {
+            return;
+        }
+        org.rtk.map.data.MapData asal = MapServer.world.get(nd.m);
+        if (asal != null) {
+            asal.delBlock(nd);
+        }
+        org.rtk.map.data.MapData tujuan = MapServer.world.get(m);
+        if (tujuan == null) {
+            log.warn("[NPC] {} diminta pindah ke peta {} yang tidak ada", nd.name, m);
+            if (asal != null) {
+                asal.addBlock(nd);
+            }
+            return;
+        }
+        nd.m = m;
+        nd.x = x;
+        nd.y = y;
+        tujuan.addBlock(nd);
+
+        tujuan.foreachInArea(x, y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (bl instanceof User sd) {
+                Clif.sendNpcLook(sd, nd);
+            }
+        });
+    }
+
+    /**
+     * npc_move_sub(): true bila ada benda di petak tujuan yang menghalangi.
+     *
+     * <p>Yang <b>tidak</b> menghalangi: NPC ber-subtype bukan nol, mob yang
+     * sudah mati, pemain yang mati di peta ber-{@code show_ghosts}, pemain
+     * ber-state -1, dan GM level 50 ke atas — GM tinggi dilewati NPC begitu
+     * saja.</p>
+     */
+    private static boolean blockedBy(org.rtk.map.data.MapData map, int dx, int dy, Npc nd) {
+        for (org.rtk.map.data.BlockList bl : map.objectsAt(dx, dy)) {
+            if (bl == nd) {
+                continue;
+            }
+            if (bl instanceof Npc other) {
+                if (other.subtype != 0) {
+                    continue;
+                }
+                return true;
+            }
+            if (bl instanceof Mob mb) {
+                if (!mb.isAlive()) {
+                    continue;
+                }
+                return true;
+            }
+            if (bl instanceof User sd) {
+                if (sd.status.state == -1 || sd.status.gmLevel >= 50) {
+                    continue;
+                }
+                if (map.showGhosts != 0 && sd.status.state == 1) {
+                    continue;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

@@ -238,7 +238,7 @@ public final class LoginClif {
                     s.wfifoString(11, key);
                     s.wfifoSet(11 + key.length());
                 } else {
-                    log.info("patching");
+                    log.info("patching — versi klien {} != versi server {}", ver, nexVersion);
                     String url = patchUrl;
                     s.wfifoB(0, 0xAA);
                     s.wfifoWBE(1, 6 + url.length()); // 0x29 with the original URL

@@ -95,6 +95,44 @@ public class ScriptPlayer {
         java.util.List<Integer> scriptItemSlots(java.util.List<String> names);
 
         /**
+         * pcl_addspell(): ajarkan mantra. Menerima nama atau id.
+         * @return false bila mantranya tak dikenal atau sudah dimiliki
+         */
+        boolean scriptAddSpell(String nameOrId);
+
+        /** pcl_hasspell(): true bila pemain sudah punya mantra itu. */
+        boolean scriptHasSpell(String nameOrId);
+
+        /**
+         * pcl_bankdeposit(): titipkan barang ke bank.
+         * @return false bila barangnya tidak ada di inventaris
+         */
+        boolean scriptBankDeposit(String itemName, int amount);
+
+        /**
+         * pcl_bankwithdraw(): ambil barang dari bank.
+         * @return jumlah yang benar-benar diambil
+         */
+        int scriptBankWithdraw(String itemName, int amount);
+
+        /** bll_addnpc(): lahirkan NPC sementara dari skrip. */
+        void scriptAddNpc(String name, int m, int x, int y, int subtype,
+                          long actionTime, long duration, long ownerId,
+                          long moveTime, String displayName);
+
+        /** pcl_calcstat(): hitung ulang nilai turunan dari perlengkapan. */
+        void scriptCalcStat();
+
+        /** pcl_addthreat(): catat ancaman pemain ini pada sebuah mob. */
+        void scriptAddThreat(long mobId, long damage);
+
+        /**
+         * pcl_getobjectsincell(): benda di satu petak, disaring jenis
+         * ({@code BL_PC}=1, {@code BL_MOB}=2, {@code BL_NPC}=4 di C).
+         */
+        java.util.List<Object> scriptObjectsInCell(int m, int x, int y, int type);
+
+        /**
          * pcl_getattr(): nilai atribut karakter, atau null bila atribut itu
          * belum diport. Mengembalikan null berarti "biar penanganan biasa
          * yang mengurus", bukan "nilainya nol".
@@ -117,11 +155,20 @@ public class ScriptPlayer {
     /** Everything the scripts "sent" to this player (minitext, dialogs...). */
     public final List<String> outbox = new ArrayList<>();
 
-    /** Cached userdata so scripts always see the same object identity. */
+    /**
+     * Cached userdata so scripts always see the same object identity.
+     *
+     * <p>⚠️ Karena di-cache, satu {@code ScriptPlayer} hanya boleh dipakai
+     * oleh <b>satu</b> {@link ScriptEngine}. Memakainya dengan engine kedua
+     * akan mengembalikan objek milik engine pertama, dan kegagalannya
+     * membingungkan: skrip tampak berjalan tapi tidak pernah menyentuh
+     * keadaan yang benar. Pernah kejadian di uji.</p>
+     */
     LuaValue udata;
     LuaValue registryUdata;
     LuaValue registryStringUdata;
     LuaValue npcIntUdata;
+    LuaValue mapRegistryUdata;
     LuaValue questUdata;
 
     public ScriptPlayer(int id, String name) {

@@ -31,6 +31,13 @@ public final class Npc extends BlockList
     /** Id khusus NPC F1 — satu-satunya yang tidak mengikuti rumus biasa. */
     public static final long F1_NPC = 4294967295L;
 
+    /**
+     * Awal rentang id NPC <b>sementara</b> (NPCT_START_NUM di map.h) —
+     * NPC yang dilahirkan skrip, mis. jebakan dan dekorasi.
+     * Rentangnya terpisah dari NPC tetap supaya keduanya tidak bertabrakan.
+     */
+    public static final long NPCT_START_NUM = 3321225472L;
+
     /** Nama skrip ({@code NpcIdentifier}) — kunci ke kelas skrip Lua. */
     public String name = "";
 
@@ -83,6 +90,21 @@ public final class Npc extends BlockList
      */
     public long moveTimer;
     public long actionTimer;
+
+    /** Penghitung durasi hidup, untuk NPC sementara berumur terbatas. */
+    public long duraTimer;
+
+    /** Umur NPC sementara dalam ms; 0 = tidak pernah kedaluwarsa. */
+    public long duration;
+
+    /** true bila NPC ini dilahirkan skrip, bukan dari tabel NPCs. */
+    public boolean temporary;
+
+    /** true bila NPC sedang kembali ke titik awalnya ({@code returning}). */
+    public boolean returning;
+
+    /** Waktu aksi terakhir, dipakai skrip untuk menjeda perilaku. */
+    public long lastAction;
 
     /**
      * Pemain yang "memiliki" NPC ini, bila ada ({@code nd->owner} di C).
@@ -148,8 +170,63 @@ public final class Npc extends BlockList
             case "repairNPC" -> org.luaj.vm2.LuaValue.valueOf(repairNpc ? 1 : 0);
             case "actionTime" -> org.luaj.vm2.LuaValue.valueOf((double) actionTime);
             case "moveTime" -> org.luaj.vm2.LuaValue.valueOf((double) moveTime);
+            // Titik awal & perilaku kembali: dipakai skrip AI NPC untuk
+            // menghitung jarak dari rumahnya. Tanpa ini `npc.startX` bernilai
+            // nil dan `distanceXY()` gagal dengan "arithmetic on nil" —
+            // pernah membanjiri log dengan ribuan baris.
+            case "startM" -> org.luaj.vm2.LuaValue.valueOf(startM);
+            case "startX" -> org.luaj.vm2.LuaValue.valueOf(startX);
+            case "startY" -> org.luaj.vm2.LuaValue.valueOf(startY);
+            case "retDist" -> org.luaj.vm2.LuaValue.valueOf(returnDistance);
+            case "returning" -> org.luaj.vm2.LuaValue.valueOf(returning);
+            case "owner" -> org.luaj.vm2.LuaValue.valueOf((double) ownerId);
+            case "duration" -> org.luaj.vm2.LuaValue.valueOf((double) duration);
+            case "lastAction" -> org.luaj.vm2.LuaValue.valueOf((double) lastAction);
+            case "subType" -> org.luaj.vm2.LuaValue.valueOf(subtype);
+            case "npcType" -> org.luaj.vm2.LuaValue.valueOf(npcType);
+            case "look" -> org.luaj.vm2.LuaValue.valueOf((double) graphicId);
+            case "lookColor" -> org.luaj.vm2.LuaValue.valueOf((double) graphicColor);
+            case "faceColor" -> org.luaj.vm2.LuaValue.valueOf(faceColor);
+            case "hairColor" -> org.luaj.vm2.LuaValue.valueOf(hairColor);
+            case "skinColor" -> org.luaj.vm2.LuaValue.valueOf(skinColor);
+            case "armorColor" -> org.luaj.vm2.LuaValue.valueOf(armorColor);
             default -> null;
         };
+    }
+
+    /**
+     * npcl_setattr(): atribut NPC yang boleh diubah skrip.
+     *
+     * <p>Skrip AI menulis {@code npc.side} dan {@code npc.returning} setiap
+     * langkah, jadi tanpa setter ini NPC tidak akan pernah berbelok atau
+     * pulang ke titik awalnya.</p>
+     */
+    @Override
+    public boolean scriptSetAttr(String attr, org.luaj.vm2.LuaValue v) {
+        switch (attr) {
+            case "side" -> side = v.toint();
+            case "state" -> state = v.toint();
+            case "returning" -> returning = v.toboolean();
+            case "retDist" -> returnDistance = v.toint();
+            case "actionTime" -> actionTime = (long) v.todouble();
+            case "duration" -> duration = (long) v.todouble();
+            case "owner" -> ownerId = (long) v.todouble();
+            case "lastAction" -> lastAction = (long) v.todouble();
+            case "look" -> graphicId = (long) v.todouble();
+            case "lookColor" -> graphicColor = (long) v.todouble();
+            case "face" -> face = v.toint();
+            case "faceColor" -> faceColor = v.toint();
+            case "hair" -> hair = v.toint();
+            case "hairColor" -> hairColor = v.toint();
+            case "skinColor" -> skinColor = v.toint();
+            case "armorColor" -> armorColor = v.toint();
+            case "sex" -> sex = v.toint();
+            case "subType" -> subtype = v.toint();
+            default -> {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

@@ -211,7 +211,13 @@ public class Session {
                 cap *= 2;
             }
             byte[] n = new byte[cap];
-            System.arraycopy(wdata, 0, n, 0, wdataSize);
+            // Salin SELURUH isi lama, bukan hanya `wdataSize`.
+            // Byte yang sedang disusun berada DI BELAKANG wdataSize
+            // (di `wdataSize + pos`), jadi menyalin sebanyak wdataSize saja
+            // membuang semuanya diam-diam. Pernah kejadian: paket daftar
+            // peta 19.708 byte terkirim sebagai 19.708 byte NOL, dan
+            // tautan map-char putus-nyambung tiap 10 detik.
+            System.arraycopy(wdata, 0, n, 0, wdata.length);
             wdata = n;
         }
     }

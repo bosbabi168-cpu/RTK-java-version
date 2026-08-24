@@ -26,6 +26,12 @@ public final class ItemDb {
     public record Look(int look, int lookColor, int icon, int iconColor) {
     }
 
+    /** Bonus stat yang diberikan sebuah barang saat dikenakan. */
+    public record Stats(int vita, int mana, int might, int will, int grace,
+                        int armor, int hit, int dam, int protection, int healing,
+                        int minSdam, int maxSdam, int minLdam, int maxLdam) {
+    }
+
     /**
      * Data satu jenis barang yang dibutuhkan skrip dan toko.
      *
@@ -35,7 +41,7 @@ public final class ItemDb {
      */
     public record Info(long id, String name, String display, String buyText,
                        int type, int buyPrice, int sellPrice,
-                       int stackAmount, int maxAmount, Look look) {
+                       int stackAmount, int maxAmount, Look look, Stats stats) {
 
         /** Nama yang dilihat pemain; jatuh ke nama skrip bila kosong. */
         public String tampilan() {
@@ -44,8 +50,10 @@ public final class ItemDb {
     }
 
     private static final Look KOSONG = new Look(0, 0, 0, 0);
+    private static final Stats TANPA_STAT =
+            new Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     private static final Info TIDAK_DIKENAL =
-            new Info(0, "", "", "", 0, 0, 0, 1, 0, KOSONG);
+            new Info(0, "", "", "", 0, 0, 0, 1, 0, KOSONG, TANPA_STAT);
 
     private final Map<Long, Look> byId = new HashMap<>();
     private final Map<Long, Info> infoById = new HashMap<>();
@@ -109,8 +117,11 @@ public final class ItemDb {
         int rows = sql.forEachRow(
                 "SELECT `ItmId`,`ItmIdentifier`,`ItmType`,`ItmLook`,`ItmLookColor`,"
                 + "`ItmIcon`,`ItmIconColor`,`ItmBuyPrice`,`ItmSellPrice`,"
-                + "`ItmStackAmount`,`ItmMaximumAmount`,`ItmDescription`,`ItmBuyText` "
-                + "FROM `Items`",
+                + "`ItmStackAmount`,`ItmMaximumAmount`,`ItmDescription`,`ItmBuyText`,"
+                + "`ItmVita`,`ItmMana`,`ItmMight`,`ItmWill`,`ItmGrace`,`ItmArmor`,"
+                + "`ItmHit`,`ItmDam`,`ItmProtection`,`ItmHealing`,"
+                + "`ItmMinimumSDamage`,`ItmMaximumSDamage`,"
+                + "`ItmMinimumLDamage`,`ItmMaximumLDamage` FROM `Items`",
                 rs -> {
                     long id = rs.getLong("ItmId");
                     Look look = new Look(rs.getInt("ItmLook"), rs.getInt("ItmLookColor"),
@@ -124,7 +135,16 @@ public final class ItemDb {
                             rs.getInt("ItmType"),
                             rs.getInt("ItmBuyPrice"), rs.getInt("ItmSellPrice"),
                             rs.getInt("ItmStackAmount"), rs.getInt("ItmMaximumAmount"),
-                            look);
+                            look,
+                            new Stats(rs.getInt("ItmVita"), rs.getInt("ItmMana"),
+                                    rs.getInt("ItmMight"), rs.getInt("ItmWill"),
+                                    rs.getInt("ItmGrace"), rs.getInt("ItmArmor"),
+                                    rs.getInt("ItmHit"), rs.getInt("ItmDam"),
+                                    rs.getInt("ItmProtection"), rs.getInt("ItmHealing"),
+                                    rs.getInt("ItmMinimumSDamage"),
+                                    rs.getInt("ItmMaximumSDamage"),
+                                    rs.getInt("ItmMinimumLDamage"),
+                                    rs.getInt("ItmMaximumLDamage")));
                     byId.put(id, look);
                     infoById.put(id, info);
                     if (!info.name().isEmpty()) {

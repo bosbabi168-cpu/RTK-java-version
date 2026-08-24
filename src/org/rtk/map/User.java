@@ -48,6 +48,17 @@ public final class User extends BlockList
     public int grace;
     public int armor;
 
+    // ---- nilai turunan dari perlengkapan (pc_calcstat) ----
+    public int hit;
+    public int dam;
+    public int protection;
+    public int healing;
+    public int minSdam;
+    public int maxSdam;
+    public int minLdam;
+    public int maxLdam;
+    public int attackSpeed = 20;
+
     // ---- keadaan sesaat ----
     public boolean canMove = true;
     public boolean isWalking;
@@ -157,6 +168,181 @@ public final class User extends BlockList
     }
 
     // ------------------------------------------------------------------
+    // mantra & bank
+    // ------------------------------------------------------------------
+
+    /** Ubah argumen skrip (nama atau nomor) jadi id mantra; 0 = tak dikenal. */
+    private int spellId(String nameOrId) {
+        if (nameOrId == null || nameOrId.isEmpty()) {
+            return 0;
+        }
+        // C menerima keduanya: angka dipakai apa adanya, teks dicari namanya
+        try {
+            return Integer.parseInt(nameOrId.trim());
+        } catch (NumberFormatException e) {
+            return MapServer.spellDb.idOf(nameOrId);
+        }
+    }
+
+    /**
+     * pcl_addspell(): ajarkan mantra.
+     *
+     * <p>Mantra disimpan di {@code CharStatus.spells}, sebuah array
+     * berindeks slot. Slot pertama yang kosong dipakai — sama seperti C
+     * yang menyapu 52 slot mencari yang kosong.</p>
+     */
+    @Override
+    public boolean scriptAddSpell(String nameOrId) {
+        int id = spellId(nameOrId);
+        if (id <= 0 || scriptHasSpell(nameOrId)) {
+            return false;
+        }
+        for (int i = 0; i < status.spells.length; i++) {
+            if (status.spells[i] == 0) {
+                status.spells[i] = id;
+                return true;
+            }
+        }
+        // buku mantra penuh: perbesar, karena panjangnya di sini tidak tetap
+        int[] baru = java.util.Arrays.copyOf(status.spells, status.spells.length + 1);
+        baru[baru.length - 1] = id;
+        status.spells = baru;
+        return true;
+    }
+
+    /** pcl_hasspell(). */
+    @Override
+    public boolean scriptHasSpell(String nameOrId) {
+        int id = spellId(nameOrId);
+        if (id <= 0) {
+            return false;
+        }
+        for (int s : status.spells) {
+            if (s == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * pcl_bankdeposit(): pindahkan barang dari inventaris ke bank.
+     *
+     * <p>Barang sejenis digabung ke slot bank yang sudah ada — di C
+     * pencocokannya juga memeriksa ukiran, pemilik, dan tampilan khusus;
+     * port ini baru mencocokkan id (lihat catatan batas di CLAUDE.md).</p>
+     */
+    @Override
+    public boolean scriptBankDeposit(String itemName, int amount) {
+        var info = MapServer.itemDb.infoByName(itemName);
+        if (info == null || amount <= 0) {
+            return false;
+        }
+        int diambil = scriptRemoveItem(itemName, amount);
+        if (diambil <= 0) {
+            return false;   // tidak punya barangnya
+        }
+        for (org.rtk.common.mmo.BankItem b : status.banks) {
+            if (b.itemId == info.id()) {
+                b.amount += diambil;
+                return true;
+            }
+        }
+        org.rtk.common.mmo.BankItem baru = new org.rtk.common.mmo.BankItem();
+        baru.itemId = info.id();
+        baru.amount = diambil;
+        status.banks.add(baru);
+        return true;
+    }
+
+    /**
+     * pcl_bankwithdraw(): ambil barang dari bank ke inventaris.
+     *
+     * <p>Bila inventaris penuh, barangnya <b>dikembalikan ke bank</b> —
+     * tidak boleh lenyap di tengah jalan.</p>
+     *
+     * @return jumlah yang benar-benar berpindah
+     */
+    @Override
+    public int scriptBankWithdraw(String itemName, int amount) {
+        var info = MapServer.itemDb.infoByName(itemName);
+        if (info == null || amount <= 0) {
+            return 0;
+        }
+        var it = status.banks.iterator();
+        while (it.hasNext()) {
+            org.rtk.common.mmo.BankItem b = it.next();
+            if (b.itemId != info.id()) {
+                continue;
+            }
+            int ambil = (int) Math.min(b.amount, amount);
+            b.amount -= ambil;
+            if (b.amount <= 0) {
+                it.remove();
+            }
+            if (!scriptAddItem(itemName, ambil)) {
+                // inventaris penuh: kembalikan supaya tidak hilang
+                b.amount += ambil;
+                if (!status.banks.contains(b)) {
+                    status.banks.add(b);
+                }
+                return 0;
+            }
+            return ambil;
+        }
+        return 0;
+    }
+
+    /** bll_addnpc(): lahirkan NPC sementara dari skrip. */
+    @Override
+    public void scriptAddNpc(String name, int m, int x, int y, int subtype,
+                             long actionTime, long duration, long ownerId,
+                             long moveTime, String displayName) {
+        MapServer.npcs.addTemp(MapServer.scriptEngine, MapServer.world,
+                name, m, x, y, subtype, actionTime, duration, ownerId,
+                moveTime, displayName);
+    }
+
+    /** pcl_calcstat(): hitung ulang nilai turunan dari perlengkapan. */
+    @Override
+    public void scriptCalcStat() {
+        recalcStatus();
+    }
+
+    /** pcl_addthreat(): catat ancaman pemain ini pada sebuah mob. */
+    @Override
+    public void scriptAddThreat(long mobId, long damage) {
+        // Lewat indeks id, bukan pemindaian daftar: ini dipanggil setiap
+        // kali pukulan mendarat.
+        if (MapServer.npcs.byId(mobId) instanceof Mob mb) {
+            mb.addThreat(id, damage);
+        }
+    }
+
+    /**
+     * pcl_getobjectsincell(): benda di satu petak, disaring bendera BL_*.
+     *
+     * <p>Inilah cara skrip pertarungan menemukan lawan. Objek yang
+     * dikembalikan adalah <b>objek aslinya</b>, bukan salinan — skrip
+     * mengurangi nyawanya lewat situ.</p>
+     */
+    @Override
+    public java.util.List<Object> scriptObjectsInCell(int m, int x, int y, int type) {
+        java.util.List<Object> out = new java.util.ArrayList<>();
+        var map = MapServer.world.get(m);
+        if (map == null) {
+            return out;
+        }
+        int flags = type <= 0 ? org.rtk.map.data.BlockList.BL_ALL : type;
+        for (var bl : map.objectsAt(x, y)) {
+            if ((bl.blFlag() & flags) != 0) {
+                out.add(bl);
+            }
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------
     // atribut karakter: jalur skrip -> CharStatus
     // ------------------------------------------------------------------
 
@@ -187,6 +373,18 @@ public final class User extends BlockList
             case "side" -> (long) status.side;
             case "state" -> (long) status.state;
             case "maxSlots" -> status.maxSlots;
+            // nilai turunan hasil calcStat — dibaca skrip pertarungan
+            case "maxHealth" -> maxHp;
+            case "maxMagic" -> maxMp;
+            case "might" -> (long) might;
+            case "will" -> (long) will;
+            case "grace" -> (long) grace;
+            case "armor" -> (long) armor;
+            case "hit" -> (long) hit;
+            case "dam" -> (long) dam;
+            case "protection" -> (long) protection;
+            case "healing" -> (long) healing;
+            case "attackSpeed" -> (long) attackSpeed;
             default -> null;
         };
     }
@@ -364,12 +562,52 @@ public final class User extends BlockList
      * (bonus perlengkapan, buff, path) menyusul bersama port `pc.c`.
      */
     public void recalcStatus() {
+        // pc_calcstat(): nilai dasar dijaga minimal 5 seperti di C —
+        // karakter bernyawa 0 karena data rusak tetap bisa hidup
+        if (status.baseHp <= 0) {
+            status.baseHp = 5;
+        }
+        if (status.baseMp <= 0) {
+            status.baseMp = 5;
+        }
+
         maxHp = status.baseHp;
         maxMp = status.baseMp;
         might = (int) status.baseMight;
         will = (int) status.baseWill;
         grace = (int) status.baseGrace;
         armor = status.baseArmor;
+        hit = 0;
+        dam = 0;
+        protection = 0;
+        healing = 0;
+        minSdam = 0;
+        maxSdam = 0;
+        minLdam = 0;
+        maxLdam = 0;
+        attackSpeed = 20;
+
+        // bonus dari perlengkapan yang dikenakan
+        for (org.rtk.common.mmo.Item it : status.equip) {
+            if (it == null || it.id <= 0) {
+                continue;
+            }
+            var st = MapServer.itemDb.info(it.id).stats();
+            maxHp += st.vita();
+            maxMp += st.mana();
+            might += st.might();
+            grace += st.grace();
+            will += st.will();
+            armor += st.armor();
+            healing += st.healing();
+            dam += st.dam();
+            hit += st.hit();
+            protection += st.protection();
+            minSdam += st.minSdam();
+            maxSdam += st.maxSdam();
+            minLdam += st.minLdam();
+            maxLdam += st.maxLdam();
+        }
 
         if (status.hp > maxHp) {
             status.hp = maxHp;

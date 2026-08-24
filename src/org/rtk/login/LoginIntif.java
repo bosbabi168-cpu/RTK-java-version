@@ -114,9 +114,15 @@ public final class LoginIntif {
         int code = s.rfifoB(4);
 
         if (code == 0) {
-            ServerLog.logAdd("validlogin", "<%02d:%02d> User: %s IP: %s   Password used: %s%n",
+            // PENYIMPANGAN SENGAJA dari versi C: C mencatat password MENTAH
+            // di sini (`Password used: %s` di login/intif.c:92). Itu masalah
+            // keamanan nyata — berkas log biasa ikut ter-backup, terkirim saat
+            // melaporkan bug, dan dibaca siapa saja yang punya akses server.
+            // Menghilangkannya tidak memengaruhi protokol sama sekali, jadi
+            // tidak ada alasan meniru kebiasaan itu.
+            ServerLog.logAdd("validlogin", "<%02d:%02d> User: %s IP: %s%n",
                     ServerLog.getHour(), ServerLog.getMinute(), sd.name,
-                    client.clientIpString(), sd.pass);
+                    client.clientIpString());
 
             // track the player's IP while online (added 06-29-2017 in the C source)
             sql.update("UPDATE `Character` SET `ChaLastIP` = ? WHERE `ChaName` = ?",
@@ -158,9 +164,13 @@ public final class LoginIntif {
         } else if (code == 0x02) {
             LoginClif.clifMessage(clientFd, 0x03, loginMsg[LGN_WRONGUSER]);
         } else if (code == 0x03) {
-            ServerLog.logAdd("invalidlogin", "<%02d:%02d> Login:%s IP:%s Password used:%s%n",
+            // Sama seperti validlogin: password tidak dicatat. Panjangnya
+            // saja disimpan, karena itu cukup untuk membedakan "salah ketik"
+            // dari "kolom kosong" saat menelusuri percobaan masuk yang gagal,
+            // tanpa membocorkan apa pun yang bisa dipakai ulang.
+            ServerLog.logAdd("invalidlogin", "<%02d:%02d> Login:%s IP:%s (panjang password: %d)%n",
                     ServerLog.getHour(), ServerLog.getMinute(), sd.name,
-                    client.clientIpString(), sd.pass);
+                    client.clientIpString(), sd.pass == null ? 0 : sd.pass.length());
             if (setInvalidCount(client.clientIp()) >= LOCKOUT_ATTEMPTS) {
                 net.addIpLockout(client.clientIp());
                 client.eof = true;
