@@ -295,6 +295,32 @@ public final class Clif {
     }
 
     /**
+     * Paket obrolan (opcode 0x0D) yang dikirim <b>hanya ke pemain ini</b> —
+     * bagian kirim dari {@code pcl_talkself}.
+     *
+     * <p>Ladang [10] berisi {@code panjang + 2}, bukan panjang teksnya.
+     * Itu memang begitu di C; jangan "dibetulkan".</p>
+     *
+     * @param speakerId id benda yang dianggap berbicara; 0 = pemain sendiri
+     */
+    public static void chatSelf(User sd, int type, long speakerId, String text) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        String msg = text == null ? "" : text;
+        byte[] raw = msg.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int len = raw.length;
+
+        head(s, 0x0D, 10 + len);
+        s.wfifoB(5, type);
+        s.wfifoLBE(6, (int) (speakerId == 0 ? sd.status.id : speakerId));
+        s.wfifoB(10, len + 2);
+        s.wfifoBytes(11, raw);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
      * clif_playsound() — mainkan bunyi di sekitar sebuah benda.
      * Opcode 0x19, panjang isi 0x14, disiarkan ke SAMEAREA.
      *

@@ -59,6 +59,14 @@ public interface ClientView {
     /** Satu mantra lenyap dari buku mantra pemain. */
     void playerSpellRemoved(User sd, int slot);
 
+    /**
+     * Satu baris obrolan yang <b>hanya pemain ini</b> yang melihatnya,
+     * seolah diucapkan oleh benda tertentu.
+     *
+     * @param speakerId id benda yang tampak berbicara; 0 = pemain sendiri
+     */
+    void chatLineToPlayer(User sd, int type, long speakerId, String text);
+
     // ------------------------------------------------------------------
     // Benda di dunia (pemain, NPC, atau mob)
     // ------------------------------------------------------------------

@@ -180,6 +180,29 @@ public final class MapServer {
         classDb.load(dbPath);
     }
 
+    /** map_id2sd(): pemain online dengan id itu, atau null. */
+    public static User userById(long id) {
+        for (User u : onlineChars.values()) {
+            if (u.id == id || u.status.id == id) {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    /** map_name2sd(): pemain online dengan nama itu (abai besar-kecil), atau null. */
+    public static User userByName(String name) {
+        if (name == null) {
+            return null;
+        }
+        for (User u : onlineChars.values()) {
+            if (u.status.name.equalsIgnoreCase(name)) {
+                return u;
+            }
+        }
+        return null;
+    }
+
     /**
      * map_id2bl(): cari benda dari id blok. Indeks idnya kebetulan tinggal
      * di {@link NpcRegistry} — namanya menyesatkan, isinya NPC <b>dan</b>

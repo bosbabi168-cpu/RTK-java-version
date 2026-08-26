@@ -35,6 +35,38 @@ final class Bindings {
      * untuk {@code flushKills}.
      */
     /**
+     * bll_talkcolor(): pesan berwarna ke <b>satu pemain</b>.
+     *
+     * <p>⚠️ <b>Kuirk C yang sengaja ditiru.</b> Sumbernya begini:</p>
+     * <pre>
+     * if (lua_isnumber(arg3)) tsd = map_id2sd(...); else tsd = map_name2sd(...);
+     * if (lua_tonumber(arg3) == 0) { /* disiarkan ke area — DIKOMENTARI *&#47; }
+     * else if (!tsd) return;
+     * else clif_sendmsg(tsd, color, msg);
+     * </pre>
+     * <p>Untuk argumen ke-3 berupa <b>nama</b>, {@code lua_tonumber} bernilai
+     * 0, sehingga cabang pertama yang diambil — dan cabang itu kosong. Jadi
+     * di server asli {@code msg(warna, teks, "Nama")} <b>tidak mengirim apa
+     * pun</b>, walau nama itu sudah terlanjur dicari. Hal yang sama berlaku
+     * bila argumen ke-3 tidak diisi. Hanya bentuk <b>id angka bukan-nol</b>
+     * yang benar-benar bekerja — dan itulah yang dipakai 33 dari 38
+     * pemanggilan di korpus ({@code player.ID}, {@code target.ID}).</p>
+     */
+    private static void kirimMsg(Varargs args) {
+        LuaValue sasaran = args.arg(4);
+        // Cabang yang menghasilkan kiriman HANYA bila arg3 angka bukan-nol.
+        if (!sasaran.isnumber() || sasaran.tolong() == 0) {
+            return;
+        }
+        org.rtk.map.User tsd = org.rtk.map.MapServer.userById(sasaran.tolong());
+        if (tsd == null) {
+            return;
+        }
+        org.rtk.map.MapServer.clientView.messageToPlayer(tsd,
+                args.optint(2, 0), args.optjstring(3, ""));
+    }
+
+    /**
      * Bongkar benda permainan dari argumen Lua — padanan
      * {@code typel_topointer()} di C.
      *
@@ -310,6 +342,22 @@ final class Bindings {
                 return LuaValue.valueOf(o.scriptHasSpell(v));
             }
             return LuaValue.FALSE;
+        });
+
+        // ---- obrolan ----
+        // pcl_talkself(type, teks, id): satu baris obrolan yang HANYA pemain
+        // ini melihatnya. Argumen ke-3 opsional; 0 = seolah dirinya sendiri.
+        player.addMethod("talkSelf", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.User sd) {
+                org.rtk.map.MapServer.clientView.chatLineToPlayer(sd,
+                        args.optint(2, 0), args.optlong(4, 0), args.optjstring(3, ""));
+            }
+            return LuaValue.NONE;
+        });
+        player.addMethod("msg", (self, args) -> {
+            kirimMsg(args);
+            return LuaValue.NONE;
         });
 
         // ---- serangan jarak dekat ----
@@ -693,6 +741,13 @@ final class Bindings {
          * ada atau tidak ada di tabel. Skrip AI membandingkannya dengan
          * angka, jadi nil akan meledak.</p>
          */
+        // bll_talkcolor: di C dipasang ke prototipe BERSAMA, jadi NPC dan mob
+        // punya `msg` yang sama persis dengan pemain.
+        klass.addMethod("msg", (self, args) -> {
+            kirimMsg(args);
+            return LuaValue.NONE;
+        });
+
         klass.addMethod("checkThreat", (self, args) -> {
             if (self instanceof org.rtk.map.Mob mb) {
                 return LuaValue.valueOf((double) mb.checkThreat(args.optlong(2, 0)));

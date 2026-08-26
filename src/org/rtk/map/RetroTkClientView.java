@@ -52,6 +52,11 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void chatLineToPlayer(User sd, int type, long speakerId, String text) {
+        Clif.chatSelf(sd, type, speakerId, text);
+    }
+
+    @Override
     public void soundPlayed(BlockList at, int sound) {
         Clif.playSound(at, sound);
     }
