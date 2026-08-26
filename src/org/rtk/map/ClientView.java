@@ -105,6 +105,54 @@ public interface ClientView {
     void popupToPlayer(User sd, String text);
 
     /**
+     * Kamera pemain digeser tanpa ia berpindah petak, dan seluruh isi
+     * pandangannya digambar ulang.
+     */
+    void playerCameraChanged(User sd, int x, int y);
+
+    /** Teks besar melayang di tengah layar pemain (pengumuman event). */
+    void guiTextToPlayer(User sd, String text);
+
+    /** Kotak "kertas" berisi teks panjang, dengan ukuran yang ditentukan skrip. */
+    void paperToPlayer(User sd, String text, int width, int height);
+
+    /**
+     * Alamat web dibuka di klien pemain.
+     *
+     * @param type 0 = peramban dalam permainan, 1 = peramban luar lalu klien
+     *             ditutup, 2 = jendela sembul
+     */
+    void urlToPlayer(User sd, int type, String url);
+
+    /**
+     * Penghitung waktu dipasang di layar pemain.
+     *
+     * @param seconds lama dalam detik
+     */
+    void playerTimerSet(User sd, int type, long seconds);
+
+    /**
+     * Pemain berbicara — <b>namanya disisipkan server</b> di depan pesannya.
+     *
+     * @param type 1 = berteriak (seluruh peta); selain itu bicara biasa
+     */
+    void playerSpoke(User sd, String text, int type);
+
+    /**
+     * Gerak pemain dikunci atau dilepas di sisi klien.
+     *
+     * <p>⚠️ Terbalik dari dugaan: {@code lock} mengirim 0 dan {@code unlock}
+     * mengirim 1. Itu di C.</p>
+     */
+    void playerMovementLocked(User sd, boolean locked);
+
+    /**
+     * Animasi dimainkan pada sebuah benda, tetapi <b>hanya satu pemain</b>
+     * yang melihatnya.
+     */
+    void objectAnimationSeenBy(User viewer, BlockList target, int animation, int times);
+
+    /**
      * Nyawa pemain berubah, dan angka kerusakannya perlu terlihat.
      *
      * @param percent sisa nyawa dalam persen (0..100)

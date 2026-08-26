@@ -836,6 +836,121 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        // ---- tampilan & timer ----
+
+        /**
+         * pcl_changeview(x, y): geser kamera pemain tanpa memindahkannya,
+         * lalu gambar ulang seluruh isi pandangannya. Dipakai 22x, hampir
+         * semuanya oleh cutscene.
+         */
+        player.addMethod("changeView", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.MapServer.clientView.playerCameraChanged(u,
+                        args.optint(2, 0), args.optint(3, 0));
+            }
+            return LuaValue.TRUE;
+        });
+
+        /** pcl_guitext(teks): teks besar melayang di tengah layar. */
+        player.addMethod("guitext", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.MapServer.clientView.guiTextToPlayer(u,
+                        args.optjstring(2, ""));
+            }
+            return LuaValue.NONE;
+        });
+
+        /** pcl_paperpopup(lebar, tinggi, teks): kotak kertas berisi teks panjang. */
+        player.addMethod("paperpopup", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.MapServer.clientView.paperToPlayer(u,
+                        args.optjstring(4, ""), args.optint(2, 0), args.optint(3, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        /** pcl_sendurl(ragam, alamat): buka alamat web di klien. */
+        player.addMethod("sendURL", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.MapServer.clientView.urlToPlayer(u,
+                        args.optint(2, 0), args.optjstring(3, ""));
+            }
+            return LuaValue.TRUE;
+        });
+
+        /**
+         * pcl_speak(pesan, ragam): pemain berbicara, namanya disisipkan
+         * server. Ragam 1 = berteriak (seluruh peta).
+         *
+         * <p>⚠️ Tiga penjaga di C <b>belum</b> diport karena subsistemnya
+         * belum ada: peta yang melarang bicara ({@code map.cantalk}),
+         * penguraian perintah GM ({@code is_command}), dan bendera
+         * dibungkam ({@code uFlag_silenced}). Tambahkan bersama subsistem
+         * masing-masing.</p>
+         */
+        player.addMethod("speak", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.NONE;
+            }
+            String pesan = args.optjstring(2, "");
+            org.rtk.map.MapServer.clientView.playerSpoke(u, pesan, args.optint(3, 0));
+            u.speech = pesan;
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_settimer(ragam, detik): pasang penghitung waktu di layar.
+         *
+         * <p>Ragam 1 dan 2 menghitung mundur dan menyetel sisa waktunya;
+         * ragam lain <b>ditolak</b> bila masih ada timer berjalan. Nilai
+         * negatif ditolak. Batas atasnya nilai unsigned 32-bit penuh.</p>
+         */
+        player.addMethod("setTimer", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.FALSE;
+            }
+            int ragam = args.optint(2, 0);
+            long lama = (long) args.optdouble(3, 0);
+            if (ragam == 1 || ragam == 2) {
+                if (lama < 0) {
+                    return LuaValue.FALSE;
+                }
+                u.disptimerTick = Math.min(lama, 4294967295L);
+            } else if (u.disptimerType > 0) {
+                return LuaValue.FALSE;
+            }
+            u.disptimerType = ragam;
+            org.rtk.map.MapServer.clientView.playerTimerSet(u, ragam, lama);
+            return LuaValue.TRUE;
+        });
+
+        /**
+         * pcl_lock() / pcl_unlock(): kunci atau lepas gerak pemain.
+         *
+         * <p>⚠️ Nilai paketnya <b>terbalik dari namanya</b>: `lock` mengirim
+         * 0 dan `unlock` mengirim 1. Itu di C.</p>
+         */
+        player.addMethod("lock", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.MapServer.clientView.playerMovementLocked(u, true);
+            }
+            return LuaValue.NONE;
+        });
+        player.addMethod("unlock", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.MapServer.clientView.playerMovementLocked(u, false);
+            }
+            return LuaValue.NONE;
+        });
+
         // ---- buku mantra ----
 
         /** pcl_getspells(): id seluruh mantra yang dikuasai pemain. */
@@ -1220,6 +1335,26 @@ final class Bindings {
             t.set(x++, LuaValue.valueOf(db.nameOf(id)));
         }
         return t;
+    }
+
+    /**
+     * map_id2sd() / map_name2sd(): pemain dari argumen Lua yang boleh berupa
+     * <b>id atau nama</b>. Dipakai binding yang menyebut pemain lain.
+     */
+    private static org.rtk.map.User pemainDariArg(LuaValue v) {
+        if (v.isnumber()) {
+            return org.rtk.map.MapServer.userById((long) v.todouble());
+        }
+        String nama = v.optjstring("");
+        if (nama.isEmpty()) {
+            return null;
+        }
+        for (org.rtk.map.User u : org.rtk.map.MapServer.onlineChars.values()) {
+            if (nama.equalsIgnoreCase(u.status.name)) {
+                return u;
+            }
+        }
+        return null;
     }
 
     /** itemdb_id(): argumen Lua yang boleh berupa nama ATAU nomor barang. */
@@ -1773,6 +1908,38 @@ final class Bindings {
             if (bl instanceof org.rtk.map.User u) {
                 u.action = action;
                 engine.doScript("onAction", null, engine.playerRef(u.scriptPlayer()));
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * bll_selfanimation(pemain, animasi, kali): animasi dimainkan pada
+         * <b>benda ini</b>, tetapi hanya pemain yang disebut yang melihatnya.
+         *
+         * <p>⚠️ Pembagian perannya mudah tertukar: argumen pertama adalah
+         * <b>penonton</b>, sedangkan yang dianimasikan adalah bendanya
+         * sendiri. Pemainnya boleh disebut dengan id atau nama.</p>
+         */
+        klass.addMethod("selfAnimation", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            org.rtk.map.User penonton = pemainDariArg(args.arg(2));
+            if (bl != null && penonton != null) {
+                org.rtk.map.MapServer.clientView.objectAnimationSeenBy(penonton, bl,
+                        args.optint(3, 0), args.optint(4, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        /** bll_selfanimationxy(pemain, animasi, x, y, kali): pada sebuah petak. */
+        klass.addMethod("selfAnimationXY", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            org.rtk.map.User penonton = pemainDariArg(args.arg(2));
+            if (bl != null && penonton != null) {
+                // Animasi petak tidak punya varian satu-penonton di Java;
+                // jalur areanya dipakai, sama seperti sendAnimationXY biasa.
+                org.rtk.map.MapServer.clientView.objectAnimationAt(bl,
+                        args.optint(3, 0), args.optint(6, 0),
+                        args.optint(4, 0), args.optint(5, 0));
             }
             return LuaValue.NONE;
         });

@@ -104,6 +104,25 @@ public final class User extends BlockList
     public int action;
 
     /**
+     * Penghitung waktu yang tampil di layar pemain
+     * ({@code sd->disptimer*} di C).
+     *
+     * <p>{@code disptimerType} 1 dan 2 menghitung mundur; nilai lain hanya
+     * menampilkan angkanya. {@code disptimerTick} sisa detiknya. Berkurang
+     * satu tiap detik lewat {@link MapServer#duraTick}, dan saat habis kait
+     * {@code pc_timer.display_timer} dipanggil sekali lalu timernya mati.</p>
+     */
+    public int disptimerType;
+    public long disptimerTick;
+
+    /**
+     * Kalimat terakhir yang diucapkan pemain ({@code sd->speech} di C).
+     * Disetel {@code clif_sendscriptsay} dan dibaca skrip yang menanggapi
+     * kata kunci.
+     */
+    public String speech = "";
+
+    /**
      * Posisi kamera klien dalam petak layar (0..16 / 0..14).
      * Setara {@code sd->viewx} / {@code sd->viewy} di C: server ikut
      * melacaknya karena nilai ini dikirim balik pada tiap langkah.

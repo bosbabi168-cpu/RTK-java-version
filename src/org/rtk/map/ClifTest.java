@@ -215,6 +215,147 @@ public final class ClifTest {
         floorItemTest(map, sd);
         inventoryTest(map, sd);
         spellBookTest(map, sd);
+        displayTest(map, sd);
+    }
+
+    /**
+     * Tampilan & timer: kamera, teks layar, kertas, URL, penghitung waktu,
+     * obrolan pemain, kunci gerak, dan animasi satu-penonton.
+     */
+    private static void displayTest(MapData map, User sd) {
+        log.info("=== tampilan & timer ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+        MapServer.onlineChars.put(sd.fd, sd);
+
+        // --- kamera ---
+        drain(s);
+        Clif.sendXyChange(sd, 8, 7);
+        byte[] p = decrypt(drain(s), sd);
+        check("changeView: opcode 0x04", (p[3] & 0xFF) == 0x04);
+        check("changeView: posisi pemain di [5],[7]",
+                be16(p, 5) == sd.x && be16(p, 7) == sd.y);
+        check("changeView: kamera ikut tersimpan di User",
+                sd.viewX == be16(p, 9) && sd.viewY == be16(p, 11));
+
+        // di tepi peta offsetnya DIGESER satu, bukan dipotong
+        placeAt(map, sd, c[0], c[1]);
+        int sebelum = sd.viewX;
+        Clif.sendXyChange(sd, 0, 0);
+        check("changeView: kamera di tepi digeser, bukan dijepit ke batas",
+                sd.viewX != sebelum || sd.viewX <= 0);
+        drain(s);
+
+        // --- teks layar (0x58 [5]=6) vs bersihkan layar (0x58 [5]=0) ---
+        Clif.guiText(sd, "Pengumuman");
+        p = decrypt(drain(s), sd);
+        check("guitext: opcode 0x58", (p[3] & 0xFF) == 0x58);
+        check("guitext: penanda 6 di [5]", (p[5] & 0xFF) == 0x06);
+        int gl = be16(p, 6);
+        check("guitext: panjang teks di [6]", gl == "Pengumuman".length());
+        check("guitext: isi teks di [8..]", new String(p, 8, gl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Pengumuman"));
+
+        drain(s);
+        Clif.destroyOld(sd);
+        p = decrypt(drain(s), sd);
+        check("destroyOld: opcode 0x58 juga, tapi penanda 0 di [5]",
+                (p[3] & 0xFF) == 0x58 && (p[5] & 0xFF) == 0x00);
+
+        // --- kertas ---
+        drain(s);
+        Clif.paperPopup(sd, "Surat rahasia", 12, 20);
+        p = decrypt(drain(s), sd);
+        check("paperpopup: opcode 0x35", (p[3] & 0xFF) == 0x35);
+        check("paperpopup: lebar & tinggi di [6],[7]",
+                (p[6] & 0xFF) == 12 && (p[7] & 0xFF) == 20);
+        int pl = be16(p, 9);
+        check("paperpopup: isi teks di [11..]", new String(p, 11, pl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Surat rahasia"));
+
+        // --- URL ---
+        drain(s);
+        Clif.sendUrl(sd, 2, "http://contoh");
+        p = decrypt(drain(s), sd);
+        check("sendURL: opcode 0x66", (p[3] & 0xFF) == 0x66);
+        check("sendURL: ragam di [5]", (p[5] & 0xFF) == 2);
+        check("sendURL: alamat di [8..]", new String(p, 8, be16(p, 6),
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("http://contoh"));
+
+        // --- penghitung waktu ---
+        drain(s);
+        Clif.sendTimer(sd, 1, 300);
+        p = decrypt(drain(s), sd);
+        check("setTimer: opcode 0x67", (p[3] & 0xFF) == 0x67);
+        check("setTimer: ragam di [5]", (p[5] & 0xFF) == 1);
+        check("setTimer: lama dalam detik di [6]", be32(p, 6) == 300);
+
+        // tiknya berkurang satu per detik, lalu mati saat habis
+        sd.disptimerType = 1;
+        sd.disptimerTick = 2;
+        Durations.tick(null, sd);
+        check("timer tampilan: berkurang satu tiap tik", sd.disptimerTick == 1);
+        Durations.tick(null, sd);
+        check("timer tampilan: habis -> ragamnya dinolkan",
+                sd.disptimerTick == 0 && sd.disptimerType == 0);
+        Durations.tick(null, sd);
+        check("timer tampilan: yang sudah mati tidak ditik lagi",
+                sd.disptimerTick == 0);
+
+        // --- obrolan pemain: nama disisipkan server ---
+        drain(s);
+        Clif.scriptSay(sd, "halo semua", 0);
+        p = decrypt(drain(s), sd);
+        check("speak: opcode 0x0D", (p[3] & 0xFF) == 0x0D);
+        check("speak: id pembicara di [6]", (be32(p, 6) & 0xFFFFFFFFL) == sd.status.id);
+        int nl = sd.status.name.length();
+        check("speak: nama pemain disisipkan di depan",
+                new String(p, 11, nl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals(sd.status.name));
+        check("speak: pemisah ':' untuk bicara biasa",
+                (p[11 + nl] & 0xFF) == ':' && (p[12 + nl] & 0xFF) == ' ');
+        check("speak: pesannya menyusul", new String(p, 13 + nl, 10,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("halo semua"));
+
+        drain(s);
+        Clif.scriptSay(sd, "tolong", 1);
+        p = decrypt(drain(s), sd);
+        check("speak ragam 1 (teriak): pemisahnya '!' bukan ':'",
+                (p[11 + nl] & 0xFF) == '!');
+
+        // --- kunci gerak: nilainya TERBALIK dari namanya ---
+        drain(s);
+        MapServer.clientView.playerMovementLocked(sd, true);
+        p = decrypt(drain(s), sd);
+        check("lock: opcode 0x51 dengan nilai 0", (p[3] & 0xFF) == 0x51
+                && (p[5] & 0xFF) == 0);
+        drain(s);
+        MapServer.clientView.playerMovementLocked(sd, false);
+        p = decrypt(drain(s), sd);
+        check("unlock: nilai 1 — terbalik dari namanya", (p[5] & 0xFF) == 1);
+
+        // --- animasi satu-penonton ---
+        drain(s);
+        Clif.sendAnimationTo(sd, sd, 42, 3);
+        p = decrypt(drain(s), sd);
+        check("selfAnimation: opcode 0x29", (p[3] & 0xFF) == 0x29);
+        check("selfAnimation: id benda yang dianimasikan di [5]",
+                (be32(p, 5) & 0xFFFFFFFFL) == sd.id);
+        check("selfAnimation: nomor animasi & pengulangan",
+                be16(p, 9) == 42 && be16(p, 11) == 3);
+
+        long flagAsli = sd.status.settingFlags;
+        sd.status.settingFlags = 0;      // FLAG_MAGIC mati
+        drain(s);
+        Clif.sendAnimationTo(sd, sd, 42, 3);
+        check("selfAnimation: pemain yang mematikan efek sihir tidak menerimanya",
+                drain(s).length == 0);
+        sd.status.settingFlags = flagAsli;
+
+        MapServer.onlineChars.remove(sd.fd);
+        drain(s);
     }
 
     /**

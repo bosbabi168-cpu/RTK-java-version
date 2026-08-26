@@ -707,6 +707,250 @@ public final class Clif {
     }
 
     /**
+     * clif_sendxychange() — geser kamera klien tanpa memindahkan pemain.
+     * Opcode 0x04, tata letak sama dengan {@link #sendXy}.
+     *
+     * <p>⚠️ <b>Offset kamera dijepit dengan cara yang aneh dan itu
+     * disengaja:</b> bila kamera akan menembus tepi peta, nilainya
+     * <b>dinaikkan atau diturunkan satu</b>, bukan dipotong ke batas. Angka
+     * 16 dan 14 adalah lebar dan tinggi layar dikurangi satu.</p>
+     */
+    public static void sendXyChange(User sd, int dx, int dy) {
+        Session s = sessionOf(sd);
+        MapData map = MapServer.world.get(sd.m);
+        if (s == null || map == null) {
+            return;
+        }
+        s.wfifoB(0, 0xAA);
+        s.wfifoWBE(1, 0x0A);
+        s.wfifoB(3, 0x04);
+        s.wfifoWBE(5, sd.x);
+        s.wfifoWBE(7, sd.y);
+
+        int kx = dx;
+        if (sd.x - kx < 0) {
+            kx--;
+        } else if (sd.x + (16 - kx) >= map.xs) {
+            kx++;
+        }
+        s.wfifoWBE(9, kx);
+        sd.viewX = kx;
+
+        int ky = dy;
+        if (sd.y - ky < 0) {
+            ky--;
+        } else if (sd.y + (14 - ky) >= map.ys) {
+            ky++;
+        }
+        s.wfifoWBE(11, ky);
+        sd.viewY = ky;
+
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_destroyold() — suruh klien membuang benda yang masih tergambar
+     * dari gambaran sebelumnya. Opcode 0x58 dengan [5] = 0.
+     *
+     * <p>Opcode yang sama dipakai {@link #guiText}; yang membedakan hanya
+     * ladang [5] — 0 membersihkan layar, 6 menampilkan teks.</p>
+     */
+    public static void destroyOld(User sd) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        head(s, 0x58, 3);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, 0x00);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_guitextsd() — teks besar melayang di tengah layar pemain
+     * (pengumuman event). Opcode 0x58 dengan [5] = 6.
+     *
+     * <p>⚠️ Ladang panjangnya ditulis {@code 8 + panjang + 3} — sudah
+     * memasukkan 3 byte indeks kunci yang biasanya ditambahkan
+     * {@code setPacketIndexes} sesudahnya. Jadi paket ini <b>menghitung
+     * ganda</b> dibanding paket lain. Itu ada di C dan ditiru apa adanya;
+     * lihat Peringatan #17 soal jebakan panjang paket.</p>
+     */
+    public static void guiText(User sd, String text) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] raw = (text == null ? "" : text)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x58);
+        s.wfifoB(5, 0x06);
+        s.wfifoWBE(6, raw.length);
+        s.wfifoBytes(8, raw);
+        s.wfifoWBE(1, 8 + raw.length + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_paperpopup() — kotak "kertas" berisi teks panjang, ukurannya
+     * ditentukan skrip. Opcode 0x35.
+     */
+    public static void paperPopup(User sd, String text, int width, int height) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] raw = (text == null ? "" : text)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        head(s, 0x35, raw.length + 11);
+        s.wfifoB(5, 0);
+        s.wfifoB(6, width);
+        s.wfifoB(7, height);
+        s.wfifoB(8, 0);
+        s.wfifoWBE(9, raw.length);
+        s.wfifoBytes(11, raw);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_sendurl() — buka alamat web di klien. Opcode 0x66.
+     *
+     * @param type 0 = peramban dalam permainan, 1 = buka peramban luar lalu
+     *             tutup klien, 2 = jendela sembul
+     */
+    public static void sendUrl(User sd, int type, String url) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] raw = (url == null ? "" : url)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x66);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, type);
+        s.wfifoWBE(6, raw.length);
+        s.wfifoBytes(8, raw);
+        s.wfifoWBE(1, raw.length + 8);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_send_timer() — pasang penghitung waktu di layar pemain.
+     * Opcode 0x67, panjang isi 7.
+     *
+     * @param type   1 dan 2 menghitung mundur; nilai lain hanya menampilkan
+     * @param length lama dalam <b>detik</b>
+     */
+    public static void sendTimer(User sd, int type, long length) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        head(s, 0x67, 7);
+        s.wfifoB(5, type);
+        s.wfifoLBE(6, (int) length);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_sendscriptsay() — pemain berbicara, dengan <b>namanya sendiri
+     * disisipkan di depan</b>. Opcode 0x0D.
+     *
+     * <p>Berbeda dari {@link #speak}, yang mengirim teks apa adanya atas nama
+     * sebuah benda. Di sini server yang menyusun {@code "Nama: pesan"}.</p>
+     *
+     * <p>⚠️ <b>Ragam 1 adalah berteriak</b>, dan tiga hal berubah sekaligus:
+     * pemisahnya {@code '!'} bukan {@code ':'}, dan siarannya ke
+     * <b>seluruh peta</b>, bukan hanya area pandang.</p>
+     *
+     * <p>Ragam &gt;= 10 menandai bahasa dan menambahkan awalan seperti
+     * {@code "EN[Nama]"}; itu <b>belum</b> diport — daftar bahasanya ada di
+     * C tapi tidak satu pun skrip memakainya.</p>
+     */
+    public static void scriptSay(User sd, String text, int type) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        String msg = text == null ? "" : text;
+        byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] raw = msg.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        byte[] buf = new byte[16 + nama.length + raw.length];
+        buf[0] = (byte) 0xAA;
+        putBE16(buf, 1, 10 + nama.length + raw.length);
+        buf[3] = 0x0D;
+        buf[5] = (byte) type;
+        putBE32(buf, 6, (int) sd.status.id);
+        buf[10] = (byte) (nama.length + raw.length + 2);
+        System.arraycopy(nama, 0, buf, 11, nama.length);
+        buf[11 + nama.length] = (byte) (type == 1 ? '!' : ':');
+        buf[12 + nama.length] = (byte) ' ';
+        System.arraycopy(raw, 0, buf, 13 + nama.length, raw.length);
+
+        if (type == 1) {
+            sendToMap(sd, buf, buf.length);
+        } else {
+            sendToArea(sd, buf, buf.length, true);
+        }
+    }
+
+    /**
+     * Bagian gambar-ulang {@code pcl_changeview()}: seluruh isi area pandang
+     * digambar ulang di layar pemain.
+     *
+     * <p>Urutannya diambil dari C dan <b>bukan sembarang</b>: benda
+     * bukan-karakter dulu (satu paket berkelompok), lalu sisa gambar lama
+     * dibuang, baru pemain, NPC, dan mob digambar. Membalik urutannya
+     * membuat benda yang baru digambar ikut terhapus {@code destroyOld}.</p>
+     */
+    public static void redrawSurroundings(User sd) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        java.util.List<org.rtk.map.data.BlockList> benda = new java.util.ArrayList<>();
+        map.foreachInArea(sd.x, sd.y, null, bl -> {
+            if (!(bl instanceof User)) {
+                benda.add(bl);
+            }
+        });
+        objectLookBatch(sd, benda);
+        destroyOld(sd);
+
+        map.foreachInArea(sd.x, sd.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (bl instanceof User other && other != sd) {
+                sendCharLook(sd, other);
+                sendCharLook(other, sd);
+            }
+        });
+        map.foreachInArea(sd.x, sd.y, null, bl -> {
+            if (bl instanceof Npc nd) {
+                sendNpcLook(sd, nd);
+            } else if (bl instanceof Mob mb) {
+                sendMobLook(sd, mb);
+            }
+        });
+    }
+
+    /** clif_send(..., SAMEMAP): siarkan ke seluruh pemain di peta yang sama. */
+    static void sendToMap(org.rtk.map.data.BlockList from, byte[] packet, int len) {
+        for (User to : MapServer.onlineChars.values()) {
+            if (to.m != from.m) {
+                continue;
+            }
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                continue;
+            }
+            ts.wfifoBytes(0, packet, len);
+            ts.wfifoSet(encrypt(ts, to));
+        }
+    }
+
+    /**
      * clif_playsound() — mainkan bunyi di sekitar sebuah benda.
      * Opcode 0x19, panjang isi 0x14, disiarkan ke SAMEAREA.
      *
@@ -3104,24 +3348,41 @@ public final class Clif {
             return;
         }
         map.foreachInArea(src.x, src.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
-            if (!(bl instanceof User to)) {
-                return;
+            if (bl instanceof User to) {
+                sendAnimationTo(to, src, anim, times);
             }
-            if ((to.status.settingFlags & FLAG_MAGIC) == 0) {
-                return;
-            }
-            Session ts = MapServer.net.session(to.fd);
-            if (ts == null) {
-                return;
-            }
-            ts.wfifoB(0, 0xAA);
-            ts.wfifoWBE(1, 0x0A);
-            ts.wfifoB(3, 0x29);
-            ts.wfifoLBE(5, (int) src.id);
-            ts.wfifoWBE(9, anim);
-            ts.wfifoWBE(11, times);
-            ts.wfifoSet(encrypt(ts, to));
         });
+    }
+
+    /**
+     * Badan {@code clif_sendanimation()} untuk <b>satu penonton</b>.
+     *
+     * <p>Perhatikan pembagian perannya, karena mudah tertukar: {@code viewer}
+     * adalah pemain yang <b>melihat</b>, {@code target} adalah benda tempat
+     * animasinya <b>dimainkan</b>. Di C keduanya dua argumen terpisah
+     * ({@code bl} dan {@code t}), dan {@code bll_selfanimation} memakainya
+     * untuk memainkan animasi pada dirinya sendiri tetapi hanya terlihat oleh
+     * satu orang.</p>
+     *
+     * <p>Penyaring FLAG_MAGIC ada di sisi <b>penerima</b>: pemain yang
+     * mematikan efek sihir tidak menerima paketnya sama sekali.</p>
+     */
+    public static void sendAnimationTo(User viewer, org.rtk.map.data.BlockList target,
+                                       int anim, int times) {
+        if ((viewer.status.settingFlags & FLAG_MAGIC) == 0) {
+            return;
+        }
+        Session ts = MapServer.net.session(viewer.fd);
+        if (ts == null) {
+            return;
+        }
+        ts.wfifoB(0, 0xAA);
+        ts.wfifoWBE(1, 0x0A);
+        ts.wfifoB(3, 0x29);
+        ts.wfifoLBE(5, (int) target.id);
+        ts.wfifoWBE(9, anim);
+        ts.wfifoWBE(11, times);
+        ts.wfifoSet(encrypt(ts, viewer));
     }
 
     /**

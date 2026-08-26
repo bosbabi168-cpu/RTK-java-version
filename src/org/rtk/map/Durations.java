@@ -295,7 +295,30 @@ public final class Durations {
      * mob itu masih bernyawa — mantra yang penyihirnya sudah mati berhenti
      * mendapat tik, tapi durasinya tetap berkurang.</p>
      */
+    /**
+     * pc_disptimertick() (map/pc.c) — satu detik penghitung waktu di layar.
+     *
+     * <p>Di C ini timer terpisah yang dipasang {@code pcl_settimer}; di sini
+     * ia menumpang tik satu detik yang sama, karena keduanya berdenyut pada
+     * irama yang sama dan menyapu daftar pemain yang sama.</p>
+     *
+     * <p>Saat habis, kait {@code pc_timer.display_timer} dipanggil
+     * <b>sekali</b> lalu timernya dimatikan — bukan diulang.</p>
+     */
+    private static void tikTimerTampilan(ScriptEngine engine, User sd) {
+        if (sd.disptimerType == 0) {
+            return;
+        }
+        sd.disptimerTick = Math.max(0, sd.disptimerTick - 1);
+        if (sd.disptimerTick <= 0) {
+            sd.disptimerType = 0;
+            kait(engine, sd, "pc_timer", "display_timer", null);
+        }
+    }
+
     public static void tick(ScriptEngine engine, User sd) {
+        tikTimerTampilan(engine, sd);
+
         for (int id : sd.status.spells) {
             if (id > 0) {
                 kait(engine, sd, MapServer.spellDb.nameOf(id), "while_passive", null);

@@ -82,6 +82,51 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void playerCameraChanged(User sd, int x, int y) {
+        // Urutan diambil dari pcl_changeview: kamera dulu, lalu benda-benda
+        // digambar ulang, lalu sisa gambar lama dibuang, baru karakternya.
+        Clif.sendXyChange(sd, x, y);
+        Clif.redrawSurroundings(sd);
+    }
+
+    @Override
+    public void guiTextToPlayer(User sd, String text) {
+        Clif.guiText(sd, text);
+    }
+
+    @Override
+    public void paperToPlayer(User sd, String text, int width, int height) {
+        Clif.paperPopup(sd, text, width, height);
+    }
+
+    @Override
+    public void urlToPlayer(User sd, int type, String url) {
+        Clif.sendUrl(sd, type, url);
+    }
+
+    @Override
+    public void playerTimerSet(User sd, int type, long seconds) {
+        Clif.sendTimer(sd, type, seconds);
+    }
+
+    @Override
+    public void playerSpoke(User sd, String text, int type) {
+        Clif.scriptSay(sd, text, type);
+    }
+
+    @Override
+    public void playerMovementLocked(User sd, boolean locked) {
+        // ⚠️ 0 mengunci, 1 melepas — terbalik dari dugaan, dan itu di C.
+        Clif.blockMovement(sd, locked ? 0 : 1);
+    }
+
+    @Override
+    public void objectAnimationSeenBy(User viewer, BlockList target,
+                                      int animation, int times) {
+        Clif.sendAnimationTo(viewer, target, animation, times);
+    }
+
+    @Override
     public void playerHealthChanged(User sd, int critical, int percent, int damage) {
         Clif.sendPcHealth(sd, critical, percent, damage);
     }
