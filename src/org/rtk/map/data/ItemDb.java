@@ -41,7 +41,8 @@ public final class ItemDb {
      */
     public record Info(long id, String name, String display, String buyText,
                        String text,
-                       int type, int buyPrice, int sellPrice,
+                       int type, int breakOnDeath, long expiresAt,
+                       int buyPrice, int sellPrice,
                        int stackAmount, int maxAmount, int sound, int durability,
                        int protectedValue, int droppable,
                        Look look, Stats stats) {
@@ -56,7 +57,7 @@ public final class ItemDb {
     private static final Stats TANPA_STAT =
             new Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     private static final Info TIDAK_DIKENAL =
-            new Info(0, "", "", "", "", 0, 0, 0, 1, 0, 0, 0, 0, 0, KOSONG, TANPA_STAT);
+            new Info(0, "", "", "", "", 0, 0, 0L, 0, 0, 1, 0, 0, 0, 0, 0, KOSONG, TANPA_STAT);
 
     private final Map<Long, Look> byId = new HashMap<>();
     private final Map<Long, Info> infoById = new HashMap<>();
@@ -112,6 +113,25 @@ public final class ItemDb {
     public static final int ITM_MAP = 22;
     public static final int ITM_QUIVER = 23;
 
+    /**
+     * itemdb_breakondeath(): barang ini hancur saat pemiliknya mati.
+     *
+     * <p>Kolomnya {@code ItmBoD} — <b>BoD = Break on Death</b>, bukan
+     * singkatan lain. Nama "BOD" muncul lagi di {@code getBODItem} dan
+     * {@code checkInvBod}, yang semuanya soal barang hancur ini.</p>
+     */
+    public boolean breaksOnDeath(long itemId) {
+        return info(itemId).breakOnDeath() != 0;
+    }
+
+    /**
+     * itemdb_time(): waktu kedaluwarsa <b>mutlak</b> bawaan jenis barang
+     * (detik epoch), bukan lamanya. 0 = tidak pernah kedaluwarsa.
+     */
+    public long expiresAt(long itemId) {
+        return info(itemId).expiresAt();
+    }
+
     /** itemdb_protected(): nilai perlindungan bawaan barang. */
     public int protectedOf(long itemId) {
         return info(itemId).protectedValue();
@@ -166,7 +186,7 @@ public final class ItemDb {
                 "SELECT `ItmId`,`ItmIdentifier`,`ItmType`,`ItmLook`,`ItmLookColor`,"
                 + "`ItmIcon`,`ItmIconColor`,`ItmBuyPrice`,`ItmSellPrice`,"
                 + "`ItmStackAmount`,`ItmMaximumAmount`,`ItmDescription`,`ItmBuyText`,"
-                + "`ItmText`,"
+                + "`ItmText`,`ItmBoD`,`ItmTimer`,"
                 + "`ItmSound`,`ItmDurability`,`ItmProtected`,`ItmDroppable`,"
                 + "`ItmVita`,`ItmMana`,`ItmMight`,`ItmWill`,`ItmGrace`,`ItmArmor`,"
                 + "`ItmHit`,`ItmDam`,`ItmProtection`,`ItmHealing`,"
@@ -185,6 +205,7 @@ public final class ItemDb {
                             buyText == null ? "" : buyText,
                             teks == null ? "" : teks,
                             rs.getInt("ItmType"),
+                            rs.getInt("ItmBoD"), rs.getLong("ItmTimer"),
                             rs.getInt("ItmBuyPrice"), rs.getInt("ItmSellPrice"),
                             rs.getInt("ItmStackAmount"), rs.getInt("ItmMaximumAmount"),
                             rs.getInt("ItmSound"), rs.getInt("ItmDurability"),

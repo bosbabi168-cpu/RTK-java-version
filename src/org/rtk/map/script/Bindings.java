@@ -1057,6 +1057,123 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        // ---- BOD (Break on Death) ----
+
+        /**
+         * pcl_deductduraequip(): ausi seluruh perlengkapan 10%, hancurkan
+         * yang habis, lalu serahkan daftarnya ke {@code characterLog.bodLog}.
+         */
+        player.addMethod("deductDuraEquip", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Combat.deductDuraEquip(engine, u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /** pcl_checkinvbod(): hancurkan barang inventaris ber-BoD saat pemain mati. */
+        player.addMethod("checkInvBod", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Combat.checkInvBod(engine, u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_getboditem(n): satu barang dari daftar yang hancur pada sapuan
+         * ini. Mengembalikan <b>nil</b> bila indeksnya kosong — skrip
+         * mengandalkan pembedaan itu.
+         */
+        player.addMethod("getBODItem", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            int n = args.optint(2, -1);
+            if (u == null || n < 0 || n >= u.bodItems.size()) {
+                return LuaValue.NIL;
+            }
+            return engine.newInstance(engine.boundItemClass,
+                    new ScriptItem(u.bodItems.get(n)));
+        });
+
+        /** pcl_expireitem(): buang barang yang masa berlakunya habis. */
+        player.addMethod("expireItem", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Combat.expireItems(u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_stripequip(slot, hancurkan, paksa): lepas paksa satu slot
+         * perlengkapan.
+         *
+         * <p>Tiga jalur berbeda, dan yang menentukan adalah <b>ada tidaknya
+         * slot inventaris kosong</b>:</p>
+         * <ul>
+         *   <li>Ada tempat — barangnya masuk inventaris. {@code hancurkan}
+         *       membuatnya dibuang alih-alih disimpan.</li>
+         *   <li>Tidak ada tempat, {@code hancurkan} — barangnya jatuh ke
+         *       lantai lalu <b>langsung dihapus dari lantai</b>.</li>
+         *   <li>Tidak ada tempat, {@code paksa} — barangnya ditinggalkan di
+         *       lantai.</li>
+         * </ul>
+         *
+         * <p>Tanpa {@code hancurkan} maupun {@code paksa}, dan tanpa tempat
+         * di inventaris, <b>tidak terjadi apa-apa</b> — barangnya tetap
+         * dikenakan. Itu di C.</p>
+         */
+        player.addMethod("stripEquip", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            int slot = args.optint(2, -1);
+            if (u == null || slot < 0) {
+                return LuaValue.NONE;
+            }
+            var it = u.status.equipAt(slot);
+            if (it == null || it.id <= 0) {
+                return LuaValue.NONE;
+            }
+            boolean hancurkan = args.optint(3, 0) == 1;
+            boolean paksa = args.optint(4, 0) == 1;
+            String nama = org.rtk.map.MapServer.itemDb.info(it.id).tampilan();
+
+            boolean adaTempat = u.status.inventory.size() < u.status.maxInv;
+            if (adaTempat) {
+                u.status.equip.remove(it);
+                if (hancurkan) {
+                    org.rtk.map.MapServer.clientView.messageToPlayer(u, 5,
+                            nama + " milikmu hancur.");
+                } else {
+                    u.status.inventory.add(it);
+                    org.rtk.map.MapServer.clientView.playerInventorySlotChanged(u,
+                            u.status.inventory.size() - 1);
+                    org.rtk.map.MapServer.clientView.messageToPlayer(u, 5,
+                            nama + " milikmu terlepas paksa.");
+                }
+                org.rtk.map.MapServer.clientView.objectAppearanceChanged(u);
+                return LuaValue.NONE;
+            }
+
+            if (!hancurkan && !paksa) {
+                return LuaValue.NONE;   // C: tidak melakukan apa pun
+            }
+
+            // inventaris penuh: barangnya jatuh ke lantai
+            u.status.equip.remove(it);
+            var fl = org.rtk.map.MapServer.floorItems.drop(u, it.id, Math.max(1, it.amount),
+                    it.dura, it.protectedFlag, it.owner, u.m, u.x, u.y);
+            if (hancurkan && fl != null) {
+                org.rtk.map.MapServer.floorItems.hapus(fl);
+                org.rtk.map.MapServer.clientView.messageToPlayer(u, 5,
+                        nama + " milikmu hancur.");
+            } else {
+                org.rtk.map.MapServer.clientView.messageToPlayer(u, 5,
+                        nama + " milikmu terlepas paksa.");
+            }
+            org.rtk.map.MapServer.clientView.objectAppearanceChanged(u);
+            return LuaValue.NONE;
+        });
+
         /** pcl_updatePath(jalur, tanda): naik jalur; langsung ditulis ke database. */
         player.addMethod("updatePath", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;

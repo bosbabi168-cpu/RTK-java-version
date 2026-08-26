@@ -123,6 +123,27 @@ public final class User extends BlockList
     public String speech = "";
 
     /**
+     * Barang yang <b>hancur pada sapuan yang sedang berjalan</b>
+     * ({@code sd->boditems} di C — BoD = <i>Break on Death</i>).
+     *
+     * <p>⚠️ Ini <b>bukan</b> penyimpanan permanen, melainkan daftar
+     * sementara: {@code deductDuraEquip} dan {@code checkInvBod} mengisinya
+     * sambil menghancurkan barang, memanggil kait
+     * {@code characterLog.bodLog} sekali di akhir, lalu
+     * <b>mengosongkannya</b>. Skrip membacanya lewat {@code getBODItem(n)}
+     * dan atribut {@code BODItemCount} — hanya di dalam kait itu.</p>
+     */
+    public final java.util.List<org.rtk.common.mmo.Item> bodItems =
+            new java.util.ArrayList<>();
+
+    /** Id jenis barang yang baru saja hancur ({@code sd->breakid}). */
+    public long breakId;
+
+    /** Slot yang sedang disapu ({@code sd->equipslot} / {@code sd->invslot}). */
+    public int equipSlot;
+    public int invSlot;
+
+    /**
      * Posisi kamera klien dalam petak layar (0..16 / 0..14).
      * Setara {@code sd->viewx} / {@code sd->viewy} di C: server ikut
      * melacaknya karena nilai ini dikirim balik pada tiap langkah.
@@ -630,6 +651,12 @@ public final class User extends BlockList
             case "side" -> (long) status.side;
             case "state" -> (long) status.state;
             case "maxSlots" -> status.maxSlots;
+            // Jumlah barang yang hancur pada sapuan BOD yang sedang berjalan.
+            // Hanya bermakna di dalam kait `characterLog.bodLog`; di luar itu
+            // selalu 0, karena daftarnya dikosongkan setiap sapuan selesai.
+            case "BODItemCount" -> (long) bodItems.size();
+            /** Id jenis barang yang paling akhir hancur ({@code sd->breakid}). */
+            case "breakId" -> breakId;
             // nilai turunan hasil calcStat — dibaca skrip pertarungan
             case "maxHealth" -> maxHp;
             case "maxMagic" -> maxMp;

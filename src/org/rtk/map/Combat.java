@@ -325,6 +325,199 @@ public final class Combat {
     }
 
     /**
+     * clif_deductduraequip() — sapu <b>seluruh perlengkapan</b>: ausi 10%,
+     * peringatkan saat menipis, dan hancurkan yang habis.
+     *
+     * <p>Dipanggil skrip saat pemain mati. Barang yang hancur ditampung di
+     * {@link User#bodItems}, lalu kait {@code characterLog.bodLog} dipanggil
+     * <b>sekali</b> di akhir sebelum daftarnya dikosongkan.</p>
+     *
+     * <p>⚠️ <b>Perlindungan MENYELAMATKAN barangnya, dan menghentikan
+     * seluruh sapuan.</b> Bila barangnya terlindungi, C mengurangi satu
+     * perlindungan, memulihkan ketahanannya penuh, memanggil kait
+     * {@code equipRestore}, lalu <b>{@code return 0}</b> — dari dalam
+     * perulangan. Jadi slot-slot sesudahnya <b>tidak ikut diperiksa</b> pada
+     * pemanggilan itu, dan {@code bodLog} pun tidak dipanggil. Terlihat
+     * seperti kelalaian, tetapi ditiru apa adanya.</p>
+     */
+    public static void deductDuraEquip(org.rtk.map.script.ScriptEngine engine, User sd) {
+        var map = MapServer.world.get(sd.m);
+        boolean pvp = map != null && map.pvp != 0;
+
+        for (int slot = 0; slot < 14; slot++) {
+            Item it = sd.status.equipAt(slot);
+            if (it == null || it.id <= 0) {
+                continue;
+            }
+            if (pvp) {
+                return;   // C: return, bukan continue — sapuan berhenti total
+            }
+            sd.equipSlot = slot;
+
+            int max = MapServer.itemDb.info(it.id).durability();
+            it.dura -= (int) Math.floor(max * 0.10);
+            peringatkanDura(sd, it, max);
+
+            boolean hancur = it.dura <= 0
+                    || (sd.status.state == PC_DIE && MapServer.itemDb.breaksOnDeath(it.id));
+            if (!hancur) {
+                continue;
+            }
+
+            if (MapServer.itemDb.protectedOf(it.id) > 0 || it.protectedFlag >= 1) {
+                it.protectedFlag -= 1;
+                it.dura = max;
+                MapServer.clientView.playerStatusChanged(sd, Clif.SFLAG_ALL);
+                MapServer.clientView.messageToPlayer(sd, 5,
+                        "Perlengkapanmu terselamatkan!");
+                kait(engine, sd, "characterLog", "equipRestore");
+                return;   // ⚠️ lihat catatan di atas: sapuan berhenti di sini
+            }
+
+            sd.bodItems.add(salin(it));
+            kait(engine, sd, "characterLog", "equipBreak");
+            sd.breakId = it.id;
+            kait(engine, sd, "onBreak", null);
+            kait(engine, sd, MapServer.itemDb.info(it.id).name(), "on_break");
+            sd.status.equip.remove(it);
+
+            MapServer.clientView.playerStatusChanged(sd, Clif.SFLAG_ALL);
+            MapServer.clientView.messageToPlayer(sd, 5, "Perlengkapanmu hancur!");
+        }
+
+        kait(engine, sd, "characterLog", "bodLog");
+        sd.bodItems.clear();
+    }
+
+    /**
+     * clif_checkinvbod() — sapu <b>inventaris</b> untuk barang yang hancur
+     * saat pemiliknya mati ({@code ItmBoD}).
+     *
+     * <p>Bedanya dari {@link #deductDuraEquip}: tidak ada pengausan sama
+     * sekali di sini. Barang inventaris hanya hancur bila pemainnya
+     * <b>sedang mati</b> dan jenisnya memang ber-BoD.</p>
+     *
+     * <p>⚠️ Perlindungan di sini juga menghentikan seluruh sapuan, sama
+     * seperti pada perlengkapan.</p>
+     */
+    public static void checkInvBod(org.rtk.map.script.ScriptEngine engine, User sd) {
+        for (int x = sd.status.inventory.size() - 1; x >= 0; x--) {
+            Item it = sd.status.inventory.get(x);
+            if (it.id <= 0) {
+                continue;
+            }
+            sd.invSlot = x;
+            if (sd.status.state != PC_DIE || !MapServer.itemDb.breaksOnDeath(it.id)) {
+                continue;
+            }
+
+            if (MapServer.itemDb.protectedOf(it.id) > 0 || it.protectedFlag >= 1) {
+                it.protectedFlag -= 1;
+                it.dura = MapServer.itemDb.info(it.id).durability();
+                MapServer.clientView.playerStatusChanged(sd, Clif.SFLAG_ALL);
+                MapServer.clientView.messageToPlayer(sd, 5, "Barangmu terselamatkan!");
+                kait(engine, sd, "characterLog", "invRestore");
+                return;   // sama seperti di perlengkapan: sapuan berhenti
+            }
+
+            sd.bodItems.add(salin(it));
+            kait(engine, sd, "characterLog", "invBreak");
+            sd.breakId = it.id;
+            kait(engine, sd, "onBreak", null);
+            kait(engine, sd, MapServer.itemDb.info(it.id).name(), "on_break");
+
+            // pc_delitem(sd, x, 1, 9): 9 = "diberikan/hilang"
+            MapServer.clientView.playerInventorySlotCleared(sd, x, 9);
+            MapServer.clientView.messageToPlayer(sd, 5, "Barangmu hancur!");
+            MapServer.clientView.objectAppearanceChanged(sd);
+        }
+
+        kait(engine, sd, "characterLog", "bodLog");
+        sd.bodItems.clear();
+    }
+
+    /**
+     * pcl_expireitem() — buang barang yang masa berlakunya habis, baik di
+     * inventaris maupun yang sedang dikenakan.
+     *
+     * <p>Dua sumber waktu, dan <b>salah satunya cukup</b>: waktu pada
+     * barangnya sendiri ({@code item.time}) atau bawaan jenisnya
+     * ({@code ItmTimer}). Keduanya <b>waktu mutlak</b> (detik epoch), bukan
+     * lama pakai.</p>
+     *
+     * <p>⚠️ Cabang perlengkapan di C <b>rusak dan tidak ditiru</b>: ia
+     * menghitung satu slot inventaris kosong (`eqdel`) <i>sekali</i> sebelum
+     * perulangan, lalu untuk tiap perlengkapan yang kedaluwarsa memanggil
+     * {@code pc_unequip} disusul {@code pc_delitem(sd, eqdel, ...)} —
+     * menghapus apa pun yang kebetulan ada di slot itu, dan slot yang sama
+     * lagi untuk barang kedua. Di sini perlengkapan yang kedaluwarsa
+     * langsung dibuang tanpa singgah di inventaris.</p>
+     */
+    public static void expireItems(User sd) {
+        long sekarang = System.currentTimeMillis() / 1000;
+
+        for (int x = sd.status.inventory.size() - 1; x >= 0; x--) {
+            Item it = sd.status.inventory.get(x);
+            if (kedaluwarsa(it, sekarang)) {
+                MapServer.clientView.messageToPlayer(sd, 5,
+                        "Masa berlaku barangmu sudah habis.");
+                // pc_delitem(sd, x, 1, 8): 8 = "lapuk"
+                MapServer.clientView.playerInventorySlotCleared(sd, x, 8);
+            }
+        }
+
+        for (int slot = 0; slot < 14; slot++) {
+            Item it = sd.status.equipAt(slot);
+            if (it != null && kedaluwarsa(it, sekarang)) {
+                MapServer.clientView.messageToPlayer(sd, 5,
+                        "Masa berlaku perlengkapanmu sudah habis.");
+                sd.status.equip.remove(it);
+                MapServer.clientView.objectAppearanceChanged(sd);
+            }
+        }
+    }
+
+    private static boolean kedaluwarsa(Item it, long sekarang) {
+        if (it == null || it.id <= 0) {
+            return false;
+        }
+        long bawaan = MapServer.itemDb.expiresAt(it.id);
+        return (it.time > 0 && it.time < sekarang) || (bawaan > 0 && bawaan < sekarang);
+    }
+
+    /** Salinan dangkal barang, supaya daftar BOD tidak menunjuk objek yang dibuang. */
+    private static Item salin(Item src) {
+        Item c = new Item();
+        c.id = src.id;
+        c.amount = src.amount;
+        c.dura = src.dura;
+        c.owner = src.owner;
+        c.protectedFlag = src.protectedFlag;
+        c.custom = src.custom;
+        c.customIcon = src.customIcon;
+        c.customIconColor = src.customIconColor;
+        c.customLook = src.customLook;
+        c.customLookColor = src.customLookColor;
+        c.realName = src.realName;
+        c.note = src.note;
+        c.time = src.time;
+        c.pos = src.pos;
+        return c;
+    }
+
+    private static void kait(org.rtk.map.script.ScriptEngine engine, User sd,
+                             String root, String method) {
+        if (engine == null || root == null || root.isEmpty()) {
+            return;
+        }
+        try {
+            engine.doScript(root, method, engine.playerRef(sd.scriptPlayer()));
+        } catch (RuntimeException e) {
+            log.error("[BOD] kait '{}.{}' gagal", root, method, e);
+        }
+    }
+
+    /**
      * clif_deductarmor(): tiap perlengkapan yang dikenakan punya
      * <b>peluang 50%</b> ikut aus terkena satu pukulan.
      *
@@ -366,11 +559,33 @@ public final class Combat {
         if (max <= 0) {
             return;
         }
+        peringatkanDura(sd, it, max);
+    }
+
+    /**
+     * Ambang peringatan ketahanan: 50%, 25%, 10%, 5%, 1%.
+     *
+     * <p>Bendera {@code repair} naik satu tiap ambang terlewati, dan tiap
+     * ambang hanya berbunyi bila bendera itu <b>persis</b> satu tingkat di
+     * bawahnya. Itu yang membuat peringatannya muncul sekali per ambang,
+     * berurutan, alih-alih berteriak tiap pukulan.</p>
+     *
+     * <p>Sebelumnya hanya ambang 50% yang diport, jadi barang yang sudah
+     * menipis lewat itu tidak pernah memperingatkan lagi.</p>
+     */
+    private static void peringatkanDura(User sd, Item it, int max) {
+        if (max <= 0) {
+            return;
+        }
         float persen = (float) it.dura / (float) max;
-        if (persen <= 0.5f && it.repair == 0) {
-            MapServer.clientView.messageToPlayer(sd, 5,
-                    "Your " + MapServer.itemDb.info(it.id).tampilan() + " is at 50%.");
-            it.repair = 1;
+        String nama = MapServer.itemDb.info(it.id).tampilan();
+        int[] ambang = {50, 25, 10, 5, 1};
+        for (int i = 0; i < ambang.length; i++) {
+            if (persen <= ambang[i] / 100.0f && it.repair == i) {
+                MapServer.clientView.messageToPlayer(sd, 5,
+                        nama + " tinggal " + ambang[i] + "%.");
+                it.repair = i + 1;
+            }
         }
     }
 

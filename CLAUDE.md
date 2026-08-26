@@ -130,7 +130,7 @@ proses build di server.
   `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar
   ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
   durasi mantra, gerak mob, barang lantai, inventaris, buku mantra,
-  tampilan & timer, simpan paksa — **518 assertion**),
+  tampilan & timer, simpan paksa, BOD — **535 assertion**),
   `./run.sh dbtest` (lapisan database ke MySQL hidup — 132 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
@@ -758,6 +758,37 @@ byte-identik dengan `rtklua/`.
    peta lama. Menghapusnya akan memulangkan pemain ke peta yang salah
    begitu C3 hidup.
 
+42. **BOD = "Break on Death", dan ia BUKAN penyimpanan.** Namanya terdengar
+   seperti tas penyimpanan barang mati; sebenarnya `sd->boditems` adalah
+   **daftar gores sementara**: `deductDuraEquip` dan `checkInvBod`
+   mengisinya sambil menghancurkan barang, memanggil kait
+   `characterLog.bodLog` <b>sekali</b> di akhir, lalu
+   <b>mengosongkannya</b>. Skrip hanya bisa membacanya
+   (`getBODItem(n)`, atribut `BODItemCount`) <b>di dalam kait itu</b>; di
+   luar itu selalu kosong. Kolom sumbernya `ItmBoD`.
+
+   Perkiraan awal roadmap ("subsistem besar, kerjakan sebagai satu blok")
+   **terlalu tinggi** — isinya dua sapuan dan satu daftar.
+
+43. **Perlindungan barang MENYELAMATKAN barangnya DAN menghentikan seluruh
+   sapuan.** Bila barang yang hendak hancur punya perlindungan, C
+   mengurangi satu perlindungan, memulihkan ketahanannya penuh, memanggil
+   kait `equipRestore`/`invRestore`, lalu **`return 0` dari dalam
+   perulangan**. Akibatnya:
+   - slot-slot **sesudahnya tidak ikut diperiksa** pada pemanggilan itu;
+   - kait `bodLog` **tidak pernah dipanggil**, sehingga barang yang sudah
+     telanjur masuk daftar BOD pada sapuan yang sama tidak pernah dilaporkan
+     ke skrip log.
+
+   Terlihat seperti kelalaian, tetapi ditiru apa adanya. Menggantinya dengan
+   `continue` akan mengubah berapa banyak barang yang hilang saat mati.
+
+   Terkait: **peringatan ketahanan punya LIMA ambang** (50/25/10/5/1%),
+   masing-masing menaikkan bendera `repair` satu tingkat dan hanya berbunyi
+   bila benderanya persis satu di bawahnya. Port ini sempat hanya memuat
+   ambang 50%, jadi barang yang sudah menipis lewat itu tidak pernah
+   memperingatkan lagi. Sudah dilengkapi.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -875,8 +906,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **518**, `dbtest` **141** assertion) |
-| Binding skrip | **45** belum diport (39 di `sl.c` + 6 salah ketik); global belum diport **0** |
+| Gerbang regresi | 6/6 hijau (`cliftest` **535**, `dbtest` **141** assertion) |
+| Binding skrip | **40** belum diport (34 di `sl.c` + 6 salah ketik); global belum diport **0** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -908,6 +939,10 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**10. Subsistem BOD** — `deductDuraEquip`, `checkInvBod`, `getBODItem`,
+`expireItem`, `stripEquip` (9x), atribut `BODItemCount`. Ikut diperbaiki:
+`checkDura` hanya memport ambang 50% dari lima yang ada di C.
 
 **9. `forceSave` (15x)** — `intif_save()`. `MapIntif.saveChar` kini punya
 ragam yang menerima `User` dan menyegarkan posisi & samaran dari objek
@@ -1316,20 +1351,16 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 39 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 34 method masih ada di `sl.c` tapi belum diport, plus 6
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
 Sisa yang berkaitan: `throwItem` (`clif_throwitem_script`, jalur klien
 melempar barang) dan `sd->pickuptype`.
 
-**1. Sisa inventaris & perlengkapan — SEMUANYA menunggu subsistem BOD.**
-Paket inventaris (0x0F/0x10) dan bagian yang berdiri sendiri sudah diport
-26 Agustus 2026 malam. Yang tersisa **semuanya** bergantung pada
-`sd->boditems` (simpanan barang yang patah / hilang saat mati), yang belum
-ada sama sekali: `stripEquip` (9x), `checkInvBod`, `getBODItem`,
-`deductDuraEquip`, `expireItem`. Kerjakan BOD sebagai satu blok, jangan
-satu per satu.
+~~**1. Sisa inventaris & perlengkapan — menunggu subsistem BOD.**~~
+**SELESAI 26 Agustus 2026 (malam).** BOD ternyata **jauh lebih kecil dari
+dugaan** — lihat Peringatan #42.
 
 ~~**2. Gerak mob lanjutan.**~~ **SELESAI 26 Agustus 2026 (malam).**
 Ketiganya memang varian dari mesin yang sama — lihat Peringatan #35 untuk

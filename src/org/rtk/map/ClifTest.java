@@ -217,6 +217,208 @@ public final class ClifTest {
         spellBookTest(map, sd);
         displayTest(map, sd);
         saveTest(map, sd);
+        bodTest(map, sd);
+    }
+
+    /**
+     * Subsistem BOD (<i>Break on Death</i>) — barang yang hancur saat
+     * pemain mati, plus kedaluwarsa dan lepas-paksa.
+     *
+     * <p>Yang dijaga: daftar BOD adalah <b>sementara</b> (dikosongkan tiap
+     * sapuan), perlindungan <b>menyelamatkan barang DAN menghentikan
+     * sapuan</b>, dan `stripEquip` punya tiga jalur berbeda tergantung ada
+     * tidaknya slot inventaris kosong.</p>
+     */
+    private static void bodTest(MapData map, User sd) {
+        log.info("=== BOD (Break on Death) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        var db = MapServer.itemDb;
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        var kosong = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+
+        // jubah: hancur saat mati (ItmBoD = 1), tanpa perlindungan bawaan
+        db.register(new org.rtk.map.data.ItemDb.Info(7201, "jubah", "Jubah", "", "",
+                4, 1, 0L, 1, 1, 1, 0, 0, 100, 0, 0, kosong, tanpaStat));
+        // jimat: ber-BoD TAPI terlindungi bawaan
+        db.register(new org.rtk.map.data.ItemDb.Info(7202, "jimat", "Jimat", "", "",
+                4, 1, 0L, 1, 1, 1, 0, 0, 100, 3, 0, kosong, tanpaStat));
+        // ramuan: barang inventaris ber-BoD
+        db.register(new org.rtk.map.data.ItemDb.Info(7203, "ramuan", "Ramuan", "", "",
+                18, 1, 0L, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+        // kartu: kedaluwarsa pada waktu MUTLAK di masa lalu
+        db.register(new org.rtk.map.data.ItemDb.Info(7204, "kartu", "Kartu", "", "",
+                18, 0, 1000L, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.maxInv = 20;
+        sd.bodItems.clear();
+        sd.status.state = 1;              // PC_DIE
+
+        // --- perlengkapan hancur, masuk daftar BOD, lalu daftarnya kosong ---
+        var jubah = new org.rtk.common.mmo.Item();
+        jubah.id = 7201;
+        jubah.amount = 1;
+        jubah.dura = 100;
+        jubah.pos = 0;
+        sd.status.equip.add(jubah);
+
+        Combat.deductDuraEquip(null, sd);
+        check("BOD: perlengkapan ber-BoD hancur saat pemain mati",
+                sd.status.equipAt(0) == null);
+        check("BOD: daftarnya DIKOSONGKAN setelah sapuan selesai",
+                sd.bodItems.isEmpty());
+        check("BOD: id barang yang hancur tercatat di breakId", sd.breakId == 7201);
+
+        // --- perlindungan menyelamatkan barang DAN menghentikan sapuan ---
+        sd.status.equip.clear();
+        var jimat = new org.rtk.common.mmo.Item();
+        jimat.id = 7202;
+        jimat.amount = 1;
+        jimat.dura = 100;
+        jimat.pos = 0;
+        sd.status.equip.add(jimat);
+        var jubah2 = new org.rtk.common.mmo.Item();
+        jubah2.id = 7201;
+        jubah2.amount = 1;
+        jubah2.dura = 100;
+        jubah2.pos = 1;
+        sd.status.equip.add(jubah2);
+
+        Combat.deductDuraEquip(null, sd);
+        check("BOD: barang terlindungi TIDAK hancur", sd.status.equipAt(0) != null);
+        check("BOD: ketahanannya dipulihkan penuh",
+                sd.status.equipAt(0).dura == 100);
+        check("BOD: perlindungannya berkurang satu",
+                sd.status.equipAt(0).protectedFlag == -1);
+        check("BOD: ⚠️ sapuan BERHENTI — slot sesudahnya tidak diperiksa",
+                sd.status.equipAt(1) != null);
+
+        // --- inventaris ---
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.addItemById(7203, 1, -1);
+        Combat.checkInvBod(null, sd);
+        check("BOD: barang inventaris ber-BoD hancur saat mati",
+                sd.status.inventory.isEmpty());
+
+        // yang TIDAK ber-BoD selamat, bahkan saat pemain mati
+        sd.status.inventory.clear();
+        sd.addItemById(7204, 1, -1);
+        Combat.checkInvBod(null, sd);
+        check("BOD: barang tanpa BoD selamat walau pemain mati",
+                sd.status.inventory.size() == 1);
+
+        // pemain hidup: tidak ada yang hancur
+        sd.status.state = 0;
+        sd.status.inventory.clear();
+        sd.addItemById(7203, 1, -1);
+        Combat.checkInvBod(null, sd);
+        check("BOD: pemain hidup -> tidak ada yang hancur",
+                sd.status.inventory.size() == 1);
+
+        // --- kedaluwarsa ---
+        sd.status.inventory.clear();
+        sd.addItemById(7204, 1, -1);          // ItmTimer = 1000 (masa lalu)
+        Combat.expireItems(sd);
+        check("expireItem: kedaluwarsa dari jenisnya dibuang",
+                sd.status.inventory.isEmpty());
+
+        sd.status.inventory.clear();
+        sd.addItemById(7203, 1, -1);
+        sd.status.inventory.get(0).time = 1000;   // waktu pada barangnya
+        Combat.expireItems(sd);
+        check("expireItem: kedaluwarsa dari barangnya sendiri juga dibuang",
+                sd.status.inventory.isEmpty());
+
+        sd.status.inventory.clear();
+        sd.addItemById(7203, 1, -1);
+        Combat.expireItems(sd);
+        check("expireItem: barang tanpa batas waktu tidak disentuh",
+                sd.status.inventory.size() == 1);
+
+        // --- stripEquip: tiga jalur ---
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.maxInv = 20;
+        var senjata = new org.rtk.common.mmo.Item();
+        senjata.id = 7201;
+        senjata.amount = 1;
+        senjata.dura = 100;
+        senjata.pos = 0;
+        sd.status.equip.add(senjata);
+
+        var p = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;   // binding dipanggil lewat ScriptPlayer
+        // jalur 1: ada tempat -> masuk inventaris
+        panggilStrip(sd, 0, 0, 0);
+        check("stripEquip: ada tempat -> barangnya masuk inventaris",
+                sd.status.equipAt(0) == null && sd.status.inventory.size() == 1);
+
+        // jalur 2: inventaris penuh + hancurkan -> lenyap, tidak tertinggal di lantai
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.equip.add(senjata);
+        sd.status.maxInv = 0;
+        int lantaiSebelum = MapServer.floorItems.count();
+        panggilStrip(sd, 0, 1, 0);
+        check("stripEquip: penuh + hancurkan -> tidak tertinggal di lantai",
+                sd.status.equipAt(0) == null
+                        && MapServer.floorItems.count() == lantaiSebelum);
+
+        // jalur 3: inventaris penuh + paksa -> tertinggal di lantai
+        sd.status.equip.clear();
+        sd.status.equip.add(senjata);
+        panggilStrip(sd, 0, 0, 1);
+        check("stripEquip: penuh + paksa -> tertinggal di lantai",
+                sd.status.equipAt(0) == null
+                        && MapServer.floorItems.count() == lantaiSebelum + 1);
+
+        // jalur 4: penuh, tanpa hancurkan/paksa -> TIDAK terjadi apa-apa
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        sd.status.equip.clear();
+        sd.status.equip.add(senjata);
+        panggilStrip(sd, 0, 0, 0);
+        check("stripEquip: penuh tanpa hancurkan/paksa -> barangnya TETAP dikenakan",
+                sd.status.equipAt(0) != null);
+
+        MapServer.scriptEngine = p;
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.maxInv = 20;
+        sd.status.state = 0;
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+    }
+
+    /**
+     * Engine terpisah untuk uji BOD — ⚠️ satu ScriptPlayer hanya boleh
+     * dipakai satu ScriptEngine (lihat catatan A4), jadi pemain uji di sini
+     * memakai objek skripnya sendiri.
+     */
+    private static org.rtk.map.script.ScriptEngine bodEngine;
+    private static org.luaj.vm2.LuaValue bodRef;
+
+    /** Panggil binding stripEquip lewat prototipe skrip, seperti skrip Lua. */
+    private static void panggilStrip(User sd, int slot, int hancurkan, int paksa) {
+        if (bodEngine == null) {
+            bodEngine = new org.rtk.map.script.ScriptEngine();
+            var p = new org.rtk.map.script.ScriptPlayer((int) sd.id, sd.status.name);
+            p.owner = sd;
+            bodRef = bodEngine.playerRef(p);
+        }
+        bodEngine.playerClass.proto.get("stripEquip").invoke(
+                org.luaj.vm2.LuaValue.varargsOf(new org.luaj.vm2.LuaValue[]{
+                    bodRef,
+                    org.luaj.vm2.LuaValue.valueOf(slot),
+                    org.luaj.vm2.LuaValue.valueOf(hancurkan),
+                    org.luaj.vm2.LuaValue.valueOf(paksa)}));
     }
 
     /**
@@ -487,19 +689,19 @@ public final class ClifTest {
 
         // pedang: perlengkapan (type 3) -> ketahanan ikut dikirim
         db.register(new org.rtk.map.data.ItemDb.Info(7101, "klewang", "Klewang", "", "",
-                3, 1, 1, 1, 0, 0, 120, 7, 0,
+                3, 0, 0, 1, 1, 1, 0, 0, 120, 7, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 88, 6), tanpaStat));
         // roti: barang biasa bertumpuk (type 18)
         db.register(new org.rtk.map.data.ItemDb.Info(7102, "roti", "Roti Tawar", "", "",
-                18, 1, 1, 20, 0, 0, 0, 0, 0,
+                18, 0, 0, 1, 1, 20, 0, 0, 0, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 12, 3), tanpaStat));
         // obor: ITM_SMOKE -> teksnya "nama [dura satuan]"
         db.register(new org.rtk.map.data.ItemDb.Info(7103, "obor", "Obor", "", "jam",
-                org.rtk.map.data.ItemDb.ITM_SMOKE, 1, 1, 1, 0, 0, 30, 0, 0,
+                org.rtk.map.data.ItemDb.ITM_SMOKE, 0, 0, 1, 1, 1, 0, 0, 30, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 5, 1), tanpaStat));
         // peta: ITM_MAP -> teksnya "[Tdura] nama"
         db.register(new org.rtk.map.data.ItemDb.Info(7104, "peta_uji", "Peta Uji", "", "",
-                org.rtk.map.data.ItemDb.ITM_MAP, 1, 1, 1, 0, 0, 3, 0, 0,
+                org.rtk.map.data.ItemDb.ITM_MAP, 0, 0, 1, 1, 1, 0, 0, 3, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 9, 2), tanpaStat));
 
         sd.status.inventory.clear();
@@ -653,17 +855,17 @@ public final class ClifTest {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         // apel: bertumpuk 10, boleh dipungut
         db.register(new org.rtk.map.data.ItemDb.Info(7001, "apel_uji", "Apel Uji", "", "",
-                18, 1, 1, 10, 0, 0, 50, 0, 0,
+                18, 0, 0, 1, 1, 10, 0, 0, 50, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(11, 2, 33, 4), tanpaStat));
         // pedang: tidak bertumpuk
         db.register(new org.rtk.map.data.ItemDb.Info(7002, "pedang_uji", "Pedang Uji", "", "",
-                3, 1, 1, 1, 0, 0, 100, 0, 0, kosongLook, tanpaStat));
+                3, 0, 0, 1, 1, 1, 0, 0, 100, 0, 0, kosongLook, tanpaStat));
         // batu nisan: ItmDroppable != 0 -> TIDAK bisa dipungut
         db.register(new org.rtk.map.data.ItemDb.Info(7003, "nisan_uji", "Nisan Uji", "", "",
-                18, 1, 1, 1, 0, 0, 1, 0, 1, kosongLook, tanpaStat));
+                18, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, kosongLook, tanpaStat));
         // jebakan: ITM_TRAPS
         db.register(new org.rtk.map.data.ItemDb.Info(7004, "jebakan_uji", "Jebakan Uji", "", "",
-                org.rtk.map.data.ItemDb.ITM_TRAPS, 1, 1, 1, 0, 0, 1, 0, 0,
+                org.rtk.map.data.ItemDb.ITM_TRAPS, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0,
                 kosongLook, tanpaStat));
 
         var reg = MapServer.floorItems;
