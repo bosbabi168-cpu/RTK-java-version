@@ -295,6 +295,45 @@ public final class Clif {
     }
 
     /**
+     * clif_playsound() — mainkan bunyi di sekitar sebuah benda.
+     * Opcode 0x19, panjang isi 0x14, disiarkan ke SAMEAREA.
+     *
+     * <p>Ladang tetapnya diambil apa adanya dari C; artinya tidak
+     * terdokumentasi di sumber, jadi jangan "dirapikan".</p>
+     */
+    public static void playSound(org.rtk.map.data.BlockList src, int sound) {
+        MapData map = MapServer.world.get(src.m);
+        if (map == null) {
+            return;
+        }
+        map.foreachInArea(src.x, src.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (!(bl instanceof User to)) {
+                return;
+            }
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                return;
+            }
+            ts.wfifoB(0, 0xAA);
+            ts.wfifoWBE(1, 0x14);
+            ts.wfifoB(3, 0x19);
+            ts.wfifoB(4, 0x03);
+            ts.wfifoWBE(5, 3);
+            ts.wfifoWBE(7, sound);
+            ts.wfifoB(9, 100);
+            ts.wfifoWBE(10, 4);
+            ts.wfifoLBE(12, (int) src.id);
+            ts.wfifoB(16, 1);
+            ts.wfifoB(17, 0);
+            ts.wfifoB(18, 2);
+            ts.wfifoB(19, 2);
+            ts.wfifoWBE(20, 4);
+            ts.wfifoB(22, 0);
+            ts.wfifoSet(encrypt(ts, to));
+        });
+    }
+
+    /**
      * clif_removespell() — hapus satu mantra dari buku mantra klien.
      * Opcode 0x18, panjang isi 3.
      *

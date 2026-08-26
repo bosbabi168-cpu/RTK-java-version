@@ -72,6 +72,16 @@ public interface ClientView {
     /** Animasi dimainkan pada petak tertentu, bukan pada bendanya. */
     void objectAnimationAt(BlockList bl, int animation, int times, int x, int y);
 
+    /** Bunyi terdengar di sekitar sebuah benda. */
+    void soundPlayed(BlockList at, int sound);
+
+    /**
+     * Pesan teks untuk seorang pemain.
+     *
+     * @param type ragam pesan di C ({@code clif_sendmsg}); 5 = peringatan
+     */
+    void messageToPlayer(User sd, int type, String text);
+
     // ------------------------------------------------------------------
     // NPC
     // ------------------------------------------------------------------

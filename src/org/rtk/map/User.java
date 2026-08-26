@@ -49,6 +49,19 @@ public final class User extends BlockList
     public int might;
     public int will;
     public int grace;
+    /**
+     * Hasil kait {@code hitCritChance}: 0 = meleset, 1 = kena biasa,
+     * 2 = kritis. Diisi <b>oleh skrip Lua</b>, dibaca {@link Combat}.
+     */
+    public int critChance;
+
+    /**
+     * Hasil kait {@code swingDamage}: kerusakan pukulan berikutnya. Diisi
+     * skrip, dan sengaja bertipe pecahan karena C memakai {@code float} lalu
+     * membulatkannya dengan {@code (int)(damage += 0.5f)}.
+     */
+    public double damage;
+
     public int armor;
 
     // ---- nilai turunan dari perlengkapan (pc_calcstat) ----

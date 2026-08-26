@@ -52,6 +52,16 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void soundPlayed(BlockList at, int sound) {
+        Clif.playSound(at, sound);
+    }
+
+    @Override
+    public void messageToPlayer(User sd, int type, String text) {
+        Clif.sendMsg(sd, type, text);
+    }
+
+    @Override
     public void npcMoved(Npc nd, MapData map, int fromX, int fromY,
                          int revealX0, int revealY0, int revealX1, int revealY1) {
         // Petak yang baru terlihat digambar DULU, baru perpindahannya —

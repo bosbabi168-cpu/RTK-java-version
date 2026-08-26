@@ -41,7 +41,8 @@ public final class ItemDb {
      */
     public record Info(long id, String name, String display, String buyText,
                        int type, int buyPrice, int sellPrice,
-                       int stackAmount, int maxAmount, Look look, Stats stats) {
+                       int stackAmount, int maxAmount, int sound, int durability,
+                       Look look, Stats stats) {
 
         /** Nama yang dilihat pemain; jatuh ke nama skrip bila kosong. */
         public String tampilan() {
@@ -53,7 +54,7 @@ public final class ItemDb {
     private static final Stats TANPA_STAT =
             new Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     private static final Info TIDAK_DIKENAL =
-            new Info(0, "", "", "", 0, 0, 0, 1, 0, KOSONG, TANPA_STAT);
+            new Info(0, "", "", "", 0, 0, 0, 1, 0, 0, 0, KOSONG, TANPA_STAT);
 
     private final Map<Long, Look> byId = new HashMap<>();
     private final Map<Long, Info> infoById = new HashMap<>();
@@ -118,6 +119,7 @@ public final class ItemDb {
                 "SELECT `ItmId`,`ItmIdentifier`,`ItmType`,`ItmLook`,`ItmLookColor`,"
                 + "`ItmIcon`,`ItmIconColor`,`ItmBuyPrice`,`ItmSellPrice`,"
                 + "`ItmStackAmount`,`ItmMaximumAmount`,`ItmDescription`,`ItmBuyText`,"
+                + "`ItmSound`,`ItmDurability`,"
                 + "`ItmVita`,`ItmMana`,`ItmMight`,`ItmWill`,`ItmGrace`,`ItmArmor`,"
                 + "`ItmHit`,`ItmDam`,`ItmProtection`,`ItmHealing`,"
                 + "`ItmMinimumSDamage`,`ItmMaximumSDamage`,"
@@ -135,6 +137,7 @@ public final class ItemDb {
                             rs.getInt("ItmType"),
                             rs.getInt("ItmBuyPrice"), rs.getInt("ItmSellPrice"),
                             rs.getInt("ItmStackAmount"), rs.getInt("ItmMaximumAmount"),
+                            rs.getInt("ItmSound"), rs.getInt("ItmDurability"),
                             look,
                             new Stats(rs.getInt("ItmVita"), rs.getInt("ItmMana"),
                                     rs.getInt("ItmMight"), rs.getInt("ItmWill"),

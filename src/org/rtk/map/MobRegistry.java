@@ -314,14 +314,50 @@ public final class MobRegistry {
      * {@code MobAI}: 0..3 dan 5 memakai tabel bersama {@code mob_ai_*},
      * sedangkan 4 memakai skrip milik mob itu sendiri ({@code yname}).
      */
+    /** Skrip AI yang dipakai mob ini, atau null bila MobAI di luar jangkauan. */
+    private static String aiRoot(MobData d) {
+        if (d.subtype >= 0 && d.subtype < AI_TABLES.length && AI_TABLES[d.subtype] != null) {
+            return AI_TABLES[d.subtype];
+        }
+        if (d.subtype == 4) {
+            return d.yname;   // skrip mob itu sendiri
+        }
+        return null;
+    }
+
+    /**
+     * Port {@code clif_send_mob_health()} — namanya di C <b>menyesatkan</b>:
+     * fungsi itu tidak mengirim paket apa pun, isinya murni memanggil kait
+     * {@code on_attacked} milik AI mob, dan parameter damage/critical-nya
+     * tidak pernah dipakai.
+     *
+     * <p>Argumen kedua adalah <b>penyerangnya</b>; bila tidak ketemu, C
+     * memakai <b>mob itu sendiri</b> ({@code map_id2bl(mob->bl.id)}), bukan
+     * nil — sama seperti jebakan {@code callBase}.</p>
+     */
+    public static void fireAttacked(org.rtk.map.script.ScriptEngine engine,
+                                    Mob mob, Object penyerang) {
+        if (engine == null || mob == null) {
+            return;
+        }
+        String root = aiRoot(mob.data);
+        if (root == null) {
+            return;
+        }
+        try {
+            org.luaj.vm2.LuaValue lawan = penyerang instanceof User u
+                    ? engine.playerRef(u.scriptPlayer())
+                    : engine.objectRef(penyerang != null ? penyerang : mob);
+            engine.doScript(root, "on_attacked", engine.objectRef(mob), lawan);
+        } catch (RuntimeException e) {
+            log.error("[MOB] kait on_attacked pada '{}' gagal", root, e);
+        }
+    }
+
     private boolean fireAi(org.rtk.map.script.ScriptEngine engine, Mob mob, String method) {
         MobData d = mob.data;
-        String root;
-        if (d.subtype >= 0 && d.subtype < AI_TABLES.length && AI_TABLES[d.subtype] != null) {
-            root = AI_TABLES[d.subtype];
-        } else if (d.subtype == 4) {
-            root = d.yname;   // skrip mob itu sendiri
-        } else {
+        String root = aiRoot(d);
+        if (root == null) {
             return false;     // MobAI di luar jangkauan: tidak ada kait
         }
 

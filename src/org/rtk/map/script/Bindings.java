@@ -34,6 +34,25 @@ final class Bindings {
      * Mengembalikan "" bila argumennya nil — di C itu berarti "semua"
      * untuk {@code flushKills}.
      */
+    /**
+     * Bongkar benda permainan dari argumen Lua — padanan
+     * {@code typel_topointer()} di C.
+     *
+     * <p>Pemain terbungkus dua lapis (ScriptInstance -&gt; ScriptPlayer -&gt;
+     * User), NPC dan mob hanya satu lapis. Mengembalikan null bila
+     * argumennya bukan benda.</p>
+     */
+    private static Object bendaDari(LuaValue v) {
+        if (!(v instanceof ScriptInstance si)) {
+            return null;
+        }
+        Object o = si.self;
+        if (o instanceof ScriptPlayer p) {
+            return p.owner;
+        }
+        return o;
+    }
+
     private static String namaAtauAngka(Varargs args, int i) {
         LuaValue v = args.arg(i);
         if (v.isnil()) {
@@ -291,6 +310,22 @@ final class Bindings {
                 return LuaValue.valueOf(o.scriptHasSpell(v));
             }
             return LuaValue.FALSE;
+        });
+
+        // ---- serangan jarak dekat ----
+        // pcl_swingtarget(sasaran): seluruh pipeline pukulan. Sasarannya
+        // objek Lua (mob atau pemain), bukan id — di C:
+        // typel_topointer(state, sl_memberarg(1)).
+        player.addMethod("swingTarget", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (!(p.owner instanceof org.rtk.map.User sd)) {
+                return LuaValue.NONE;
+            }
+            Object sasaran = bendaDari(args.arg(2));
+            if (sasaran instanceof org.rtk.map.data.BlockList bl) {
+                org.rtk.map.Combat.swingAt(sd, bl);
+            }
+            return LuaValue.NONE;
         });
 
         // ---- ruang inventaris ----
