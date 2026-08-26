@@ -281,11 +281,16 @@ public final class MapServer {
         }
 
         User sd = onlineChars.get(fd);
-        Clif.decrypt(s, sd);
         int opcode = s.rfifoB(3);
 
         if (sd == null) {
-            // belum login: hanya paket perkenalan yang diterima
+            // Paket perkenalan TIDAK didekripsi. Di C cabang !sd menangani
+            // 0x10 lalu return, sementara decrypt(fd) baru dipanggil setelah
+            // nullpo_ret(0, sd) (clif.c:11304-11317 vs 11359). Masuk akal:
+            // kunci sesi berasal dari data karakter, yang belum ada saat
+            // klien baru memperkenalkan diri. Mendekripsinya di sini membuat
+            // byte mulai offset 5 ter-XOR — opcode tetap 0x10 (crypt mulai
+            // dari off+5) tapi panjang nama di offset 15 jadi sampah.
             if (opcode == 0x10) {
                 clientAuth(fd, s);
             } else {
@@ -293,6 +298,7 @@ public final class MapServer {
                         String.format("%02X", opcode));
             }
         } else {
+            Clif.decrypt(s, sd);
             switch (opcode) {
                 case 0x06, 0x32 -> Clif.parseWalk(sd);
                 case 0x43 -> Clif.parseClick(sd);
