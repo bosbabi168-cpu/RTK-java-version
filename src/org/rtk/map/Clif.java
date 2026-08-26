@@ -438,6 +438,74 @@ public final class Clif {
     }
 
     /**
+     * clif_send_duration() — perbarui bilah durasi mantra di klien.
+     * Opcode 0x3A, dibangun lewat {@code WFIFOHEADER}.
+     *
+     * <p>Yang dikirim adalah <b>nama tampilan</b> mantra, dan bila
+     * penyihirnya orang lain namanya ikut dalam kurung:
+     * {@code "Kawlana's guard (Tester)"}. Waktu dalam <b>detik</b>.</p>
+     *
+     * <p>Mantra dengan {@code SplTicker = 0} sengaja tidak dikirim sama
+     * sekali — durasinya tetap berjalan di server, hanya tidak terlihat.
+     * Itu penyaring di C, bukan kelalaian.</p>
+     *
+     * <p>⚠️ Ada satu keanehan yang ditiru apa adanya: bila {@code id == 0}
+     * teksnya dipaksa menjadi {@code "Shield"} dengan panjang 6.</p>
+     */
+    public static void sendDuration(User sd, int id, int seconds, String casterName) {
+        Session s = sessionOf(sd);
+        if (s == null || !MapServer.spellDb.hasTicker(id)) {
+            return;
+        }
+        String teks;
+        if (id == 0) {
+            teks = "Shield";
+        } else if (casterName != null && !casterName.isEmpty()) {
+            teks = MapServer.spellDb.displayNameOf(id) + " (" + casterName + ")";
+        } else {
+            teks = MapServer.spellDb.displayNameOf(id);
+        }
+        byte[] raw = teks.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int len = raw.length;
+
+        headSeq(s, 0x3A, len + 7);
+        s.wfifoB(5, len);
+        s.wfifoBytes(6, raw);
+        s.wfifoLBE(len + 6, seconds);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_send_aether() — sisa aether sebuah mantra. Opcode 0x3F,
+     * juga lewat {@code WFIFOHEADER}.
+     *
+     * <p>Yang dikirim <b>nomor slot mantra di buku mantra</b> (1-basis),
+     * bukan id mantranya — klien menandai barisnya sendiri. Mantra yang
+     * tidak ada di buku pemain tidak dikirim sama sekali
+     * ({@code clif_findspell_pos} mengembalikan -1).</p>
+     */
+    public static void sendAether(User sd, int id, int seconds) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        int pos = -1;
+        for (int i = 0; i < sd.status.spells.length; i++) {
+            if (sd.status.spells[i] == id) {
+                pos = i;
+                break;
+            }
+        }
+        if (pos < 0) {
+            return;
+        }
+        headSeq(s, 0x3F, 8);
+        s.wfifoWBE(5, pos + 1);
+        s.wfifoLBE(7, seconds);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
      * clif_sendaction() — benda memainkan gerakan (serang, lempar, duduk,
      * sihir, makan). Opcode 0x1A, disiarkan ke SAMEAREA.
      *

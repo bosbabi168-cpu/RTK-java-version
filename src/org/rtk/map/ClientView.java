@@ -62,6 +62,18 @@ public interface ClientView {
      */
     void playerIdentityChanged(User sd);
 
+    /**
+     * Sisa waktu sebuah mantra yang sedang menempel pada pemain berubah.
+     *
+     * @param seconds sisa waktu dalam detik; 0 = mantranya berakhir
+     * @param casterName nama penyihirnya bila orang lain, "" bila dirinya
+     *                   sendiri atau tidak diketahui
+     */
+    void playerDurationChanged(User sd, int spellId, int seconds, String casterName);
+
+    /** Sisa aether sebuah mantra pemain berubah; 0 = habis. */
+    void playerAetherChanged(User sd, int spellId, int seconds);
+
     /** Satu mantra lenyap dari buku mantra pemain. */
     void playerSpellRemoved(User sd, int slot);
 

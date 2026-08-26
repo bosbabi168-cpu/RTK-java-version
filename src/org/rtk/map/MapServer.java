@@ -260,6 +260,27 @@ public final class MapServer {
     }
 
     /** check_connect_char(): (re)establish the char-server link. */
+    /**
+     * Satu tik durasi mantra untuk <b>semua</b> pemain online.
+     *
+     * <p>Salinan daftarnya diambil dulu karena kait skrip
+     * ({@code uncast}, {@code while_cast}) boleh membuat pemain keluar
+     * dunia, dan itu mengubah {@code onlineChars} di tengah sapuan.</p>
+     */
+    static int duraTick() {
+        if (scriptEngine == null) {
+            return 0;
+        }
+        for (User sd : new java.util.ArrayList<>(onlineChars.values())) {
+            try {
+                Durations.tick(scriptEngine, sd);
+            } catch (RuntimeException e) {
+                log.error("[DURASI] tik gagal untuk '{}'", sd.status.name, e);
+            }
+        }
+        return 0;
+    }
+
     static int checkConnectChar() {
         if (charFd <= 0 || net.session(charFd) == null) {
             log.info("Attempt to connect to char-server...");
@@ -486,6 +507,12 @@ public final class MapServer {
         // mob_timer_spawns(): tik 50 ms untuk AI mob dan kelahiran ulang
         timers.insert(MobRegistry.TICK_MS, MobRegistry.TICK_MS,
                 (a, b) -> mobs.runTimers(scriptEngine, world), 0, 0);
+        // bl_duratimer(): tik 1 detik untuk durasi & aether mantra, kait
+        // `while_passive` / `while_equipped` / `while_cast`, dan `uncast`
+        // saat durasinya habis. Di C tiap pemain punya timernya sendiri;
+        // di sini satu timer menyapu semua pemain online, karena logika
+        // permainan berjalan di satu thread (lihat Peringatan #8).
+        timers.insert(1000, 1000, (a, b) -> duraTick(), 0, 0);
 
         log.info("RetroTK Map Server (Java skeleton) is ready! Listening at {}.", mapPort);
         ServerLog.addLog("Server Ready! Listening at %d.%n", mapPort);

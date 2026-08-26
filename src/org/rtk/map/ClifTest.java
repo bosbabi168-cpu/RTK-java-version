@@ -210,6 +210,154 @@ public final class ClifTest {
         lookTest(map, sd);
         walkTest(map, sd);
         bllTest(map, sd);
+        durationTest(map, sd);
+    }
+
+    /**
+     * Durasi & aether mantra ({@link Durations}) — logika dan paketnya.
+     *
+     * <p>Yang dijaga di sini adalah cabang-cabang yang mudah terbalik:
+     * merapal ulang mantra yang sisanya masih panjang <b>tidak</b> memperpanjang
+     * (kecuali {@code recast}), waktu di bawah satu detik dinaikkan jadi satu
+     * detik, satu baris memegang durasi dan aether sekaligus sehingga
+     * habisnya salah satu tidak boleh membuang barisnya, dan mantra ber-ticker
+     * 0 tidak mengirim paket apa pun meski durasinya jalan.</p>
+     */
+    private static void durationTest(MapData map, User sd) {
+        log.info("=== durasi & aether mantra (dura_aether) ===");
+
+        // SpellDb diisi tangan: uji ini tidak menyentuh MySQL.
+        MapServer.spellDb.register(101, "shield_spell", "Shield spell", 1, 0);
+        MapServer.spellDb.register(102, "diam_diam", "Diam-diam", 0, 5);
+        MapServer.spellDb.register(103, "racun", "Racun", 1, 2);
+
+        // ⚠️ Pemain dan engine SENDIRI. Satu ScriptPlayer hanya boleh
+        // dipakai satu ScriptEngine (udata-nya di-cache), jadi memakai `sd`
+        // di sini akan merusak uji dialog yang sudah mengikatnya ke engine
+        // lain — jebakan yang sudah pernah kejadian.
+        CharStatus dst = new CharStatus();
+        dst.id = 0x0DEDEDE;
+        dst.name = "Durasi";
+        dst.baseHp = 100;
+        dst.lastPos = new Point(0, sd.x, sd.y);
+        User sd2 = new User(21, dst);
+        sd2.m = 0;
+        sd2.x = sd.x;
+        sd2.y = sd.y;
+        org.rtk.common.Session s = MapServer.net.openTestSession(sd2.fd);
+        var engine = new org.rtk.map.script.ScriptEngine();
+
+        // --- pemasangan pertama ---
+        Durations.setDuration(engine, sd2, 101, 10000, 0, false);
+        check("setDuration: baris baru dibuat", sd2.status.duraAether.size() == 1);
+        check("setDuration: durasi tersimpan", Durations.duration(sd2, 101) == 10000);
+        check("setDuration: hasDuration true", Durations.hasDuration(sd2, 101));
+        check("setDuration: mantra lain tidak terpengaruh",
+                !Durations.hasDuration(sd2, 103));
+
+        // --- merapal ulang lebih panjang TIDAK memperpanjang ---
+        Durations.setDuration(engine, sd2, 101, 30000, 0, false);
+        check("merapal ulang lebih panjang tidak memperpanjang",
+                Durations.duration(sd2, 101) == 10000);
+        Durations.setDuration(engine, sd2, 101, 4000, 0, false);
+        check("merapal ulang lebih pendek MEMENDEKKAN",
+                Durations.duration(sd2, 101) == 4000);
+        Durations.setDuration(engine, sd2, 101, 30000, 0, true);
+        check("recast=1 menimpa walau lebih panjang",
+                Durations.duration(sd2, 101) == 30000);
+
+        // --- waktu di bawah satu detik ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 103, 200, 0, false);
+        check("waktu 200 ms dinaikkan jadi 1000", Durations.duration(sd2, 103) == 1000);
+
+        // --- paket durasi ---
+        sd2.status.duraAether.clear();
+        drain(s);
+        Durations.setDuration(engine, sd2, 101, 10000, 0, false);
+        byte[] p = decrypt(drain(s), sd2);
+        check("paket durasi: opcode 0x3A", (p[3] & 0xFF) == 0x3A);
+        check("paket durasi: membawa nomor urut di [4]", (p[4] & 0xFF) != 0);
+        int dl = p[5] & 0xFF;
+        check("paket durasi: nama TAMPILAN mantra, bukan nama skrip",
+                new String(p, 6, dl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Shield spell"));
+        check("paket durasi: sisa waktu dalam DETIK", be32(p, dl + 6) == 10);
+        check("paket durasi: ladang panjang = len + 7 + 3", be16(p, 1) == dl + 7 + 3);
+
+        // --- ticker 0 tidak mengirim apa pun ---
+        sd2.status.duraAether.clear();
+        drain(s);
+        Durations.setDuration(engine, sd2, 102, 10000, 0, false);
+        check("mantra ber-ticker 0: durasinya jalan", Durations.duration(sd2, 102) == 10000);
+        check("mantra ber-ticker 0: tidak ada paket terkirim", drain(s).length == 0);
+
+        // --- durasi dan aether berbagi satu baris ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 0, false);
+        Durations.setAether(sd2, 101, 8000);
+        check("durasi + aether memakai baris yang SAMA",
+                sd2.status.duraAether.size() == 1);
+        check("aether tersimpan", Durations.aether(sd2, 101) == 8000);
+        Durations.setDuration(engine, sd2, 101, 0, 0, false);
+        check("durasi dihentikan, barisnya TIDAK dibuang karena aether jalan",
+                sd2.status.duraAether.size() == 1 && Durations.aether(sd2, 101) == 8000);
+        check("durasi benar-benar nol", Durations.duration(sd2, 101) == 0);
+        Durations.flushAether(sd2, 99, 0, 0);
+        check("aether ikut habis -> barisnya baru dibuang",
+                sd2.status.duraAether.isEmpty());
+
+        // --- penyaring dispel pada flushDuration ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 0, false);   // dispel 0
+        Durations.setDuration(engine, sd2, 103, 5000, 0, false);   // dispel 2
+        Durations.flushDuration(engine, sd2, 1, 0, 0, true);
+        check("flushDuration(1): mantra dispel 0 terhapus",
+                !Durations.hasDuration(sd2, 101));
+        check("flushDuration(1): mantra dispel 2 kebal",
+                Durations.hasDuration(sd2, 103));
+        Durations.flushDuration(engine, sd2, 9, 0, 0, true);
+        check("flushDuration(9): yang kebal pun ikut terhapus",
+                sd2.status.duraAether.isEmpty());
+
+        // --- rentang minId/maxId ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 0, false);
+        Durations.setDuration(engine, sd2, 103, 5000, 0, false);
+        Durations.flushDuration(engine, sd2, 9, 101, 0, true);
+        check("minId>0 & maxId<=0: hanya mantra itu yang dihapus",
+                !Durations.hasDuration(sd2, 101) && Durations.hasDuration(sd2, 103));
+
+        // --- durasi dari penyihir tertentu ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 555, false);
+        check("hasDurationID cocok dengan penyihirnya",
+                Durations.hasDurationFrom(sd2, 101, 555));
+        check("hasDurationID tidak cocok dengan penyihir lain",
+                !Durations.hasDurationFrom(sd2, 101, 556));
+        check("getCasterID mengembalikan penyihirnya",
+                Durations.casterOf(sd2, 101) == 555);
+
+        // --- tik satu detik ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 2000, 0, false);
+        Durations.tick(engine, sd2);
+        check("tik: durasi berkurang 1000 ms", Durations.duration(sd2, 101) == 1000);
+        Durations.tick(engine, sd2);
+        check("tik: durasi habis -> baris dibuang", sd2.status.duraAether.isEmpty());
+
+        // aether habis lebih dulu, durasinya masih jalan
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 0, false);
+        Durations.setAether(sd2, 101, 1000);
+        Durations.tick(engine, sd2);
+        check("tik: aether habis tapi barisnya tetap karena durasi jalan",
+                sd2.status.duraAether.size() == 1
+                        && Durations.aether(sd2, 101) == 0
+                        && Durations.duration(sd2, 101) == 4000);
+
+        sd2.status.duraAether.clear();
+        drain(s);
     }
 
     /**

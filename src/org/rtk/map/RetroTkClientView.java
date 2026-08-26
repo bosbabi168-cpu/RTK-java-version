@@ -37,6 +37,16 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void playerDurationChanged(User sd, int spellId, int seconds, String casterName) {
+        Clif.sendDuration(sd, spellId, seconds, casterName);
+    }
+
+    @Override
+    public void playerAetherChanged(User sd, int spellId, int seconds) {
+        Clif.sendAether(sd, spellId, seconds);
+    }
+
+    @Override
     public void playerSpellRemoved(User sd, int slot) {
         Clif.removeSpell(sd, slot);
     }

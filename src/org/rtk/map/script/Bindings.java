@@ -741,16 +741,173 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
-        // Sisa stub: subsistem durasi/aether belum diport. `sendSound` dan
-        // `updateStatus` tidak ada di sl.c sama sekali — dibiarkan terdaftar
-        // supaya skrip yang memanggilnya tidak meledak.
-        for (String name : new String[]{
-                "setDuration", "setAether", "sendSound", "updateStatus"}) {
+        defineDurations(engine, player);
+
+        // `sendSound` dan `updateStatus` tidak ada di sl.c sama sekali —
+        // dibiarkan terdaftar supaya skrip yang memanggilnya tidak meledak.
+        for (String name : new String[]{"sendSound", "updateStatus"}) {
             player.addMethod(name, (self, args) -> {
                 engine.warnStub("player:" + name + "()");
                 return LuaValue.NONE;
             });
         }
+    }
+
+    /**
+     * Keluarga durasi & aether mantra — {@link org.rtk.map.Durations}.
+     *
+     * <p>Semuanya menyebut mantra dengan <b>nama skrip</b> (SplIdentifier),
+     * yang diterjemahkan jadi id lewat {@code magicdb_id}. Nama yang tidak
+     * dikenal jadi id 0, dan di C id 0 punya arti khusus pada paket durasi
+     * (teksnya dipaksa "Shield") — jadi jangan meloloskan nama kosong.</p>
+     */
+    static void defineDurations(ScriptEngine engine, ScriptClass player) {
+        // ---- setter ----
+        player.addMethod("setDuration", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.NONE;
+            }
+            org.rtk.map.Durations.setDuration(engine, u,
+                    mantraId(args.optjstring(2, "")), args.optint(3, 0),
+                    (long) args.optdouble(4, 0), args.optint(5, 0) == 1);
+            return LuaValue.NONE;
+        });
+        player.addMethod("setAether", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Durations.setAether(u,
+                        mantraId(args.optjstring(2, "")), args.optint(3, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        // ---- pemeriksa ----
+        player.addMethod("hasDuration", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u != null && org.rtk.map.Durations.hasDuration(
+                    u, mantraId(args.optjstring(2, ""))));
+        });
+        player.addMethod("hasDurationID", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u != null && org.rtk.map.Durations.hasDurationFrom(
+                    u, mantraId(args.optjstring(2, "")), (long) args.optdouble(3, 0)));
+        });
+        player.addMethod("hasAether", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u != null && org.rtk.map.Durations.hasAether(
+                    u, mantraId(args.optjstring(2, ""))));
+        });
+
+        // ---- pembaca ----
+        // getDuration dan durationAmount di C dua fungsi terpisah dengan isi
+        // yang sama persis — keduanya mengembalikan sisa dalam MILIDETIK.
+        ScriptClass.Method sisa = (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u == null ? 0
+                    : org.rtk.map.Durations.duration(u, mantraId(args.optjstring(2, ""))));
+        };
+        player.addMethod("getDuration", sisa);
+        player.addMethod("durationAmount", sisa);
+        player.addMethod("getDurationID", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u == null ? 0
+                    : org.rtk.map.Durations.durationFrom(u,
+                            mantraId(args.optjstring(2, "")), (long) args.optdouble(3, 0)));
+        });
+        player.addMethod("getAether", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u == null ? 0
+                    : org.rtk.map.Durations.aether(u, mantraId(args.optjstring(2, ""))));
+        });
+        player.addMethod("getCasterID", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u == null ? 0
+                    : (double) org.rtk.map.Durations.casterOf(u,
+                            mantraId(args.optjstring(2, ""))));
+        });
+
+        /**
+         * pcl_getalldurations(): daftar NAMA SKRIP mantra yang sedang
+         * berjalan. Berbeda dari getAllAethers, yang berselang-seling
+         * sisa-waktu lalu nama — bentuk itu ada di C dan skrip
+         * mengandalkannya.
+         */
+        player.addMethod("getAllDurations", (self, args) -> {
+            LuaTable t = new LuaTable();
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return t;
+            }
+            int i = 1;
+            for (var s : u.status.duraAether) {
+                if (s.id > 0 && s.duration > 0) {
+                    t.set(i++, LuaValue.valueOf(
+                            org.rtk.map.MapServer.spellDb.nameOf(s.id)));
+                }
+            }
+            return t;
+        });
+        player.addMethod("getAllAethers", (self, args) -> {
+            LuaTable t = new LuaTable();
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return t;
+            }
+            int i = 1;
+            for (var s : u.status.duraAether) {
+                if (s.id > 0 && s.aether > 0) {
+                    t.set(i++, LuaValue.valueOf(s.aether));
+                    t.set(i++, LuaValue.valueOf(
+                            org.rtk.map.MapServer.spellDb.nameOf(s.id)));
+                }
+            }
+            return t;
+        });
+
+        // ---- penghapus ----
+        player.addMethod("flushDuration", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Durations.flushDuration(engine, u, args.optint(2, 0),
+                        args.optint(3, 0), args.optint(4, 0), true);
+            }
+            return LuaValue.NONE;
+        });
+        player.addMethod("flushDurationNoUncast", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Durations.flushDuration(engine, u, args.optint(2, 0),
+                        args.optint(3, 0), args.optint(4, 0), false);
+            }
+            return LuaValue.NONE;
+        });
+        player.addMethod("flushAether", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Durations.flushAether(u, args.optint(2, 0),
+                        args.optint(3, 0), args.optint(4, 0));
+            }
+            return LuaValue.NONE;
+        });
+        player.addMethod("refreshDurations", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Durations.refresh(u);
+            }
+            return LuaValue.TRUE;
+        });
+    }
+
+    /** magicdb_id() dari nama skrip mantra. */
+    private static int mantraId(String nama) {
+        return org.rtk.map.MapServer.spellDb.idOf(nama);
+    }
+
+    /** Pemain sungguhan di balik objek skrip, atau null bila pemain tiruan uji. */
+    private static org.rtk.map.User pemainDari(Object self) {
+        return self instanceof ScriptPlayer p && p.owner instanceof org.rtk.map.User u
+                ? u : null;
     }
 
     // ------------------------------------------------------------------
