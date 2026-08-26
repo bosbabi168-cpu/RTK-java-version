@@ -641,7 +641,7 @@ gerbang regresi yang harus selalu hijau:
 | `./run.sh maptest` | 3.544 berkas peta terbaca sesuai format |
 | `./run.sh chartest` | serialisasi karakter (29 assertion) |
 | `./run.sh worldtest` | dunia peta + penempatan pemain (53 assertion) |
-| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap (294 assertion) |
+| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap, obrolan & gerakan, durasi mantra (365 assertion) |
 | `./run.sh dbtest` | lapisan database ke MySQL hidup (132 assertion) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -755,18 +755,30 @@ plus infrastruktur (HikariCP, Log4j2, properties, build NetBeans/`build.sh`,
 deploy `run.sh`) dan arsitektur jaringan instance-per-server dengan IO
 thread terpisah.
 
-### Status terakhir — 24 Agustus 2026
+### Status terakhir — 26 Agustus 2026
 
 Titik berangkat untuk sesi berikutnya.
 
 | | |
 |---|---|
-| Gerbang regresi | 6/6 hijau (`cliftest` 294 assertion) |
-| `logs/map.log` server hidup | **0 ERROR / 0 WARN**, stabil ~6 menit runtime |
+| Gerbang regresi | 6/6 hijau (`cliftest` **365** assertion) |
+| `logs/map.log` server hidup | **0 ERROR / 0 WARN** |
 | Ketiga server | jalan berdampingan (`./run.sh all`), tautan map↔char stabil |
-| Binding skrip | 173 tersedia; **100 belum diport**; global belum diport **1** |
+| Binding skrip | **79 belum diport** (73 di `sl.c` + 6 salah ketik); global belum diport **1** |
+| Binding yang masih **stub** | tinggal `spawn`, `sendSound`, `updateStatus` |
 | Skrip Lua | 906/906 termuat, 0 error |
-| **Klien RetroTK asli** | ⚠️ **belum pernah berhasil login** |
+| **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
+
+Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
+**stub** — `talk` (698x), `sendAction` (905x), `playSound` (632x),
+`updateState` (434x), `delete`, `refresh`, `sendHealth`, `removeItemSlot`,
+`updatePath`; dan (2) **subsistem durasi & aether mantra**
+(`map/Durations.java`): `setDuration` (423x) plus 15 binding sekeluarga
+dan tik satu detik `bl_duratimer()`.
+
+⚠️ **Angka `luaaudit` tidak mengukur pekerjaan ini dengan adil.** Binding
+yang diport dari keadaan *stub* tidak pernah terhitung di audit — bagi
+audit namanya sudah "terdefinisi". Lihat baris "masih stub" di atas.
 
 Memastikan keadaan ini masih berlaku:
 
@@ -795,19 +807,20 @@ hanya menulis WARN sekali lalu mengembalikan nil.
 
 | Method | Pemakaian | Keadaan |
 |---|---|---|
-| `sendAction` | 905x | stub |
-| `talk` | 698x | pemain: `outbox` di memori; NPC/Mob: `log.debug` — **belum ada paket 0x0D** |
-| `playSound` | 632x | stub |
-| `updateState` | 434x | stub |
-| `setDuration` | 423x | stub |
-| `spawn` | 381x | stub (NPC/Mob) |
-| `setAether` | 225x | stub |
-| `msg` | 133x | seperti `talk` |
-| `delete` | 109x | stub (NPC/Mob) |
-| `dropItem` | 24x | butuh subsistem barang di lantai (BL_ITEM) |
+| `sendAction` | 905x | ✅ diport 26 Agu |
+| `talk` | 698x | ✅ diport 26 Agu (`clif_speak` 0x0D) |
+| `playSound` | 632x | ✅ diport 26 Agu |
+| `updateState` | 434x | ✅ diport 26 Agu |
+| `setDuration` | 423x | ✅ diport 26 Agu |
+| `spawn` | 381x | **masih stub** — butuh `mobspawn_onetime` |
+| `setAether` | 225x | ✅ diport 26 Agu |
+| `msg` | 133x | ✅ diport 26 Agu |
+| `delete` | 109x | ✅ diport 26 Agu |
+| `moveGhost` | 84x | **belum diport** — kini yang terbanyak |
+| `dropItem` / `dropItemXY` | 55x | butuh subsistem barang di lantai (BL_ITEM) |
 
-`talk`/`msg` paling berdampak — tanpa keduanya NPC tidak pernah benar-benar
-bersuara di layar.
+Yang tersisa dan paling menghambat sekarang: **`moveGhost`** (mob berjalan
+di server tapi belum tergambar berpindah di klien) dan **`spawn`**.
 
 **3. BL_ITEM (barang di lantai) belum ada sama sekali** — prasyarat
 `dropItem`, penyaring `...WithTraps` yang sungguhan, dan jatuhan mob yang

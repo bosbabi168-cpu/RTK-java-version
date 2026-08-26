@@ -644,7 +644,7 @@ there are six regression gates, all of which must stay green:
 | `./run.sh maptest` | 3,544 map files parse correctly |
 | `./run.sh chartest` | character serialisation (29 assertions) |
 | `./run.sh worldtest` | map world + player placement (53 assertions) |
-| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing (294 assertions) |
+| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing, chat & actions, spell durations (365 assertions) |
 | `./run.sh dbtest` | database layer against live MySQL (132 assertions) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -761,18 +761,31 @@ the infrastructure (HikariCP, Log4j2, properties, NetBeans/`build.sh`
 builds, `run.sh` deployment) and the per-server networking architecture
 with its dedicated I/O thread.
 
-### Latest status — 24 August 2026
+### Latest status — 26 August 2026
 
 The starting point for the next session.
 
 | | |
 |---|---|
-| Regression gates | 6/6 green (`cliftest` 294 assertions) |
-| `logs/map.log` on a live server | **0 ERROR / 0 WARN**, stable across ~6 minutes of runtime |
+| Regression gates | 6/6 green (`cliftest` **365** assertions) |
+| `logs/map.log` on a live server | **0 ERROR / 0 WARN** |
 | All three servers | running side by side (`./run.sh all`), map↔char link stable |
-| Script bindings | 173 available; **100 not ported**; globals not ported: **1** |
+| Script bindings | **79 not ported** (73 in `sl.c` + 6 typos); globals not ported: **1** |
+| Bindings still **stubbed** | only `spawn`, `sendSound`, `updateStatus` remain |
 | Lua scripts | 906/906 loaded, 0 errors |
-| **Real RetroTK client** | ⚠️ **has never logged in successfully** |
+| **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
+
+The 26 August session closed two blocks: (1) bindings that were still
+**stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),
+`updateState` (434x), `delete`, `refresh`, `sendHealth`, `removeItemSlot`,
+`updatePath`; and (2) the **spell duration & aether subsystem**
+(`map/Durations.java`): `setDuration` (423x) plus 15 sibling bindings and
+the one-second `bl_duratimer()` tick.
+
+⚠️ **The `luaaudit` number does not measure this work fairly.** A binding
+ported out of a *stub* never counted in the audit to begin with — as far as
+the audit is concerned the name was already "defined". See the "still
+stubbed" row above.
 
 To confirm this still holds:
 
@@ -800,19 +813,20 @@ clean: a stub logs one WARN and returns nil.
 
 | Method | Call sites | State |
 |---|---|---|
-| `sendAction` | 905x | stub |
-| `talk` | 698x | player: in-memory `outbox`; NPC/Mob: `log.debug` — **no 0x0D packet yet** |
-| `playSound` | 632x | stub |
-| `updateState` | 434x | stub |
-| `setDuration` | 423x | stub |
-| `spawn` | 381x | stub (NPC/Mob) |
-| `setAether` | 225x | stub |
-| `msg` | 133x | same as `talk` |
-| `delete` | 109x | stub (NPC/Mob) |
-| `dropItem` | 24x | needs the floor-item subsystem (BL_ITEM) |
+| `sendAction` | 905x | ✅ ported 26 Aug |
+| `talk` | 698x | ✅ ported 26 Aug (`clif_speak` 0x0D) |
+| `playSound` | 632x | ✅ ported 26 Aug |
+| `updateState` | 434x | ✅ ported 26 Aug |
+| `setDuration` | 423x | ✅ ported 26 Aug |
+| `spawn` | 381x | **still a stub** — needs `mobspawn_onetime` |
+| `setAether` | 225x | ✅ ported 26 Aug |
+| `msg` | 133x | ✅ ported 26 Aug |
+| `delete` | 109x | ✅ ported 26 Aug |
+| `moveGhost` | 84x | **not ported** — now the biggest remaining one |
+| `dropItem` / `dropItemXY` | 55x | needs the floor-item subsystem (BL_ITEM) |
 
-`talk` / `msg` matter most — without them NPCs never actually speak
-on screen.
+What blocks most now: **`moveGhost`** (mobs walk on the server but the
+client never sees them move) and **`spawn`**.
 
 **3. BL_ITEM (floor items) does not exist yet** — a prerequisite for
 `dropItem`, for a real `...WithTraps` filter, and for mob drops that are

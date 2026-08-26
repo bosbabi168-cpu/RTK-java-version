@@ -43,8 +43,10 @@ Nama method menyebut **apa yang terjadi**, bukan paket apa yang dikirim.
 Daftar method di antarmuka itu pada akhirnya **adalah** spesifikasi protokol
 baru — diturunkan dari kebutuhan nyata skrip, bukan dikarang dari nol.
 
-Cakupan saat ini: seluruh **12 titik panggilan keluar** sudah lewat lapisan
-ini (9 peristiwa). Yang **belum**: arah **masuk** (`Clif.parseWalk`,
+Cakupan saat ini: seluruh panggilan keluar sudah lewat lapisan ini
+(**16 peristiwa** per 26 Agustus 2026 sore — bertambah `objectSpoke`,
+`objectActed`, `objectAppearanceChanged`, `objectRemoved`,
+`playerIdentityChanged`, `playerDurationChanged`, `playerAetherChanged`). Yang **belum**: arah **masuk** (`Clif.parseWalk`,
 `parseClick`, `parseMenuInput`, `parseNpcDialog`, `decrypt` di
 `MapServer.clientParse`) — itu loop dispatcher paket, urusan terpisah yang
 juga perlu dipindah saat protokol baru dirancang.
@@ -568,6 +570,36 @@ byte-identik dengan `rtklua/`.
    Ditemukan 24 Agustus 2026 dengan membongkar bytecode-nya
    (`javap -p -c`), karena membaca sumbernya saja tidak menampakkan apa pun.
 
+28. **`MapData.delBlock` menolak benda dari peta lain — jangan dilonggarkan.**
+   Di C `map_delblock(bl)` selalu memakai `map[bl->m]`, jadi mustahil
+   mencabut benda dari peta yang bukan tempatnya. Di sini `delBlock` adalah
+   method instance, sehingga peta yang salah bisa dilewatkan; tanpa penjaga
+   `bl.m != id` bendanya **tidak** tercabut dari daftar peta aslinya padahal
+   `onMap` sudah dimatikan — dan `addBlock` berikutnya mendaftarkannya
+   **untuk kedua kalinya**. Efeknya setiap siaran ke area terkirim ganda dan
+   tiap sapuan menghitung bendanya dua kali. Lolos dari 294 assertion
+   `cliftest`; ketahuan 26 Agustus 2026 hanya karena nomor urut paket naik
+   dua per kiriman.
+
+29. **Nomor urut paket [4] hanya ada pada sebagian paket.** `WFIFOHEADER()`
+   di C menaikkan `session->increment` lalu menaruhnya di ladang [4]; paket
+   yang dibangun dengan `WBUF` atau `WFIFOHEAD` biasa meninggalkannya 0
+   (buffernya `CALLOC`). Di Java pilih `Clif.head()` atau `Clif.headSeq()`
+   menurut makro yang dipakai fungsi C-nya — **jangan diseragamkan**.
+   Yang memakai `WFIFOHEADER`: 0x07, 0x0C (hanya `clif_mob_move`), 0x0D
+   (`clif_speak`, **bukan** `pcl_talkself`), 0x13
+   (`clif_send_mob_health_sub`, **bukan** `clif_send_pc_healthscript`),
+   0x1F, 0x37, 0x3A, 0x3F, 0x51. Dua pasangan itu mudah tertukar karena
+   opcodenya sama persis; bedanya cuma makro pembangunnya.
+
+30. **Angka `luaaudit` tidak turun saat binding STUB diport.** Stub sudah
+   terdaftar di prototipe, jadi bagi audit namanya "terdefinisi" — memport
+   `sendAction` yang dipakai 905x tidak menggerakkan angkanya sedikit pun.
+   Karena itu jangan memakai angka audit sebagai ukuran kemajuan tanpa
+   melihat daftar stub di `Bindings.java` (`registerGlobals()`,
+   `definePlayer()`, `defineBlockList()`). Kebalikannya juga berlaku:
+   binding yang belum ada sama sekali baru terlihat setelah dipanggil.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -602,6 +634,7 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
 | `map/class_db.c` `leveldb_read` | `map/data/ClassDb` | tabel pengalaman per path, dari `db/level_db.txt` |
 | `map/itemdb.c` `itemdb_look` | `map/data/ItemDb` | tampilan barang dari tabel `Items` |
 | `map/clif.c` `nexCRCC` + `clif_sendmapdata` | `map/Clif.nexCrc`, `Clif.sendMapData` | checksum petak peta; cocok = tidak dikirim ulang |
+| `map/pc.c` `bl_duratimer` + `sl.c` `pcl_setduration` dkk. | `map/Durations` | durasi & aether mantra; tik 1 detik, kait `while_cast`/`uncast` |
 
 ## Scripting engine (org.rtk.map.script)
 
@@ -676,17 +709,80 @@ padahal kodenya salah (opcode menu, tabel CRC, indeks id mob), dan
 ketiganya baru ketahuan setelah dicocokkan ke sumber C atau saat uji lain
 ikut rusak. Uji buatan sendiri tidak bisa menggantikan klien nyata.
 
-### STATUS TERAKHIR — 26 Agustus 2026
+### STATUS TERAKHIR — 26 Agustus 2026 (sore)
 
 Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau |
-| Binding skrip | **89** belum diport (dari 100) |
+| Gerbang regresi | 6/6 hijau (`cliftest` **365** assertion) |
+| Binding skrip | **79** belum diport (73 di `sl.c` + 6 salah ketik) |
+| Binding yang masih **stub** | tinggal `spawn`, `sendSound`, `updateStatus` |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
+
+#### Yang dikerjakan pada sesi ini
+
+Dua blok, keduanya sudah lewat 6 gerbang + server hidup 0 ERROR / 0 WARN.
+
+**1. Binding yang masih stub — kategori paling berbahaya.** Stub tidak
+melempar error, hanya menulis WARN sekali lalu mengembalikan nil, jadi
+`map.log` tetap bersih sementara skripnya "berhasil" tanpa efek apa pun.
+Diport: `talk` (698x, `clif_speak` 0x0D — tanpa ini NPC tidak pernah
+bersuara di layar), `sendAction` (905x, 0x1A), `playSound` (632x),
+`updateState` (434x, 0x1D untuk pemain / 0x33 / 0x07), `delete` (109x),
+`delFromIDDB`, `sendHealth`, `refresh` (90x), `removeItemSlot` (27x),
+`updatePath` (25x), `updateCountry`.
+
+**2. Subsistem durasi & aether mantra** (`map/Durations.java`) —
+`setDuration` (423x) plus 15 binding sekeluarga dan tik satu detik
+`bl_duratimer()`. Ini **logika permainan, bukan protokol**, jadi tetap
+terpakai setelah protokol diganti.
+
+⚠️ **Angka luaaudit tidak turun sebanyak pekerjaannya.** Binding yang
+diport dari keadaan *stub* **tidak pernah terhitung** di audit — bagi
+audit ia sudah "terdefinisi". Jadi 89 → 79 mengecilkan apa yang berubah;
+yang benar-benar bergerak ada di kolom "masih stub" di atas.
+
+#### Jebakan baru yang ditemukan sesi ini
+
+- **`MapData.delBlock` pada peta yang SALAH** diam-diam menyetel
+  `onMap = false` tanpa mencabut bendanya, sehingga `addBlock` berikutnya
+  mendaftarkannya **untuk kedua kalinya** — tiap siaran ke area lalu
+  terkirim ganda. Di C mustahil: `map_delblock(bl)` selalu memakai
+  `map[bl->m]`. Lolos dari 294 assertion `cliftest`; ketahuan hanya karena
+  nomor urut paket naik **dua** per kiriman. Sekarang dijaga:
+  `delBlock` menolak bila `bl.m != id`.
+- **Nomor urut paket ada di ladang [4], tapi hanya pada sebagian paket.**
+  `WFIFOHEADER()` di C menaikkan `session->increment` dan menaruhnya di
+  sana; paket yang dibangun dengan `WBUF`/`WFIFOHEAD` biasa meninggalkan
+  [4] bernilai 0. Di Java pembagiannya jadi `Clif.head()` vs
+  `Clif.headSeq()` — **jangan diseragamkan**. Yang memakai: 0x07, 0x0C
+  (`clif_mob_move` saja), 0x0D (`clif_speak`, bukan `pcl_talkself`), 0x13
+  (`clif_send_mob_health_sub`, bukan `..._healthscript`), 0x1F, 0x37,
+  0x3A, 0x3F, 0x51.
+- **0x33 dan 0x1D isinya identik, bergeser 5 byte** — 0x33 membawa
+  x/y/side lebih dulu. Karena itu badannya dipisah jadi
+  `Clif.charBody(base)`. **Kecuali** `state == 4`: hanya 0x1D yang punya
+  tata letak pendek untuk itu.
+- **`LuaAudit` mencetak "... dan N lagi" walau daftarnya tidak dipotong**,
+  sehingga `-Drtk.audit.penuh=true` tetap mengabarkan 73 nama tersembunyi
+  yang sebenarnya sudah tercetak semua. Sudah diperbaiki.
+
+#### Prasyarat yang masih menggantung
+
+- **Tik durasi belum pernah berjalan dengan pemain sungguhan online.**
+  Kait `while_cast` / `uncast` / `while_equipped` baru terbukti lewat
+  `cliftest`, bukan lewat `map.log` — dan Peringatan #26 justru lahir dari
+  kait timer yang hanya menyala saat server hidup. Ini yang paling layak
+  diperiksa lebih dulu di sesi berikutnya.
+- **`moveGhost` (84x) belum diport** dan kini jadi method belum-diport
+  terbanyak. Ia butuh paket daftar benda 0x07 berkelompok
+  (`clif_mob_look_start/close`), bukan versi satu-benda yang sudah ada.
+- **BL_ITEM masih belum ada**, jadi `dropItem`/`dropItemXY` (55x gabungan)
+  tetap tertutup, dan penyaring `...WithTraps` masih identik dengan varian
+  biasa.
 
 **Pemain sungguhan masuk dunia untuk pertama kalinya** setelah empat bug
 ditutup — semuanya lolos dari 294 assertion `cliftest`, dan semuanya
@@ -783,21 +879,21 @@ stub hanya menulis WARN sekali lalu mengembalikan nil. Yang terbesar:
 
 | Method | Pemakaian | Keadaan sekarang |
 |---|---|---|
-| `sendAction` | 905x | stub warn-once (pemain) |
-| `talk` | 698x | pemain: masuk `outbox` di memori (boneka uji); NPC/Mob: `log.debug` — **belum ada paket 0x0D** |
-| `playSound` | 632x | stub |
-| `updateState` | 434x | stub |
-| `setDuration` | 423x | stub |
-| `spawn` | 381x | stub (NPC/Mob) |
-| `setAether` | 225x | stub |
-| `msg` | 133x | seperti `talk` |
-| `delete` | 109x | stub (NPC/Mob) |
-| `refresh` | 90x | stub |
-| `dropItem` / `dropItemXY` | 24x | butuh subsistem barang di lantai (BL_ITEM) yang **belum diport sama sekali** |
+| `sendAction` | 905x | ✅ diport 26 Agu (0x1A + kait `onAction`) |
+| `talk` | 698x | ✅ diport 26 Agu (`clif_speak` 0x0D) |
+| `playSound` | 632x | ✅ diport 26 Agu |
+| `updateState` | 434x | ✅ diport 26 Agu (0x1D / 0x33 / 0x07) |
+| `setDuration` | 423x | ✅ diport 26 Agu (`map/Durations`) |
+| `spawn` | 381x | **masih stub** — butuh `mobspawn_onetime` |
+| `setAether` | 225x | ✅ diport 26 Agu |
+| `msg` | 133x | ✅ diport 26 Agu (`bll_talkcolor`) |
+| `delete` | 109x | ✅ diport 26 Agu |
+| `refresh` | 90x | ✅ diport 26 Agu |
+| `moveGhost` | 84x | **belum diport** — kini yang terbanyak; butuh paket daftar benda 0x07 berkelompok |
+| `dropItem` / `dropItemXY` | 55x | butuh subsistem barang di lantai (BL_ITEM) yang **belum diport sama sekali** |
 
-`talk`/`msg` paling berdampak: tanpa keduanya NPC tidak pernah benar-benar
-bersuara di layar. Keduanya butuh paket obrolan 0x0D, yang juga membawa
-penyaring `clif_isignore` (lihat `clif_send_sub`).
+Penyaring `clif_isignore` (lihat `clif_send_sub`) pada jalur obrolan
+**belum** ikut diport — daftar abaikan pemain belum ada.
 
 **3. BL_ITEM (barang di lantai) belum ada.** Ini prasyarat `dropItem`,
 `getObjectsInCellWithTraps` yang sungguhan (sekarang identik dengan varian
@@ -1014,14 +1110,20 @@ NPC **dan** mob.
 
 1. **Uji dengan klien RetroTK asli** — satu-satunya penghambat nyata,
    tidak butuh kode baru, **belum pernah berhasil login**.
-2. **Binding yang masih stub** (`sendAction` 905x, `talk` 698x,
-   `playSound` 632x, …) — tidak melempar error sehingga `map.log` tetap
-   bersih, tapi juga tidak berfungsi.
-3. **BL_ITEM (barang di lantai)** — belum ada sama sekali; prasyarat
+2. **Tik durasi dengan pemain sungguhan online** — kait `while_cast` /
+   `uncast` / `while_equipped` baru terbukti lewat `cliftest`. Peringatan
+   #26 lahir persis dari kait timer yang hanya menyala saat server hidup.
+3. **`moveGhost` (84x)** — method belum-diport terbanyak sekarang; mob
+   berjalan tapi belum tergambar berpindah pada klien. Butuh paket daftar
+   benda 0x07 berkelompok (`clif_mob_look_start`/`_close`), bukan versi
+   satu-benda yang sudah ada.
+4. **`spawn` (381x)** — satu-satunya stub besar yang tersisa; butuh
+   `mobspawn_onetime`.
+5. **BL_ITEM (barang di lantai)** — belum ada sama sekali; prasyarat
    `dropItem` dan jatuhan mob yang terlihat di tanah.
-4. **C4 papan pesan & surat** — murni protokol char server
+6. **C4 papan pesan & surat** — murni protokol char server
    (0x3009–0x300F) dengan tabel yang sudah ada. Bisa diuji offline.
-5. **C2 berkas meta** dan **C3 warp antar-map-server** — bisa dibangun,
+7. **C2 berkas meta** dan **C3 warp antar-map-server** — bisa dibangun,
    tapi **tidak bisa dibuktikan benar tanpa klien**, jadi kerjakan
    bersamaan dengan butir 1.
 
