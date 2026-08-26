@@ -9,7 +9,7 @@ tailoring = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "tailor" then
+		if speech == "penjahit" then
 			local tcloth = {graphic = convertGraphic(1632, "item"), color = 0}
 			player.npcGraphic = tcloth.graphic
 			player.npcColor = tcloth.color

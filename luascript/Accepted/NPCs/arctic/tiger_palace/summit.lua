@@ -2,7 +2,7 @@ SummitNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 
-		if speech == "cleanse curse" or speech == "cleanse" then
+		if speech == "sucikan kutukan" or speech == "sucikan" then
 			SummitNpc.changeAlignment(player, npc)
 		end
 	end),

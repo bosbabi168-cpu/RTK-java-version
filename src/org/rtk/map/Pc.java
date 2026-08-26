@@ -116,7 +116,7 @@ public final class Pc {
         }
 
         // gambar ulang dunia di sisi klien setelah berpindah
-        Clif.refresh(sd);
+        MapServer.clientView.playerViewRefreshed(sd);
 
         if (mapChanged) {
             fireScript(sd, "mapEnter");
@@ -163,7 +163,7 @@ public final class Pc {
             return false;
         }
         // beri tahu klien: id, peta, posisi, waktu (clif.c saat pemain masuk)
-        Clif.sendWorldEntry(sd);
+        MapServer.clientView.playerEnteredWorld(sd);
 
         fireScript(sd, "mapEnter");
         log.info("[PC] {} masuk dunia di {} ({}:{},{}), vita {}/{} mana {}/{}",

@@ -154,6 +154,21 @@ public final class CharStatus {
         return null;
     }
 
+    /**
+     * Barang di slot inventaris tertentu, atau null.
+     *
+     * <p>Sepasang dengan {@link #equipAt}: di C {@code status.inventory[]}
+     * berindeks slot, di sini slotnya ada di {@link Item#pos}.</p>
+     */
+    public Item inventoryAt(int slot) {
+        for (Item it : inventory) {
+            if (it != null && it.pos == slot && it.id > 0) {
+                return it;
+            }
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         return "CharStatus{id=" + id + ", name='" + name + "', level=" + level

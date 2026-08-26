@@ -21,7 +21,7 @@ LibrarianReevesNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 		if player.quest["reeves_quest"] >= 0 then
-			if speech == "spoon" then
+			if speech == "sendok" then
 				if player.quest["reeves_quest"] == 0 then
 					player.quest["reeves_quest"] = 1
 				end
@@ -36,7 +36,7 @@ LibrarianReevesNpc = {
 		end
 
 		if player.quest["reeves_quest"] >= 1 then
-			if speech == "demons" then
+			if speech == "iblis" then
 				if player.quest["reeves_quest"] == 1 then
 					player.quest["reeves_quest"] = 2
 				end
@@ -50,7 +50,7 @@ LibrarianReevesNpc = {
 					0
 				)
 			end
-			if speech == "demon" then
+			if speech == "iblis" then
 				if player.quest["reeves_quest"] == 1 then
 					player.quest["reeves_quest"] = 2
 				end
@@ -64,7 +64,7 @@ LibrarianReevesNpc = {
 					0
 				)
 			end
-			if speech == "spicy chicken wings" then
+			if speech == "sayap ayam pedas" then
 				player:dialogSeq(
 					{
 						t,
@@ -86,7 +86,7 @@ LibrarianReevesNpc = {
 		end
 
 		if player.quest["reeves_quest"] >= 1 then
-			if speech == "statues" then
+			if speech == "patung" then
 				player:dialogSeq(
 					{
 						t,
@@ -97,7 +97,7 @@ LibrarianReevesNpc = {
 					0
 				)
 			end
-			if speech == "statue" then
+			if speech == "patung" then
 				player:dialogSeq(
 					{
 						t,
@@ -111,7 +111,7 @@ LibrarianReevesNpc = {
 		end
 
 		if player.quest["reeves_quest"] >= 2 then
-			if speech == "book" then
+			if speech == "buku" then
 				if player.quest["reeves_quest"] == 2 then
 					player.quest["reeves_quest"] = 3
 				end

@@ -245,7 +245,7 @@ BaekNpc = {
 			)
 		end
 
-		if speech == "compass" then
+		if speech == "kompas" then
 			Tools.checkKarma(player)
 
 			player:dialogSeq(

@@ -85,12 +85,12 @@ SelNpc = {
 		Tools.configureDialog(player, npc)
 		local speech = string.lower(player.speech)
 
-		if (speech == "gem" or speech == "jewel") then
+		if (speech == "permata" or speech == "permata") then
 			crafting.craftingDialog(player, npc, speech)
 			return
 		end
 
-		if (speech == "waypoint" and not Waypoint.isEnabled(player, _waypointId)) then
+		if (speech == "titik jalan" and not Waypoint.isEnabled(player, _waypointId)) then
 			Waypoint.add(player, npc, _waypointId)
 			return
 		end

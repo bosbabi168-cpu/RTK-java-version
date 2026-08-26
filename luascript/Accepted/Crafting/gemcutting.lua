@@ -9,7 +9,7 @@ gemcutting = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "gem" then
+		if speech == "permata" then
 			-- 100 ambers used. 37 tarnished, 14 crafted, 6 well crafted
 
 			local ambertypes = {

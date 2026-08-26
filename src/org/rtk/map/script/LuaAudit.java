@@ -116,6 +116,13 @@ public final class LuaAudit {
             }
             try {
                 String src = Files.readString(p, java.nio.charset.StandardCharsets.ISO_8859_1);
+                // ⚠️ Buang baris yang DIKOMENTARI lebih dulu. Tanpa ini,
+                // pendaftaran yang sengaja dimatikan di C ikut terhitung
+                // "ada di sl.c", sehingga binding yang sebenarnya TIDAK ADA
+                // di server aslinya pun dilaporkan sebagai celah port.
+                // Kejadian pada `addActivationKey`/`checkActivationKey`,
+                // yang baris typel_extendproto-nya dikomentari.
+                src = buangKomentar(src);
                 // PENTING: jangan ambil semua literal string dari sl.c. Di sana
                 // nama global, nama method, DAN nama properti objek ("might",
                 // "level", ...) semuanya berupa string, sehingga menyamaratakan
@@ -134,6 +141,44 @@ public final class LuaAudit {
             break;
         }
         return out;
+    }
+
+    /**
+     * Hapus komentar C dari sumber sebelum nama binding diambil.
+     *
+     * <p>Sederhana dengan sengaja: hanya {@code //} sampai akhir baris dan
+     * blok {@code /* … *&#47;}. Cukup karena yang dicari hanya baris
+     * pendaftaran, dan tidak ada literal string di sl.c yang memuat
+     * penanda komentar.</p>
+     */
+    private static String buangKomentar(String src) {
+        StringBuilder out = new StringBuilder(src.length());
+        boolean blok = false;
+        for (int i = 0; i < src.length(); i++) {
+            if (blok) {
+                if (src.startsWith("*/", i)) {
+                    blok = false;
+                    i++;
+                }
+                continue;
+            }
+            if (src.startsWith("/*", i)) {
+                blok = true;
+                i++;
+                continue;
+            }
+            if (src.startsWith("//", i)) {
+                int nl = src.indexOf('\n', i);
+                if (nl < 0) {
+                    break;
+                }
+                i = nl;
+                out.append('\n');
+                continue;
+            }
+            out.append(src.charAt(i));
+        }
+        return out.toString();
     }
 
     private static void report(String file, int line, String kind, String detail) {
@@ -177,6 +222,13 @@ public final class LuaAudit {
         runtimeMethods.addAll(keysOf(engine.playerClass.proto));
         runtimeMethods.addAll(keysOf(engine.npcClass.proto));
         runtimeMethods.addAll(keysOf(engine.mobClass.proto));
+        // ⚠️ Prototipe yang TIDAK terdaftar di sini membuat method miliknya
+        // terhitung "belum diport" selamanya. `FloorItem` sempat terlewat,
+        // sehingga `addTrapSpotters`/`getTrapSpotters` tetap dilaporkan
+        // sebagai celah padahal sudah ada. Setiap kali ScriptEngine dapat
+        // prototipe baru, tambahkan di sini juga.
+        runtimeMethods.addAll(keysOf(engine.floorItemClass.proto));
+        runtimeMethods.addAll(keysOf(engine.boundItemClass.proto));
         log.info("tersedia saat runtime: {} global, {} method prototipe",
                 runtimeGlobals.size(), runtimeMethods.size());
 
@@ -371,9 +423,14 @@ public final class LuaAudit {
 
         log.info("--- {} ada di sl.c tapi BELUM DIPORT (celah yang sudah diketahui): {} nama ---",
                 label, belumDiport.size());
-        belumDiport.stream().limit(10).forEach(a -> log.info("  {}", a));
-        if (belumDiport.size() > 10) {
-            log.info("  ... dan {} lagi", belumDiport.size() - 10);
+        // -Drtk.audit.penuh=true mencetak daftar utuh; default 10 agar ringkas.
+        long batas = Boolean.getBoolean("rtk.audit.penuh") ? Long.MAX_VALUE : 10;
+        belumDiport.stream().limit(batas).forEach(a -> log.info("  {}", a));
+        // Baris "dan N lagi" hanya benar bila daftarnya MEMANG dipotong.
+        // Sebelumnya ia ikut tercetak pada mode penuh dan mengabarkan 73 nama
+        // tersembunyi yang sebenarnya sudah tercetak semua.
+        if (belumDiport.size() > batas) {
+            log.info("  ... dan {} lagi", belumDiport.size() - batas);
         }
     }
 

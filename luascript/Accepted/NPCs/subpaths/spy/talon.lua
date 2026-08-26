@@ -75,7 +75,7 @@ TalonNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 		local speech = string.lower(player.speech)
-		if speech == "special order" then
+		if speech == "pesanan khusus" then
 			if player.class == 2 and (player.quest["subpath_trials"] == 0 or player.quest["subpath_trials"] == 19) and (player.gameRegistry["subpaths_released"] == 0 or player.gmLevel == 99) then
 				if player.quest["spy_trials"] == 0 then
 					player.quest["subpath_trials"] = 19

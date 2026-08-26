@@ -40,8 +40,12 @@ public final class ItemDb {
      * @param maxAmount   batas total yang boleh dimiliki; 0 = tanpa batas
      */
     public record Info(long id, String name, String display, String buyText,
-                       int type, int buyPrice, int sellPrice,
-                       int stackAmount, int maxAmount, Look look, Stats stats) {
+                       String text,
+                       int type, int breakOnDeath, long expiresAt,
+                       int buyPrice, int sellPrice,
+                       int stackAmount, int maxAmount, int sound, int durability,
+                       int protectedValue, int droppable,
+                       Look look, Stats stats) {
 
         /** Nama yang dilihat pemain; jatuh ke nama skrip bila kosong. */
         public String tampilan() {
@@ -53,13 +57,26 @@ public final class ItemDb {
     private static final Stats TANPA_STAT =
             new Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     private static final Info TIDAK_DIKENAL =
-            new Info(0, "", "", "", 0, 0, 0, 1, 0, KOSONG, TANPA_STAT);
+            new Info(0, "", "", "", "", 0, 0, 0L, 0, 0, 1, 0, 0, 0, 0, 0, KOSONG, TANPA_STAT);
 
     private final Map<Long, Look> byId = new HashMap<>();
     private final Map<Long, Info> infoById = new HashMap<>();
 
     /** Nama barang (huruf kecil) -&gt; data; nama di skrip tidak peka besar-kecil. */
     private final Map<String, Info> infoByName = new HashMap<>();
+
+    /**
+     * Daftarkan satu jenis barang. Dipakai {@link #load} dan uji yang
+     * berjalan tanpa database; nama pertama menang bila ada duplikat, sama
+     * seperti pencarian berurutan di C.
+     */
+    public void register(Info info) {
+        byId.put(info.id(), info.look());
+        infoById.put(info.id(), info);
+        if (!info.name().isEmpty()) {
+            infoByName.putIfAbsent(info.name().toLowerCase(), info);
+        }
+    }
 
     /** Data barang menurut id, atau entri kosong bila tak dikenal. */
     public Info info(long itemId) {
@@ -78,6 +95,57 @@ public final class ItemDb {
     public long idOf(String name) {
         Info i = infoByName(name);
         return i == null ? 0 : i.id();
+    }
+
+    /**
+     * Jenis barang (enum di itemdb.h:23). Hanya yang benar-benar dipakai
+     * kode ini yang diberi nama.
+     *
+     * <p>⚠️ Rentang {@code 3..17} adalah <b>perlengkapan</b>: hanya jenis
+     * itu yang membawa ketahanan pada paket inventaris. Ini rentang, bukan
+     * daftar — jadi jangan diperiksa satu per satu.</p>
+     */
+    public static final int ITM_SMOKE = 2;
+    public static final int ITM_EQUIP_MIN = 3;
+    public static final int ITM_EQUIP_MAX = 17;
+    public static final int ITM_TRAPS = 20;
+    public static final int ITM_BAG = 21;
+    public static final int ITM_MAP = 22;
+    public static final int ITM_QUIVER = 23;
+
+    /**
+     * itemdb_breakondeath(): barang ini hancur saat pemiliknya mati.
+     *
+     * <p>Kolomnya {@code ItmBoD} — <b>BoD = Break on Death</b>, bukan
+     * singkatan lain. Nama "BOD" muncul lagi di {@code getBODItem} dan
+     * {@code checkInvBod}, yang semuanya soal barang hancur ini.</p>
+     */
+    public boolean breaksOnDeath(long itemId) {
+        return info(itemId).breakOnDeath() != 0;
+    }
+
+    /**
+     * itemdb_time(): waktu kedaluwarsa <b>mutlak</b> bawaan jenis barang
+     * (detik epoch), bukan lamanya. 0 = tidak pernah kedaluwarsa.
+     */
+    public long expiresAt(long itemId) {
+        return info(itemId).expiresAt();
+    }
+
+    /** itemdb_protected(): nilai perlindungan bawaan barang. */
+    public int protectedOf(long itemId) {
+        return info(itemId).protectedValue();
+    }
+
+    /**
+     * itemdb_droppable(): <b>namanya menyesatkan.</b> Di
+     * {@code pc_getitemscript} nilai bukan-nol berarti barangnya
+     * <b>TIDAK boleh dipungut</b> pemain biasa ("That item cannot be picked
+     * up"); GM tetap bisa. Jadi bacalah sebagai "terkunci di lantai", bukan
+     * "boleh dijatuhkan".
+     */
+    public boolean cannotBePickedUp(long itemId) {
+        return info(itemId).droppable() != 0;
     }
 
     /** itemdb_stackamount(): berapa muat dalam satu slot (minimal 1). */
@@ -118,6 +186,8 @@ public final class ItemDb {
                 "SELECT `ItmId`,`ItmIdentifier`,`ItmType`,`ItmLook`,`ItmLookColor`,"
                 + "`ItmIcon`,`ItmIconColor`,`ItmBuyPrice`,`ItmSellPrice`,"
                 + "`ItmStackAmount`,`ItmMaximumAmount`,`ItmDescription`,`ItmBuyText`,"
+                + "`ItmText`,`ItmBoD`,`ItmTimer`,"
+                + "`ItmSound`,`ItmDurability`,`ItmProtected`,`ItmDroppable`,"
                 + "`ItmVita`,`ItmMana`,`ItmMight`,`ItmWill`,`ItmGrace`,`ItmArmor`,"
                 + "`ItmHit`,`ItmDam`,`ItmProtection`,`ItmHealing`,"
                 + "`ItmMinimumSDamage`,`ItmMaximumSDamage`,"
@@ -129,12 +199,17 @@ public final class ItemDb {
                     String nama = rs.getString("ItmIdentifier");
                     String tampil = rs.getString("ItmDescription");
                     String buyText = rs.getString("ItmBuyText");
+                    String teks = rs.getString("ItmText");
                     Info info = new Info(id, nama == null ? "" : nama,
                             tampil == null ? "" : tampil,
                             buyText == null ? "" : buyText,
+                            teks == null ? "" : teks,
                             rs.getInt("ItmType"),
+                            rs.getInt("ItmBoD"), rs.getLong("ItmTimer"),
                             rs.getInt("ItmBuyPrice"), rs.getInt("ItmSellPrice"),
                             rs.getInt("ItmStackAmount"), rs.getInt("ItmMaximumAmount"),
+                            rs.getInt("ItmSound"), rs.getInt("ItmDurability"),
+                            rs.getInt("ItmProtected"), rs.getInt("ItmDroppable"),
                             look,
                             new Stats(rs.getInt("ItmVita"), rs.getInt("ItmMana"),
                                     rs.getInt("ItmMight"), rs.getInt("ItmWill"),
@@ -145,13 +220,7 @@ public final class ItemDb {
                                     rs.getInt("ItmMaximumSDamage"),
                                     rs.getInt("ItmMinimumLDamage"),
                                     rs.getInt("ItmMaximumLDamage")));
-                    byId.put(id, look);
-                    infoById.put(id, info);
-                    if (!info.name().isEmpty()) {
-                        // nama pertama menang bila ada duplikat, sama seperti
-                        // pencarian berurutan di C
-                        infoByName.putIfAbsent(info.name().toLowerCase(), info);
-                    }
+                    register(info);
                 });
         if (rows < 0) {
             log.error("[ITEM] gagal membaca tabel Items");

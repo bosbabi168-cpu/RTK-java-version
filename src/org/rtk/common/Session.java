@@ -63,6 +63,23 @@ public class Session {
     public InetSocketAddress clientAddr;
     public String name = "";
 
+    /**
+     * Nomor urut paket keluar — {@code session[fd]->increment} di C.
+     *
+     * <p>Dinaikkan oleh {@code WFIFOHEADER()}, yang menaruh hasilnya di byte
+     * [4]. <b>Hanya paket yang di C dibangun lewat makro itu</b> yang
+     * membawanya (opcode 0x07, 0x0C, 0x0D, 0x13, 0x1F, 0x37, 0x3A, 0x51);
+     * paket lain meninggalkan [4] bernilai 0. Jangan diseragamkan — klien
+     * membedakan keduanya.</p>
+     */
+    private int increment;
+
+    /** WFIFOHEADER(): naikkan lalu ambil nomor urut berikutnya (0..255). */
+    public int nextIncrement() {
+        increment = (increment + 1) & 0xFF;
+        return increment;
+    }
+
     /** true bila handler accept belum dijalankan logic thread. */
     volatile boolean pendingAccept = false;
 
@@ -309,6 +326,21 @@ public class Session {
         byte[] packet = new byte[len];
         System.arraycopy(wdata, wdataSize, packet, 0, len);
         outbox.add(packet);
+
+        // Bersihkan area penyusunan supaya paket berikutnya mulai dari nol.
+        //
+        // Di C setiap paket ditulis di offset BARU (`WFIFOP` = wdata +
+        // wdata_size + pos, dan WFIFOSET memajukan wdata_size), jadi byte
+        // yang tidak ditulis eksplisit selalu nol dari buffer yang di-CALLOC.
+        // Port ini memakai ulang offset yang sama, sehingga byte tersebut
+        // mewarisi isi paket SEBELUMNYA — dan karena crypt mengenkripsi di
+        // tempat, yang diwarisi adalah sampah terenkripsi. Itu ikut terkirim
+        // karena beberapa paket mendeklarasikan panjang LEBIH BESAR dari
+        // ladang yang benar-benar ditulis (0x1E sisa 2 byte, 0x05 sisa 1,
+        // 0x15 sisa 5, 0x04 sisa 2). Terlihat nyata di dump 26 Agu 2026:
+        // paket 0x04 berekor "4D 79" (ASCII "My" dari "Mythic Nexus").
+        java.util.Arrays.fill(wdata, wdataSize, wdata.length, (byte) 0);
+
         net.wantWrite(this);
     }
 

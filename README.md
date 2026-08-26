@@ -12,6 +12,26 @@ ditulis dalam C — sumbernya: [unkmc/RTK-Server](https://github.com/unkmc/RTK-S
 > Project ini menerjemahkan inti server C tersebut ke Java, dan menjalankan
 > konten Lua-nya **tanpa diubah** lewat LuaJ.
 
+## Arah project (diperbarui 26 Agustus 2026)
+
+**Protokol RetroTK akan diganti dengan rancangan sendiri, dan klien dibuat
+sendiri memakai libGDX.** Kompatibilitas byte-per-byte dengan klien RetroTK
+asli **bukan lagi tujuan**.
+
+Konsekuensinya untuk siapa pun yang membaca kode ini:
+
+- Yang **terbawa** ke protokol baru: 906 skrip Lua, 9.850 peta, 4.476 portal,
+  716 jenis mob, 2.545 item, dan binding logika permainan.
+- Yang **akan ditulis ulang**: seluruh lapisan paket `clif_*`. Karena itu
+  `Clif.sendMyStatus()` sengaja dibiarkan setengah jadi.
+- Kesetiaan pada sumber C tetap dijaga untuk **logika**, tidak untuk format
+  kabel.
+
+Sebelum keputusan ini, klien RetroTK asli sempat **berhasil masuk dunia**
+setelah empat bug server ditutup (lihat "Status & roadmap"). Keempatnya lolos
+dari 294 assertion uji — bukti bahwa uji buatan sendiri tidak bisa
+menggantikan klien nyata.
+
 ## Prasyarat
 
 - **JDK 25** (level bahasa project = 25). Untuk mesin pengembangan;
@@ -554,7 +574,7 @@ membiarkannya tersangkut.
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ konek+auth ke char server, memuat geometri peta, terima routing pemain, minta & terima data karakter (0x3003/0x3803) |
 | dunia peta (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometri + metadata + indeks spasial blok 8×8, area pandang x±9/y±8 |
 | **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c` ±22rb baris) | `map/User.java`, `map/Pc.java`, `map/Clif.java`, `map/Npc*.java`, `map/Mob*.java` | ✅ **Trek A selesai** — masuk dunia + panggambaran sekitar (0x33), gerakan & portal, dialog/menu/input NPC (0x30/0x2F/0x39/0x3A), toko beli-jual, NPC & timernya, mob: 716 jenis + 1.175 spawn, AI (tik 50 ms), pertarungan, kematian & jatuhan barang. ⚠️ belum pernah diuji dengan klien RetroTK asli |
-| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **jalan via LuaJ** — 906 skrip asli termuat tanpa error; object model typel, dispatch `root.method`, coroutine `_async` + dialog blocking, registry & inventaris tersambung ke `CharStatus`. ⚠️ dari ±258 method yang dipanggil skrip, **100 masih ada di `sl.c` tapi belum diport**; yang paling sering dipakai sudah ditutup (`calcStat`, `addNPC`, `addSpell`, `callBase`, bank, `sendStatus`, `npc:move()`, `sendSide`). Angka terkini: `./run.sh luaaudit` |
+| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **jalan via LuaJ** — 906 skrip asli termuat tanpa error; object model typel, dispatch `root.method`, coroutine `_async` + dialog blocking, registry & inventaris tersambung ke `CharStatus`. ⚠️ dari ±258 method yang dipanggil skrip, tinggal **4 yang masih ada di `sl.c` tapi belum diport**; yang paling sering dipakai sudah ditutup (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus seluruh keluarga barang lantai). Angka terkini: `./run.sh luaaudit` |
 | save server (`saveif.c` — di C pun sudah dinonaktifkan) | — | ❌ tidak diport (timer koneksinya di-comment di C) |
 
 ## Catatan desain
@@ -621,7 +641,7 @@ gerbang regresi yang harus selalu hijau:
 | `./run.sh maptest` | 3.544 berkas peta terbaca sesuai format |
 | `./run.sh chartest` | serialisasi karakter (29 assertion) |
 | `./run.sh worldtest` | dunia peta + penempatan pemain (53 assertion) |
-| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap (294 assertion) |
+| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap, obrolan & gerakan, durasi mantra, gerak mob, barang lantai, inventaris, buku mantra, tampilan & timer, simpan paksa, BOD (535 assertion) |
 | `./run.sh dbtest` | lapisan database ke MySQL hidup (132 assertion) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -735,18 +755,62 @@ plus infrastruktur (HikariCP, Log4j2, properties, build NetBeans/`build.sh`,
 deploy `run.sh`) dan arsitektur jaringan instance-per-server dengan IO
 thread terpisah.
 
-### Status terakhir — 24 Agustus 2026
+### Status terakhir — 26 Agustus 2026
 
 Titik berangkat untuk sesi berikutnya.
 
 | | |
 |---|---|
-| Gerbang regresi | 6/6 hijau (`cliftest` 294 assertion) |
-| `logs/map.log` server hidup | **0 ERROR / 0 WARN**, stabil ~6 menit runtime |
+| Gerbang regresi | 6/6 hijau (`cliftest` **552**, `dbtest` **187** assertion) |
+| `logs/map.log` server hidup | **0 ERROR / 0 WARN** |
 | Ketiga server | jalan berdampingan (`./run.sh all`), tautan map↔char stabil |
-| Binding skrip | 173 tersedia; **100 belum diport**; global belum diport **1** |
+| Binding skrip | **12 belum diport** (**4** di `sl.c` + 8 salah ketik / kode mati); global belum diport **0** |
+| Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
-| **Klien RetroTK asli** | ⚠️ **belum pernah berhasil login** |
+| **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
+| **Paket MASUK** | ⚠️ **5 dari 54 opcode** — lihat catatan audit di bawah |
+| Trek A | selesai fungsinya; `sendMyStatus` sengaja dibiarkan TAHAP 1 |
+| Trek C | C1 dan C4 selesai; **C2 dan C3 belum tersentuh** |
+
+⚠️ **Audit 27 Agustus 2026.** Binding skrip hampir selesai (4 dari ±258
+method tersisa), tetapi **porting belum**. `clif_parse()` di C melayani
+**54 opcode klien**; port ini melayani **lima** — jalan, menu & input,
+dialog NPC, klik. Semua yang *dimulai pemain* selain berjalan dan bicara
+dengan NPC belum punya jalur: mengobrol, memakai perlengkapan, memakai
+barang, menjatuhkan, memungut, merapal, menyerang, dan **bertukar barang
+dengan pemain lain**.
+
+Itu bukan berarti 49 paket menunggu disalin — format kabelnya memang akan
+diganti. Yang berharga adalah **logika di balik tiap aksinya**, bukan
+pembacaan bytenya.
+
+**Lapisan masuknya kini sudah berdiri** (27 Agustus 2026):
+`ClientCommands` adalah cermin dari `ClientView` — gagasan yang sama, arah
+berlawanan, dan yang mengimplementasikannya adalah *logika* sementara yang
+memanggilnya *protokol*. Keempat `Clif.parse*` kini pembaca byte murni.
+Protokol baru cukup menulis pembaca baru; logika di `MapCommands` tidak
+disentuh. Roadmap berurutnya ada di `CLAUDE.md`.
+
+Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
+**stub** — `talk` (698x), `sendAction` (905x), `playSound` (632x),
+`updateState` (434x), `delete`, `refresh`, `sendHealth`, `removeItemSlot`,
+`updatePath`; dan (2) **subsistem durasi & aether mantra**
+(`map/Durations.java`): `setDuration` (423x) plus 15 binding sekeluarga
+dan tik satu detik `bl_duratimer()`; serta (3) `moveGhost` (84x, cara
+hampir seluruh AI mob bergerak) dan `spawn` (381x, jebakan / mob event /
+boss instance), yang bersama-sama **menghabiskan daftar stub**; serta (4)
+**BL_ITEM**, barang di lantai — subsistem besar terakhir yang belum ada
+sama sekali, yang sendirian membuka ~95 titik panggilan; serta (5) sisa
+varian gerak mob (`moveIntent`, `checkMove`, `moveIgnoreObject`); serta
+(6) paket inventaris (0x0F / 0x10) beserta `updateInv`, `hasEquipped`, dan
+keluarga `deduct*`; serta (7) buku mantra (`getSpells`, `getSpellName`,
+`getUnknownSpells`, `getAllClassSpells`, `addHealth`); serta (8) tampilan
+& timer (`changeView`, `guitext`, `setTimer`, `selfAnimation`,
+`paperpopup`, `speak`, `sendURL`, `lock`/`unlock`); serta (9) `forceSave`; dan (10) subsistem BOD; serta (11) kiriman, surat, dan hadiah, dan (12) papan pesan (Trek C4); serta (13) bank klan dan subpath; dan (14) sisa binding administratif.
+
+⚠️ **Angka `luaaudit` tidak mengukur pekerjaan ini dengan adil.** Binding
+yang diport dari keadaan *stub* tidak pernah terhitung di audit — bagi
+audit namanya sudah "terdefinisi". Lihat baris "masih stub" di atas.
 
 Memastikan keadaan ini masih berlaku:
 
@@ -775,26 +839,39 @@ hanya menulis WARN sekali lalu mengembalikan nil.
 
 | Method | Pemakaian | Keadaan |
 |---|---|---|
-| `sendAction` | 905x | stub |
-| `talk` | 698x | pemain: `outbox` di memori; NPC/Mob: `log.debug` — **belum ada paket 0x0D** |
-| `playSound` | 632x | stub |
-| `updateState` | 434x | stub |
-| `setDuration` | 423x | stub |
-| `spawn` | 381x | stub (NPC/Mob) |
-| `setAether` | 225x | stub |
-| `msg` | 133x | seperti `talk` |
-| `delete` | 109x | stub (NPC/Mob) |
-| `dropItem` | 24x | butuh subsistem barang di lantai (BL_ITEM) |
+| `sendAction` | 905x | ✅ diport 26 Agu |
+| `talk` | 698x | ✅ diport 26 Agu (`clif_speak` 0x0D) |
+| `playSound` | 632x | ✅ diport 26 Agu |
+| `updateState` | 434x | ✅ diport 26 Agu |
+| `setDuration` | 423x | ✅ diport 26 Agu |
+| `spawn` | 381x | **masih stub** — butuh `mobspawn_onetime` |
+| `setAether` | 225x | ✅ diport 26 Agu |
+| `msg` | 133x | ✅ diport 26 Agu |
+| `delete` | 109x | ✅ diport 26 Agu |
+| `moveGhost` | 84x | ✅ diport 26 Agu |
+| `dropItemXY` / `throw` / `dropItem` / `pickUp` | ~90x | ✅ diport 26 Agu (BL_ITEM) |
 
-`talk`/`msg` paling berdampak — tanpa keduanya NPC tidak pernah benar-benar
-bersuara di layar.
+**Daftar stub dan BL_ITEM dua-duanya sudah beres.** Yang tersisa: inventaris
+& perlengkapan (~65 titik, butuh paket kirim-inventaris), lalu ekor panjang
+kelompok-kelompok kecil — lihat `CLAUDE.md` untuk roadmap berurut.
 
-**3. BL_ITEM (barang di lantai) belum ada sama sekali** — prasyarat
-`dropItem`, penyaring `...WithTraps` yang sungguhan, dan jatuhan mob yang
-terlihat di tanah.
+⚠️ Dua jalur yang baru diport **belum pernah berjalan di server hidup**:
+tik durasi dan `moveGhost`. Keduanya hanya menyala untuk pemain yang
+benar-benar online (tik AI mob melewati peta ber-`map.users == 0`), jadi
+butuh klien sungguhan untuk mengujinya.
 
-**4. Sisa Trek C** — C2 (berkas meta), C3 (warp antar map server),
-C4 (papan pesan & surat, paling bebas hambatan).
+~~**3. BL_ITEM (barang di lantai) belum ada sama sekali**~~ — **selesai
+26 Agustus 2026 sore** (`map/FloorItem`, `map/FloorItemRegistry`).
+Penyaring `...WithTraps` kini benar-benar berbeda dari varian biasa, dan
+jatuhan mob terlihat di tanah.
+
+~~**4. Inventaris & perlengkapan**~~ — **selesai 26 Agustus 2026**,
+termasuk subsistem BOD (BOD = *Break on Death*), yang ternyata hanya daftar
+gores sementara, bukan subsistem besar seperti dugaan roadmap.
+
+**5. Sisa Trek C** — C2 (berkas meta), C3 (warp antar map server), dan
+sisa C4: hanya `showPost` (baca satu kiriman) dan menulis kiriman.
+Kiriman, surat, hadiah, dan tampilan papan sudah selesai 26/27 Agustus 2026.
 
 **Bug yang ditemukan dan sudah ditutup pada putaran ini:** daftar stub
 menimpa binding baru; field `name` LuaJ membuat pelaporan stub lumpuh
@@ -880,8 +957,8 @@ dijadikan syarat setelah menyentuh binding atau kait skrip.
   ini: protokol dan tabelnya sudah ada, bisa diuji offline.
 
 **Acuan prioritas binding skrip.** Dari ±258 method yang dipanggil skrip,
-**100 masih ada di `sl.c` tapi belum diport** (dari 110), dan tinggal
-**1 global** (`lock`) yang belum ada — turun dari 6.
+**4 masih ada di `sl.c` tapi belum diport** per 27 Agustus 2026
+(110 → 100 → 4), dan **tidak ada lagi global** yang belum diport — turun dari 6. Angka terkini selalu dari `./run.sh luaaudit`.
 
 Sudah selesai 21 Agustus 2026 — yang paling sering dipakai lebih dulu:
 `calcStat` (**249×**), `addNPC` (54×), `addSpell` (28×), `callBase` (12×),

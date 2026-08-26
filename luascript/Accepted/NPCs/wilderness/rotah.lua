@@ -168,7 +168,7 @@ RotahNpc = {
 		local speech = string.lower(player.speech)
 		local pathQuest
 
-		if speech == "sweet summer blossoms" and player.quest["forgotten_path"] == 1 then
+		if speech == "bunga musim panas manis" and player.quest["forgotten_path"] == 1 then
 			player.quest["forgotten_path"] = 2
 			player:dialogSeq(
 				{
@@ -182,7 +182,7 @@ RotahNpc = {
 			return
 		end
 
-		if speech == "wilderness life" and (player.quest["forgotten_path"] == 2 or player.quest["forgotten_path"] == 3) then
+		if speech == "kehidupan liar" and (player.quest["forgotten_path"] == 2 or player.quest["forgotten_path"] == 3) then
 			player.quest["forgotten_path"] = 3
 			player:dialogSeq(
 				{
@@ -195,7 +195,7 @@ RotahNpc = {
 			return
 		end
 
-		if speech == "strange metal" and player.quest["forgotten_path"] == 10 then
+		if speech == "logam aneh" and player.quest["forgotten_path"] == 10 then
 			player.quest["forgotten_path"] = 11
 			player:dialogSeq(
 				{
@@ -208,7 +208,7 @@ RotahNpc = {
 			return
 		end
 
-		if speech == "elemental orb" then
+		if speech == "bola elemen" then
 			if player:hasItem("shu_jing", 1) ~= true and player.quest["forgotten_path"] == 11 then
 				player:dialogSeq(
 					{
@@ -382,7 +382,7 @@ RotahNpc = {
 			end
 		end
 
-		if (speech == "waypoint" and not Waypoint.isEnabled(player, _waypointId)) then
+		if (speech == "titik jalan" and not Waypoint.isEnabled(player, _waypointId)) then
 			Waypoint.add(player, npc, _waypointId)
 			return
 		end

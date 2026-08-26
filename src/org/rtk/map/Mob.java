@@ -23,6 +23,21 @@ public final class Mob extends BlockList
     /** Baris {@code Spawns<serverId>} yang melahirkan mob ini. */
     public long spawnId;
 
+    /**
+     * Pemain yang "memiliki" mob ini ({@code mob->owner} di C) — diisi
+     * {@code spawn()} dari skrip; jebakan memakainya untuk tahu siapa
+     * pemasangnya. 0 bila mob tabel biasa.
+     */
+    public long owner;
+
+    /**
+     * {@code mob->onetime}: mob yang dilahirkan skrip, bukan dari tabel
+     * {@code Spawns}. Setelah mati ia <b>tidak lahir kembali</b> — itu satu-
+     * satunya beda perilakunya, dan penjaganya ada di
+     * {@link MobRegistry#runTimers}.
+     */
+    public boolean oneTime;
+
     public long currentVita;
     public long currentMana;
     public long maxVita;
@@ -42,6 +57,16 @@ public final class Mob extends BlockList
     public long target;
 
     /**
+     * {@code mob->canmove}: penanda "langkah berikutnya terhalang", diisi
+     * sapuan {@code mob_move} pada petak tujuan. Dinolkan tiap kali
+     * {@code move_mob_intent} dipanggil.
+     *
+     * <p>⚠️ Namanya terbalik dari artinya: {@code canmove == 1} berarti
+     * <b>TIDAK</b> boleh melangkah.</p>
+     */
+    public boolean canMove;
+
+    /**
      * Id pemain yang terakhir melukai mob ini ({@code mob->attacker} di C).
      *
      * <p>Dipakai saat mob mati: dialah yang menerima jatuhan barang dan
@@ -49,6 +74,14 @@ public final class Mob extends BlockList
      * yang bisa disebut pembunuhnya.</p>
      */
     public long attacker;
+
+    /**
+     * Kerusakan dan hasil lemparan kritis pukulan berikutnya — pasangan
+     * {@code User.damage}/{@code User.critChance}. Diisi skrip Lua atau
+     * {@code removeHealth}, bukan dihitung server.
+     */
+    public double damage;
+    public int critChance;
 
     /**
      * Tabel ancaman: id pemain &rarr; total kerusakan yang ia timbulkan.
@@ -59,6 +92,21 @@ public final class Mob extends BlockList
      */
     public final java.util.Map<Long, Long> threat = new java.util.LinkedHashMap<>();
 
+    /**
+     * Kerusakan yang dicatat per <b>pemain</b> ({@code mob->dmgindtable}) dan
+     * per <b>grup</b> ({@code mob->dmggrptable}).
+     *
+     * <p>⚠️ Ini <b>bukan</b> tabel ancaman. Ancaman menentukan siapa yang
+     * dikejar mob; dua tabel ini hanya catatan siapa menyumbang berapa,
+     * dipakai skrip untuk membagi jatuhan dan pengalaman. Angkanya
+     * <b>ditambahkan</b>, bukan ditimpa — sama seperti ancaman.</p>
+     */
+    public final java.util.Map<Long, Double> indDamage = new java.util.LinkedHashMap<>();
+    public final java.util.Map<Integer, Double> groupDamage = new java.util.LinkedHashMap<>();
+
+    /** MAX_THREATCOUNT: batas kedua tabel kerusakan di C. */
+    public static final int MAX_DAMAGE_ENTRIES = 50;
+
     /** Tambah ancaman dari satu pemain, dan jadikan ia penyerang terakhir. */
     public void addThreat(long playerId, long amount) {
         if (playerId == 0 || amount <= 0) {
@@ -66,6 +114,31 @@ public final class Mob extends BlockList
         }
         threat.merge(playerId, amount, Long::sum);
         attacker = playerId;
+    }
+
+    /**
+     * pcl_setthreat(): setel ancaman satu pemain ke nilai TERTENTU (bukan
+     * menambah seperti {@link #addThreat}).
+     *
+     * <p>⚠️ <b>CELAH YANG DIKETAHUI:</b> C juga menyegarkan
+     * {@code mob->lastaction} di sini (sl.c, {@code pcl_setthreat}). Port ini
+     * belum punya padanannya — tidak ada ladang "kapan terakhir mob berbuat
+     * sesuatu", hanya {@code moveTimer}/{@code attackTimer}. Akibatnya baru
+     * terasa ketika logika mob-menganggur-lalu-pulang diport: mob yang
+     * diancam lewat skrip tidak akan ikut dianggap "baru saja aktif".
+     * Sengaja TIDAK dikarang di sini supaya tidak jadi state mati yang
+     * menyesatkan.</p>
+     */
+    public void setThreat(long playerId, long amount) {
+        if (playerId == 0) {
+            return;
+        }
+        threat.put(playerId, amount);
+    }
+
+    /** mobl_checkthreat(): ancaman pemain itu, 0 bila tidak ada di tabel. */
+    public long checkThreat(long playerId) {
+        return threat.getOrDefault(playerId, 0L);
     }
 
     /** Id pemain dengan ancaman terbesar, atau 0 bila tabelnya kosong. */

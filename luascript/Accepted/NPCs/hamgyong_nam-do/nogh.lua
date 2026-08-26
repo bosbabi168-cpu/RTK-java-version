@@ -62,7 +62,7 @@ NoghNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 
-		if (speech == "waypoint" and not Waypoint.isEnabled(player, _waypointId)) then
+		if (speech == "titik jalan" and not Waypoint.isEnabled(player, _waypointId)) then
 			Waypoint.add(player, npc, _waypointId)
 			return
 		end

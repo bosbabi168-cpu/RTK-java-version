@@ -67,7 +67,7 @@ InnNpc = {
 		local speech = player.speech:lower()
 		local waypointId = _getWaypointId(player, npc)
 
-		if (speech == "waypoint" and not Waypoint.isEnabled(player, waypointId)) then
+		if (speech == "titik jalan" and not Waypoint.isEnabled(player, waypointId)) then
 			Waypoint.add(player, npc, waypointId)
 			return
 		end

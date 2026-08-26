@@ -33,7 +33,7 @@ BenitnathNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "sewers" then
+		if speech == "selokan" then
 			Tools.checkKarma(player)
 
 			player:dialogSeq(

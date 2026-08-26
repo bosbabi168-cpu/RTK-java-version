@@ -450,7 +450,7 @@ MainTutorialNpc = {
 				{
 					t,
 					"So, you are interested in more things to do? Fishing can weaken your fighting skills, but is a nice diversion from time to time.",
-					"Find Bate on the west side of Kugnae at 28,170 or Wim in the southeast of Buya at 109,88. Say to him out loud 'I'd like to fish'.",
+					"Temui Bate di sisi barat Kugnae pada 28,170 atau Wim di tenggara Buya pada 109,88. Katakan lantang padanya 'aku ingin memancing'.",
 					"If you bring me back a Minnow, I'll give you a little gold."
 				},
 				0
@@ -985,7 +985,7 @@ MainTutorialNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "stars" then
+		if speech == "bintang" then
 			Tools.checkKarma(player)
 
 			if player.level < 60 then

@@ -1137,51 +1137,51 @@ crafting = {
 		player.lastClick = npc.ID
 
 		local skill = ""
-		if speech == "wood" or speech == "scraps" then
+		if speech == "kayu" or speech == "rongsokan" then
 			if not crafting.checkSkillLegend(player, "woodworking") then
 				return
 			end
 			woodworking.craft(player, npc, speech)
-		elseif speech == "weave" then
+		elseif speech == "tenun" then
 			if not crafting.checkSpecializationLegend(player, "weaving") then
 				return
 			end
 			weaving.craft(player, npc, speech)
-		elseif speech == "tailor" then
+		elseif speech == "penjahit" then
 			if not crafting.checkSkillLegend(player, "tailoring") then
 				return
 			end
 			tailoring.craft(player, npc, speech)
-		elseif speech == "gem" then
+		elseif speech == "permata" then
 			--if not crafting.checkSpecializationLegend(player,"gemcutting") then return end
 			gemcutting.craft(player, npc, speech)
-		elseif speech == "jewel" then
+		elseif speech == "permata" then
 			if not crafting.checkSkillLegend(player, "jewelry making") then
 				return
 			end
 			jewelrymaking.craft(player, npc, speech)
-		elseif speech == "smelt" then
+		elseif speech == "lebur" then
 			--if not crafting.checkSpecializationLegend(player,"smelting") then return end
 			smelting.craft(player, npc, speech)
-		elseif speech == "metal" then
+		elseif speech == "logam" then
 			if not crafting.checkSkillLegend(player, "metalworking") then
 				return
 			end
 			metalworking.craft(player, npc, speech)
-		elseif speech == "smith armor" then
+		elseif speech == "tempa zirah" then
 			if not crafting.checkSkillLegend(player, "metalworking") then
 				return
 			end
 			metalworking.craft(player, npc, speech)
-		elseif speech == "prepare noodles" then
+		elseif speech == "siapkan mi" then
 			chef.craft(player, npc, speech)
 		elseif speech:match("prepare ") then
 			foodpreparation.craft(player, npc, speech)
-		elseif speech == "scribe" then
+		elseif speech == "juru tulis" then
 			scribing.craft(player, npc, speech)
-		elseif speech == "alchemy" then
+		elseif speech == "alkimia" then
 			potionmaking.craft(player, npc, speech)
-		elseif speech == "draw" or speech == "draw map" or "combine" then
+		elseif speech == "gambar" or speech == "gambar peta" or "combine" then
 			cartography.craft(player, npc, speech)
 		end
 	end,

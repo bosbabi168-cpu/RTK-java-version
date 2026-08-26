@@ -1,6 +1,6 @@
 potionmaking = {
 	craft = function(player, npc, speech)
-		if speech == "alchemy" then
+		if speech == "alkimia" then
 			if not crafting.checkSkillLegend(player, "potion making") then
 				player:dialogSeq(
 					{

@@ -11,7 +11,7 @@ ChuRuaRockNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if (speech == "hello") then
+		if (speech == "halo") then
 			Tools.checkKarma(player)
 
 			player:dialogSeq(

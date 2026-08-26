@@ -26,7 +26,7 @@ WoodlandAngelNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 
-		if speech == "finish" then
+		if speech == "selesaikan" then
 			local t = {
 				graphic = convertGraphic(npc.look, "monster"),
 				color = npc.lookColor

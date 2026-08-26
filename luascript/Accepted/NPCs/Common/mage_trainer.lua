@@ -1318,10 +1318,10 @@ MageTrainerNpc = {
 				player:sendStatus()
 				player:updateState()
 			end
-		elseif speech == "quest" or speech == "minor" or speech == "minor quest" then
+		elseif speech == "misi" or speech == "kecil" or speech == "misi kecil" then
 			Tools.checkKarma(player)
 			MinorQuest.quest(player, npc)
-		elseif speech == "complete" or speech "complete quest" then
+		elseif speech == "selesai" or speech "complete quest" then
 			Tools.checkKarma(player)
 			MinorQuest.complete(player, npc)
 		end

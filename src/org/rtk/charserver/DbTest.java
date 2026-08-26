@@ -61,6 +61,18 @@ public final class DbTest {
         "src/org/rtk/charserver/CharPersistence.java",
         "src/org/rtk/charserver/CharDb.java",
         "src/org/rtk/map/data/MapRegistry.java",
+        // Ditambahkan 26 Agustus 2026: keempatnya membaca tabel game dan
+        // sempat TIDAK terjangkau audit ini, sehingga kolom yang baru
+        // ditambahkan (`ItmText`, `ItmProtected`, `ItmDroppable`, kueri
+        // mantra per jalur) tidak pernah divalidasi MySQL.
+        "src/org/rtk/map/data/ItemDb.java",
+        "src/org/rtk/map/data/SpellDb.java",
+        "src/org/rtk/map/NpcRegistry.java",
+        "src/org/rtk/map/MobRegistry.java",
+        "src/org/rtk/map/Parcels.java",
+        "src/org/rtk/map/data/BoardDb.java",
+        "src/org/rtk/map/data/ClanDb.java",
+        "src/org/rtk/charserver/Mapif.java",
         "src/org/rtk/map/MapServer.java",
         "src/org/rtk/login/LoginClif.java",
         "src/org/rtk/login/LoginIntif.java",
@@ -124,6 +136,10 @@ public final class DbTest {
 
         auditSql(conf);
         worldData(sql);
+        spellQueries(sql);
+        parcelTest(sql);
+        boardTest(sql);
+        clanBankTest(sql);
         charRoundTrip(sql);
     }
 
@@ -262,6 +278,253 @@ public final class DbTest {
     // ------------------------------------------------------------------
     // Tahap 2 — data dunia
     // ------------------------------------------------------------------
+
+    /**
+     * Kueri buku mantra terhadap tabel `Spells` sungguhan.
+     *
+     * <p>{@code getUnknownSpells} dan {@code getAllClassSpells} menembak
+     * database tiap kali dipanggil, jadi keduanya tidak bisa diuji di
+     * {@code cliftest} yang berjalan tanpa MySQL.</p>
+     */
+    private static void spellQueries(Sql sql) {
+        log.info("=== tahap 2b: kueri buku mantra ===");
+
+        org.rtk.map.data.SpellDb db = new org.rtk.map.data.SpellDb();
+        int n = db.load(sql);
+        check("tabel Spells termuat", n > 0);
+
+        // Jalur 1 dipilih karena selalu ada isinya di data asli; kalau nanti
+        // kosong, ujinya akan berkata begitu alih-alih lolos diam-diam.
+        var jalur = db.classSpells(sql, 1);
+        check("getAllClassSpells(1) mengembalikan mantra", !jalur.isEmpty());
+
+        boolean adaPenanda = false;
+        for (int id : jalur) {
+            if (org.rtk.map.data.SpellDb.isSectionMarker(id)) {
+                adaPenanda = true;
+                break;
+            }
+        }
+        check("getAllClassSpells: penanda bagian TIDAK ikut", !adaPenanda);
+        check("getAllClassSpells: batas 255 dihormati", jalur.size() <= 255);
+
+        boolean semuaBernama = true;
+        for (int id : jalur) {
+            if (db.nameOf(id).isEmpty()) {
+                semuaBernama = false;
+                break;
+            }
+        }
+        check("getAllClassSpells: tiap id punya nama skrip", semuaBernama);
+
+        // tanda 0 = pemain baru: hasilnya harus subset dari tanda tinggi
+        var tandaRendah = db.candidateSpells(sql, 1, 0, 0, 0);
+        var tandaTinggi = db.candidateSpells(sql, 1, 0, 99, 0);
+        check("getUnknownSpells: tanda lebih tinggi membuka mantra >= tanda rendah",
+                tandaTinggi.size() >= tandaRendah.size());
+        check("getUnknownSpells: penanda bagian juga disaring di sini",
+                tandaTinggi.stream().noneMatch(
+                        org.rtk.map.data.SpellDb::isSectionMarker));
+
+        // jalur yang pasti tidak ada -> hanya mantra umum (SplPthId = 0)
+        var takAda = db.classSpells(sql, 9999);
+        check("getAllClassSpells: jalur tak dikenal mengembalikan kosong",
+                takAda.isEmpty());
+    }
+
+    /**
+     * Kiriman antar pemain (tabel {@code Parcels}) — seluruhnya SQL, jadi
+     * bisa diuji sungguhan tanpa klien sama sekali.
+     *
+     * <p>Memakai id karakter di luar rentang yang dipakai data asli, lalu
+     * membersihkan sendiri barisnya. Tidak menyentuh kiriman yang ada.</p>
+     */
+    private static void parcelTest(Sql sql) {
+        log.info("=== tahap 2c: kiriman (Parcels) ===");
+
+        final long penerima = 999000111L;
+        sql.update("DELETE FROM `Parcels` WHERE `ParChaIdDestination` = ?", penerima);
+        check("mulai dari keadaan kosong",
+                org.rtk.map.Parcels.list(sql, penerima).isEmpty());
+        check("getParcel pada kotak kosong mengembalikan null",
+                org.rtk.map.Parcels.first(sql, penerima) == null);
+
+        // --- nomor urut per penerima ---
+        check("kiriman pertama masuk",
+                org.rtk.map.Parcels.send(sql, penerima, 42, 7001, 3, 0, "", 0,
+                        0, 0, 0, 0, 0, 0));
+        check("kiriman kedua masuk",
+                org.rtk.map.Parcels.send(sql, penerima, 42, 7002, 1, 0, "Ukiran", 0,
+                        0, 0, 0, 0, 0, 0));
+
+        var daftar = org.rtk.map.Parcels.list(sql, penerima);
+        check("keduanya terbaca kembali", daftar.size() == 2);
+        check("nomor urutnya 0 lalu 1",
+                daftar.get(0).pos == 0 && daftar.get(1).pos == 1);
+        check("isi kiriman pertama utuh",
+                daftar.get(0).data.id == 7001 && daftar.get(0).data.amount == 3);
+        check("ukiran ikut tersimpan",
+                daftar.get(1).data.realName.equals("Ukiran"));
+
+        // --- pengirim NPC digeser ke rentang id NPC ---
+        check("kiriman dari NPC masuk",
+                org.rtk.map.Parcels.send(sql, penerima, 5, 7003, 1, 0, "", 1,
+                        0, 0, 0, 0, 0, 0));
+        var dariNpc = org.rtk.map.Parcels.list(sql, penerima).stream()
+                .filter(p -> p.npcFlag != 0).findFirst().orElse(null);
+        check("pengirim NPC digeser + NPC_START_NUM - 2",
+                dariNpc != null
+                        && dariNpc.sender == 5 + org.rtk.map.Npc.NPC_START_NUM - 2);
+
+        // --- menghapus TIDAK menomori ulang sisanya ---
+        check("hapus kiriman di posisi 0",
+                org.rtk.map.Parcels.remove(sql, penerima, 0));
+        daftar = org.rtk.map.Parcels.list(sql, penerima);
+        check("sisanya dua", daftar.size() == 2);
+        check("nomor urut sisanya TIDAK digeser ulang",
+                daftar.stream().noneMatch(p -> p.pos == 0));
+        org.rtk.map.Parcels.send(sql, penerima, 42, 7004, 1, 0, "", 0, 0, 0, 0, 0, 0, 0);
+        var terbaru = org.rtk.map.Parcels.list(sql, penerima).stream()
+                .max(java.util.Comparator.comparingInt(p -> p.pos)).orElseThrow();
+        check("kiriman baru memakai nomor TERTINGGI + 1, bukan lubang yang kosong",
+                terbaru.pos == 3);
+
+        // --- ketahanan 0 berarti bawaan jenisnya ---
+        check("hapus posisi yang tidak ada mengembalikan false",
+                !org.rtk.map.Parcels.remove(sql, penerima, 9999));
+
+        sql.update("DELETE FROM `Parcels` WHERE `ParChaIdDestination` = ?", penerima);
+        check("bersih setelah uji",
+                org.rtk.map.Parcels.list(sql, penerima).isEmpty());
+    }
+
+    /**
+     * Papan pesan: metadata dari {@code BoardNames} / {@code BoardTitles},
+     * dan bendera tampilan yang dihitung dari hak akses.
+     *
+     * <p>Bendera itu logika murni tanpa database, tetapi diuji di sini
+     * karena satu-satunya cara mengetahuinya benar adalah membandingkan
+     * dengan papan sungguhan.</p>
+     */
+    private static void boardTest(Sql sql) {
+        log.info("=== tahap 2d: papan pesan ===");
+
+        var db = new org.rtk.map.data.BoardDb();
+        int n = db.load(sql);
+        check("tabel BoardNames termuat", n > 0);
+        check("papan pertama punya nama", !db.nameOf(1).isEmpty());
+        check("nama papan bisa dicari balik", db.idOf(db.nameOf(1)) == 1);
+        check("papan tak dikenal menjawab kosong, bukan meledak",
+                db.nameOf(999999).isEmpty() && db.idOf("tidak_ada_papan") == 0);
+
+        // ⚠️ flags1 bergantung pada popup DAN papan sekaligus
+        var B = org.rtk.map.Boards.class;
+        check("flags1: popup + papan biasa + boleh tulis -> 2",
+                org.rtk.map.Boards.displayFlags1(
+                        org.rtk.map.Boards.CAN_WRITE, true, 5) == 2);
+        check("flags1: popup + papan biasa + TIDAK boleh tulis -> 0",
+                org.rtk.map.Boards.displayFlags1(0, true, 5) == 0);
+        check("flags1: bukan popup + boleh tulis -> 3",
+                org.rtk.map.Boards.displayFlags1(
+                        org.rtk.map.Boards.CAN_WRITE, false, 5) == 3);
+        check("flags1: bukan popup + tidak boleh tulis -> 1",
+                org.rtk.map.Boards.displayFlags1(0, false, 5) == 1);
+        check("flags1: kotak surat (papan 0) memakai cabang bukan-popup",
+                org.rtk.map.Boards.displayFlags1(
+                        org.rtk.map.Boards.CAN_WRITE, true, 0) == 3);
+        check("flags1: nilai 6 MENGGANTIKAN seluruh bendera, tidak di-OR",
+                org.rtk.map.Boards.displayFlags1(
+                        org.rtk.map.Boards.WRITE_ASK_SCRIPT, true, 5) == 6
+                        && org.rtk.map.Boards.displayFlags1(
+                                org.rtk.map.Boards.WRITE_ASK_SCRIPT, false, 5) == 6);
+
+        check("flags2: kotak surat 4, papan biasa 2",
+                org.rtk.map.Boards.displayFlags2(0) == 4
+                        && org.rtk.map.Boards.displayFlags2(7) == 2);
+
+        // kueri isi papan harus diterima skema hidup
+        Integer brd = sql.queryInt("SELECT COUNT(*) FROM `Boards`");
+        Integer mal = sql.queryInt("SELECT COUNT(*) FROM `Mail`");
+        check("tabel Boards terbaca", brd != null);
+        check("tabel Mail terbaca", mal != null);
+    }
+
+    /**
+     * Bank klan — titip, ambil, dan penggabungan barang sejenis.
+     *
+     * <p>Memakai id klan di luar rentang data asli dan membersihkan sendiri
+     * barisnya; tidak menyentuh bank klan yang ada.</p>
+     */
+    private static void clanBankTest(Sql sql) {
+        log.info("=== tahap 2e: bank klan ===");
+
+        final int klan = 999321;
+        sql.update("DELETE FROM `ClanBanks` WHERE `CbkClnId` = ?", klan);
+
+        var db = new org.rtk.map.data.ClanDb();
+        db.load(sql);
+        check("tabel Clans terbaca", db.count() >= 0);
+        check("bank klan uji mulai kosong", db.bank(sql, klan).isEmpty());
+
+        // --- titip ---
+        var a = new org.rtk.common.mmo.BankItem();
+        a.itemId = 7001;
+        a.amount = 5;
+        a.realName = "";
+        check("titip barang pertama", db.deposit(sql, klan, a));
+        check("isinya satu slot", db.bank(sql, klan).size() == 1);
+
+        // barang dengan sepuluh atribut SAMA digabung, bukan slot baru
+        var b = new org.rtk.common.mmo.BankItem();
+        b.itemId = 7001;
+        b.amount = 3;
+        b.realName = "";
+        check("titip barang sejenis", db.deposit(sql, klan, b));
+        check("barang sejenis DIGABUNG, bukan jadi slot kedua",
+                db.bank(sql, klan).size() == 1
+                        && db.bank(sql, klan).get(0).amount == 8);
+
+        // atribut berbeda -> slot terpisah
+        var c = new org.rtk.common.mmo.BankItem();
+        c.itemId = 7001;
+        c.amount = 1;
+        c.realName = "Ukiran";
+        check("titip barang berukir", db.deposit(sql, klan, c));
+        check("ukiran berbeda -> slot TERPISAH", db.bank(sql, klan).size() == 2);
+
+        // --- ambil ---
+        var ambil = new org.rtk.common.mmo.BankItem();
+        ambil.itemId = 7001;
+        ambil.amount = 3;
+        ambil.realName = "";
+        check("ambil sebagian", db.withdraw(sql, klan, ambil, 3));
+        check("jumlahnya berkurang", db.bank(sql, klan).get(0).amount == 5);
+
+        ambil.amount = 99;
+        check("ambil lebih banyak dari yang ada -> gagal",
+                !db.withdraw(sql, klan, ambil, 99));
+        check("gagal ambil tidak mengubah apa pun",
+                db.bank(sql, klan).get(0).amount == 5);
+
+        check("ambil seluruhnya", db.withdraw(sql, klan, ambil, 5));
+        check("slot yang habis dibuang", db.bank(sql, klan).size() == 1);
+
+        var takAda = new org.rtk.common.mmo.BankItem();
+        takAda.itemId = 999999;
+        check("ambil barang yang tidak ada -> gagal",
+                !db.withdraw(sql, klan, takAda, 1));
+
+        // --- bertahan lewat muat ulang ---
+        var db2 = new org.rtk.map.data.ClanDb();
+        db2.load(sql);
+        var isi = db2.bank(sql, klan);
+        check("isinya bertahan setelah dimuat ulang dari database",
+                isi.size() == 1 && isi.get(0).realName.equals("Ukiran"));
+
+        sql.update("DELETE FROM `ClanBanks` WHERE `CbkClnId` = ?", klan);
+        check("bersih setelah uji",
+                new org.rtk.map.data.ClanDb().bank(sql, klan).isEmpty());
+    }
 
     private static void worldData(Sql sql) {
         log.info("=== tahap 2: data dunia dari tabel asli ===");

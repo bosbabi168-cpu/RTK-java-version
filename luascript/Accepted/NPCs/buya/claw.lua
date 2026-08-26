@@ -11,7 +11,7 @@ ClawNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "i lost my tiger mail" then
+		if speech == "aku kehilangan surat harimauku" then
 			player:dialogSeq(
 				{
 					t,
@@ -546,7 +546,7 @@ ClawNpc = {
 		end
 
 		if player.level >= 99 then
-			if speech == "dragon" then
+			if speech == "naga" then
 				player.quest["claw_soe"] = 1
 				player:dialogSeq(
 					{
@@ -558,7 +558,7 @@ ClawNpc = {
 				)
 			end
 
-			if speech == "earth dragon" then
+			if speech == "naga bumi" then
 				player.quest["claw_soe"] = 2
 				player:dialogSeq(
 					{
@@ -571,7 +571,7 @@ ClawNpc = {
 				)
 			end
 
-			if speech == "shard" and player.quest["claw_soe"] >= 2 then
+			if speech == "serpihan" and player.quest["claw_soe"] >= 2 then
 				player.quest["claw_soe"] = 3
 				player:dialogSeq(
 					{

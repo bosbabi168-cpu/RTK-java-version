@@ -41,7 +41,7 @@ RogueGuildShamanNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "moon" and player.level >= 50 and player.baseClass == 2 then
+		if speech == "bulan" and player.level >= 50 and player.baseClass == 2 then
 			Tools.checkKarma(player)
 
 			player:dialogSeq(
