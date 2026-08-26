@@ -24,7 +24,7 @@ AssistantYanNpc = {
 			if player.quest["reeves_quest"] == 3 then
 				player.quest["reeves_quest"] = 4
 			end
-			if speech == "the calamity" then
+			if speech == "malapetaka itu" then
 				player:dialogSeq(
 					{
 						t,

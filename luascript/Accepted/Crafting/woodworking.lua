@@ -9,7 +9,7 @@ woodworking = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "wood" then
+		if speech == "kayu" then
 			local choices = {
 				"Melee Weapons",
 				"Arrows",
@@ -875,7 +875,7 @@ woodworking = {
 			end
 
 			return
-		elseif speech == "scraps" or speech == "scrap" then
+		elseif speech == "rongsokan" or speech == "rongsokan" then
 			local titem = {graphic = convertGraphic(723, "item"), color = 0}
 			if player:hasItem("wood_scraps", 4) ~= true then
 				player:dialogSeq(

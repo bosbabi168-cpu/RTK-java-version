@@ -158,7 +158,7 @@ MuseumCaretakerNpc = {
 		Tools.configureDialog(player, npc)
 		local speech = string.lower(player.speech)
 
-		if speech == "map" or speech == "fragment" or speech == "map fragment" then
+		if speech == "peta" or speech == "pecahan" or speech == "pecahan peta" then
 			if player.quest["instance"] == 6 then
 				player:dialogSeq({"This is it. Take this to the disciple of Chung Ryong and show them the essence"}, 1)
 			end
@@ -190,7 +190,7 @@ MuseumCaretakerNpc = {
 			end
 		end
 
-		if (speech == "waypoint" and not Waypoint.isEnabled(player, _waypointId)) then
+		if (speech == "titik jalan" and not Waypoint.isEnabled(player, _waypointId)) then
 			Waypoint.add(player, npc, _waypointId)
 			return
 		end

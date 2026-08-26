@@ -90,6 +90,8 @@ public final class ScriptEngine {
     }
     LuaValue gameRegistryUdata;
     public ScriptClass mapRegistryClass;
+    /** biteml_type: barang milik pemain (inventaris/perlengkapan/bank). */
+    public ScriptClass boundItemClass;
 
     /** Generic Java object behind script types with no engine backing yet. */
     public static final class GameObject {
@@ -282,9 +284,19 @@ public final class ScriptEngine {
                 (s, k, v) -> mapReg(mapIdOf(s)).put(k.toLowerCase(), v.toint()));
         registerClass(mapRegistryClass);
 
+        // biteml_type ("BoundItem"): satu barang milik pemain. Getter/setter
+        // diteruskan ke ScriptItem, yang meniru biteml_getattr — ladang
+        // instance dijawab sendiri, sisanya jatuh ke data jenis barang.
+        boundItemClass = new ScriptClass("BoundItem");
+        boundItemClass.getter = (self, attr) ->
+                self instanceof ScriptAttrs a ? a.scriptAttr(attr) : null;
+        boundItemClass.setter = (self, attr, value) ->
+                self instanceof ScriptAttrs a && a.scriptSetAttr(attr, value);
+        registerClass(boundItemClass);
+
         // remaining typel classes: constructible placeholders until their
         // engine subsystems are ported
-        for (String name : new String[]{"Item", "FloorItem", "BankItem", "BoundItem",
+        for (String name : new String[]{"Item", "FloorItem", "BankItem",
                 "Parcel", "Recipe", "Accountregistry"}) {
             ScriptClass klass = new ScriptClass(name);
             klass.ctor = args -> new GameObject(name, args);

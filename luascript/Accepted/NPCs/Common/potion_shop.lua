@@ -76,7 +76,7 @@ PotionShopNpc = {
 		player.lastClick = npc.ID
 
 		local speech = string.lower(player.speech)
-		if speech == "special guest" and player.m == 28 and player.quest["spy_trials"] == 9 then
+		if speech == "tamu khusus" and player.m == 28 and player.quest["spy_trials"] == 9 then
 			player:dialogSeq(
 				{
 					t,
@@ -105,7 +105,7 @@ PotionShopNpc = {
 				return
 			end
 		end
-		if speech == "special guest" and player.m == 28 and player.quest["spy_trials"] == 10 then
+		if speech == "tamu khusus" and player.m == 28 and player.quest["spy_trials"] == 10 then
 			if os.time() > player.quest["spy_potion_timer"] + 7200 then
 				if player:hasItem("mountain_ginseng", 1) == true then
 					player:removeItem("mountain_ginseng", 1)

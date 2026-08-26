@@ -9,7 +9,7 @@ cartography = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "combine" then
+		if speech == "gabung" then
 			if not crafting.checkSkillLegend(player, "cartography") then
 				player:dialogSeq(
 					{

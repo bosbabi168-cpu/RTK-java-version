@@ -63,6 +63,9 @@ public final class Clif {
     // setting flags (common/mmo.h)
     private static final int FLAG_WEATHER = 32;
     private static final int FLAG_REALM = 64;
+    /** mmo.h: FLAG_GROUP = 2, FLAG_EXCHANGE = 128. */
+    private static final int FLAG_GROUP = 2;
+    private static final int FLAG_EXCHANGE = 128;
     private static final int FLAG_HELM = 8192;
     private static final int FLAG_NECKLACE = 16384;
 
@@ -93,12 +96,34 @@ public final class Clif {
      *
      * @return panjang total paket termasuk header, untuk {@code wfifoSet}
      */
+    /** Diagnostik sementara: cetak paket keluar sebelum dienkripsi. */
+    private static final boolean DIAG_DUMP =
+            Boolean.getBoolean("rtk.diag.dumpOut");
+
+    private static String hexDump(byte[] buf, int off, int len) {
+        StringBuilder sb = new StringBuilder(len * 3);
+        for (int i = 0; i < len; i++) {
+            sb.append(String.format("%02X ", buf[off + i]));
+        }
+        return sb.toString().trim();
+    }
+
     static int encrypt(Session s, User sd) {
         byte[] buf = s.wbuf();
         int off = s.woff();
 
         int total = Crypt.setPacketIndexes(buf, off);
         int opcode = buf[off + 3] & 0xFF;
+
+        // -Drtk.diag.dumpOut=true mencetak paket keluar SEBELUM dienkripsi.
+        // Mati secara default. Dipertahankan sebagai alat: uji klien 26 Agu
+        // 2026 membuktikan dump inilah yang menemukan byte sampah di ekor
+        // paket (lihat Session.wfifoSet) — sesuatu yang tidak terlihat dari
+        // membaca kode maupun dari 294 assertion cliftest.
+        if (DIAG_DUMP) {
+            log.info("[DUMP] keluar 0x{} ({} byte): {}",
+                    String.format("%02X", opcode), total, hexDump(buf, off, total));
+        }
 
         if (usesSessionKey(opcode) && sd != null && sd.encHash != null) {
             byte[] key = Crypt.generateKey2(buf, off, sd.encHash, false);
@@ -266,6 +291,23 @@ public final class Clif {
         s.wfifoB(4, 0x03);
         s.wfifoB(5, curTime);
         s.wfifoB(6, curYear);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_removespell() — hapus satu mantra dari buku mantra klien.
+     * Opcode 0x18, panjang isi 3.
+     *
+     * <p>⚠️ Nomor slot dikirim <b>+1</b> (klien memakai indeks mulai 1).</p>
+     */
+    public static void removeSpell(User sd, int slot) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        head(s, 0x18, 3);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, slot + 1);
         s.wfifoSet(encrypt(s, sd));
     }
 
@@ -2360,6 +2402,76 @@ public final class Clif {
     }
 
     /**
+     * clif_mystaytus() — panel profil milik pemain sendiri. Opcode 0x39.
+     *
+     * <p>⚠️ TAHAP 1 (26 Agu 2026): strukturnya lengkap dan mengikuti
+     * clif.c:2898-3104 ladang demi ladang, tapi isinya masih minimal —
+     * clan/gelar/partner/nama kelas dikirim kosong, 14 slot perlengkapan
+     * dikirim sebagai slot kosong, dan daftar legenda 0 entri. Tujuannya
+     * menguji apakah KETIADAAN paket ini yang membuat klien asli crash,
+     * sebelum menanam ClanDb + classdb_name + clif_getName + itemdb_protected
+     * yang semuanya belum ada. Begitu hipotesisnya terbukti, isi ladangnya
+     * dilengkapi — JANGAN biarkan versi minimal ini menetap.
+     *
+     * <p>Tata letak panjang variabel: {@code len} menghitung byte payload
+     * setelah offset 8, persis seperti variabel {@code len} di C.
+     */
+    public static void sendMyStatus(User sd) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        // C menjepit armor ke rentang signed byte sebelum dikirim
+        int armor = Math.max(-127, Math.min(127, sd.armor));
+        s.wfifoB(5, armor & 0xFF);
+        s.wfifoB(6, sd.dam & 0xFF);
+        s.wfifoB(7, sd.hit & 0xFF);
+
+        int len = 0;
+        // clan, gelar clan, gelar — TAHAP 1: semuanya kosong (panjang 0)
+        s.wfifoB(8, 0);
+        len += 1;
+        s.wfifoB(len + 8, 0);
+        len += 1;
+        s.wfifoB(len + 8, 0);
+        len += 1;
+        // partner — TAHAP 1: kosong (butuh clif_getName yang belum diport)
+        s.wfifoB(len + 8, 0);
+        len += 1;
+
+        s.wfifoB(len + 8, (sd.status.settingFlags & FLAG_GROUP) != 0 ? 1 : 0);
+        s.wfifoLBE(len + 9, 0); // TNL — TAHAP 1: 0 (butuh clif_getLevelTNL)
+        len += 5;
+
+        // nama kelas — TAHAP 1: kosong (butuh classdb_name)
+        s.wfifoB(len + 8, 0);
+        len += 1;
+
+        // 14 slot perlengkapan. Cabang kosong di C menulis 10 byte nol
+        // (WFIFOL di len+13 lalu WFIFOB di len+14 sengaja tumpang tindih —
+        // hasilnya tetap 10 byte nol, jadi ditiru sebagai nol semua).
+        for (int i = 0; i < 14; i++) {
+            for (int b = 0; b < 10; b++) {
+                s.wfifoB(len + 8 + b, 0);
+            }
+            len += 10;
+        }
+
+        s.wfifoB(len + 8, (sd.status.settingFlags & FLAG_EXCHANGE) != 0 ? 1 : 0);
+        s.wfifoB(len + 9, (sd.status.settingFlags & FLAG_GROUP) != 0 ? 1 : 0);
+        len += 1;
+
+        // daftar legenda — TAHAP 1: 0 entri
+        s.wfifoB(len + 8, 0);
+        s.wfifoWBE(len + 9, 0);
+        len += 3;
+
+        head(s, 0x39, len + 5);
+        s.wfifoSet(encrypt(s, sd));
+        log.debug("[CLIF] mystaytus (TAHAP 1, minimal) ke {} — payload {} byte", sd.name(), len + 5);
+    }
+
+    /**
      * Urutan paket saat pemain baru masuk dunia, mengikuti
      * {@code intif_mmo_tosd} + {@code clif_spawn} di versi C.
      */
@@ -2376,6 +2488,12 @@ public final class Clif {
         sendId(sd);
         sendMapInfo(sd);
         sendStatus(sd, SFLAG_ALL);
+        // clif_mystaytus + clif_spawn: di C keduanya ADA di antara status dan
+        // refresh (intif.c:229-230). Port ini sempat melewatkan keduanya.
+        // map_addblock sudah dikerjakan Pc.spawn() sebelum sendWorldEntry,
+        // jadi sisa clif_spawn tinggal siarannya = sendCharArea.
+        sendMyStatus(sd);
+        sendCharArea(sd);
         refresh(sd);
         sendXy(sd);
         getCharArea(sd);

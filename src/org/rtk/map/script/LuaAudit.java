@@ -371,7 +371,9 @@ public final class LuaAudit {
 
         log.info("--- {} ada di sl.c tapi BELUM DIPORT (celah yang sudah diketahui): {} nama ---",
                 label, belumDiport.size());
-        belumDiport.stream().limit(10).forEach(a -> log.info("  {}", a));
+        // -Drtk.audit.penuh=true mencetak daftar utuh; default 10 agar ringkas.
+        long batas = Boolean.getBoolean("rtk.audit.penuh") ? Long.MAX_VALUE : 10;
+        belumDiport.stream().limit(batas).forEach(a -> log.info("  {}", a));
         if (belumDiport.size() > 10) {
             log.info("  ... dan {} lagi", belumDiport.size() - 10);
         }

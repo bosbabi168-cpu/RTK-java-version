@@ -9,7 +9,7 @@ jewelrymaking = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "jewel" then
+		if speech == "permata" then
 			local choices = {"Ring", "Bracelet", "Headgear"}
 			local jewelskill = crafting.getSkillValue(player, "jewelry making")
 			if jewelskill < 9 then

@@ -68,6 +68,31 @@ public final class Mob extends BlockList
         attacker = playerId;
     }
 
+    /**
+     * pcl_setthreat(): setel ancaman satu pemain ke nilai TERTENTU (bukan
+     * menambah seperti {@link #addThreat}).
+     *
+     * <p>⚠️ <b>CELAH YANG DIKETAHUI:</b> C juga menyegarkan
+     * {@code mob->lastaction} di sini (sl.c, {@code pcl_setthreat}). Port ini
+     * belum punya padanannya — tidak ada ladang "kapan terakhir mob berbuat
+     * sesuatu", hanya {@code moveTimer}/{@code attackTimer}. Akibatnya baru
+     * terasa ketika logika mob-menganggur-lalu-pulang diport: mob yang
+     * diancam lewat skrip tidak akan ikut dianggap "baru saja aktif".
+     * Sengaja TIDAK dikarang di sini supaya tidak jadi state mati yang
+     * menyesatkan.</p>
+     */
+    public void setThreat(long playerId, long amount) {
+        if (playerId == 0) {
+            return;
+        }
+        threat.put(playerId, amount);
+    }
+
+    /** mobl_checkthreat(): ancaman pemain itu, 0 bila tidak ada di tabel. */
+    public long checkThreat(long playerId) {
+        return threat.getOrDefault(playerId, 0L);
+    }
+
     /** Id pemain dengan ancaman terbesar, atau 0 bila tabelnya kosong. */
     public long topThreat() {
         long best = 0;

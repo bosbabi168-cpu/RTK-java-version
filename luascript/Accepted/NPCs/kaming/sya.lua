@@ -84,7 +84,7 @@ SyaNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "pass" then
+		if speech == "lewat" then
 			Tools.checkKarma(player)
 
 			if player.quest["wind_armor"] == 0 then
@@ -149,7 +149,7 @@ SyaNpc = {
 			end
 		end
 
-		if speech == "water skin" then
+		if speech == "kantong air" then
 			player:dialogSeq(
 				{
 					t,

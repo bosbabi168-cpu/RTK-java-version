@@ -25,7 +25,7 @@ RatCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -76,7 +76,7 @@ TigerCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -127,7 +127,7 @@ DogCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -177,7 +177,7 @@ DragonCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -227,7 +227,7 @@ SnakeCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -277,7 +277,7 @@ RoosterCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -327,7 +327,7 @@ SheepCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -377,7 +377,7 @@ MonkeyCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -427,7 +427,7 @@ OxCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -477,7 +477,7 @@ HorseCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -527,7 +527,7 @@ PigCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end
@@ -577,7 +577,7 @@ RabbitCrystalNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 		if player.quest["reeves_quest"] >= 4 then
-			if speech == "calamity" then
+			if speech == "malapetaka" then
 				if player.quest["reeves_quest"] == 4 then
 					player.quest["reeves_quest"] = 5
 				end

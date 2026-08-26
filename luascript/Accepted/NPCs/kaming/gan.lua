@@ -90,7 +90,7 @@ GanNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "pick up armor" then
+		if speech == "ambil baju zirah" then
 			Tools.checkKarma(player)
 
 			if player.quest["wind_armor"] == 0 or player.quest["frost_sabre_for_seal"] ~= 2 then
@@ -202,7 +202,7 @@ GanNpc = {
 			end
 		end
 
-		if speech == "desert" then
+		if speech == "gurun" then
 			player:dialogSeq(
 				{
 					t,
@@ -214,7 +214,7 @@ GanNpc = {
 			)
 		end
 
-		if speech == "water skin" then
+		if speech == "kantong air" then
 			player:dialogSeq(
 				{
 					t,

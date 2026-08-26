@@ -172,11 +172,18 @@ public final class ClifTest {
         org.rtk.common.Session s = fakeSession(sd);
         Clif.sendWorldEntry(sd);
         List<int[]> seq = splitPackets(drain(s));
-        // Urutan mengikuti intif.c: ack, time, id, mapinfo, status, lalu
-        // refresh (mapinfo+xy+area+trigger), xy, dan sapuan area pandang.
-        // Klien peka terhadap urutan ini, jadi ujinya memeriksa urutan
-        // persis, bukan sekadar "paketnya ada".
-        int[] want = {0x1E, 0x20, 0x05, 0x15, 0x08, 0x15, 0x04, 0x22, 0x04};
+        // Urutan mengikuti intif_mmo_tosd (intif.c:222-241): ack, time, id,
+        // mapinfo, status, MYSTAYTUS, spawn, lalu refresh (mapinfo+xy+
+        // trigger), xy, dan sapuan area pandang. Klien peka terhadap urutan
+        // ini, jadi ujinya memeriksa urutan persis, bukan sekadar "paketnya
+        // ada".
+        //
+        // Diperbarui 26 Agu 2026: `mystaytus` (0x39) dan `clif_spawn` dulu
+        // TIDAK diport padahal ada di C — ekspektasi lama (9 paket tanpa
+        // 0x39) mengunci kelalaian itu. `spawn` = sendCharArea, yang tidak
+        // menghasilkan paket bila tak ada pemain lain di area, jadi ia tidak
+        // muncul di urutan ini. Begitu pula sapuan area pandang di akhir.
+        int[] want = {0x1E, 0x20, 0x05, 0x15, 0x08, 0x39, 0x15, 0x04, 0x22, 0x04};
         boolean order = seq.size() == want.length;
         for (int i = 0; order && i < want.length; i++) {
             if (seq.get(i)[0] != want[i]) {
@@ -190,8 +197,8 @@ public final class ClifTest {
             }
             log.error("  urutan didapat: {}", got.toString().trim());
         }
-        check("sembilan paket masuk dunia terkirim", seq.size() == want.length);
-        check("urutan opcode 1E,20,05,15,08,15,04,22,04", order);
+        check("sepuluh paket masuk dunia terkirim", seq.size() == want.length);
+        check("urutan opcode 1E,20,05,15,08,39,15,04,22,04", order);
         check("status (0x08) dikirim saat masuk dunia",
                 seq.stream().anyMatch(o -> o[0] == 0x08));
 

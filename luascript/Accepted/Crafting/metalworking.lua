@@ -12,7 +12,7 @@ metalworking = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "metal" then
+		if speech == "logam" then
 			t = {
 				graphic = convertGraphic(npc.look, "monster"),
 				color = npc.lookColor
@@ -597,7 +597,7 @@ metalworking = {
 				end
 			end
 			return
-		elseif speech == "smith armor" then
+		elseif speech == "tempa zirah" then
 			if os.time() > player.quest["smith_metal_prepared"] then
 				player:dialogSeq(
 					{t, "You need to prepare three units of metal."},

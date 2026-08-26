@@ -2,7 +2,7 @@ RockNpc = {
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
 
-		if speech == "hi" then
+		if speech == "hai" then
 			local t = {
 				graphic = convertGraphic(npc.look, "monster"),
 				color = npc.lookColor

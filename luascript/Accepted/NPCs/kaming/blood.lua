@@ -463,7 +463,7 @@ BloodNpc = {
 		local item = Item("frost_sabre")
 		local tfrostsabre = {graphic = item.icon, color = item.iconC}
 
-		if speech == "ice beast" then
+		if speech == "binatang es" then
 			Tools.checkKarma(player)
 
 			if player.level < 7 then
@@ -577,7 +577,7 @@ BloodNpc = {
 			end
 		end
 
-		if speech == "seal" then
+		if speech == "segel" then
 			Tools.checkKarma(player)
 
 			if player.quest["wind_armor"] > 0 then

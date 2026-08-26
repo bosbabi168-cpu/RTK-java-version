@@ -96,7 +96,7 @@ LibrarianNpc = {
 			end
 		end
 
-		if speech == "legend" and npc.mapTitle == "Pond's Library" then
+		if speech == "legenda" and npc.mapTitle == "Pond's Library" then
 			Tools.checkKarma(player)
 
 			if not player:hasLegend("lost_legend") then
@@ -120,7 +120,7 @@ LibrarianNpc = {
 			)
 		end
 
-		if speech == "special collections" and npc.mapTitle == "Pond's Library" and player.quest[
+		if speech == "koleksi khusus" and npc.mapTitle == "Pond's Library" and player.quest[
 			"spy_trials"
 		] == 8 then
 			local choices = {
@@ -196,7 +196,7 @@ LibrarianNpc = {
 			end
 		end
 
-		if speech == "special collections" and npc.mapTitle == "Pond's Library" and player.quest[
+		if speech == "koleksi khusus" and npc.mapTitle == "Pond's Library" and player.quest[
 			"spy_trials"
 		] == 9 then
 			local jewels = {graphic = convertGraphic(1588, "item"), color = 0}
@@ -229,7 +229,7 @@ LibrarianNpc = {
 			return
 		end
 
-		if speech == "legend" and npc.mapTitle == "Buya Library" then
+		if speech == "legenda" and npc.mapTitle == "Buya Library" then
 			Tools.checkKarma(player)
 
 			if player.quest["wind_armor"] == 0 then
@@ -261,7 +261,7 @@ LibrarianNpc = {
 			--player:dialogSeq({t,"I am permitting you to pass into the Library Caverns, please take a lantern and be safe."},0)
 		end
 
-		if speech == "map" or speech == "fragment" or speech == "map fragment" then
+		if speech == "peta" or speech == "pecahan" or speech == "pecahan peta" then
 			if player.quest["instance"] == 4 then
 				player:dialogSeq(
 					{

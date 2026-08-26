@@ -253,7 +253,7 @@ SmithNpc = {
 				"You're interested in smelting, eh? Yeah, I can spare a couple minutes. Smelting isn't no wimpy craft. It's no coincidence that smelt and welt rhyme.",
 				"But I'm not gonna be held responsible if you hurt youself, you hear? You'll need a smelting agreement before any smart smith will let you near the coals.",
 				"Smithing turns ore or spent metal into useful metal bars. The higher the quality of ore, the better your luck will be.",
-				"When you have some more to smelt, say 'smelt' to me and we'll get started."
+				"Kalau kau punya lebih banyak untuk dilebur, katakan 'lebur' padaku dan kita mulai."
 			},
 			0
 		)
@@ -282,13 +282,13 @@ SmithNpc = {
 
 		player:dialogSeq(
 			{
-				"Metalworking is extremely useful. With this fine skill, you can make valuable metal weapons. If you have some metal on you, tell me 'metal' and I'll help you out.",
+				"Pengerjaan logam itu sangat berguna. Dengan keahlian ini kau bisa membuat senjata logam bernilai tinggi. Kalau kau membawa logam, katakan 'logam' padaku dan akan kubantu.",
 				"Get together with a tailor and you'll be able to make armor as well. First you'll have to prepare the metal, and the tailor has to prepare the cloth."
 			},
 			1
 		)
 
-		player:dialogSeq({"I can help you prepare metal for armormaking. Tell me you want to 'smith armor' after you have prepared the metal and when your tailor is ready."}, 0)
+		player:dialogSeq({"Aku bisa membantumu menyiapkan logam untuk pembuatan zirah. Katakan kau ingin 'tempa zirah' setelah logammu siap dan penjahitmu sudah bersedia."}, 0)
 	end,
 
 	metalworkingDevotion = function(player, npc)
@@ -655,7 +655,7 @@ SmithNpc = {
 			end
 		end
 
-		if speech == "special delivery" and npc.mapTitle == "Gruff Smith" and player.quest["spy_trials"] == 1 then
+		if speech == "kiriman khusus" and npc.mapTitle == "Gruff Smith" and player.quest["spy_trials"] == 1 then
 			player.quest["spy_trials"] = 2
 
 			player:dialogSeq(
@@ -668,7 +668,7 @@ SmithNpc = {
 				0
 			)
 
-		elseif speech == "special delivery" and npc.mapTitle == "Gruff Smith" and player.quest["spy_trials"] == 2 then
+		elseif speech == "kiriman khusus" and npc.mapTitle == "Gruff Smith" and player.quest["spy_trials"] == 2 then
 			if player:hasItem("ore_high", 10) == true then
 				player:removeItem("ore_high", 10)
 				player.quest["spy_trials"] = 3
@@ -693,7 +693,7 @@ SmithNpc = {
 					0
 				)
 			end
-		elseif speech == "special delivery" and npc.mapTitle == "Gruff Smith" and player.quest["spy_trials"] == 3 then
+		elseif speech == "kiriman khusus" and npc.mapTitle == "Gruff Smith" and player.quest["spy_trials"] == 3 then
 			player:dialogSeq(
 				{
 					smithDialog,
@@ -781,7 +781,7 @@ SmithNpc = {
 			end
 		end
 
-		if speech == "coal" and npc.mapTitle == "Gruff Smith" then
+		if speech == "batu bara" and npc.mapTitle == "Gruff Smith" then
 			Tools.checkKarma(player)
 
 			player:dialogSeq(
@@ -853,7 +853,7 @@ SmithNpc = {
 			end
 		end
 
-		if ((speech == "gruff ring" or speech == "ring") and npc.mapTitle == "Gruff Smith") then
+		if ((speech == "cincin kasar" or speech == "cincin") and npc.mapTitle == "Gruff Smith") then
 			Tools.checkKarma(player)
 
 			if (player.level < 50) then
@@ -863,7 +863,7 @@ SmithNpc = {
 			SmithNpc.gruffRing(player,npc)
 		end
 
-		if speech == "virtue" and npc.mapTitle == "Chul Smith" then
+		if speech == "kebajikan" and npc.mapTitle == "Chul Smith" then
 			Tools.checkKarma(player)
 
 			if player.quest["wind_armor"] ~= 0 and player.quest["min_clicked"] == 1 and player:hasItem("stardrop", 1) == true then
@@ -907,7 +907,7 @@ SmithNpc = {
 			end
 		end
 
-		if (speech == "shield" and npc.mapTitle == "Chul Smith") then
+		if (speech == "perisai" and npc.mapTitle == "Chul Smith") then
 			Tools.checkKarma(player)
 
 			local baseClass = player.baseClass
@@ -1017,7 +1017,7 @@ SmithNpc = {
 			end
 		end
 
-		if speech == "forge metal" and npc.mapTitle == "Gruff Smith" then
+		if speech == "tempa logam" and npc.mapTitle == "Gruff Smith" then
 			if player.quest["forgotten_path"] == 6 then
 				player.quest["forgotten_path"] = 7
 				player:dialogSeq(
@@ -1050,7 +1050,7 @@ SmithNpc = {
 
 				return
 			end
-			if speech == "metal orb" then
+			if speech == "bola logam" then
 				if player.quest["forgotten_path"] == 8 then
 					player.quest["forgotten_path"] = 9
 
@@ -1083,25 +1083,25 @@ SmithNpc = {
 			end
 		end
 
-		if npc.mapTitle == "Gruff Smith" and speech == "smelt" then
+		if npc.mapTitle == "Gruff Smith" and speech == "lebur" then
 			crafting.craftingDialog(player, npc, speech)
 		end
 
-		if (npc.mapTitle == "Beard Smith" or npc.mapTitle == "Dok Smith") and speech == "metal" then
+		if (npc.mapTitle == "Beard Smith" or npc.mapTitle == "Dok Smith") and speech == "logam" then
 			crafting.craftingDialog(player, npc, speech)
 		end
 
-		if (npc.mapTitle == "Beard Smith" or npc.mapTitle == "Dok Smith") and speech == "smith armor" then
+		if (npc.mapTitle == "Beard Smith" or npc.mapTitle == "Dok Smith") and speech == "tempa zirah" then
 			crafting.craftingDialog(player, npc, speech)
 		end
 
-		if (npc.mapTitle == "Beard Smith" or npc.mapTitle == "Dok Smith") and speech == "prepare" then
+		if (npc.mapTitle == "Beard Smith" or npc.mapTitle == "Dok Smith") and speech == "siapkan" then
 			SmithNpc.metalPreparation(player, npc)
 		end
 
 		local waypointId = _getWaypointId(player, npc)
 
-		if (speech == "waypoint" and not Waypoint.isEnabled(player, waypointId)) then
+		if (speech == "titik jalan" and not Waypoint.isEnabled(player, waypointId)) then
 			Waypoint.add(player, npc, waypointId)
 			return
 		end

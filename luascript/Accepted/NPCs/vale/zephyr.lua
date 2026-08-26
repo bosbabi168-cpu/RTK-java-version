@@ -170,15 +170,15 @@ ZephyrNpc = {
 		Tools.configureDialog(player, npc)
 		local speech = string.lower(player.speech)
 
-		if speech == "capture the winds" then
+		if speech == "tangkap angin" then
 			ZephyrNpc.armorOfTheWinds(player, npc)
 		end
 
-		if speech == "scribe" or speech == "alchemy" then
+		if speech == "juru tulis" or speech == "alkimia" then
 			crafting.craftingDialog(player, npc, speech)
 		end
 
-		if speech == "map" or speech == "fragment" or speech == "map fragment" then
+		if speech == "peta" or speech == "pecahan" or speech == "pecahan peta" then
 			if player:hasItem("map_fragment", 1) == true and player.quest["instance"] == 0 then
 				player.quest["instance"] = 1
 				player:dialogSeq(
@@ -195,7 +195,7 @@ ZephyrNpc = {
 			end
 		end
 
-		if (speech == "waypoint" and not Waypoint.isEnabled(player, _waypointId)) then
+		if (speech == "titik jalan" and not Waypoint.isEnabled(player, _waypointId)) then
 			Waypoint.add(player, npc, _waypointId)
 			return
 		end

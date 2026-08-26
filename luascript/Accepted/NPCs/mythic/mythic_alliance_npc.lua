@@ -250,7 +250,7 @@ MythicAllianceNpc = {
 				player:dialogSeq({t, "Then die."}, 0)
 				return
 			end
-		elseif speech == "greater" or speech == "greater alliance" then
+		elseif speech == "agung" or speech == "aliansi agung" then
 			Tools.checkKarma(player)
 
 			if player:hasLegend("greater_alliance_" .. string.lower(alliance)) then

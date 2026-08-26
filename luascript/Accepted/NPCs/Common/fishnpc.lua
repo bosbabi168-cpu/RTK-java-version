@@ -13,7 +13,7 @@ FishNpc = {
 
 		math.randomseed(os.time())
 
-		if (speech == "fish" or speech == "i'd like to fish" or speech == "id like to fish") then
+		if (speech == "ikan" or speech == "aku ingin memancing" or speech == "aku ingin memancing") then
 			Tools.checkKarma(player)
 
 			if player.state == 1 then

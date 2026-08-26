@@ -53,7 +53,7 @@ ValleyFarmGhostNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "bridge" then
+		if speech == "jembatan" then
 			Tools.checkKarma(player)
 
 			if player.quest["majhum_told_about_bridge"] == 2 then
@@ -121,7 +121,7 @@ ValleyFarmGhostNpc = {
 			end
 		end
 
-		if speech == "dusk shaman" and player.quest["majhum_told_about_bridge"] >= 1 then
+		if speech == "dukun senja" and player.quest["majhum_told_about_bridge"] >= 1 then
 			if player.registry["majhum_karma_bonus"] == 0 then
 				player.registry["majhum_karma_bonus"] = 1
 				player:addKarma(1.0)

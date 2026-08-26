@@ -74,8 +74,15 @@ public final class MapIntif {
         s.wfifoStringFixed(4, name, 16);
         s.wfifoSet(20);
 
-        // sekaligus minta data karakternya (0x3003); balasannya 0x3803
-        requestChar(clientFd, charIdNum, name);
+        // JANGAN minta data karakter di sini. Di C (intif_parse_authadd,
+        // intif.c:394) yang dilakukan hanya auth_add() + ack 0x3002; yang
+        // memanggil intif_load() adalah clif_accept2() (clif.c:409) SETELAH
+        // klien menyambung dan menyebutkan namanya — dengan fd klien yang
+        // asli. `clientFd` di paket ini milik ruang fd CHAR SERVER, jadi
+        // memakainya di sini salah dua kali: paket masuk dunia dikirim ke
+        // sesi yang belum ada, dan User hantu terdaftar di onlineChars[fd]
+        // sehingga fd yang sama saat dipakai klien sungguhan membuat paket
+        // perkenalan 0x10 tidak pernah sampai ke clientAuth().
         return 0;
     }
 

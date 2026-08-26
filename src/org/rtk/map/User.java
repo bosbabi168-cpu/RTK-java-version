@@ -21,6 +21,9 @@ import org.rtk.map.data.BlockList;
 public final class User extends BlockList
         implements org.rtk.map.script.ScriptPlayer.Owner {
 
+    private static final org.apache.logging.log4j.Logger log =
+            org.apache.logging.log4j.LogManager.getLogger(User.class);
+
     /**
      * Batas id: nilai di atasnya milik mob, bukan pemain.
      * Setara MOB_START_NUM di map.h.
@@ -223,6 +226,215 @@ public final class User extends BlockList
             }
         }
         return false;
+    }
+
+    /**
+     * mobdb_id(): id jenis mob dari {@code MobIdentifier}, atau angka apa
+     * adanya bila yang diberikan memang angka — C memeriksa
+     * {@code lua_isnumber} lebih dulu, jadi keduanya sah.
+     */
+    private long mobTypeId(String nameOrId) {
+        if (nameOrId == null || nameOrId.isEmpty()) {
+            return 0;
+        }
+        try {
+            return Long.parseLong(nameOrId.trim());
+        } catch (NumberFormatException e) {
+            MobData d = MapServer.mobs.typeByName(nameOrId);
+            return d == null ? 0 : d.id;
+        }
+    }
+
+    /**
+     * pcl_hasspace(): apakah barang ini masih muat.
+     *
+     * <p>Dua kuirk C yang sengaja ditiru:</p>
+     * <ol>
+     *   <li>Slot bertumpuk <b>pertama</b> yang id+pemiliknya cocok langsung
+     *       menentukan jawaban — meski slot berikutnya sebenarnya masih muat.
+     *       Menjadikannya "cari yang muat" akan mengubah perilaku toko.</li>
+     *   <li>Barang tak bertumpuk ({@code stackAmount <= 1}) tidak pernah
+     *       memicu cabang itu; ia hanya butuh satu slot kosong.</li>
+     * </ol>
+     */
+    @Override
+    public boolean scriptHasSpace(String nameOrId, int amount, long owner) {
+        long itemId;
+        try {
+            itemId = Long.parseLong(nameOrId.trim());
+        } catch (NumberFormatException | NullPointerException e) {
+            itemId = MapServer.itemDb.idOf(nameOrId);
+        }
+        int stackAmount = MapServer.itemDb.stackAmountOf(itemId);
+        boolean adaSlotKosong = false;
+
+        for (int slot = 0; slot < status.maxInv; slot++) {
+            org.rtk.common.mmo.Item it = status.inventoryAt(slot);
+            if (it == null || it.id <= 0) {
+                adaSlotKosong = true;
+                continue;
+            }
+            if (it.id == itemId && it.owner == owner && stackAmount > 1) {
+                return it.amount + amount <= stackAmount;
+            }
+        }
+        return adaSlotKosong;
+    }
+
+    /** pcl_setthreat(): setel (bukan tambah) ancaman pemain ini pada mob. */
+    @Override
+    public void scriptSetThreat(long mobId, long amount) {
+        if (MapServer.npcs.byId(mobId) instanceof Mob mb) {
+            mb.setThreat(id, amount);
+        }
+    }
+
+    /**
+     * pcl_removespell(): lupakan mantra, panggil kait {@code on_forget}
+     * milik mantra itu, lalu beri tahu klien.
+     *
+     * <p>Urutannya mengikuti C: kait skrip dipanggil <b>sebelum</b> slotnya
+     * dikosongkan, sehingga skrip masih bisa membaca keadaan pemain saat
+     * masih memiliki mantra tersebut.</p>
+     */
+    @Override
+    public void scriptRemoveSpell(String nameOrId) {
+        int spell = spellId(nameOrId);
+        if (spell <= 0) {
+            return;
+        }
+        for (int i = 0; i < status.spells.length; i++) {
+            if (status.spells[i] == spell) {
+                String yname = MapServer.spellDb.nameOf(spell);
+                if (MapServer.scriptEngine != null && yname != null && !yname.isEmpty()) {
+                    try {
+                        MapServer.scriptEngine.doScript(yname, "on_forget",
+                                MapServer.scriptEngine.playerRef(Pc.scriptPlayerOf(this)));
+                    } catch (RuntimeException e) {
+                        log.error("[PC] kait on_forget mantra {} gagal untuk {}", yname, name(), e);
+                    }
+                }
+                Clif.removeSpell(this, i);
+                status.spells[i] = 0;
+                return; // C berhenti di kecocokan pertama
+            }
+        }
+    }
+
+    /** pcl_getequippeditem(). */
+    @Override
+    public org.rtk.common.mmo.Item scriptEquippedItem(int slot) {
+        return status.equipAt(slot);
+    }
+
+    /** pcl_getinventoryitem(). */
+    @Override
+    public org.rtk.common.mmo.Item scriptInventoryItem(int slot) {
+        return status.inventoryAt(slot);
+    }
+
+    /** pcl_hasduration(). */
+    @Override
+    public boolean scriptHasDuration(String spellName) {
+        int id = spellId(spellName);
+        if (id <= 0) {
+            return false;
+        }
+        for (org.rtk.common.mmo.SkillInfo s : status.duraAether) {
+            if (s.id == id && s.duration > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** pcl_killcount(). */
+    @Override
+    public long scriptKillCount(String mobNameOrId) {
+        long id = mobTypeId(mobNameOrId);
+        if (id == 0) {
+            return 0;
+        }
+        return status.killReg.getOrDefault(id, 0L);
+    }
+
+    /** pcl_setkillcount(). */
+    @Override
+    public void scriptSetKillCount(String mobNameOrId, long amount) {
+        long id = mobTypeId(mobNameOrId);
+        if (id == 0) {
+            return;
+        }
+        status.killReg.put(id, amount);
+    }
+
+    /**
+     * pcl_flushkills(): tanpa argumen (atau id 0) menghapus SELURUH hitungan,
+     * dengan argumen hanya mob itu. Perilaku "kosong = semua" ada di C.
+     */
+    @Override
+    public void scriptFlushKills(String mobNameOrId) {
+        long id = mobTypeId(mobNameOrId);
+        if (id == 0) {
+            status.killReg.clear();
+        } else {
+            status.killReg.remove(id);
+        }
+    }
+
+    /**
+     * MAX_LEGENDS di mmo.h = 1000, tapi {@code pcl_addlegend} mensyaratkan
+     * slot x <b>dan</b> x+1 sama-sama kosong, sehingga slot terakhir tidak
+     * pernah terpakai — kapasitas efektifnya 999. (Di C, pemeriksaan x+1 pada
+     * x terakhir bahkan membaca satu slot di luar array; itu tidak ditiru.)
+     */
+    private static final int MAX_LEGENDS_EFEKTIF = 999;
+
+    /** pcl_addlegend(). */
+    @Override
+    public void scriptAddLegend(String text, String name, int icon, int color, long tchaid) {
+        if (status.legends.size() >= MAX_LEGENDS_EFEKTIF) {
+            return; // C diam saja bila penuh
+        }
+        org.rtk.common.mmo.Legend l = new org.rtk.common.mmo.Legend();
+        l.text = text == null ? "" : text;
+        l.name = name == null ? "" : name;
+        l.icon = icon;
+        l.color = color;
+        l.tchaid = tchaid;
+        status.legends.add(l);
+    }
+
+    /** pcl_haslegend() — strcmp, PEKA besar-kecil (lihat catatan antarmuka). */
+    @Override
+    public boolean scriptHasLegend(String name) {
+        if (name == null) {
+            return false;
+        }
+        for (org.rtk.common.mmo.Legend l : status.legends) {
+            if (name.equals(l.name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * pcl_removelegendbyname() — strcmpi, TIDAK peka besar-kecil.
+     *
+     * <p>C menyimpan legenda di array 1000 slot lalu memadatkannya dengan
+     * satu lintasan geser-satu, yang tidak benar-benar merapatkan bila ada
+     * beberapa lubang sekaligus. Di sini koleksinya sudah padat (hanya entri
+     * terisi), jadi penghapusan otomatis merapatkan. Setara secara perilaku:
+     * lubang di C tidak pernah terlihat karena {@code clif_mystaytus}
+     * melewati entri yang nama/teksnya kosong.
+     */
+    @Override
+    public void scriptRemoveLegendByName(String name) {
+        if (name == null) {
+            return;
+        }
+        status.legends.removeIf(l -> name.equalsIgnoreCase(l.name));
     }
 
     /**

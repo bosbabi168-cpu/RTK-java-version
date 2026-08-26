@@ -139,7 +139,7 @@ SeamstressNpc = {
 					"So, you think you're cut out to be a tailor? Tailoring is a necessity for making any type of garment.",
 					"Many types of clothing can be made by a tailor working alone, though some types require the assistance of a metalworker.",
 					"When you attempt to create a garment, the quality ((i.e., Spring, Summer, etc.)) of the product depends upon your skill, your cloth, and your luck.",
-					"Say 'tailor' to me when you are ready to make something. I can also help you with Cloth Preparation, which is needed before you can make armor."
+					"Katakan 'penjahit' padaku bila kau siap membuat sesuatu. Aku juga bisa membantumu menyiapkan kain, yang dibutuhkan sebelum kau bisa membuat zirah."
 				},
 				0
 			)
@@ -247,7 +247,7 @@ SeamstressNpc = {
 
 		local speech = string.lower(player.speech)
 
-		if speech == "special occasion" and npc.mapTitle == "Lin Cloth" and player.quest[
+		if speech == "acara khusus" and npc.mapTitle == "Lin Cloth" and player.quest[
 			"spy_trials"
 		] == 4 then
 			local choices = {
@@ -289,7 +289,7 @@ SeamstressNpc = {
 				end
 				player:dialogSeq({t, "Here you go!"}, 0)
 			end
-		elseif speech == "special occasion" and npc.mapTitle == "Lin Cloth" and player.quest[
+		elseif speech == "acara khusus" and npc.mapTitle == "Lin Cloth" and player.quest[
 			"spy_trials"
 		] == 5 then
 			if os.time() > player.quest["spy_trial_outfit_timer"] + 60 then
@@ -311,13 +311,13 @@ SeamstressNpc = {
 			end
 		end
 
-		if speech == "tailor" then
+		if speech == "penjahit" then
 			if npc.mapTitle == "Blossom Seams" or npc.mapTitle == "Lin Cloth" then
 				crafting.craftingDialog(player, npc, speech)
 			end
 		end
 
-		if speech == "prepare" then
+		if speech == "siapkan" then
 			if npc.mapTitle == "Blossom Seams" or npc.mapTitle == "Lin Cloth" then
 				SeamstressNpc.clothPreparation(player, npc)
 			end

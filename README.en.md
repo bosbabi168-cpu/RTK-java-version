@@ -13,6 +13,26 @@ written in C — upstream source:
 > through the `sl.c` bindings. This project ports that C core to Java and
 > runs the Lua content **unmodified** via LuaJ.
 
+## Project direction (updated 26 August 2026)
+
+**The RetroTK protocol will be replaced with our own design, and the client
+will be rebuilt from scratch using libGDX.** Byte-for-byte compatibility with
+the original RetroTK client is **no longer a goal**.
+
+What this means for anyone reading this code:
+
+- **Carries over** to the new protocol: 906 Lua scripts, 9,850 maps, 4,476
+  warps, 716 mob types, 2,545 items, and the game-logic bindings.
+- **Will be rewritten**: the entire `clif_*` packet layer. This is why
+  `Clif.sendMyStatus()` is deliberately left unfinished.
+- Fidelity to the C source is still enforced for **logic**, not for the wire
+  format.
+
+Before this decision, the original RetroTK client did **successfully enter the
+world** once four server bugs were fixed (see "Status & roadmap"). All four
+had slipped past 294 test assertions — evidence that self-written tests cannot
+substitute for a real client.
+
 ## Requirements
 
 - **JDK 25** (the project's language level). That is for the development

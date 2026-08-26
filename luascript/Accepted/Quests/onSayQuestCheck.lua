@@ -14,7 +14,7 @@ Player.onSayQuestCheck = async(function(player, speech)
 			graphic = Item("lockpick").icon,
 			color = Item("lockpick").iconC
 		}
-		if speech == "hello" then
+		if speech == "halo" then
 			player:dialogSeq(
 				{
 					t,
@@ -24,7 +24,7 @@ Player.onSayQuestCheck = async(function(player, speech)
 				0
 			)
 		end
-		if speech == "lockpick" then
+		if speech == "congkel kunci" then
 			if player.quest["maso_lockpick"] == 0 then
 				player.quest["maso_lockpick"] = 1
 				player:dialogSeq(
