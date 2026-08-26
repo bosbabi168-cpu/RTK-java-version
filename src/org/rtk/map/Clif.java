@@ -1317,7 +1317,7 @@ public final class Clif {
      * Tarik pemain kembali ke posisi menurut server, lalu buka kuncinya.
      * Urutannya (kunci, kirim posisi, buka) ditiru dari `clif_parsewalk`.
      */
-    private static void snapBack(User sd) {
+    static void snapBack(User sd) {
         blockMovement(sd, 0);
         sendXy(sd);
         blockMovement(sd, 1);
@@ -1386,85 +1386,23 @@ public final class Clif {
      */
     public static void parseWalk(User sd) {
         Session s = sessionOf(sd);
-        MapData map = MapServer.world.get(sd.m);
-        if (s == null || map == null) {
+        if (s == null) {
             return;
         }
-
         int opcode = s.rfifoB(3) & 0xFF;
         int direction = s.rfifoB(5) & 0xFF;
-
-        // Hanya paket 0x06 yang membawa permintaan gambar ulang; 0x32 tidak.
-        int redrawX0 = 0;
-        int redrawY0 = 0;
-        int redrawW = 0;
-        int redrawH = 0;
-        int redrawCheck = 0;
-        if (opcode == 0x06) {
-            redrawX0 = s.rfifoWBE(12);
-            redrawY0 = s.rfifoWBE(14);
-            redrawW = s.rfifoB(16) & 0xFF;
-            redrawH = s.rfifoB(17) & 0xFF;
-            redrawCheck = s.rfifoWBE(18);
-        }
         int claimX = s.rfifoWBE(8);
         int claimY = s.rfifoWBE(10);
 
-        // klien dan server tidak sepakat soal posisi -> tarik kembali
-        if (claimX != sd.x || claimY != sd.y) {
-            log.debug("[CLIF] {} desinkron: klien mengira ({},{}), server ({},{})",
-                    sd.name(), claimX, claimY, sd.x, sd.y);
-            snapBack(sd);
-            return;
-        }
-
-        int oldX = sd.x;
-        int oldY = sd.y;
-        // Versi C memakai switch tanpa default: arah di luar 0..3 tidak
-        // menggeser apa pun. Jangan diganti dengan mask 0x03 — arah 4 akan
-        // berubah jadi "ke atas" dan klien cacat bisa berjalan menembus.
-        int nx = sd.x + (direction < 4 ? DX[direction] : 0);
-        int ny = sd.y + (direction < 4 ? DY[direction] : 0);
-
-        // jepit ke batas peta, seperti versi C
-        nx = Math.max(0, Math.min(nx, map.xs - 1));
-        ny = Math.max(0, Math.min(ny, map.ys - 1));
-
-        sd.blocked = false;
-        if (!sd.isGm()) {
-            if (!map.walkable(nx, ny)) {
-                sd.blocked = true;
-            } else {
-                for (org.rtk.map.data.BlockList bl : map.objectsAt(nx, ny)) {
-                    if (blocksMovement(sd, bl, map)) {
-                        sd.blocked = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (sd.blocked || sd.paralyzed) {
-            snapBack(sd);
-            return;
-        }
-
-        updateCamera(sd, map, direction, nx, ny);
-        sendWalkConfirm(sd, direction, oldX, oldY);
-
-        if (nx == sd.x && ny == sd.y) {
-            return; // terjepit di tepi: tidak benar-benar berpindah
-        }
-
-        broadcastWalk(sd, direction, oldX, oldY);
-        map.moveBlock(sd, nx, ny);
-
+        // Hanya paket 0x06 yang menitipkan permintaan gambar ulang; 0x32
+        // tidak. Lihat catatan kebocoran di ClientCommands.playerWalks.
+        ClientCommands.RedrawRequest redraw = null;
         if (opcode == 0x06) {
-            redrawArea(sd, map, redrawX0, redrawY0, redrawW, redrawH, redrawCheck);
+            redraw = new ClientCommands.RedrawRequest(
+                    s.rfifoWBE(12), s.rfifoWBE(14),
+                    s.rfifoB(16) & 0xFF, s.rfifoB(17) & 0xFF, s.rfifoWBE(18));
         }
-
-        fireWalkScripts(sd);
-        checkWarpTile(sd, map);
+        MapServer.commands.playerWalks(sd, direction, claimX, claimY, redraw);
     }
 
     /**
@@ -1475,7 +1413,7 @@ public final class Clif {
      * pemain, NPC, mob, dan terakhir menampilkan diri kita kepada pemain
      * lain di petak yang sama.</p>
      */
-    private static void redrawArea(User sd, MapData map,
+    static void redrawArea(User sd, MapData map,
                                    int x0, int y0, int w, int h, int check) {
         sendMapData(sd, x0, y0, w, h, check);
 
@@ -1514,7 +1452,7 @@ public final class Clif {
      * {@code clif_parsewalk}: syarat masuk peta tujuan diperiksa dulu, dan
      * bila gagal pemain didorong mundur disertai pesan penolakan.
      */
-    private static void checkWarpTile(User sd, MapData map) {
+    static void checkWarpTile(User sd, MapData map) {
         // C menjepit koordinat dulu sebelum menelusuri daftar portal
         int fx = Math.min(sd.x, map.xs - 1);
         int fy = Math.min(sd.y, map.ys - 1);
@@ -2074,25 +2012,10 @@ public final class Clif {
      */
     public static void parseClick(User sd) {
         Session s = sessionOf(sd);
-        MapData map = MapServer.world.get(sd.m);
-        if (s == null || map == null) {
+        if (s == null) {
             return;
         }
-        long id = s.rfifoLBE(6) & 0xFFFFFFFFL;
-        var bl = id == 0 ? MapServer.npcs.byId(sd.lastClick) : MapServer.npcs.byId(id);
-        if (bl == null) {
-            log.debug("[CLIF] {} mengklik id {} yang tidak dikenal", sd.name(), id);
-            return;
-        }
-        if (bl.m != sd.m) {
-            return;
-        }
-
-        sd.lastClick = bl.id;
-        if (bl instanceof Npc nd) {
-            clickNpc(sd, nd);
-        }
-        // TODO(A5): klik mob -> onLook + skrip "click" milik mob
+        MapServer.commands.playerClicks(sd, s.rfifoLBE(6) & 0xFFFFFFFFL);
     }
 
     /**
@@ -2102,7 +2025,7 @@ public final class Clif {
      * bicara oleh hampir semua NPC — kecuali NPC F1 dan NPC totem, karena
      * keduanya jalur keluar yang tidak boleh ikut tertutup.</p>
      */
-    private static void clickNpc(User sd, Npc nd) {
+    static void clickNpc(User sd, Npc nd) {
         if (MapServer.scriptEngine == null) {
             return;
         }
@@ -2182,57 +2105,34 @@ public final class Clif {
      */
     public static void parseMenuInput(User sd) {
         Session s = sessionOf(sd);
-        if (s == null || MapServer.scriptEngine == null) {
+        if (s == null) {
             return;
         }
-        var p = sd.scriptPlayer();
-        if (p.coroutine == null) {
-            return;   // hasCoref() di C: tidak ada yang menunggu
-        }
-
         int ragam = s.rfifoB(5) & 0xFF;
-        try {
-            switch (ragam) {
-                case 1 -> {
-                    // clif_parsemenu: id di [6] BE32, pilihan di [10] BE16
-                    int pilihan = s.rfifoWBE(10);
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(pilihan));
-                }
-                case 3 -> {
-                    // clif_parseinput: panjang di [12], teks di [13];
-                    // di C ada string kedua setelahnya — belum dipakai
-                    // primitif mana pun, jadi cukup yang pertama.
-                    int len = s.rfifoB(12) & 0xFF;
-                    StringBuilder sb = new StringBuilder(len);
-                    for (int i = 0; i < len; i++) {
-                        sb.append((char) (s.rfifoB(13 + i) & 0xFF));
-                    }
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(sb.toString()));
-                }
-                case 2 -> {
-                    // clif_parsebuy: NAMA barang di [13], panjangnya di [12]
-                    int len = s.rfifoB(12) & 0xFF;
-                    StringBuilder sb = new StringBuilder(len);
-                    for (int i = 0; i < len; i++) {
-                        sb.append((char) (s.rfifoB(13 + i) & 0xFF));
-                    }
-                    String nama = sb.toString();
-                    if (nama.isEmpty()) {
-                        MapServer.scriptEngine.cancel(p);
-                        return;
-                    }
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(nama));
-                }
-                case 4 -> {
-                    // clif_parsesell: nomor slot inventaris di [12]
-                    int slot = s.rfifoB(12) & 0xFF;
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(slot));
-                }
-                default -> MapServer.scriptEngine.cancel(p);   // 0 dan lainnya: batal
-            }
-        } catch (RuntimeException e) {
-            log.error("[CLIF] melanjutkan menu/input gagal untuk {}", sd.name(), e);
+        ClientCommands.Answer jawab = switch (ragam) {
+            // clif_parsemenu: id di [6] BE32, pilihan di [10] BE16
+            case 1 -> ClientCommands.Answer.choice(s.rfifoWBE(10));
+            // clif_parseinput: panjang di [12], teks di [13]. Di C ada
+            // string kedua setelahnya — belum dipakai primitif mana pun.
+            case 3 -> ClientCommands.Answer.text(teks(s, 12, 13));
+            // clif_parsebuy: NAMA barang, bukan indeksnya
+            case 2 -> ClientCommands.Answer.itemName(teks(s, 12, 13));
+            // clif_parsesell: nomor slot inventaris
+            case 4 -> ClientCommands.Answer.slot(s.rfifoB(12) & 0xFF);
+            // 0 dan lainnya: pemain membatalkan
+            default -> null;
+        };
+        MapServer.commands.playerAnswersMenu(sd, jawab);
+    }
+
+    /** Baca string berprefiks panjang: panjang di posLen, isi mulai posIsi. */
+    private static String teks(Session s, int posLen, int posIsi) {
+        int len = s.rfifoB(posLen) & 0xFF;
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            sb.append((char) (s.rfifoB(posIsi + i) & 0xFF));
         }
+        return sb.toString();
     }
 
     /**
@@ -2248,44 +2148,28 @@ public final class Clif {
      */
     public static void parseNpcDialog(User sd) {
         Session s = sessionOf(sd);
-        if (s == null || MapServer.scriptEngine == null) {
+        if (s == null) {
             return;
         }
-        var p = sd.scriptPlayer();
-        if (p.coroutine == null) {
-            log.debug("[CLIF] {} menjawab dialog padahal tidak ada yang menunggu", sd.name());
-            return;
-        }
-
         int ragam = s.rfifoB(5) & 0xFF;
         int pilihan = s.rfifoB(13) & 0xFF;
 
-        try {
-            switch (ragam) {
-                case 0x01 -> resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(pilihan));
-                case 0x02 -> {
-                    int menu = s.rfifoB(15) & 0xFF;
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(menu));
-                }
-                case 0x04 -> {
-                    if (pilihan != 0x02) {
-                        // pemain menutup kotak input: buang coroutine-nya
-                        MapServer.scriptEngine.cancel(p);
-                        return;
-                    }
-                    int len = s.rfifoB(15) & 0xFF;
-                    StringBuilder sb = new StringBuilder(len);
-                    for (int i = 0; i < len; i++) {
-                        sb.append((char) (s.rfifoB(16 + i) & 0xFF));
-                    }
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(sb.toString()));
-                }
-                default -> log.debug("[CLIF] ragam dialog 0x{} belum ditangani",
-                        String.format("%02X", ragam));
+        ClientCommands.Answer jawab;
+        switch (ragam) {
+            case 0x01 -> jawab = ClientCommands.Answer.step(pilihan);
+            case 0x02 -> jawab = ClientCommands.Answer.choice(s.rfifoB(15) & 0xFF);
+            case 0x04 -> {
+                // [13] != 2 berarti pemain menutup kotak isian, bukan menjawab
+                jawab = pilihan != 0x02 ? null
+                        : ClientCommands.Answer.text(teks(s, 15, 16));
             }
-        } catch (RuntimeException e) {
-            log.error("[CLIF] melanjutkan dialog gagal untuk {}", sd.name(), e);
+            default -> {
+                log.debug("[CLIF] ragam dialog 0x{} belum ditangani",
+                        String.format("%02X", ragam));
+                return;
+            }
         }
+        MapServer.commands.playerAnswersDialog(sd, jawab);
     }
 
     /**
@@ -3482,7 +3366,7 @@ public final class Clif {
      *   <li>NPC bertipe 2 (dekorasi) tidak menghalangi.</li>
      * </ul>
      */
-    private static boolean blocksMovement(User sd, org.rtk.map.data.BlockList bl, MapData map) {
+    static boolean blocksMovement(User sd, org.rtk.map.data.BlockList bl, MapData map) {
         if (bl.id == sd.id) {
             return false;
         }
@@ -3509,7 +3393,7 @@ public final class Clif {
      * seperti versi C: kamera hanya ikut bergerak bila pemain belum berada
      * di zona tepi peta.
      */
-    private static void updateCamera(User sd, MapData map, int direction, int nx, int ny) {
+    static void updateCamera(User sd, MapData map, int direction, int nx, int ny) {
         switch (direction) {
             case 0 -> {
                 if (ny <= sd.viewY || ((map.ys - 1 - ny) < 7 && sd.viewY > 7)) {
@@ -3542,7 +3426,7 @@ public final class Clif {
     }
 
     /** Konfirmasi langkah ke pemain yang bergerak. Opcode 0x26. */
-    private static void sendWalkConfirm(User sd, int direction, int oldX, int oldY) {
+    static void sendWalkConfirm(User sd, int direction, int oldX, int oldY) {
         Session s = sessionOf(sd);
         if (s == null) {
             return;
@@ -3558,7 +3442,7 @@ public final class Clif {
     }
 
     /** Beri tahu pemain lain di sekitar bahwa seseorang melangkah. Opcode 0x0C. */
-    private static void broadcastWalk(User sd, int direction, int oldX, int oldY) {
+    static void broadcastWalk(User sd, int direction, int oldX, int oldY) {
         byte[] buf = new byte[32];
         buf[0] = (byte) 0xAA;
         buf[1] = 0x00;
@@ -3720,7 +3604,7 @@ public final class Clif {
      * per perlengkapan dan {@code on_walk_passive} per mantra — menyusul
      * setelah subsistem barang & mantra diport.
      */
-    private static void fireWalkScripts(User sd) {
+    static void fireWalkScripts(User sd) {
         if (MapServer.scriptEngine == null) {
             return;
         }

@@ -782,7 +782,14 @@ dengan pemain lain**.
 
 Itu bukan berarti 49 paket menunggu disalin — format kabelnya memang akan
 diganti. Yang berharga adalah **logika di balik tiap aksinya**, bukan
-pembacaan bytenya. Roadmap berurutnya ada di `CLAUDE.md`.
+pembacaan bytenya.
+
+**Lapisan masuknya kini sudah berdiri** (27 Agustus 2026):
+`ClientCommands` adalah cermin dari `ClientView` — gagasan yang sama, arah
+berlawanan, dan yang mengimplementasikannya adalah *logika* sementara yang
+memanggilnya *protokol*. Keempat `Clif.parse*` kini pembaca byte murni.
+Protokol baru cukup menulis pembaca baru; logika di `MapCommands` tidak
+disentuh. Roadmap berurutnya ada di `CLAUDE.md`.
 
 Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
 **stub** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

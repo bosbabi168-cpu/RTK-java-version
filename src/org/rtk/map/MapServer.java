@@ -112,6 +112,19 @@ public final class MapServer {
      */
     public static ClientView clientView = new RetroTkClientView();
 
+    /**
+     * Jembatan klien -&gt; logika permainan: apa yang <b>diminta</b> pemain.
+     *
+     * <p>Pasangan masuk dari {@link #clientView}. Protokol baru cukup
+     * menulis pembaca yang memanggil method-method di {@link ClientCommands};
+     * isinya — {@link MapCommands} — tidak perlu disentuh.</p>
+     *
+     * <p>⚠️ Lapisan protokol memanggil ini; lapisan logika
+     * <b>mengimplementasikannya</b>. Arahnya kebalikan dari
+     * {@code clientView}, dan itu yang paling mudah tertukar.</p>
+     */
+    public static ClientCommands commands = new MapCommands();
+
     /** Lapisan jaringan + timer milik map server sendiri. */
     public static final NetServer net = new NetServer("map");
     public static final TimerSystem timers = new TimerSystem();

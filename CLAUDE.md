@@ -890,6 +890,30 @@ byte-identik dengan `rtklua/`.
    dan {@code setGrpDmg} mencatat menurut **id grup** pemain, bukan id
    pemainnya.
 
+52. **Dua antarmuka, arah dan pemilik TERBALIK.** Ini yang paling mudah
+   tertukar saat menyentuh lapisan protokol:
+
+   | | `ClientView` | `ClientCommands` |
+   |---|---|---|
+   | Arah | logika &rarr; klien | klien &rarr; logika |
+   | Isi | apa yang **terjadi** | apa yang **diminta** |
+   | Diimplementasikan | lapisan **protokol** | lapisan **logika** |
+   | Dipanggil | lapisan **logika** | lapisan **protokol** |
+
+   Aturannya sepasang: **kode logika jangan memanggil `Clif`**, dan
+   **kode logika jangan membaca `rfifo*`**. Kalau sebuah baris di
+   `MapCommands` butuh `Session` atau opcode, baris itu salah tempat.
+
+   ⚠️ **Satu kebocoran yang disengaja dan sudah ditandai:**
+   `playerWalks` membawa `RedrawRequest` — permintaan klien RetroTK untuk
+   menggambar ulang sepetak wilayah, yang menumpang paket langkah yang
+   sama. Ia ada di sana karena **urutannya mengikat**: penggambaran harus
+   terjadi setelah pemain berpindah tetapi sebelum kait skrip dan
+   pemeriksaan portal — portal bisa memindahkannya ke peta lain, dan
+   menggambar ulang peta lama sesudah itu salah. Jadi tidak bisa dikerjakan
+   pemanggil setelah method-nya kembali. **Buang saat protokol baru
+   dirancang**; server baru tahu sendiri apa yang baru terlihat.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -1476,15 +1500,14 @@ NPC **dan** mob.
 > Disusun ulang setelah audit di atas. Urutannya mengikuti **apa yang
 > menghambat**, bukan jumlah pemakaian, karena binding sudah hampir habis.
 
-**1. Rancang protokol baru — arah MASUK.** Ini sekarang penghambat
-terbesar dan sekaligus keputusan desain terbesar yang belum diambil.
-`ClientView` sudah menjadi spesifikasi arah **keluar** (39 peristiwa,
-diturunkan dari kebutuhan skrip nyata). Arah **masuk** belum punya
-padanannya: `Clif.parseWalk`/`parseClick`/`parseMenuInput`/`parseNpcDialog`
-masih memanggil logika langsung dari pembaca byte. Buat antarmuka kedua —
-katakanlah `ClientCommands` — dengan cara yang sama: turunkan dari **aksi
-pemain** (jalan, bicara, pakai barang, tukar barang), bukan dari opcode.
-Tabel aksi di audit di atas adalah daftar bahannya.
+~~**1. Rancang protokol baru — arah MASUK.**~~ **LAPISANNYA BERDIRI
+27 Agustus 2026.** `ClientCommands` + `MapCommands` sudah ada, dan keempat
+`Clif.parse*` kini pembaca byte murni. Lihat Peringatan #52.
+
+**Sisa butir ini** (kerjakan satu helper per langkah, jangan sekaligus):
+lima helper yang isinya **logika** masih tinggal di `Clif` —
+`blocksMovement`, `updateCamera`, `fireWalkScripts`, `checkWarpTile`,
+`clickNpc`. Daftarnya ada di javadoc `MapCommands`.
 
 **2. Subsistem pertukaran barang antar pemain** (`sd->exchange`). Satu-
 satunya sisa binding yang butuh blok tersendiri (`getExchangeItem`), dan

@@ -787,7 +787,13 @@ casting, attacking, and **trading with another player**.
 
 That is not 49 packets waiting to be copied, though — the wire format is
 being replaced. What matters is the **logic behind each action**, not the
-byte decoding. See `CLAUDE.md` for the ranked roadmap.
+byte decoding.
+
+**The inbound layer now exists** (27 August 2026): `ClientCommands` is the
+mirror of `ClientView` — same idea, opposite direction, and the *logic*
+implements it while the *protocol* calls it. The four `Clif.parse*` methods
+are now pure byte readers. A new protocol only needs a new reader; the
+logic in `MapCommands` stays untouched. See `CLAUDE.md` for the roadmap.
 
 The 26 August session closed two blocks: (1) bindings that were still
 **stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),
