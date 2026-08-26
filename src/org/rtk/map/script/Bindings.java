@@ -27,6 +27,21 @@ final class Bindings {
     private Bindings() {
     }
 
+    /**
+     * Beberapa binding di C menerima <b>nama ATAU angka</b> di posisi yang
+     * sama ({@code lua_isnumber} dulu, kalau bukan baru {@code lua_tostring}).
+     * Helper ini menyeragamkannya jadi String; sisi User yang memilah.
+     * Mengembalikan "" bila argumennya nil — di C itu berarti "semua"
+     * untuk {@code flushKills}.
+     */
+    private static String namaAtauAngka(Varargs args, int i) {
+        LuaValue v = args.arg(i);
+        if (v.isnil()) {
+            return "";
+        }
+        return v.isnumber() ? String.valueOf(v.tolong()) : v.tojstring();
+    }
+
     // ------------------------------------------------------------------
     // Player (playerl_staticinit)
     // ------------------------------------------------------------------
@@ -278,6 +293,117 @@ final class Bindings {
             return LuaValue.FALSE;
         });
 
+        // ---- ruang inventaris ----
+        player.addMethod("hasSpace", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptHasSpace(
+                        namaAtauAngka(args, 2), args.optint(3, 0), args.optlong(4, 0)));
+            }
+            return LuaValue.FALSE;
+        });
+
+        // ---- ancaman & mantra ----
+        player.addMethod("setThreat", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                o.scriptSetThreat(args.optlong(2, 0), args.optlong(3, 0));
+            }
+            return LuaValue.NIL;
+        });
+        player.addMethod("removeSpell", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                o.scriptRemoveSpell(namaAtauAngka(args, 2));
+            }
+            return LuaValue.NIL;
+        });
+
+        // ---- barang di slot (biteml_pushinst) ----
+        // C mengembalikan objek BoundItem bila slotnya terisi, nil bila
+        // kosong. Skrip mengandalkan pembedaan itu (`if item then ...`),
+        // jadi jangan pernah mengembalikan objek kosong sebagai ganti nil.
+        player.addMethod("getEquippedItem", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                org.rtk.common.mmo.Item it = o.scriptEquippedItem(args.optint(2, 0));
+                if (it != null) {
+                    return engine.newInstance(engine.boundItemClass, new ScriptItem(it));
+                }
+            }
+            return LuaValue.NIL;
+        });
+        player.addMethod("getInventoryItem", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                org.rtk.common.mmo.Item it = o.scriptInventoryItem(args.optint(2, 0));
+                if (it != null) {
+                    return engine.newInstance(engine.boundItemClass, new ScriptItem(it));
+                }
+            }
+            return LuaValue.NIL;
+        });
+
+        // ---- durasi mantra ----
+        player.addMethod("hasDuration", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptHasDuration(args.optjstring(2, "")));
+            }
+            return LuaValue.FALSE;
+        });
+
+        // ---- hitungan bunuh mob ----
+        // C menerima nama ATAU angka di argumen pertama; keduanya dilewatkan
+        // sebagai String lalu dipilah di User.mobTypeId().
+        player.addMethod("killCount", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptKillCount(namaAtauAngka(args, 2)));
+            }
+            return LuaValue.valueOf(0);
+        });
+        player.addMethod("setKillCount", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                o.scriptSetKillCount(namaAtauAngka(args, 2), args.optlong(3, 0));
+            }
+            return LuaValue.NIL;
+        });
+        player.addMethod("flushKills", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                // tanpa argumen = hapus semua (lua_isnil di C)
+                o.scriptFlushKills(namaAtauAngka(args, 2));
+            }
+            return LuaValue.NIL;
+        });
+
+        // ---- legenda ----
+        // Urutan argumen di C: addLegend(text, name, icon, color, tchaid).
+        player.addMethod("addLegend", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                o.scriptAddLegend(args.optjstring(2, ""), args.optjstring(3, ""),
+                        args.optint(4, 0), args.optint(5, 0), args.optlong(6, 0));
+            }
+            return LuaValue.NIL;
+        });
+        player.addMethod("hasLegend", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                return LuaValue.valueOf(o.scriptHasLegend(args.optjstring(2, "")));
+            }
+            return LuaValue.FALSE;
+        });
+        player.addMethod("removeLegendbyName", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof ScriptPlayer.Owner o) {
+                o.scriptRemoveLegendByName(args.optjstring(2, ""));
+            }
+            return LuaValue.NIL;
+        });
+
         // ---- bank ----
         player.addMethod("bankDeposit", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
@@ -521,6 +647,20 @@ final class Bindings {
                 org.rtk.map.Clif.sendSide(bl);
             }
             return LuaValue.NONE;
+        });
+
+        /**
+         * mobl_checkthreat(idPemain): berapa ancaman pemain itu pada mob ini.
+         *
+         * <p>⚠️ C mengembalikan <b>0</b> — bukan nil — bila pemainnya tidak
+         * ada atau tidak ada di tabel. Skrip AI membandingkannya dengan
+         * angka, jadi nil akan meledak.</p>
+         */
+        klass.addMethod("checkThreat", (self, args) -> {
+            if (self instanceof org.rtk.map.Mob mb) {
+                return LuaValue.valueOf((double) mb.checkThreat(args.optlong(2, 0)));
+            }
+            return LuaValue.valueOf(0);
         });
 
         klass.addMethod("callBase", (self, args) -> {

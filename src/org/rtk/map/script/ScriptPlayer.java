@@ -104,6 +104,84 @@ public class ScriptPlayer {
         boolean scriptHasSpell(String nameOrId);
 
         /**
+         * pcl_hasspace(): apakah barang ini masih muat di inventaris.
+         *
+         * <p>Argumen ke-4 dan seterusnya di C (engrave, customLook, …)
+         * <b>tidak memengaruhi hasil</b> — {@code engraved} dihitung lalu
+         * tidak pernah dibaca. Karena itu tidak ikut diport.</p>
+         */
+        boolean scriptHasSpace(String nameOrId, int amount, long owner);
+
+        /**
+         * pcl_setthreat(): setel ancaman pemain ini pada mob tertentu ke
+         * nilai tetap — beda dari {@code addThreat} yang menambah.
+         */
+        void scriptSetThreat(long mobId, long amount);
+
+        /**
+         * pcl_removespell(): lupakan mantra. Menerima nama atau id.
+         *
+         * <p>Ikut memicu kait skrip {@code on_forget} milik mantra itu dan
+         * paket {@code clif_removespell} (0x18) ke klien, seperti di C.</p>
+         */
+        void scriptRemoveSpell(String nameOrId);
+
+        /**
+         * pcl_getequippeditem(): barang di slot perlengkapan itu, atau null
+         * bila slotnya kosong (di C: {@code lua_pushnil}).
+         */
+        org.rtk.common.mmo.Item scriptEquippedItem(int slot);
+
+        /** pcl_getinventoryitem(): barang di slot inventaris itu, atau null. */
+        org.rtk.common.mmo.Item scriptInventoryItem(int slot);
+
+        /**
+         * pcl_hasduration(): true bila mantra bernama itu sedang aktif
+         * dengan sisa durasi &gt; 0. Nama dicari lewat {@code magicdb_id}.
+         */
+        boolean scriptHasDuration(String spellName);
+
+        /**
+         * pcl_killcount(): berapa kali mob itu sudah dibunuh. Menerima nama
+         * ({@code MobIdentifier}) atau id angka, seperti di C.
+         */
+        long scriptKillCount(String mobNameOrId);
+
+        /** pcl_setkillcount(): setel hitungan bunuh mob itu ke nilai tertentu. */
+        void scriptSetKillCount(String mobNameOrId, long amount);
+
+        /**
+         * pcl_flushkills(): hapus hitungan bunuh.
+         *
+         * @param mobNameOrId null/kosong atau id 0 berarti hapus SEMUA
+         */
+        void scriptFlushKills(String mobNameOrId);
+
+        /**
+         * pcl_addlegend(): tambahkan satu baris legenda.
+         *
+         * <p>⚠️ C <b>tidak</b> memeriksa duplikat — memanggil dua kali dengan
+         * nama sama menghasilkan dua baris. Ditiru apa adanya.
+         */
+        void scriptAddLegend(String text, String name, int icon, int color, long tchaid);
+
+        /**
+         * pcl_haslegend(): true bila ada legenda bernama itu.
+         *
+         * <p>⚠️ C memakai {@code strcmp} di sini — <b>peka besar-kecil</b>,
+         * berbeda dari {@link #scriptRemoveLegendByName} yang memakai
+         * {@code strcmpi}. Asimetri itu ada di sumbernya, jangan diseragamkan.
+         */
+        boolean scriptHasLegend(String name);
+
+        /**
+         * pcl_removelegendbyname(): buang semua legenda bernama itu.
+         *
+         * <p>⚠️ Memakai {@code strcmpi} — <b>tidak</b> peka besar-kecil.
+         */
+        void scriptRemoveLegendByName(String name);
+
+        /**
          * pcl_bankdeposit(): titipkan barang ke bank.
          * @return false bila barangnya tidak ada di inventaris
          */
