@@ -574,7 +574,7 @@ membiarkannya tersangkut.
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ konek+auth ke char server, memuat geometri peta, terima routing pemain, minta & terima data karakter (0x3003/0x3803) |
 | dunia peta (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometri + metadata + indeks spasial blok 8×8, area pandang x±9/y±8 |
 | **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c` ±22rb baris) | `map/User.java`, `map/Pc.java`, `map/Clif.java`, `map/Npc*.java`, `map/Mob*.java` | ✅ **Trek A selesai** — masuk dunia + panggambaran sekitar (0x33), gerakan & portal, dialog/menu/input NPC (0x30/0x2F/0x39/0x3A), toko beli-jual, NPC & timernya, mob: 716 jenis + 1.175 spawn, AI (tik 50 ms), pertarungan, kematian & jatuhan barang. ⚠️ belum pernah diuji dengan klien RetroTK asli |
-| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **jalan via LuaJ** — 906 skrip asli termuat tanpa error; object model typel, dispatch `root.method`, coroutine `_async` + dialog blocking, registry & inventaris tersambung ke `CharStatus`. ⚠️ dari ±258 method yang dipanggil skrip, **40 masih ada di `sl.c` tapi belum diport**; yang paling sering dipakai sudah ditutup (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus seluruh keluarga barang lantai). Angka terkini: `./run.sh luaaudit` |
+| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **jalan via LuaJ** — 906 skrip asli termuat tanpa error; object model typel, dispatch `root.method`, coroutine `_async` + dialog blocking, registry & inventaris tersambung ke `CharStatus`. ⚠️ dari ±258 method yang dipanggil skrip, **39 masih ada di `sl.c` tapi belum diport**; yang paling sering dipakai sudah ditutup (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus seluruh keluarga barang lantai). Angka terkini: `./run.sh luaaudit` |
 | save server (`saveif.c` — di C pun sudah dinonaktifkan) | — | ❌ tidak diport (timer koneksinya di-comment di C) |
 
 ## Catatan desain
@@ -641,7 +641,7 @@ gerbang regresi yang harus selalu hijau:
 | `./run.sh maptest` | 3.544 berkas peta terbaca sesuai format |
 | `./run.sh chartest` | serialisasi karakter (29 assertion) |
 | `./run.sh worldtest` | dunia peta + penempatan pemain (53 assertion) |
-| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap, obrolan & gerakan, durasi mantra, gerak mob, barang lantai, inventaris, buku mantra, tampilan & timer (514 assertion) |
+| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap, obrolan & gerakan, durasi mantra, gerak mob, barang lantai, inventaris, buku mantra, tampilan & timer, simpan paksa (518 assertion) |
 | `./run.sh dbtest` | lapisan database ke MySQL hidup (132 assertion) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -761,10 +761,10 @@ Titik berangkat untuk sesi berikutnya.
 
 | | |
 |---|---|
-| Gerbang regresi | 6/6 hijau (`cliftest` **514**, `dbtest` **141** assertion) |
+| Gerbang regresi | 6/6 hijau (`cliftest` **518**, `dbtest` **141** assertion) |
 | `logs/map.log` server hidup | **0 ERROR / 0 WARN** |
 | Ketiga server | jalan berdampingan (`./run.sh all`), tautan map↔char stabil |
-| Binding skrip | **46 belum diport** (40 di `sl.c` + 6 salah ketik); global belum diport **0** |
+| Binding skrip | **45 belum diport** (39 di `sl.c` + 6 salah ketik); global belum diport **0** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
 | **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
@@ -784,7 +784,7 @@ varian gerak mob (`moveIntent`, `checkMove`, `moveIgnoreObject`); serta
 keluarga `deduct*`; serta (7) buku mantra (`getSpells`, `getSpellName`,
 `getUnknownSpells`, `getAllClassSpells`, `addHealth`); serta (8) tampilan
 & timer (`changeView`, `guitext`, `setTimer`, `selfAnimation`,
-`paperpopup`, `speak`, `sendURL`, `lock`/`unlock`).
+`paperpopup`, `speak`, `sendURL`, `lock`/`unlock`); serta (9) `forceSave`.
 
 ⚠️ **Angka `luaaudit` tidak mengukur pekerjaan ini dengan adil.** Binding
 yang diport dari keadaan *stub* tidak pernah terhitung di audit — bagi
@@ -936,8 +936,8 @@ dijadikan syarat setelah menyentuh binding atau kait skrip.
   ini: protokol dan tabelnya sudah ada, bisa diuji offline.
 
 **Acuan prioritas binding skrip.** Dari ±258 method yang dipanggil skrip,
-**40 masih ada di `sl.c` tapi belum diport** per 26 Agustus 2026
-(110 → 100 → 40), dan **tidak ada lagi global** yang belum diport — turun dari 6. Angka terkini selalu dari `./run.sh luaaudit`.
+**39 masih ada di `sl.c` tapi belum diport** per 26 Agustus 2026
+(110 → 100 → 39), dan **tidak ada lagi global** yang belum diport — turun dari 6. Angka terkini selalu dari `./run.sh luaaudit`.
 
 Sudah selesai 21 Agustus 2026 — yang paling sering dipakai lebih dulu:
 `calcStat` (**249×**), `addNPC` (54×), `addSpell` (28×), `callBase` (12×),

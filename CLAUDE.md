@@ -130,7 +130,7 @@ proses build di server.
   `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar
   ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
   durasi mantra, gerak mob, barang lantai, inventaris, buku mantra,
-  tampilan & timer — **514 assertion**),
+  tampilan & timer, simpan paksa — **518 assertion**),
   `./run.sh dbtest` (lapisan database ke MySQL hidup — 132 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
@@ -742,6 +742,22 @@ byte-identik dengan `rtklua/`.
    depan pesannya, dan ragam 1 mengubah tiga hal sekaligus: pemisahnya
    {@code '!'} bukan {@code ':'}, dan siarannya ke seluruh peta, bukan area.
 
+41. **Menyimpan pemain yang sedang di dunia WAJIB menyegarkan posisinya
+   dulu.** `intif_save()` menyalin `bl.x/y/m` ke `status.last_pos` dan
+   samaran ke `status.disguise*` <b>tepat sebelum</b> blobnya disusun.
+   Tanpa itu yang tersimpan adalah posisi saat pemain <b>masuk</b>, dan
+   seluruh perjalanannya hilang. Di Java penyegaran itu sekarang ada di
+   dalam `MapIntif.saveChar(User, quit)` supaya tidak bisa terlewat lagi;
+   ragam `CharStatus` yang lama hanya untuk karakter yang tidak sedang di
+   dunia.
+
+   ⚠️ Ragam `quit` punya satu cabang tambahan: bila **peta tujuan pemain
+   tidak dimuat di server ini**, yang disimpan adalah **peta tujuan**, bukan
+   posisinya sekarang. Itu jalur perpindahan antar-map-server (Trek C3) —
+   pemain sudah "berangkat" secara logika meski raganya masih berdiri di
+   peta lama. Menghapusnya akan memulangkan pemain ke peta yang salah
+   begitu C3 hidup.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -859,8 +875,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **514**, `dbtest` **141** assertion) |
-| Binding skrip | **46** belum diport (40 di `sl.c` + 6 salah ketik); global belum diport **0** |
+| Gerbang regresi | 6/6 hijau (`cliftest` **518**, `dbtest` **141** assertion) |
+| Binding skrip | **45** belum diport (39 di `sl.c` + 6 salah ketik); global belum diport **0** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -892,6 +908,10 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**9. `forceSave` (15x)** — `intif_save()`. `MapIntif.saveChar` kini punya
+ragam yang menerima `User` dan menyegarkan posisi & samaran dari objek
+hidupnya lebih dulu; jalur keluar-dunia ikut memakainya.
 
 **8. Tampilan & timer** — `changeView` (22x), `guitext` (12x), `setTimer`
 (11x), `selfAnimation`/`selfAnimationXY` (19x), `paperpopup` (7x),
@@ -1296,7 +1316,7 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 40 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 39 method masih ada di `sl.c` tapi belum diport, plus 6
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
@@ -1335,7 +1355,7 @@ seperti gerbang regresi lain.
 `getClanBankItems`/`getSubpathBankItems`/`getBankItems` — 5 titik, dan
 logika bank utamanya sudah ada. Murah.
 
-**4. Sisa administratif.** `forceSave` (15x, `intif_save`), `setAccountBan`,
+**4. Sisa administratif.** `setAccountBan`,
 `setHeroShow`, `setCaptchaKey`/`getCaptchaKey`, `addActivationKey`/
 `checkActivationKey`, `mapSelection`, `checkLevel`, `getPK`,
 `setIndDmg`/`setGrpDmg`.

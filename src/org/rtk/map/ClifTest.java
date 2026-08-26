@@ -216,6 +216,62 @@ public final class ClifTest {
         inventoryTest(map, sd);
         spellBookTest(map, sd);
         displayTest(map, sd);
+        saveTest(map, sd);
+    }
+
+    /**
+     * {@code forceSave} — penyegaran posisi & samaran sebelum blob dikirim.
+     *
+     * <p>Pengirimannya sendiri butuh tautan ke char server, jadi yang diuji
+     * di sini bagian yang berdiri sendiri: apa yang <b>ditulis ke
+     * CharStatus</b> tepat sebelum blobnya disusun. Itu justru bagian yang
+     * pernah salah — tanpa penyegaran, posisi tersimpan adalah posisi saat
+     * pemain masuk.</p>
+     */
+    private static void saveTest(MapData map, User sd) {
+        log.info("=== forceSave (penyegaran sebelum simpan) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        sd.graphicId = 77;
+        sd.graphicColor = 4;
+        sd.status.lastPos = new Point(9, 1, 1);   // nilai basi yang harus tertimpa
+        sd.status.disguise = 0;
+        sd.status.disguiseColor = 0;
+        sd.destMap = -1;
+
+        // Tanpa tautan char server pengirimannya gagal (-1), tetapi
+        // penyegarannya sudah terjadi — itu yang diperiksa.
+        MapIntif.saveChar(sd, false);
+        check("forceSave: posisi tersimpan disegarkan dari posisi HIDUP",
+                sd.status.lastPos.m == sd.m
+                        && sd.status.lastPos.x == sd.x
+                        && sd.status.lastPos.y == sd.y);
+        check("forceSave: samaran ikut disegarkan",
+                sd.status.disguise == 77 && sd.status.disguiseColor == 4);
+
+        // ragam quit dengan tujuan di peta yang TIDAK dimuat server ini
+        sd.destMap = 4242;                        // tidak ada di dunia uji
+        sd.destX = 55;
+        sd.destY = 66;
+        MapIntif.saveChar(sd, true);
+        check("saveChar quit: peta tujuan di server lain yang disimpan, "
+                + "bukan posisi sekarang",
+                sd.status.lastPos.m == 4242
+                        && sd.status.lastPos.x == 55
+                        && sd.status.lastPos.y == 66);
+
+        // tujuan yang ADA di server ini tidak mengambil alih
+        sd.destMap = 0;
+        sd.destX = 55;
+        sd.destY = 66;
+        MapIntif.saveChar(sd, true);
+        check("saveChar quit: tujuan di server INI tidak menimpa posisi hidup",
+                sd.status.lastPos.m == sd.m && sd.status.lastPos.x == sd.x);
+
+        sd.destMap = -1;
+        sd.graphicId = 0;
+        sd.graphicColor = 0;
     }
 
     /**

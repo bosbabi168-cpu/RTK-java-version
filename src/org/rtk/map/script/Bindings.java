@@ -836,6 +836,20 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        /**
+         * pcl_forcesave() -&gt; {@code intif_save()}: simpan karakter
+         * <b>sekarang juga</b>, tanpa menunggu pemain keluar.
+         *
+         * <p>Dipakai 15x oleh quest yang tidak boleh kehilangan kemajuannya
+         * kalau server mati. Posisi dan samaran disegarkan lebih dulu dari
+         * objek hidupnya — lihat {@code MapIntif.saveChar}.</p>
+         */
+        player.addMethod("forceSave", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u != null
+                    && org.rtk.map.MapIntif.saveChar(u, false) == 0);
+        });
+
         // ---- tampilan & timer ----
 
         /**

@@ -435,9 +435,9 @@ public final class MapServer {
             return;
         }
         Pc.despawn(world, sd);
-        // simpan + tandai offline lewat char server (0x3007)
-        sd.status.lastPos = new org.rtk.common.mmo.Point(sd.m, sd.x, sd.y);
-        MapIntif.saveChar(sd.status, true);
+        // simpan + tandai offline lewat char server (0x3007); penyegaran
+        // posisi & samaran dilakukan saveChar sendiri
+        MapIntif.saveChar(sd, true);
         log.info("[MAP] {} keluar dari dunia", sd.name());
     }
 

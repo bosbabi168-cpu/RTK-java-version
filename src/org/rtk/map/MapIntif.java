@@ -147,8 +147,41 @@ public final class MapIntif {
     }
 
     /**
-     * intif_save() / intif_savequit() — kirim karakter untuk disimpan.
-     * Tata letak: W(0)=opcode, L(2)=panjang total, blob@6.
+     * intif_save() / intif_savequit() — simpan pemain yang <b>sedang di
+     * dunia</b>: sinkronkan dulu posisi dan samarannya dari objek hidupnya,
+     * baru kirim blobnya.
+     *
+     * <p>Ini yang dipakai {@code forceSave} dan jalur keluar-dunia. Tanpa
+     * penyegaran itu, posisi yang tersimpan adalah posisi saat pemain
+     * <b>masuk</b> — seluruh perjalanannya hilang.</p>
+     *
+     * <p>⚠️ Pada ragam {@code quit} ada satu cabang yang mudah terlewat:
+     * bila peta tujuan pemain <b>tidak dimuat di server ini</b>, yang
+     * disimpan adalah <b>peta tujuan</b>, bukan posisinya sekarang. Itu
+     * jalur perpindahan antar-map-server (Trek C3): pemain sudah "berangkat"
+     * secara logika meski raganya masih berdiri di peta lama.</p>
+     */
+    public static int saveChar(User sd, boolean quit) {
+        if (sd == null) {
+            return -1;
+        }
+        boolean tujuanDiServerLain = quit && sd.destMap >= 0
+                && MapServer.world.get(sd.destMap) == null;
+        if (tujuanDiServerLain) {
+            sd.status.lastPos = new org.rtk.common.mmo.Point(
+                    sd.destMap, sd.destX, sd.destY);
+        } else {
+            sd.status.lastPos = new org.rtk.common.mmo.Point(sd.m, sd.x, sd.y);
+        }
+        sd.status.disguise = (int) sd.graphicId;
+        sd.status.disguiseColor = (int) sd.graphicColor;
+        return saveChar(sd.status, quit);
+    }
+
+    /**
+     * Bagian kirimnya saja — dipakai bila pemanggilnya sudah menyegarkan
+     * posisi sendiri, atau menyimpan karakter yang tidak sedang di dunia.
+     * <p>Tata letak: W(0)=opcode, L(2)=panjang total, blob@6.</p>
      *
      * @param quit true memakai 0x3007 (simpan + logout), false 0x3004
      */
