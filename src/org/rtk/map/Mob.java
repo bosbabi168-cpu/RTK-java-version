@@ -92,6 +92,21 @@ public final class Mob extends BlockList
      */
     public final java.util.Map<Long, Long> threat = new java.util.LinkedHashMap<>();
 
+    /**
+     * Kerusakan yang dicatat per <b>pemain</b> ({@code mob->dmgindtable}) dan
+     * per <b>grup</b> ({@code mob->dmggrptable}).
+     *
+     * <p>⚠️ Ini <b>bukan</b> tabel ancaman. Ancaman menentukan siapa yang
+     * dikejar mob; dua tabel ini hanya catatan siapa menyumbang berapa,
+     * dipakai skrip untuk membagi jatuhan dan pengalaman. Angkanya
+     * <b>ditambahkan</b>, bukan ditimpa — sama seperti ancaman.</p>
+     */
+    public final java.util.Map<Long, Double> indDamage = new java.util.LinkedHashMap<>();
+    public final java.util.Map<Integer, Double> groupDamage = new java.util.LinkedHashMap<>();
+
+    /** MAX_THREATCOUNT: batas kedua tabel kerusakan di C. */
+    public static final int MAX_DAMAGE_ENTRIES = 50;
+
     /** Tambah ancaman dari satu pemain, dan jadikan ia penyerang terakhir. */
     public void addThreat(long playerId, long amount) {
         if (playerId == 0 || amount <= 0) {

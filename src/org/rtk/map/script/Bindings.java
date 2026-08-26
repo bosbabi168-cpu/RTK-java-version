@@ -1057,6 +1057,190 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        // ---- sisa administratif ----
+
+        /**
+         * pcl_setpk(id) / pcl_getpk(id): tandai pemain lain sebagai lawan PK.
+         *
+         * <p>⚠️ Batasnya <b>20</b> dan tanda itu <b>tidak pernah
+         * kedaluwarsa sendiri</b> — waktunya dicatat tapi server tidak
+         * pernah membacanya. Penuh berarti penandaan baru diabaikan
+         * diam-diam, seperti di C.</p>
+         *
+         * <p>Menandai lawan BARU menggambar ulang area pandang pemain, agar
+         * warna namanya langsung berubah; menyegarkan tanda yang sudah ada
+         * tidak.</p>
+         */
+        player.addMethod("setPK", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.NONE;
+            }
+            long id = (long) args.optdouble(2, 0);
+            long sekarang = System.currentTimeMillis() / 1000;
+            if (u.pvp.containsKey(id)) {
+                u.pvp.put(id, sekarang);
+            } else if (u.pvp.size() < org.rtk.map.User.MAX_PVP) {
+                u.pvp.put(id, sekarang);
+                org.rtk.map.MapServer.clientView.playerViewRefreshed(u);
+            }
+            return LuaValue.NONE;
+        });
+        player.addMethod("getPK", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u != null
+                    && u.pvp.containsKey((long) args.optdouble(2, 0)));
+        });
+
+        /**
+         * pcl_checklevel() -&gt; {@code pc_checklevel()}: periksa apakah
+         * pengalaman pemain sudah cukup untuk naik level.
+         *
+         * <p>⚠️ Kenaikan levelnya <b>seluruhnya sisi skrip</b>: C hanya
+         * memanggil kait {@code onLevel} sekali per ambang yang terlampaui,
+         * dan skripnya yang menaikkan levelnya. Karena itu perulangannya
+         * berjalan dari level sekarang sampai 99 dan bisa memanggil kait
+         * itu <b>berkali-kali</b> dalam satu panggilan.</p>
+         */
+        player.addMethod("checkLevel", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.NONE;
+            }
+            int path = u.status.charClass;
+            if (path > 5) {
+                path = org.rtk.map.MapServer.classDb.pathOf(path);
+            }
+            var ref = engine.playerRef(u.scriptPlayer());
+            for (int lv = u.status.level; lv < org.rtk.map.data.ClassDb.MAX_LEVEL; lv++) {
+                if (u.status.exp >= org.rtk.map.MapServer.classDb.level(path, lv)) {
+                    engine.doScript("onLevel", null, ref);
+                }
+            }
+            return LuaValue.NONE;
+        });
+
+        /** pcl_setHeroShow(n): tampilkan lencana pahlawan; langsung ke database. */
+        player.addMethod("setHeroShow", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.FALSE;
+            }
+            u.status.heroes = args.optint(2, 0);
+            org.rtk.map.MapServer.sql.update(
+                    "UPDATE `Character` SET `ChaHeroes` = ? WHERE `ChaName` = ?",
+                    u.status.heroes, u.status.name);
+            return LuaValue.TRUE;
+        });
+
+        /**
+         * pcl_setAccountBan(banned): larang karakter ini masuk.
+         *
+         * <p>⚠️ <b>Menendangnya keluar SEKARANG</b> bila nilainya 1 — bukan
+         * sekadar menandai. Port ini menutup sesinya lewat
+         * {@code Session.eof}, sama seperti C.</p>
+         *
+         * <p>Cabang "akun terdaftar" di C melarang <b>seluruh karakter di
+         * akun itu</b>; itu butuh tabel akun yang belum diport, jadi di sini
+         * baru karakternya sendiri yang tercakup.</p>
+         */
+        player.addMethod("setAccountBan", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.FALSE;
+            }
+            int banned = args.optint(2, 0);
+            org.rtk.map.MapServer.sql.update(
+                    "UPDATE `Character` SET `ChaBanned` = ? WHERE `ChaName` = ?",
+                    banned, u.status.name);
+            if (banned == 1) {
+                var sesi = org.rtk.map.MapServer.net.session(u.fd);
+                if (sesi != null) {
+                    sesi.eof = true;
+                }
+            }
+            return LuaValue.TRUE;
+        });
+
+        /**
+         * pcl_setCaptchaKey(kunci): simpan kunci captcha pemain.
+         *
+         * <p>Yang disimpan <b>ringkasan MD5</b>-nya, bukan kuncinya sendiri —
+         * jadi {@code getCaptchaKey} mengembalikan ringkasan itu, dan skrip
+         * membandingkannya dengan ringkasan jawaban pemain.</p>
+         */
+        player.addMethod("setCaptchaKey", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.FALSE;
+            }
+            int n = org.rtk.map.MapServer.sql.update(
+                    "UPDATE `Character` SET `ChaCaptchaKey` = ? WHERE `ChaId` = ?",
+                    md5(args.optjstring(2, "")), u.status.id);
+            return LuaValue.valueOf(n >= 0);
+        });
+
+        /** pcl_getCaptchaKey(): ringkasan MD5 kunci captcha pemain. */
+        player.addMethod("getCaptchaKey", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.valueOf("");
+            }
+            String k = org.rtk.map.MapServer.sql.queryString(
+                    "SELECT `ChaCaptchaKey` FROM `Character` WHERE `ChaId` = ?",
+                    u.status.id);
+            return LuaValue.valueOf(k == null ? "" : k);
+        });
+
+        /**
+         * pcl_forceequip(barang, slot): pasang barang langsung ke slot
+         * perlengkapan, tanpa lewat inventaris dan tanpa syarat apa pun.
+         *
+         * <p>Nilainya diisi <b>bawaan jenis barang</b>, bukan disalin dari
+         * barang yang sudah ada: ketahanan penuh, tanpa ukiran, tanpa
+         * pemilik, tanpa wujud kustom.</p>
+         */
+        player.addMethod("forceEquip", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            long id = barangId(args.arg(2));
+            int slot = args.optint(3, -1);
+            if (u == null || id <= 0 || slot < 0
+                    || org.rtk.map.MapServer.itemDb.info(id).id() == 0) {
+                return LuaValue.FALSE;
+            }
+            var lama = u.status.equipAt(slot);
+            if (lama != null) {
+                u.status.equip.remove(lama);
+            }
+            var it = new org.rtk.common.mmo.Item();
+            it.id = id;
+            it.amount = 1;
+            it.pos = slot;
+            it.dura = org.rtk.map.MapServer.itemDb.info(id).durability();
+            it.protectedFlag = org.rtk.map.MapServer.itemDb.protectedOf(id);
+            u.status.equip.add(it);
+            org.rtk.map.MapServer.clientView.objectAppearanceChanged(u);
+            return LuaValue.TRUE;
+        });
+
+        /**
+         * pcl_mapselection(judul, x0[], y0[], nama[], id[], x1[], y1[]):
+         * daftar peta yang bisa dipilih pemain (peta rumah, teleporter).
+         */
+        player.addMethod("mapSelection", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.NONE;
+            }
+            org.rtk.map.MapServer.clientView.mapSelectionToPlayer(u,
+                    args.optjstring(2, ""),
+                    angkaDari(args.arg(3)), angkaDari(args.arg(4)),
+                    tableToStrings(args.arg(5)),
+                    angkaDari(args.arg(6)),
+                    angkaDari(args.arg(7)), angkaDari(args.arg(8)));
+            return LuaValue.NONE;
+        });
+
         // ---- bank pribadi, klan, dan subpath ----
 
         /**
@@ -1766,6 +1950,33 @@ final class Bindings {
         return b;
     }
 
+    /** Tabel Lua berisi angka -&gt; daftar Java, 1-basis. */
+    private static java.util.List<Integer> angkaDari(LuaValue v) {
+        java.util.List<Integer> out = new java.util.ArrayList<>();
+        if (v.istable()) {
+            LuaTable t = v.checktable();
+            for (int i = 1; i <= t.length(); i++) {
+                out.add(t.get(i).optint(0));
+            }
+        }
+        return out;
+    }
+
+    /** MD5_String(): ringkasan heksadesimal huruf kecil, seperti di C. */
+    private static String md5(String s) {
+        try {
+            var md = java.security.MessageDigest.getInstance("MD5");
+            byte[] d = md.digest(s.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+            StringBuilder sb = new StringBuilder(32);
+            for (byte b : d) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("MD5 tidak tersedia", e);
+        }
+    }
+
     /** itemdb_id(): argumen Lua yang boleh berupa nama ATAU nomor barang. */
     private static long barangId(LuaValue v) {
         return v.isnumber() ? (long) v.todouble()
@@ -1983,6 +2194,49 @@ final class Bindings {
          * petak ke arah yang dihadapinya. Dipakai 84x, hampir seluruhnya
          * oleh AI mob di {@code Accepted/Mobs/mob.lua}.
          */
+        /**
+         * mobl_setinddmg(idPemain, kerusakan) / mobl_setgrpdmg(...):
+         * catat sumbangan kerusakan per pemain dan per grup.
+         *
+         * <p>⚠️ <b>Bukan tabel ancaman.</b> Ancaman menentukan siapa yang
+         * dikejar mob; dua tabel ini hanya catatan siapa menyumbang berapa,
+         * dipakai skrip membagi jatuhan dan pengalaman. Angkanya
+         * <b>ditambahkan</b>, dan tabelnya penuh pada 50 entri — setelah itu
+         * pencatatan baru gagal, mengembalikan false.</p>
+         */
+        klass.addMethod("setIndDmg", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.FALSE;
+            }
+            org.rtk.map.User t = org.rtk.map.MapServer.userById(
+                    (long) args.optdouble(2, 0));
+            if (t == null) {
+                return LuaValue.FALSE;
+            }
+            if (!mb.indDamage.containsKey(t.status.id)
+                    && mb.indDamage.size() >= org.rtk.map.Mob.MAX_DAMAGE_ENTRIES) {
+                return LuaValue.FALSE;
+            }
+            mb.indDamage.merge(t.status.id, args.optdouble(3, 0), Double::sum);
+            return LuaValue.TRUE;
+        });
+        klass.addMethod("setGrpDmg", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.FALSE;
+            }
+            org.rtk.map.User t = org.rtk.map.MapServer.userById(
+                    (long) args.optdouble(2, 0));
+            if (t == null) {
+                return LuaValue.FALSE;
+            }
+            if (!mb.groupDamage.containsKey(t.groupId)
+                    && mb.groupDamage.size() >= org.rtk.map.Mob.MAX_DAMAGE_ENTRIES) {
+                return LuaValue.FALSE;
+            }
+            mb.groupDamage.merge(t.groupId, args.optdouble(3, 0), Double::sum);
+            return LuaValue.TRUE;
+        });
+
         klass.addMethod("moveGhost", (self, args) -> {
             if (!(self instanceof org.rtk.map.Mob mb)) {
                 return LuaValue.valueOf(0);

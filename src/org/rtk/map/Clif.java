@@ -1022,6 +1022,69 @@ public final class Clif {
     }
 
     /**
+     * clif_mapselect() — daftar peta yang bisa dipilih pemain (peta rumah,
+     * teleporter). Opcode 0x2E.
+     *
+     * <p>⚠️ <b>Ekor tiap entri aneh dan disengaja:</b> setelah koordinat,
+     * C menulis jumlah entri lagi lalu <b>deretan 0..n-1</b> — di dalam
+     * perulangan, jadi seluruh deret itu berulang untuk <b>setiap</b> peta.
+     * Isinya tidak pernah dipakai server, tetapi klien mengharapkan
+     * panjangnya. Ditiru apa adanya.</p>
+     */
+    public static void mapSelection(User sd, String title,
+                                    java.util.List<Integer> x0,
+                                    java.util.List<Integer> y0,
+                                    java.util.List<String> names,
+                                    java.util.List<Integer> ids,
+                                    java.util.List<Integer> x1,
+                                    java.util.List<Integer> y1) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] judul = (title == null ? "" : title)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int n = names.size();
+
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x2E);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, judul.length);
+        s.wfifoBytes(6, judul);
+        int len = judul.length + 1;
+        s.wfifoB(len + 5, n);
+        s.wfifoB(len + 6, 0);
+        len += 2;
+
+        for (int i = 0; i < n; i++) {
+            s.wfifoWBE(len + 5, at(x0, i));
+            s.wfifoWBE(len + 7, at(y0, i));
+            len += 4;
+            byte[] nama = names.get(i)
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoB(len + 5, nama.length);
+            s.wfifoBytes(len + 6, nama);
+            len += nama.length + 1;
+            s.wfifoLBE(len + 5, at(ids, i));
+            s.wfifoWBE(len + 9, at(x1, i));
+            s.wfifoWBE(len + 11, at(y1, i));
+            len += 8;
+            s.wfifoWBE(len + 5, n);
+            len += 2;
+            for (int y = 0; y < n; y++) {
+                s.wfifoWBE(len + 5, y);
+                len += 2;
+            }
+        }
+        s.wfifoWBE(1, len + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    private static int at(java.util.List<Integer> l, int i) {
+        return i < l.size() ? l.get(i) : 0;
+    }
+
+    /**
      * clif_sendpowerboard() — daftar pemain di peta ini beserta "power
      * rating"-nya. Opcode 0x46.
      *

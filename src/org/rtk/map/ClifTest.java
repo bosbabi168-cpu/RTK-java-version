@@ -218,6 +218,154 @@ public final class ClifTest {
         displayTest(map, sd);
         saveTest(map, sd);
         bodTest(map, sd);
+        adminTest(map, sd);
+    }
+
+    /**
+     * Sisa administratif: penandaan PK, pasang paksa perlengkapan, catatan
+     * kerusakan mob, dan paket pilihan peta.
+     *
+     * <p>Yang menyentuh database ({@code setHeroShow}, captcha) diuji di
+     * {@code dbtest}.</p>
+     */
+    private static void adminTest(MapData map, User sd) {
+        log.info("=== sisa administratif ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+
+        // --- penandaan PK: batas 20, tidak pernah kedaluwarsa ---
+        sd.pvp.clear();
+        long now = System.currentTimeMillis() / 1000;
+        sd.pvp.put(4242L, now);
+        check("getPK: yang ditandai terbaca", sd.pvp.containsKey(4242L));
+        check("getPK: yang tidak ditandai -> false", !sd.pvp.containsKey(9999L));
+
+        for (long i = 0; i < User.MAX_PVP + 5; i++) {
+            if (sd.pvp.size() < User.MAX_PVP) {
+                sd.pvp.put(1000 + i, now);
+            }
+        }
+        check("setPK: berhenti di batas 20, tidak tumbuh terus",
+                sd.pvp.size() == User.MAX_PVP);
+        sd.pvp.clear();
+
+        // --- forceEquip: nilai dari BAWAAN jenis, bukan salinan ---
+        var db = MapServer.itemDb;
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        var kosong = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+        db.register(new org.rtk.map.data.ItemDb.Info(7301, "zirah_uji", "Zirah Uji",
+                "", "", 4, 0, 0L, 1, 1, 1, 0, 0, 250, 2, 0, kosong, tanpaStat));
+
+        sd.status.equip.clear();
+        var lama = new org.rtk.common.mmo.Item();
+        lama.id = 7301;
+        lama.amount = 1;
+        lama.dura = 5;              // hampir rusak
+        lama.realName = "Bekas";
+        lama.pos = 4;
+        sd.status.equip.add(lama);
+
+        // panggil lewat prototipe skrip, seperti skrip Lua
+        panggilBinding(sd, "forceEquip", org.luaj.vm2.LuaValue.valueOf(7301), org.luaj.vm2.LuaValue.valueOf(4));
+        var baru = sd.status.equipAt(4);
+        check("forceEquip: slotnya terisi", baru != null);
+        check("forceEquip: ketahanan dari BAWAAN jenis, bukan salinan lama",
+                baru != null && baru.dura == 250);
+        check("forceEquip: ukiran lama TIDAK terbawa",
+                baru != null && (baru.realName == null || baru.realName.isEmpty()));
+        check("forceEquip: perlindungan dari bawaan jenisnya",
+                baru != null && baru.protectedFlag == 2);
+        check("forceEquip: slotnya tetap satu barang, bukan dua",
+                sd.status.equip.size() == 1);
+        sd.status.equip.clear();
+
+        // --- catatan kerusakan mob: DITAMBAHKAN, dan bukan tabel ancaman ---
+        MobData jenis = new MobData();
+        jenis.id = 950;
+        jenis.yname = "sasaran";
+        jenis.name = "Sasaran";
+        jenis.vita = 100;
+        Mob mb = new Mob();
+        mb.data = jenis;
+        mb.id = Mob.MOB_START_NUM + 91;
+        mb.m = 0;
+        mb.x = c[0];
+        mb.y = c[1];
+        MobRegistry.resetStats(mb);
+
+        MapServer.onlineChars.put(sd.fd, sd);
+        panggilMob(mb, "setIndDmg", org.luaj.vm2.LuaValue.valueOf((double) sd.status.id),
+                org.luaj.vm2.LuaValue.valueOf(30));
+        panggilMob(mb, "setIndDmg", org.luaj.vm2.LuaValue.valueOf((double) sd.status.id),
+                org.luaj.vm2.LuaValue.valueOf(20));
+        check("setIndDmg: kerusakan DITAMBAHKAN, bukan ditimpa",
+                mb.indDamage.getOrDefault(sd.status.id, 0.0) == 50.0);
+        check("setIndDmg: tabel ancaman TIDAK ikut terisi", mb.threat.isEmpty());
+
+        sd.groupId = 7;
+        panggilMob(mb, "setGrpDmg", org.luaj.vm2.LuaValue.valueOf((double) sd.status.id),
+                org.luaj.vm2.LuaValue.valueOf(15));
+        check("setGrpDmg: dicatat menurut id GRUP, bukan id pemain",
+                mb.groupDamage.getOrDefault(7, 0.0) == 15.0
+                        && !mb.groupDamage.containsKey((int) sd.status.id));
+        sd.groupId = 0;
+        MapServer.onlineChars.remove(sd.fd);
+
+        // --- paket pilihan peta ---
+        drain(s);
+        Clif.mapSelection(sd, "Pilih", java.util.List.of(3), java.util.List.of(4),
+                java.util.List.of("Rumah"), java.util.List.of(11),
+                java.util.List.of(5), java.util.List.of(6));
+        byte[] p = decrypt(drain(s), sd);
+        check("mapSelection: opcode 0x2E", (p[3] & 0xFF) == 0x2E);
+        int jl = p[5] & 0xFF;
+        check("mapSelection: judul di [6..]", new String(p, 6, jl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Pilih"));
+        int off = jl + 1;
+        check("mapSelection: jumlah peta", (p[off + 5] & 0xFF) == 1);
+        off += 2;
+        check("mapSelection: koordinat asal", be16(p, off + 5) == 3
+                && be16(p, off + 7) == 4);
+        off += 4;
+        int nl = p[off + 5] & 0xFF;
+        check("mapSelection: nama peta", new String(p, off + 6, nl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Rumah"));
+        off += nl + 1;
+        check("mapSelection: id peta dan koordinat tujuan",
+                be32(p, off + 5) == 11 && be16(p, off + 9) == 5
+                        && be16(p, off + 11) == 6);
+
+        drain(s);
+    }
+
+    /** Engine terpisah untuk uji administratif; lihat catatan di bodTest. */
+    private static org.rtk.map.script.ScriptEngine admEngine;
+    private static org.luaj.vm2.LuaValue admRef;
+
+    private static void panggilBinding(User sd, String nama, org.luaj.vm2.LuaValue... args) {
+        if (admEngine == null) {
+            admEngine = new org.rtk.map.script.ScriptEngine();
+            var p = new org.rtk.map.script.ScriptPlayer((int) sd.id, sd.status.name);
+            p.owner = sd;
+            admRef = admEngine.playerRef(p);
+        }
+        org.luaj.vm2.LuaValue[] all = new org.luaj.vm2.LuaValue[args.length + 1];
+        all[0] = admRef;
+        System.arraycopy(args, 0, all, 1, args.length);
+        admEngine.playerClass.proto.get(nama).invoke(org.luaj.vm2.LuaValue.varargsOf(all));
+    }
+
+    private static void panggilMob(Mob mb, String nama, org.luaj.vm2.LuaValue... args) {
+        if (admEngine == null) {
+            admEngine = new org.rtk.map.script.ScriptEngine();
+        }
+        org.luaj.vm2.LuaValue[] all = new org.luaj.vm2.LuaValue[args.length + 1];
+        all[0] = admEngine.objectRef(mb);
+        System.arraycopy(args, 0, all, 1, args.length);
+        admEngine.mobClass.proto.get(nama).invoke(org.luaj.vm2.LuaValue.varargsOf(all));
     }
 
     /**

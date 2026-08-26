@@ -119,6 +119,12 @@ public interface ClientView {
     void boardListToPlayer(User sd, int board, int flags1, int flags2,
                            java.util.List<Clif.BoardEntry> isi);
 
+    /** Daftar peta yang bisa dipilih pemain (peta rumah, teleporter). */
+    void mapSelectionToPlayer(User sd, String title,
+                              java.util.List<Integer> x0, java.util.List<Integer> y0,
+                              java.util.List<String> names, java.util.List<Integer> ids,
+                              java.util.List<Integer> x1, java.util.List<Integer> y1);
+
     /** Daftar pemain di peta ini beserta "power rating"-nya. */
     void powerBoardToPlayer(User sd);
 

@@ -96,6 +96,14 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void mapSelectionToPlayer(User sd, String title,
+                                     java.util.List<Integer> x0, java.util.List<Integer> y0,
+                                     java.util.List<String> names, java.util.List<Integer> ids,
+                                     java.util.List<Integer> x1, java.util.List<Integer> y1) {
+        Clif.mapSelection(sd, title, x0, y0, names, ids, x1, y1);
+    }
+
+    @Override
     public void powerBoardToPlayer(User sd) {
         Clif.sendPowerBoard(sd);
     }

@@ -870,6 +870,26 @@ byte-identik dengan `rtklua/`.
      kalau tidak, nomor slot di memori berbeda dari yang dilihat C dan
      penyimpanan berikutnya menggeser seluruh isinya.
 
+50. **Audit sempat menghitung pendaftaran yang DIKOMENTARI di `sl.c`.**
+   `LuaAudit.bacaNamaC()` menyapu sumber C dengan regex, dan regex tidak
+   tahu soal komentar — sehingga baris seperti
+   {@code //typel_extendproto(&pcl_type, "addActivationKey", ...)} ikut
+   terhitung "ada di sl.c". Akibatnya binding yang **tidak ada di server
+   aslinya pun** dilaporkan sebagai celah port yang menunggu dikerjakan.
+   Sekarang komentar dibuang lebih dulu; dua nama pindah ke kategori
+   "tidak ada di mana pun", tempatnya yang benar.
+
+   Ini pola yang sama dengan Peringatan #30 dan prototipe `FloorItem` yang
+   terlewat: **angka audit hanya sejujur cara ia mengumpulkan namanya.**
+   Sebelum memakainya sebagai ukuran, periksa dulu apa yang ia hitung.
+
+51. **`setIndDmg`/`setGrpDmg` BUKAN tabel ancaman.** Ancaman
+   ({@code addThreat}) menentukan siapa yang dikejar mob; dua tabel ini
+   hanya catatan siapa menyumbang kerusakan berapa, dipakai skrip untuk
+   membagi jatuhan dan pengalaman. Angkanya ditambahkan, batasnya 50 entri,
+   dan {@code setGrpDmg} mencatat menurut **id grup** pemain, bukan id
+   pemainnya.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -987,8 +1007,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **535**, `dbtest` **187** assertion) |
-| Binding skrip | **22** belum diport (16 di `sl.c` + 6 salah ketik); global belum diport **0** |
+| Gerbang regresi | 6/6 hijau (`cliftest` **552**, `dbtest` **187** assertion) |
+| Binding skrip | **12** belum diport (**4** di `sl.c` + 8 salah ketik / kode mati); global belum diport **0** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -1020,6 +1040,10 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**14. Sisa administratif** — `setPK`/`getPK`, `checkLevel`, `setHeroShow`,
+`setAccountBan`, `getCaptchaKey`/`setCaptchaKey`, `forceEquip`,
+`mapSelection` (0x2E), `setIndDmg`/`setGrpDmg`.
 
 **13. Bank klan & subpath** — `getBankItems`, `getClanBankItems`,
 `getSubpathBankItems`, `clanBankDeposit`, `clanBankWithdraw`, plus
@@ -1448,7 +1472,7 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 16 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 4 method masih ada di `sl.c` tapi belum diport, plus 8
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
@@ -1480,13 +1504,26 @@ jadi tidak muncul di daftar celah.
 ~~**3. Bank klan & subpath.**~~ **SELESAI 27 Agustus 2026.** Ternyata
 bukan dua bank melainkan satu — lihat Peringatan #49.
 
-**4. Sisa administratif.** `setAccountBan`,
-`setHeroShow`, `setCaptchaKey`/`getCaptchaKey`, `addActivationKey`/
-`checkActivationKey`, `mapSelection`, `checkLevel`, `getPK`,
-`setIndDmg`/`setGrpDmg`.
+~~**4. Sisa administratif.**~~ **SELESAI 27 Agustus 2026.**
 
-**5. Enam nama yang TIDAK ADA di mana pun** (`addGMSpells`, `bowShoot`,
-`buyCustom`, `hairFaceMenu`, `returnInn`, `totemName`) — salah ketik atau
+**4. Empat method terakhir di `sl.c`** — dan ketiganya tertunda karena
+alasan yang berbeda-beda, bukan karena besar:
+- **`testPacket`** (4x) — alat debug GM yang menulis byte sembarang ke
+  kabel dari tabel Lua. Nilainya nol bila protokol memang akan diganti,
+  dan risikonya nyata. **Sengaja tidak diport.**
+- **`getExchangeItem`** (2x) — butuh subsistem <b>pertukaran barang antar
+  pemain</b> (`sd->exchange`) yang belum ada sama sekali. Satu-satunya sisa
+  yang benar-benar butuh blok tersendiri.
+- **`throwItem`** (1x) dan **`takeOff`** (1x) — keduanya sisi <b>skrip</b>
+  dari aksi yang dimulai <b>klien</b>: keduanya membaca keadaan
+  ({@code sd->invslot}, {@code sd->throwx/throwy}, {@code sd->takeoffid})
+  yang diisi penangan paket masuk yang belum diport. Memanggilnya sekarang
+  akan bekerja pada slot 0 setiap kali. Port bersama penangan paketnya.
+
+**5. DELAPAN nama yang TIDAK ADA di mana pun** — `addGMSpells`,
+`bowShoot`, `buyCustom`, `hairFaceMenu`, `returnInn`, `totemName`, plus
+`addActivationKey` dan `checkActivationKey` yang pendaftarannya
+**dikomentari** di `sl.c` (lihat Peringatan #50). Semuanya salah ketik atau
 kode mati di konten. Diputuskan satu per satu, catat di
 `luascript/PERUBAHAN.md`; jangan diport.
 

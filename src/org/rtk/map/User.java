@@ -93,6 +93,22 @@ public final class User extends BlockList
 
     /** Jumlah anggota grup; >0 memicu pembaruan darah grup setelah status. */
     public int groupCount;
+
+    /** Id grup pemain ({@code sd->groupid}); 0 berarti tidak bergrup. */
+    public int groupId;
+
+    /**
+     * Daftar lawan PK: id pemain -&gt; detik epoch saat ditandai
+     * ({@code sd->pvp[20][2]} di C).
+     *
+     * <p>Batasnya <b>20</b> dan tidak pernah kedaluwarsa sendiri — waktunya
+     * dicatat tapi tidak pernah dibaca server. Penuh berarti penandaan baru
+     * diabaikan diam-diam.</p>
+     */
+    public final java.util.LinkedHashMap<Long, Long> pvp = new java.util.LinkedHashMap<>();
+
+    /** MAX PK: {@code for (x = 0; x < 20; x++)} di C. */
+    public static final int MAX_PVP = 20;
     public int speed;
     public int direction;
 
