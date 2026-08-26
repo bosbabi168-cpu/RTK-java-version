@@ -578,7 +578,7 @@ leaving them stuck.
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ connects and authenticates to the char server, loads map geometry, accepts routed players, requests and receives character data |
 | map world (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometry + metadata + 8×8 spatial index, x±9/y±8 view area |
 | **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c`, ~22k lines) | `map/User.java`, `map/Pc.java`, `map/Clif.java`, `map/Npc*.java`, `map/Mob*.java` | ✅ **Track A complete** — world entry plus rendering of everything nearby (0x33), movement and warps, NPC dialog/menu/input (0x30/0x2F/0x39/0x3A), shops (buy and sell), NPCs and their timers, mobs: 716 types and 1,175 spawns, AI on a 50 ms tick, combat, death and drops. ⚠️ never yet tested against a real RetroTK client |
-| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **working via LuaJ** — all 906 original scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines with blocking dialogs, registries and inventory wired through to `CharStatus`. ⚠️ of the ~258 methods scripts call, **100 exist in `sl.c` but are not ported yet**; the most-used ones are now covered (`calcStat`, `addNPC`, `addSpell`, `callBase`, banking, `sendStatus`, `npc:move()`, `sendSide`). For current numbers: `./run.sh luaaudit` |
+| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **working via LuaJ** — all 906 original scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines with blocking dialogs, registries and inventory wired through to `CharStatus`. ⚠️ of the ~258 methods scripts call, **67 exist in `sl.c` but are not ported yet**; the most-used ones are now covered (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus the whole floor-item family). For current numbers: `./run.sh luaaudit` |
 | save server (`saveif.c` — already disabled in C) | — | ❌ not ported (its connection timer is commented out in C) |
 
 ## Design notes
@@ -838,11 +838,16 @@ duration tick and `moveGhost`. Both only fire for players who are actually
 online (the mob AI tick skips maps where `map.users == 0`), so a real
 client is needed to exercise them.
 
-**3. BL_ITEM (floor items) does not exist yet** — a prerequisite for
-`dropItem`, for a real `...WithTraps` filter, and for mob drops that are
-visible on the ground.
+~~**3. BL_ITEM (floor items) does not exist yet**~~ — **done 26 August 2026**
+(`map/FloorItem`, `map/FloorItemRegistry`). The `...WithTraps` filter now
+genuinely differs from the plain variant, and mob drops are visible on the
+ground.
 
-**4. The rest of Track C** — C2 (meta files), C3 (cross-map-server warps),
+**4. Inventory & equipment** — ~65 call sites (`updateInv` 24x,
+`stripEquip`, the `deductDura*` family); needs an inventory packet that
+does not exist yet. This is the next biggest blocker.
+
+**5. The rest of Track C** — C2 (meta files), C3 (cross-map-server warps),
 C4 (boards and mail, the least blocked).
 
 **Bugs found and closed in this round:** the stub list overwriting freshly
@@ -921,9 +926,10 @@ a requirement after touching any binding or script hook.
 - **Boards and mail** (char server) — the least blocked item in this track:
   protocol and tables already exist, and it can be tested offline.
 
-**Script-binding priority.** Of the ~258 methods scripts call, **100 exist
-in `sl.c` but are not ported yet** (down from 110), and only **1 global**
-(`lock`) is still missing — down from 6.
+**Script-binding priority.** Of the ~258 methods scripts call, **67 exist
+in `sl.c` but are not ported yet** as of 26 August 2026 (110 → 100 → 67),
+and only **1 global** (`lock`) is still missing — down from 6. For current
+numbers, always run `./run.sh luaaudit`.
 
 Done on 21 August 2026, most-used first: `calcStat` (**249×**), `addNPC`
 (54×), `addSpell` (28×), `callBase` (12×), `hasSpell`, `bankDeposit` /

@@ -43,10 +43,13 @@ Nama method menyebut **apa yang terjadi**, bukan paket apa yang dikirim.
 Daftar method di antarmuka itu pada akhirnya **adalah** spesifikasi protokol
 baru — diturunkan dari kebutuhan nyata skrip, bukan dikarang dari nol.
 
-Cakupan saat ini: seluruh panggilan keluar sudah lewat lapisan ini
-(**16 peristiwa** per 26 Agustus 2026 sore — bertambah `objectSpoke`,
-`objectActed`, `objectAppearanceChanged`, `objectRemoved`,
-`playerIdentityChanged`, `playerDurationChanged`, `playerAetherChanged`). Yang **belum**: arah **masuk** (`Clif.parseWalk`,
+Cakupan saat ini: seluruh panggilan keluar sudah lewat lapisan ini —
+**25 peristiwa** per 26 Agustus 2026 sore, naik dari 9 saat lapisan ini
+dibuat pagi harinya. Yang bertambah: `playerIdentityChanged`,
+`playerDurationChanged`, `playerAetherChanged`, `objectSpoke`,
+`objectActed`, `objectAppearanceChanged`, `objectRemoved`, `objectThrown`,
+`mobMoved`, `mobSpawned`, `floorItemAppeared`. Hitung ulang dengan
+`grep -c "^    void " src/org/rtk/map/ClientView.java`. Yang **belum**: arah **masuk** (`Clif.parseWalk`,
 `parseClick`, `parseMenuInput`, `parseNpcDialog`, `decrypt` di
 `MapServer.clientParse`) — itu loop dispatcher paket, urusan terpisah yang
 juga perlu dipindah saat protokol baru dirancang.
@@ -124,7 +127,9 @@ proses build di server.
   `./run.sh maptest` (3.544 berkas peta),
   `./run.sh chartest` (serialisasi karakter, 29 assertion),
   `./run.sh worldtest` (dunia peta + penempatan pemain, 53 assertion),
-  `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, toko, mob, AI & pertarungan — 294 assertion),
+  `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar
+  ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
+  durasi mantra, gerak mob, barang lantai — **434 assertion**),
   `./run.sh dbtest` (lapisan database ke MySQL hidup — 132 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
@@ -948,16 +953,17 @@ stub hanya menulis WARN sekali lalu mengembalikan nil. Yang terbesar:
 | `playSound` | 632x | ✅ diport 26 Agu |
 | `updateState` | 434x | ✅ diport 26 Agu (0x1D / 0x33 / 0x07) |
 | `setDuration` | 423x | ✅ diport 26 Agu (`map/Durations`) |
-| `spawn` | 381x | **masih stub** — butuh `mobspawn_onetime` |
+| `spawn` | 381x | ✅ diport 26 Agu (`mobspawn_onetime`) |
 | `setAether` | 225x | ✅ diport 26 Agu |
 | `msg` | 133x | ✅ diport 26 Agu (`bll_talkcolor`) |
 | `delete` | 109x | ✅ diport 26 Agu |
 | `refresh` | 90x | ✅ diport 26 Agu |
-| `moveGhost` | 84x | **belum diport** — kini yang terbanyak; butuh paket daftar benda 0x07 berkelompok |
-| `dropItem` / `dropItemXY` | 55x | butuh subsistem barang di lantai (BL_ITEM) yang **belum diport sama sekali** |
+| `moveGhost` | 84x | ✅ diport 26 Agu (`moveghost_mob` + 0x07 berkelompok) |
+| `dropItem` / `dropItemXY` | 55x | ✅ diport 26 Agu (BL_ITEM) |
 
-Penyaring `clif_isignore` (lihat `clif_send_sub`) pada jalur obrolan
-**belum** ikut diport — daftar abaikan pemain belum ada.
+**Seluruh tabel ini sudah tertutup.** Yang tersisa dari daftar aslinya
+hanya penyaring `clif_isignore` (lihat `clif_send_sub`) pada jalur obrolan —
+daftar abaikan pemain belum ada.
 
 **3. BL_ITEM (barang di lantai) belum ada.** Ini prasyarat `dropItem`,
 `getObjectsInCellWithTraps` yang sungguhan (sekarang identik dengan varian
@@ -1283,19 +1289,24 @@ Ingat: `.map` **big-endian** → `DataView.getUint16(off, false)`.
 
 **Jangan percaya angka yang ditulis di sini kalau `Bindings.java` sudah
 berubah — jalankan `./run.sh luaaudit`**, yang menghitungnya ulang dari
-mesin skrip yang hidup dan dari sumber `sl.c`. Angka di bawah keadaan
-21 Agustus 2026, setelah Trek A selesai:
+mesin skrip yang hidup dan dari sumber `sl.c`.
 
-| | 21 Agu | 24 Agu |
-|---|---|---|
-| tersedia saat runtime (prototipe Player/NPC/Mob) | 151 | **173** |
-| **ada di `sl.c` tapi belum diport** | 110 | **100** |
-| dipanggil tapi tidak ada di mana pun (salah ketik / kode mati) | 6 | 6 |
-| **global belum diport** | 6 | **1** (`lock`) |
+| | 21 Agu | 24 Agu | 26 Agu (sore) |
+|---|---|---|---|
+| tersedia saat runtime (prototipe Player/NPC/Mob/FloorItem) | 151 | 173 | **214** |
+| **ada di `sl.c` tapi belum diport** | 110 | 100 | **67** |
+| dipanggil tapi tidak ada di mana pun (salah ketik / kode mati) | 6 | 6 | 6 |
+| **global belum diport** | 6 | 1 | **1** (`lock`) |
 
 Sebagai pembanding, sebelum Trek A angkanya 12 binding riil dan 144 method
 belum ada; sebagian besar tertutup saat A4–A5 karena ternyata banyak
 "pekerjaan server" sebenarnya logika Lua yang hanya butuh jalur yang benar.
+
+⚠️ **Kolom 26 Agu turun jauh lebih sedikit daripada pekerjaannya** — lihat
+Peringatan #30. Sepuluh binding terbesar yang ditutup hari itu
+(`sendAction` 905x, `talk` 698x, `setDuration` 423x, `spawn` 381x, …)
+semuanya berangkat dari keadaan **stub**, dan stub tidak pernah terhitung
+di kolom ini sejak awal.
 
 **Sudah diport 21 Agustus 2026** (turun 117 → 110): `calcStat` (249×),
 `addNPC` (54×), `addSpell`, `hasSpell`, `bankDeposit`, `bankWithdraw`,
@@ -1351,8 +1362,10 @@ Catatan yang mudah salah pada kelompok ini:
   Sempat salah dibaca sebagai penyaring mob.
 - **`...WithTraps` bedanya cuma barang di lantai.** `map_foreachincell`
   melewati floor item bertipe `ITM_TRAPS`, versi `...withtraps`
-  menyertakannya. Subsistem BL_ITEM belum diport, jadi untuk sekarang
-  keduanya identik — tambahkan penyaringnya begitu BL_ITEM masuk.
+  menyertakannya. **Sejak BL_ITEM diport (26 Agustus 2026 sore) penyaring
+  itu aktif**, jadi keduanya benar-benar berbeda. Aturan lengkapnya —
+  termasuk kenapa `trapsTable` TIDAK ikut dilihat di sini — ada di
+  Peringatan #33.
 - **`objectRef()` dulu membungkus SEMUA benda sebagai NPC.** Untuk mob itu
   tidak terasa (prototipe NPC dan Mob berisi method yang sama), tetapi
   pemain yang ditemukan `getObjectsInCell(..., BL_PC)` jadi tidak punya

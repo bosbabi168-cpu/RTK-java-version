@@ -574,7 +574,7 @@ membiarkannya tersangkut.
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ konek+auth ke char server, memuat geometri peta, terima routing pemain, minta & terima data karakter (0x3003/0x3803) |
 | dunia peta (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometri + metadata + indeks spasial blok 8×8, area pandang x±9/y±8 |
 | **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c` ±22rb baris) | `map/User.java`, `map/Pc.java`, `map/Clif.java`, `map/Npc*.java`, `map/Mob*.java` | ✅ **Trek A selesai** — masuk dunia + panggambaran sekitar (0x33), gerakan & portal, dialog/menu/input NPC (0x30/0x2F/0x39/0x3A), toko beli-jual, NPC & timernya, mob: 716 jenis + 1.175 spawn, AI (tik 50 ms), pertarungan, kematian & jatuhan barang. ⚠️ belum pernah diuji dengan klien RetroTK asli |
-| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **jalan via LuaJ** — 906 skrip asli termuat tanpa error; object model typel, dispatch `root.method`, coroutine `_async` + dialog blocking, registry & inventaris tersambung ke `CharStatus`. ⚠️ dari ±258 method yang dipanggil skrip, **100 masih ada di `sl.c` tapi belum diport**; yang paling sering dipakai sudah ditutup (`calcStat`, `addNPC`, `addSpell`, `callBase`, bank, `sendStatus`, `npc:move()`, `sendSide`). Angka terkini: `./run.sh luaaudit` |
+| **scripting engine** (`sl.c`, 11rb baris) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **jalan via LuaJ** — 906 skrip asli termuat tanpa error; object model typel, dispatch `root.method`, coroutine `_async` + dialog blocking, registry & inventaris tersambung ke `CharStatus`. ⚠️ dari ±258 method yang dipanggil skrip, **67 masih ada di `sl.c` tapi belum diport**; yang paling sering dipakai sudah ditutup (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus seluruh keluarga barang lantai). Angka terkini: `./run.sh luaaudit` |
 | save server (`saveif.c` — di C pun sudah dinonaktifkan) | — | ❌ tidak diport (timer koneksinya di-comment di C) |
 
 ## Catatan desain
@@ -832,11 +832,16 @@ tik durasi dan `moveGhost`. Keduanya hanya menyala untuk pemain yang
 benar-benar online (tik AI mob melewati peta ber-`map.users == 0`), jadi
 butuh klien sungguhan untuk mengujinya.
 
-**3. BL_ITEM (barang di lantai) belum ada sama sekali** — prasyarat
-`dropItem`, penyaring `...WithTraps` yang sungguhan, dan jatuhan mob yang
-terlihat di tanah.
+~~**3. BL_ITEM (barang di lantai) belum ada sama sekali**~~ — **selesai
+26 Agustus 2026 sore** (`map/FloorItem`, `map/FloorItemRegistry`).
+Penyaring `...WithTraps` kini benar-benar berbeda dari varian biasa, dan
+jatuhan mob terlihat di tanah.
 
-**4. Sisa Trek C** — C2 (berkas meta), C3 (warp antar map server),
+**4. Inventaris & perlengkapan** — ~65 titik panggilan (`updateInv` 24x,
+`stripEquip`, keluarga `deductDura*`), butuh paket kirim-inventaris yang
+belum ada. Ini penghambat terbesar berikutnya.
+
+**5. Sisa Trek C** — C2 (berkas meta), C3 (warp antar map server),
 C4 (papan pesan & surat, paling bebas hambatan).
 
 **Bug yang ditemukan dan sudah ditutup pada putaran ini:** daftar stub
@@ -923,8 +928,9 @@ dijadikan syarat setelah menyentuh binding atau kait skrip.
   ini: protokol dan tabelnya sudah ada, bisa diuji offline.
 
 **Acuan prioritas binding skrip.** Dari ±258 method yang dipanggil skrip,
-**100 masih ada di `sl.c` tapi belum diport** (dari 110), dan tinggal
-**1 global** (`lock`) yang belum ada — turun dari 6.
+**67 masih ada di `sl.c` tapi belum diport** per 26 Agustus 2026 sore
+(110 → 100 → 67), dan tinggal **1 global** (`lock`) yang belum ada —
+turun dari 6. Angka terkini selalu dari `./run.sh luaaudit`.
 
 Sudah selesai 21 Agustus 2026 — yang paling sering dipakai lebih dulu:
 `calcStat` (**249×**), `addNPC` (54×), `addSpell` (28×), `callBase` (12×),
