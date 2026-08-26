@@ -91,6 +91,15 @@ public final class MapServer {
     /** Tabel pengalaman per path, dari db/level_db.txt. */
     public static final org.rtk.map.data.ClassDb classDb = new org.rtk.map.data.ClassDb();
 
+    /**
+     * Jembatan logika permainan -&gt; klien. Tukar isinya untuk mengganti
+     * protokol; logika permainan tidak perlu diubah sama sekali.
+     *
+     * <p>⚠️ Kode logika <b>jangan</b> memanggil {@code Clif.*} langsung —
+     * lewat sini. Lihat {@link ClientView} untuk alasannya.</p>
+     */
+    public static ClientView clientView = new RetroTkClientView();
+
     /** Lapisan jaringan + timer milik map server sendiri. */
     public static final NetServer net = new NetServer("map");
     public static final TimerSystem timers = new TimerSystem();

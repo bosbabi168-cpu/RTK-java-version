@@ -314,7 +314,7 @@ public final class User extends BlockList
                         log.error("[PC] kait on_forget mantra {} gagal untuk {}", yname, name(), e);
                     }
                 }
-                Clif.removeSpell(this, i);
+                MapServer.clientView.playerSpellRemoved(this, i);
                 status.spells[i] = 0;
                 return; // C berhenti di kecocokan pertama
             }

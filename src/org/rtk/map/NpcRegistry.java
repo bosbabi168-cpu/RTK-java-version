@@ -576,11 +576,11 @@ public final class NpcRegistry {
 
         map.moveBlock(nd, dx, dy);
 
-        if (!nothingNew && x1 > 0 && y1 > 0) {
-            Clif.npcRevealStrip(nd, map, x0, y0, x0 + (x1 - 1), y0 + (y1 - 1));
-        }
-
-        Clif.npcMove(nd, backX, backY);
+        boolean adaPetakBaru = !nothingNew && x1 > 0 && y1 > 0;
+        MapServer.clientView.npcMoved(nd, map, backX, backY,
+                adaPetakBaru ? x0 : -1, adaPetakBaru ? y0 : -1,
+                adaPetakBaru ? x0 + (x1 - 1) : -1,
+                adaPetakBaru ? y0 + (y1 - 1) : -1);
         return true;
     }
 
@@ -614,7 +614,7 @@ public final class NpcRegistry {
 
         tujuan.foreachInArea(x, y, org.rtk.map.data.BlockList.Type.PC, bl -> {
             if (bl instanceof User sd) {
-                Clif.sendNpcLook(sd, nd);
+                MapServer.clientView.npcAppearedTo(sd, nd);
             }
         });
     }

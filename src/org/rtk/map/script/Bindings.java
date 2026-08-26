@@ -443,7 +443,7 @@ final class Bindings {
         player.addMethod("sendSide", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
             if (p.owner instanceof org.rtk.map.data.BlockList bl) {
-                org.rtk.map.Clif.sendSide(bl);
+                org.rtk.map.MapServer.clientView.objectSideChanged(bl);
             }
             return LuaValue.NONE;
         });
@@ -530,14 +530,15 @@ final class Bindings {
         player.addMethod("sendAnimation", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
             if (p.owner instanceof org.rtk.map.data.BlockList bl) {
-                org.rtk.map.Clif.sendAnimation(bl, args.optint(2, 0), args.optint(3, 0));
+                org.rtk.map.MapServer.clientView.objectAnimation(bl,
+                        args.optint(2, 0), args.optint(3, 0));
             }
             return LuaValue.NONE;
         });
         player.addMethod("sendAnimationXY", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
             if (p.owner instanceof org.rtk.map.data.BlockList bl) {
-                org.rtk.map.Clif.sendAnimationXy(bl, args.optint(2, 0),
+                org.rtk.map.MapServer.clientView.objectAnimationAt(bl, args.optint(2, 0),
                         args.optint(5, 0), args.optint(3, 0), args.optint(4, 0));
             }
             return LuaValue.NONE;
@@ -555,7 +556,8 @@ final class Bindings {
         player.addMethod("sendStatus", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
             if (p.owner instanceof org.rtk.map.User u) {
-                org.rtk.map.Clif.sendStatus(u, org.rtk.map.Clif.SFLAG_ALL);
+                org.rtk.map.MapServer.clientView.playerStatusChanged(u,
+                        org.rtk.map.Clif.SFLAG_ALL);
             }
             return LuaValue.NONE;
         });
@@ -644,7 +646,7 @@ final class Bindings {
          */
         klass.addMethod("sendSide", (self, args) -> {
             if (self instanceof org.rtk.map.data.BlockList bl) {
-                org.rtk.map.Clif.sendSide(bl);
+                org.rtk.map.MapServer.clientView.objectSideChanged(bl);
             }
             return LuaValue.NONE;
         });
@@ -679,7 +681,8 @@ final class Bindings {
          */
         klass.addMethod("sendAnimation", (self, args) -> {
             if (self instanceof org.rtk.map.data.BlockList bl) {
-                org.rtk.map.Clif.sendAnimation(bl, args.optint(2, 0), args.optint(3, 0));
+                org.rtk.map.MapServer.clientView.objectAnimation(bl,
+                        args.optint(2, 0), args.optint(3, 0));
             }
             return LuaValue.NONE;
         });
@@ -687,7 +690,7 @@ final class Bindings {
         /** bll_sendanimxy(anim, x, y, kali): animasi pada sebuah petak. */
         klass.addMethod("sendAnimationXY", (self, args) -> {
             if (self instanceof org.rtk.map.data.BlockList bl) {
-                org.rtk.map.Clif.sendAnimationXy(bl, args.optint(2, 0),
+                org.rtk.map.MapServer.clientView.objectAnimationAt(bl, args.optint(2, 0),
                         args.optint(5, 0), args.optint(3, 0), args.optint(4, 0));
             }
             return LuaValue.NONE;

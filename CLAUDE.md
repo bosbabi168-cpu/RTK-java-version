@@ -24,14 +24,35 @@ Yang **akan dibuang**: format kabel. Karena itu `Clif.sendMyStatus()` sengaja
 dibiarkan **TAHAP 1** (struktur benar, isi kosong) — jangan habiskan waktu
 melengkapinya.
 
-⚠️ **PIUTANG ARSITEKTUR YANG MENDESAK.** Logika permainan saat ini memanggil
-paket **langsung** — `User.scriptRemoveSpell()` memanggil `Clif.removeSpell()`
-di tengah logikanya. Selama binding sisa diport dengan pola ini, penggantian
-protokol berarti menyentuh ulang semuanya. Sekarang baru **13 binding** yang
-terpengaruh; nanti **89**. Sisipkan lapisan pemberitahuan-ke-klien yang
-semantik (`spellRemoved(slot)`, `inventoryChanged()`) sebelum memport banyak
-binding lagi. Efek sampingnya: daftar method di antarmuka itu **adalah**
-spesifikasi protokol baru, diturunkan dari kebutuhan nyata skrip.
+### Lapisan pemisah logika ↔ protokol (SUDAH ADA sejak 26 Agustus 2026)
+
+**`ClientView`** (`src/org/rtk/map/ClientView.java`) adalah batas antara
+logika permainan dan protokol. Logika memanggil **peristiwa** —
+`playerSpellRemoved(sd, slot)`, `npcMoved(...)` — dan implementasi yang
+menerjemahkannya jadi byte. Yang ada sekarang: **`RetroTkClientView`**
+(memetakan ke `Clif.*`). Protokol baru = tulis implementasi kedua lalu tukar
+`MapServer.clientView`; **logika tidak perlu disentuh sama sekali**.
+
+⚠️ **ATURAN: kode di luar lapisan protokol JANGAN memanggil `Clif.*`
+langsung.** Tambahkan peristiwa baru di `ClientView`, implementasikan di
+adapter. Ini berlaku terutama saat memport ~89 binding yang tersisa — pola
+lama (`User.scriptRemoveSpell()` → `Clif.removeSpell()`) adalah persis yang
+membuat penggantian protokol jadi mahal.
+
+Nama method menyebut **apa yang terjadi**, bukan paket apa yang dikirim.
+Daftar method di antarmuka itu pada akhirnya **adalah** spesifikasi protokol
+baru — diturunkan dari kebutuhan nyata skrip, bukan dikarang dari nol.
+
+Cakupan saat ini: seluruh **12 titik panggilan keluar** sudah lewat lapisan
+ini (9 peristiwa). Yang **belum**: arah **masuk** (`Clif.parseWalk`,
+`parseClick`, `parseMenuInput`, `parseNpcDialog`, `decrypt` di
+`MapServer.clientParse`) — itu loop dispatcher paket, urusan terpisah yang
+juga perlu dipindah saat protokol baru dirancang.
+
+⚠️ **Kebocoran yang diketahui:** `npcMoved()` masih membawa empat parameter
+petak-yang-baru-terlihat — konsep viewport RetroTK, bukan peristiwa
+permainan. Idealnya adapter menghitungnya sendiri dari arah gerak. Sudah
+ditandai di Javadoc-nya; rapikan saat protokol baru dirancang.
 
 ## Apa project ini
 
