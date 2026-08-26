@@ -648,9 +648,20 @@ public final class NpcRegistry {
      * ber-state -1, dan GM level 50 ke atas — GM tinggi dilewati NPC begitu
      * saja.</p>
      */
-    private static boolean blockedBy(org.rtk.map.data.MapData map, int dx, int dy, Npc nd) {
+    /**
+     * Apakah petak tujuan ditempati sesuatu yang menghalangi.
+     *
+     * <p>Dipakai NPC <b>dan</b> mob: aturannya sama persis di C
+     * ({@code npc_move}'s helper dan {@code mob_move} memeriksa hal yang
+     * identik — NPC ber-subtype bukan 0 dilewati, mob mati dilewati, pemain
+     * tersembunyi / GM level 50+ / hantu di peta ber-show_ghosts dilewati).
+     * Karena itu satu helper melayani keduanya; {@code diri} cuma dipakai
+     * untuk melewati bendanya sendiri.</p>
+     */
+    static boolean blockedBy(org.rtk.map.data.MapData map, int dx, int dy,
+                             org.rtk.map.data.BlockList diri) {
         for (org.rtk.map.data.BlockList bl : map.objectsAt(dx, dy)) {
-            if (bl == nd) {
+            if (bl == diri) {
                 continue;
             }
             if (bl instanceof Npc other) {

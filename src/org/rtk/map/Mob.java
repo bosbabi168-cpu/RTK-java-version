@@ -23,6 +23,21 @@ public final class Mob extends BlockList
     /** Baris {@code Spawns<serverId>} yang melahirkan mob ini. */
     public long spawnId;
 
+    /**
+     * Pemain yang "memiliki" mob ini ({@code mob->owner} di C) — diisi
+     * {@code spawn()} dari skrip; jebakan memakainya untuk tahu siapa
+     * pemasangnya. 0 bila mob tabel biasa.
+     */
+    public long owner;
+
+    /**
+     * {@code mob->onetime}: mob yang dilahirkan skrip, bukan dari tabel
+     * {@code Spawns}. Setelah mati ia <b>tidak lahir kembali</b> — itu satu-
+     * satunya beda perilakunya, dan penjaganya ada di
+     * {@link MobRegistry#runTimers}.
+     */
+    public boolean oneTime;
+
     public long currentVita;
     public long currentMana;
     public long maxVita;

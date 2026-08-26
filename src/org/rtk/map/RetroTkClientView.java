@@ -126,4 +126,19 @@ public final class RetroTkClientView implements ClientView {
     public void npcAppearedTo(User viewer, Npc nd) {
         Clif.sendNpcLook(viewer, nd);
     }
+
+    @Override
+    public void mobMoved(Mob mb, MapData map, int fromX, int fromY,
+                         int revealX0, int revealY0, int revealX1, int revealY1) {
+        // Sama seperti NPC: petak baru digambar DULU, baru perpindahannya.
+        if (revealX1 >= 0 && revealY1 >= 0 && map != null) {
+            Clif.mobRevealStrip(mb, map, revealX0, revealY0, revealX1, revealY1);
+        }
+        Clif.mobMove(mb, fromX, fromY);
+    }
+
+    @Override
+    public void mobSpawned(Mob mb) {
+        Clif.broadcastLook(mb);
+    }
 }

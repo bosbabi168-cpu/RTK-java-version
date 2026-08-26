@@ -251,6 +251,7 @@ public final class ScriptEngine {
 
         mobClass.ctor = args -> new GameObject("Mob", args);
         Bindings.defineBlockList(this, mobClass);
+        Bindings.defineMob(this, mobClass);
         registerClass(mobClass);
 
         // registry views over the player (regl / reglstring / npcintregl / questregl)

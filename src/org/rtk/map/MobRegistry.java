@@ -37,6 +37,18 @@ public final class MobRegistry {
     /** Id blok berikutnya untuk mob; mulai dari MOB_START_NUM seperti C. */
     private long nextId = Mob.MOB_START_NUM;
 
+    /**
+     * Daftarkan satu jenis mob. Dipakai {@link #loadTypes} dan uji yang
+     * berjalan tanpa database. Nama pertama menang bila ada {@code yname}
+     * ganda, seperti pencarian berurutan di C.
+     */
+    public void registerType(MobData d) {
+        types.put(d.id, d);
+        if (d.yname != null && !d.yname.isEmpty()) {
+            typesByName.putIfAbsent(d.yname.toLowerCase(), d);
+        }
+    }
+
     public MobData type(long mobId) {
         return types.get(mobId);
     }
@@ -118,10 +130,7 @@ public final class MobRegistry {
                     d.skinColor = rs.getInt("MobSkinColor");
                     d.state = rs.getInt("MobState");
 
-                    types.put(d.id, d);
-                    if (!d.yname.isEmpty()) {
-                        typesByName.putIfAbsent(d.yname.toLowerCase(), d);
-                    }
+                    registerType(d);
                 });
 
         if (rows < 0) {
@@ -269,9 +278,12 @@ public final class MobRegistry {
                 continue;
             }
 
-            // kelahiran ulang: hanya setelah jeda spawnTime berlalu
+            // kelahiran ulang: hanya setelah jeda spawnTime berlalu, dan
+            // hanya untuk mob tabel. Mob yang dilahirkan skrip sekali pakai
+            // (`mob->onetime` di C: `state == MOB_DEAD && !mob->onetime`).
             if (mob.state == MobData.MOB_DEAD) {
-                if (d.spawnTime > 0 && mob.lastDeath + d.spawnTime <= now) {
+                if (!mob.oneTime && d.spawnTime > 0
+                        && mob.lastDeath + d.spawnTime <= now) {
                     respawn(mob, world);
                 }
                 continue;
@@ -479,6 +491,301 @@ public final class MobRegistry {
         if (map != null && mob.onMap) {
             map.delBlock(mob);
         }
+    }
+
+    /**
+     * moveghost_mob() (map/mob.c:1518) — mob melangkah satu petak ke arah
+     * yang sedang dihadapinya.
+     *
+     * <p>Ini {@code moveGhost}, method skrip belum-diport terbanyak (84x):
+     * hampir seluruh AI mob di {@code Accepted/Mobs/mob.lua} bergerak
+     * lewatnya. Strukturnya kembar dengan {@link NpcRegistry#move} — angka
+     * jalur petak yang baru terbuka pun sama persis, tidak simetris karena
+     * area pandang klien 19x17 dengan titik pandang bukan di tengah.</p>
+     *
+     * <p>Tiga penjaga yang ditiru dan mudah terlewat:</p>
+     * <ul>
+     *   <li><b>Mob tidak boleh menginjak portal</b> — dicek sebelum apa pun
+     *       yang lain, dan C langsung {@code return 0} di situ.</li>
+     *   <li><b>Penghalang tidak berlaku bila mob sedang mengejar sasaran.</b>
+     *       Di C ketiga cek tabrakan digabung {@code && mob->target == 0},
+     *       jadi mob yang punya target menembus apa pun. Itu di C, bukan
+     *       kelalaian port.</li>
+     *   <li><b>Menginjak jebakan memanggil kait {@code click} milik NPC
+     *       lantai</b> dengan (mob, npc) — {@code mob_trap_look}. Hanya satu
+     *       jebakan per langkah yang terpicu.</li>
+     * </ul>
+     *
+     * @return true bila mob benar-benar berpindah
+     */
+    public boolean moveGhost(org.rtk.map.script.ScriptEngine engine, Mob mob) {
+        if (mob == null || mob.state == MobData.MOB_DEAD) {
+            return false;
+        }
+        MapData map = MapServer.world.get(mob.m);
+        if (map == null) {
+            return false;
+        }
+
+        final int backX = mob.x;
+        final int backY = mob.y;
+        final int direction = mob.side;
+        int dx = backX;
+        int dy = backY;
+
+        int x0 = backX;
+        int y0 = backY;
+        int x1 = 0;
+        int y1 = 0;
+        boolean nothingNew = false;
+
+        switch (direction) {
+            case 0 -> { // atas
+                if (backY > 0) {
+                    dy = backY - 1;
+                    x0 -= 9;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    y0 -= 9;
+                    y1 = 1;
+                    x1 = 19;
+                    if (y0 < 7) {
+                        nothingNew = true;
+                    }
+                    if (y0 == 7) {
+                        y1 += 7;
+                        y0 = 0;
+                    }
+                    if (x0 + 19 + 9 >= map.xs) {
+                        x1 += 9 - ((x0 + 19 + 9) - map.xs);
+                    }
+                    if (x0 <= 8) {
+                        x1 += x0;
+                        x0 = 0;
+                    }
+                }
+            }
+            case 1 -> { // kanan
+                if (backX < map.xs) {
+                    x0 += 10;
+                    y0 -= 8;
+                    if (y0 < 0) {
+                        y0 = 0;
+                    }
+                    dx = backX + 1;
+                    y1 = 17;
+                    x1 = 1;
+                    if (x0 > map.xs - 9) {
+                        nothingNew = true;
+                    }
+                    if (x0 == map.xs - 9) {
+                        x1 += 9;
+                    }
+                    if (y0 + 17 + 8 >= map.ys) {
+                        y1 += 8 - ((y0 + 17 + 8) - map.ys);
+                    }
+                    if (y0 <= 7) {
+                        y1 += y0;
+                        y0 = 0;
+                    }
+                }
+            }
+            case 2 -> { // bawah
+                if (backY < map.ys) {
+                    x0 -= 9;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    y0 += 9;
+                    dy = backY + 1;
+                    y1 = 1;
+                    x1 = 19;
+                    if (y0 + 8 > map.ys) {
+                        nothingNew = true;
+                    }
+                    if (y0 + 8 == map.ys) {
+                        y1 += 8;
+                    }
+                    if (x0 + 19 + 9 >= map.xs) {
+                        x1 += 9 - ((x0 + 19 + 9) - map.xs);
+                    }
+                    if (x0 <= 8) {
+                        x1 += x0;
+                        x0 = 0;
+                    }
+                }
+            }
+            case 3 -> { // kiri
+                if (backX > 0) {
+                    x0 -= 10;
+                    y0 -= 8;
+                    if (y0 < 0) {
+                        y0 = 0;
+                    }
+                    y1 = 17;
+                    x1 = 1;
+                    dx = backX - 1;
+                    if (x0 < 8) {
+                        nothingNew = true;
+                    }
+                    if (x0 == 8) {
+                        x0 = 0;
+                        x1 += 8;
+                    }
+                    if (y0 + 17 + 8 >= map.ys) {
+                        y1 += 8 - ((y0 + 17 + 8) - map.ys);
+                    }
+                    if (y0 <= 7) {
+                        y1 += y0;
+                        y0 = 0;
+                    }
+                }
+            }
+            default -> {
+                // Arah di luar 0..3 tidak menggeser apa pun — `switch` di C
+                // juga tanpa default. Lihat Peringatan #13.
+            }
+        }
+
+        if (dx >= map.xs) {
+            dx = map.xs - 1;
+        }
+        if (dy >= map.ys) {
+            dy = map.ys - 1;
+        }
+
+        // Mob tidak boleh menginjak portal.
+        if (map.warpAt(dx, dy) != null) {
+            return false;
+        }
+
+        // Mob yang sedang mengejar sasaran menembus penghalang — di C ketiga
+        // cek tabrakan bersyarat `&& mob->target == 0`.
+        if (mob.target == 0
+                && (NpcRegistry.blockedBy(map, dx, dy, mob) || !map.walkable(dx, dy))) {
+            return false;
+        }
+
+        if (x0 > map.xs) {
+            x0 = map.xs - 1;
+        }
+        if (y0 > map.ys) {
+            y0 = map.ys - 1;
+        }
+        if (x0 < 0) {
+            x0 = 0;
+        }
+        if (y0 < 0) {
+            y0 = 0;
+        }
+        if (dx >= map.xs || dx < 0) {
+            dx = backX;
+        }
+        if (dy >= map.ys || dy < 0) {
+            dy = backY;
+        }
+
+        if (dx == backX && dy == backY) {
+            return false;
+        }
+
+        map.moveBlock(mob, dx, dy);
+
+        boolean adaPetakBaru = !nothingNew && x1 > 0 && y1 > 0;
+        MapServer.clientView.mobMoved(mob, map, backX, backY,
+                adaPetakBaru ? x0 : -1, adaPetakBaru ? y0 : -1,
+                adaPetakBaru ? x0 + (x1 - 1) : -1,
+                adaPetakBaru ? y0 + (y1 - 1) : -1);
+
+        trapLook(engine, map, mob);
+        return true;
+    }
+
+    /**
+     * mob_trap_look(): mob menginjak NPC lantai (jebakan) — kait
+     * {@code click} miliknya dipanggil dengan (mob, npc).
+     *
+     * <p>Hanya <b>satu</b> jebakan per langkah yang terpicu; di C penjaganya
+     * {@code def[0]} yang langsung disetel 1 setelah pemicu pertama.</p>
+     */
+    private void trapLook(org.rtk.map.script.ScriptEngine engine, MapData map, Mob mob) {
+        if (engine == null) {
+            return;
+        }
+        for (org.rtk.map.data.BlockList bl : map.objectsAt(mob.x, mob.y)) {
+            if (!(bl instanceof Npc nd) || (nd.subtype != Npc.SUBTYPE_FLOOR
+                    && nd.subtype != 2)) {
+                continue;
+            }
+            try {
+                engine.doScript(nd.name, "click", engine.objectRef(mob),
+                        engine.objectRef(nd));
+            } catch (RuntimeException e) {
+                log.error("[MOB] kait jebakan '{}' gagal", nd.name, e);
+            }
+            return;   // def[0] = 1: cukup satu
+        }
+    }
+
+    /**
+     * mobspawn_onetime() (map/mob.c:225) — lahirkan mob dari skrip.
+     *
+     * <p>Ini {@code spawn}, stub besar terakhir (381x): jebakan, mob event,
+     * dan boss instance semuanya lahir lewat sini.</p>
+     *
+     * <p>Bedanya dari mob tabel {@code Spawns}: mob ini <b>sekali pakai</b> —
+     * setelah mati ia tidak lahir kembali, dan {@link #runTimers} melewatinya
+     * saat memeriksa kelahiran ulang. Titik awalnya tetap dicatat supaya
+     * skrip yang memindahkannya masih punya acuan.</p>
+     *
+     * @param owner id pemain yang "memiliki" mob ini (jebakan mencarinya);
+     *              0 bila tidak ada
+     * @return id blok mob yang lahir, urut
+     */
+    public java.util.List<Long> spawnOneTime(org.rtk.map.script.ScriptEngine engine,
+                                             long mobId, int m, int x, int y,
+                                             int amount, long owner) {
+        java.util.List<Long> lahir = new ArrayList<>();
+        MobData d = types.get(mobId);
+        MapData map = MapServer.world.get(m);
+        if (d == null || map == null || amount <= 0) {
+            return lahir;
+        }
+        for (int i = 0; i < amount; i++) {
+            Mob mob = new Mob();
+            mob.data = d;
+            mob.startM = m;
+            mob.startX = x;
+            mob.startY = y;
+            mob.m = m;
+            mob.x = Math.min(x, map.xs - 1);
+            mob.y = Math.min(y, map.ys - 1);
+            mob.owner = owner;
+            mob.oneTime = true;
+            mob.id = nextId++;
+            resetStats(mob);
+
+            if (!map.addBlock(mob)) {
+                continue;
+            }
+            add(mob);            // daftar tik + indeks id (map_addiddb)
+            lahir.add(mob.id);
+
+            // mob_respawn(): terlihat oleh sekitarnya, lalu dua kait lahir —
+            // yang umum lebih dulu, baru milik jenis mobnya sendiri.
+            MapServer.clientView.mobSpawned(mob);
+            if (engine != null) {
+                var ref = engine.objectRef(mob);
+                try {
+                    engine.doScript("on_spawn", null, ref);
+                    engine.doScript(mob.scriptName(), "on_spawn", ref);
+                } catch (RuntimeException e) {
+                    log.error("[MOB] kait on_spawn '{}' gagal", mob.scriptName(), e);
+                }
+            }
+        }
+        return lahir;
     }
 
     /**

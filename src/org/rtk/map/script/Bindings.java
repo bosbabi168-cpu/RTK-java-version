@@ -1040,12 +1040,70 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
-        for (String name : new String[]{"spawn"}) {
-            klass.addMethod(name, (self, args) -> {
-                engine.warnStub(klass.name + ":" + name + "()");
-                return LuaValue.NONE;
-            });
-        }
+        /**
+         * bll_spawn(mob, x, y, jumlah [, peta [, pemilik]]) — lahirkan mob
+         * dari skrip; mengembalikan <b>tabel mob yang lahir</b>.
+         *
+         * <p>Argumen pertama boleh <b>nama skrip atau nomor</b> mob, sama
+         * seperti {@code addSpell} — C memilih cabangnya dengan
+         * {@code lua_isnumber}.</p>
+         *
+         * <p>Argumen ke-5 (peta) yang bernilai <b>0 berarti "peta benda
+         * ini"</b>, bukan peta nomor 0. Itu cabang eksplisit di C
+         * ({@code if (m != 0)}), jadi peta 0 memang tidak bisa disebut
+         * langsung — konsekuensi yang ditiru apa adanya.</p>
+         */
+        klass.addMethod("spawn", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl == null) {
+                return new LuaTable();
+            }
+            LuaValue jenis = args.arg(2);
+            long mobId;
+            if (jenis.isnumber()) {
+                mobId = (long) jenis.todouble();
+            } else {
+                var d = org.rtk.map.MapServer.mobs.typeByName(jenis.optjstring(""));
+                if (d == null) {
+                    return new LuaTable();
+                }
+                mobId = d.id;
+            }
+            int m = args.optint(6, 0);
+            java.util.List<Long> ids = org.rtk.map.MapServer.mobs.spawnOneTime(engine,
+                    mobId, m != 0 ? m : bl.m, args.optint(3, 0), args.optint(4, 0),
+                    args.optint(5, 0), (long) args.optdouble(7, 0));
+
+            LuaTable t = new LuaTable();
+            int i = 1;
+            for (long id : ids) {
+                org.rtk.map.data.BlockList lahir = org.rtk.map.MapServer.blockById(id);
+                if (lahir != null) {
+                    t.set(i++, engine.objectRef(lahir));
+                }
+            }
+            return t;
+        });
+    }
+
+    /**
+     * Method yang hanya dimiliki <b>Mob</b> — di C didaftarkan langsung ke
+     * {@code mobl_type}, bukan lewat {@code bll_extendproto}, jadi NPC dan
+     * pemain memang tidak punya.
+     */
+    static void defineMob(ScriptEngine engine, ScriptClass klass) {
+        /**
+         * mobl_moveghost() -&gt; {@code moveghost_mob()}: mob melangkah satu
+         * petak ke arah yang dihadapinya. Dipakai 84x, hampir seluruhnya
+         * oleh AI mob di {@code Accepted/Mobs/mob.lua}.
+         */
+        klass.addMethod("moveGhost", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.valueOf(0);
+            }
+            boolean pindah = org.rtk.map.MapServer.mobs.moveGhost(engine, mb);
+            return LuaValue.valueOf(pindah ? 1 : 0);
+        });
     }
 
     // ------------------------------------------------------------------

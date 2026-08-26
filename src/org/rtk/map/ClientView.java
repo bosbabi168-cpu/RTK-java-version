@@ -170,4 +170,22 @@ public interface ClientView {
 
     /** Satu NPC menjadi terlihat oleh seorang pemain. */
     void npcAppearedTo(User viewer, Npc nd);
+
+    // ------------------------------------------------------------------
+    // Mob
+    // ------------------------------------------------------------------
+
+    /**
+     * Mob berpindah satu petak.
+     *
+     * <p>Empat parameter terakhir membawa kebocoran yang sama dengan
+     * {@link #npcMoved} — petak yang baru masuk jangkauan pandang. Rapikan
+     * keduanya bersamaan saat protokol baru dirancang; kirim
+     * {@code revealX1 < 0} bila tidak ada petak baru.</p>
+     */
+    void mobMoved(Mob mb, MapData map, int fromX, int fromY,
+                  int revealX0, int revealY0, int revealX1, int revealY1);
+
+    /** Satu mob lahir (atau lahir kembali) dan mulai terlihat di sekitarnya. */
+    void mobSpawned(Mob mb);
 }

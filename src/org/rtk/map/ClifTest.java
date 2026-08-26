@@ -211,6 +211,192 @@ public final class ClifTest {
         walkTest(map, sd);
         bllTest(map, sd);
         durationTest(map, sd);
+        ghostTest(map, sd);
+    }
+
+    /**
+     * {@code moveGhost} (gerak mob) dan paket benda 0x07 <b>berkelompok</b>.
+     *
+     * <p>Yang dijaga: mob tidak menginjak portal, mob yang sedang mengejar
+     * sasaran menembus penghalang sementara yang tidak mengejar tertahan,
+     * dan tata letak paket berkelompok — termasuk byte passflag yang
+     * sengaja saling menimpa antar entri.</p>
+     */
+    private static void ghostTest(MapData map, User sd) {
+        log.info("=== moveGhost + paket benda berkelompok (0x07) ===");
+
+        int[] c = firstWalkable(map);
+        int px = -1;
+        int py = -1;
+        for (int y = 2; y < map.ys - 2 && px < 0; y++) {
+            for (int x = 2; x < map.xs - 3; x++) {
+                if (map.walkable(x, y) && map.walkable(x + 1, y)
+                        && map.walkable(x + 2, y)) {
+                    px = x;
+                    py = y;
+                    break;
+                }
+            }
+        }
+        check("ada tiga petak terbuka berderet untuk uji gerak", px >= 0);
+        placeAt(map, sd, px, py);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+
+        MobData jenis = new MobData();
+        jenis.id = 910;
+        jenis.yname = "hantu_uji";
+        jenis.name = "Hantu Uji";
+        jenis.vita = 20;
+        jenis.look = 42;
+        jenis.lookColor = 7;
+        jenis.subtype = 0;
+
+        Mob mb = new Mob();
+        mb.data = jenis;
+        mb.id = Mob.MOB_START_NUM + 77;
+        mb.m = 0;
+        mb.x = px + 1;
+        mb.y = py;
+        mb.startM = 0;
+        mb.startX = mb.x;
+        mb.startY = mb.y;
+        MobRegistry.resetStats(mb);
+        mb.side = 1;   // menghadap kanan
+        map.addBlock(mb);
+
+        MobRegistry reg = MapServer.mobs;
+        reg.registerType(jenis);
+        // Seperti di produksi: mob wajib masuk indeks id global, karena
+        // skrip merujuknya lewat id (lihat catatan A5 di CLAUDE.md).
+        reg.useIdIndex(MapServer.npcs);
+
+        // --- langkah biasa ---
+        drain(s);
+        boolean pindah = reg.moveGhost(null, mb);
+        check("moveGhost: mob berpindah satu petak ke kanan",
+                pindah && mb.x == px + 2 && mb.y == py);
+
+        List<int[]> keluar = splitPackets(drain(s));
+        check("moveGhost: siaran langkah 0x0C terkirim",
+                keluar.stream().anyMatch(o -> o[0] == 0x0C));
+
+        // --- petak asal, bukan tujuan, yang dikirim ---
+        map.moveBlock(mb, px + 1, py);
+        drain(s);
+        Clif.mobMove(mb, px, py);
+        byte[] p = decrypt(drain(s), sd);
+        check("mobMove: opcode 0x0C", (p[3] & 0xFF) == 0x0C);
+        check("mobMove: membawa nomor urut di [4]", (p[4] & 0xFF) != 0);
+        check("mobMove: id mob di [5]", (be32(p, 5) & 0xFFFFFFFFL) == mb.id);
+        check("mobMove: petak ASAL di [9],[11]", be16(p, 9) == px && be16(p, 11) == py);
+        check("mobMove: arah di [13]", (p[13] & 0xFF) == 1);
+
+        // --- mob mati tidak menyiarkan langkah ---
+        mb.state = MobData.MOB_DEAD;
+        drain(s);
+        Clif.mobMove(mb, px, py);
+        check("mobMove: mob mati tidak mengirim apa pun", drain(s).length == 0);
+        mb.state = MobData.MOB_ALIVE;
+
+        // --- penghalang: tertahan bila tidak mengejar, menembus bila mengejar ---
+        // Dijalankan SEBELUM uji portal: portal di petak tujuan akan
+        // menghentikan langkah lebih dulu, sehingga uji penghalangnya lulus
+        // karena alasan yang salah.
+        placeAt(map, sd, px + 1, py);       // pemain menghalangi
+        map.moveBlock(mb, px + 2, py);
+        mb.side = 3;                        // menghadap kiri, ke arah pemain
+        mb.target = 0;
+        check("moveGhost: tertahan pemain saat tidak mengejar",
+                !reg.moveGhost(null, mb) && mb.x == px + 2);
+        mb.target = sd.id;
+        check("moveGhost: menembus penghalang saat mengejar sasaran",
+                reg.moveGhost(null, mb) && mb.x == px + 1);
+        mb.target = 0;
+
+        // --- portal menghentikan langkah, bahkan saat mengejar ---
+        placeAt(map, sd, c[0], c[1]);
+        map.moveBlock(mb, px, py);
+        mb.side = 1;
+        map.addWarp(px + 1, py, 1, 0, 0);
+        check("moveGhost: mob TIDAK menginjak portal",
+                !reg.moveGhost(null, mb) && mb.x == px);
+        mb.target = sd.id;
+        check("moveGhost: portal menghentikan langkah walau sedang mengejar",
+                !reg.moveGhost(null, mb) && mb.x == px);
+        mb.target = 0;
+
+        // --- paket benda berkelompok ---
+        placeAt(map, sd, px, py);
+        map.moveBlock(mb, px + 1, py);
+        Npc benda = new Npc();
+        benda.name = "benda_uji";
+        benda.npcId = 92;
+        benda.id = Npc.blockIdFor(92);
+        benda.m = 0;
+        benda.x = px + 2;
+        benda.y = py;
+        benda.graphicId = 55;
+        benda.graphicColor = 3;
+        benda.side = 2;
+        benda.npcType = 0;
+        benda.subtype = 0;
+        map.addBlock(benda);
+
+        drain(s);
+        Clif.objectLookBatch(sd, List.of(mb, benda));
+        p = decrypt(drain(s), sd);
+        check("batch: opcode 0x07", (p[3] & 0xFF) == 0x07);
+        check("batch: membawa nomor urut di [4]", (p[4] & 0xFF) != 0);
+        check("batch: jumlah benda 2 di [5]", be16(p, 5) == 2);
+        // entri 1 di offset 0, entri 2 di offset 15
+        check("batch: entri 1 posisi di [7],[9]",
+                be16(p, 7) == px + 1 && be16(p, 9) == py);
+        check("batch: entri 1 penanda mob 0x05 di [11]", (p[11] & 0xFF) == 0x05);
+        check("batch: entri 1 id di [12]", (be32(p, 12) & 0xFFFFFFFFL) == mb.id);
+        check("batch: entri 1 grafik 32768+look di [16]", be16(p, 16) == 32768 + 42);
+        check("batch: entri 2 mulai 15 byte kemudian",
+                be16(p, 22) == px + 2 && be16(p, 24) == py);
+        check("batch: entri 2 penanda NPC 12 di [26]", (p[26] & 0xFF) == 12);
+        check("batch: entri 2 id di [27]", (be32(p, 27) & 0xFFFFFFFFL) == benda.id);
+        check("batch: entri 2 grafik di [31]", be16(p, 31) == 32768 + 55);
+        // 2 entri x 15 + 1 byte penutup = 31, ladang panjang = 31 + 4 (+3)
+        check("batch: ladang panjang = 15*2 + 1 + 4 + 3", be16(p, 1) == 38);
+
+        // yang tidak boleh digambar tidak menambah hitungan
+        mb.state = MobData.MOB_DEAD;
+        drain(s);
+        Clif.objectLookBatch(sd, List.of(mb, benda));
+        p = decrypt(drain(s), sd);
+        check("batch: mob mati dilewati dan tidak dihitung", be16(p, 5) == 1);
+        mb.state = MobData.MOB_ALIVE;
+
+        drain(s);
+        Clif.objectLookBatch(sd, List.of(sd));
+        check("batch: pemain dilewati — tidak ada paket sama sekali",
+                drain(s).length == 0);
+
+        // --- spawn dari skrip ---
+        int sebelum = reg.all().size();
+        var ids = reg.spawnOneTime(null, 910, 0, px, py, 2, sd.id);
+        check("spawn: dua mob lahir", ids.size() == 2);
+        check("spawn: masuk daftar tik", reg.all().size() == sebelum + 2);
+        org.rtk.map.data.BlockList lahir = MapServer.blockById(ids.get(0));
+        check("spawn: masuk indeks id global (map_addiddb)", lahir instanceof Mob);
+        check("spawn: bertanda sekali pakai", lahir instanceof Mob m2 && m2.oneTime);
+        check("spawn: pemiliknya tercatat", lahir instanceof Mob m3 && m3.owner == sd.id);
+        check("spawn: lahir dalam keadaan hidup",
+                lahir instanceof Mob m4 && m4.isAlive());
+        check("spawn: jenis tak dikenal tidak melahirkan apa pun",
+                reg.spawnOneTime(null, 99999, 0, px, py, 1, 0).isEmpty());
+
+        for (long id : ids) {
+            if (MapServer.blockById(id) instanceof Mob dead) {
+                reg.remove(dead, MapServer.world);
+            }
+        }
+        map.delBlock(mb);
+        map.delBlock(benda);
+        drain(s);
     }
 
     /**

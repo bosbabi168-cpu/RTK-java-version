@@ -2429,6 +2429,153 @@ public final class Clif {
     }
 
     /**
+     * clif_mob_look_start / clif_object_look_sub / clif_mob_look_close:
+     * satu paket 0x07 berisi <b>beberapa benda sekaligus</b>.
+     *
+     * <p>Bedanya dengan {@link #objectLook} halus tapi nyata: yang ini
+     * dibangun lewat {@code WFIFOHEADER} sehingga membawa nomor urut di [4],
+     * dan sanggup memuat banyak benda. Untuk satu mob biasa isinya berakhir
+     * <b>byte-identik</b> dengan versi satu-benda kecuali ladang [4] itu —
+     * C memang menyediakan dua jalan ke paket yang sama.</p>
+     *
+     * <p>⚠️ <b>Entri saling menimpa satu byte, dan itu disengaja.</b> Tiap
+     * entri panjangnya 15 byte tetapi menulis sampai {@code len+22}; entri
+     * berikutnya mulai di {@code len+15}, jadi byte "passflag" di
+     * {@code len+22} persis ditimpa oleh ladang x entri sesudahnya. Hanya
+     * entri terakhir yang passflag-nya bertahan — karena itu penutupnya
+     * menambah satu byte lagi. Menyusun ulang jadi entri rapi 15 byte akan
+     * menggeser seluruh paket.</p>
+     *
+     * <p>Mob mati, mob berwujud karakter ({@code mobType == 1}), NPC
+     * berwujud karakter, dan pemain <b>dilewati</b> — mereka digambar lewat
+     * 0x33. Benda yang dilewati tidak menambah hitungan.</p>
+     */
+    public static void objectLookBatch(User sd, java.util.List<
+            ? extends org.rtk.map.data.BlockList> objects) {
+        Session s = sessionOf(sd);
+        if (s == null || objects == null || objects.isEmpty()) {
+            return;
+        }
+        int len = 0;      // sd->mob_len
+        int count = 0;    // sd->mob_count
+        boolean adaBarang = false;   // sd->mob_item
+
+        for (org.rtk.map.data.BlockList b : objects) {
+            if (b instanceof User) {
+                continue;
+            }
+            int tipe;
+            int look;
+            int lookColor;
+            int side;
+            if (b instanceof Mob mb) {
+                if (mb.state == MobData.MOB_DEAD || mb.data.mobType == 1) {
+                    continue;
+                }
+                tipe = mb.data.isNpc ? 12 : 0x05;
+                look = mb.look;
+                lookColor = mb.lookColor;
+                side = mb.side;
+            } else if (b instanceof Npc nd) {
+                if (nd.subtype != 0 || nd.npcType == 1) {
+                    continue;
+                }
+                tipe = 12;
+                look = (int) nd.graphicId;
+                lookColor = (int) nd.graphicColor;
+                side = nd.side;
+            } else {
+                continue;
+            }
+
+            s.wfifoWBE(len + 7, b.x);
+            s.wfifoWBE(len + 9, b.y);
+            s.wfifoB(len + 11, tipe);
+            s.wfifoLBE(len + 12, (int) b.id);
+            s.wfifoWBE(len + 16, 32768 + look);
+            s.wfifoB(len + 18, lookColor);
+            s.wfifoB(len + 19, side);
+            if (tipe == 0x05) {
+                s.wfifoB(len + 20, 0);
+                s.wfifoB(len + 21, 0);   // jumlah animasi berdurasi mob
+            } else {
+                s.wfifoWBE(len + 20, 0);
+            }
+            s.wfifoB(len + 22, 0);       // passflag; ditimpa entri berikutnya
+            len += 15;
+            count++;
+        }
+
+        if (count == 0) {
+            return;
+        }
+        if (!adaBarang) {
+            s.wfifoB(len + 7, 0);
+            len++;
+        }
+        headSeq(s, 0x07, len + 4);
+        s.wfifoWBE(5, count);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_mob_move(): mob melangkah — beri tahu pemain di sekitarnya.
+     * Opcode 0x0C, sama dengan langkah pemain dan NPC.
+     *
+     * <p>Yang dikirim <b>petak asal</b> ({@code mob->bx}/{@code by} di C,
+     * disetel tepat sebelum {@code map_moveblock}) plus arahnya — klien yang
+     * memainkan animasi langkahnya sendiri.</p>
+     *
+     * <p>Berbeda dari siaran langkah pemain, paket ini dibangun per-sesi
+     * lewat {@code WFIFOHEADER}, jadi tiap penerima mendapat nomor urutnya
+     * sendiri. Mob mati tidak dikirim sama sekali.</p>
+     */
+    public static void mobMove(Mob mb, int fromX, int fromY) {
+        if (mb.state == MobData.MOB_DEAD) {
+            return;
+        }
+        MapData map = MapServer.world.get(mb.m);
+        if (map == null) {
+            return;
+        }
+        map.foreachInArea(mb.x, mb.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (!(bl instanceof User to)) {
+                return;
+            }
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                return;
+            }
+            headSeq(ts, 0x0C, 11);
+            ts.wfifoLBE(5, (int) mb.id);
+            ts.wfifoWBE(9, fromX);
+            ts.wfifoWBE(11, fromY);
+            ts.wfifoB(13, mb.side);
+            ts.wfifoSet(encrypt(ts, to));
+        });
+    }
+
+    /**
+     * Gambar ulang jalur petak yang baru terbuka saat <b>mob</b> melangkah
+     * ({@code map_foreachinblock(...)} di {@code moveghost_mob}).
+     *
+     * <p>Mob berwujud karakter memakai 0x33, sisanya paket benda 0x07
+     * berkelompok — pembagian yang sama dengan {@link #broadcastLook}.</p>
+     */
+    static void mobRevealStrip(Mob mb, MapData map, int x0, int y0, int x1, int y1) {
+        map.foreachInBlock(x0, y0, x1, y1, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (!(bl instanceof User sd)) {
+                return;
+            }
+            if (mb.data.mobType == 1) {
+                sendMobLook(sd, mb);
+            } else {
+                objectLookBatch(sd, java.util.List.of(mb));
+            }
+        });
+    }
+
+    /**
      * clif_lookgone(): sebuah benda lenyap — pemain di sekitarnya (AREA_WOS)
      * harus berhenti menggambarnya.
      *
