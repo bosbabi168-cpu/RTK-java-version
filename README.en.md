@@ -774,6 +774,20 @@ The starting point for the next session.
 | Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
+| **Inbound packets** | ⚠️ **5 of 54 opcodes** — see the audit note below |
+| Track A | functionally done; `sendMyStatus` deliberately left at stage 1 |
+| Track C | C1 and C4 done; **C2 and C3 not started** |
+
+⚠️ **Audit, 27 August 2026.** Script bindings are nearly finished (4 of ~258
+methods left), but **porting is not**. `clif_parse()` in C serves **54
+client opcodes**; this port serves **five** — walk, menu/input, NPC dialog,
+click. Everything a player *initiates* beyond moving and talking to NPCs
+has no path yet: chatting, equipping, using items, dropping, picking up,
+casting, attacking, and **trading with another player**.
+
+That is not 49 packets waiting to be copied, though — the wire format is
+being replaced. What matters is the **logic behind each action**, not the
+byte decoding. See `CLAUDE.md` for the ranked roadmap.
 
 The 26 August session closed two blocks: (1) bindings that were still
 **stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

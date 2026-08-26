@@ -1009,6 +1009,9 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
 | Gerbang regresi | 6/6 hijau (`cliftest` **552**, `dbtest` **187** assertion) |
 | Binding skrip | **12** belum diport (**4** di `sl.c` + 8 salah ketik / kode mati); global belum diport **0** |
+| **Paket MASUK** | ⚠️ **5 dari 54 opcode** — lihat "AUDIT 27 Agustus 2026" |
+| Trek A | selesai fungsinya; `sendMyStatus` sengaja TAHAP 1 |
+| Trek C | C1 & C4 selesai; **C2 dan C3 belum tersentuh** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -1468,7 +1471,53 @@ NPC **dan** mob.
 
 ---
 
-#### Prioritas sekarang — 26 Agustus 2026 (sore)
+#### ROADMAP — 27 Agustus 2026
+
+> Disusun ulang setelah audit di atas. Urutannya mengikuti **apa yang
+> menghambat**, bukan jumlah pemakaian, karena binding sudah hampir habis.
+
+**1. Rancang protokol baru — arah MASUK.** Ini sekarang penghambat
+terbesar dan sekaligus keputusan desain terbesar yang belum diambil.
+`ClientView` sudah menjadi spesifikasi arah **keluar** (39 peristiwa,
+diturunkan dari kebutuhan skrip nyata). Arah **masuk** belum punya
+padanannya: `Clif.parseWalk`/`parseClick`/`parseMenuInput`/`parseNpcDialog`
+masih memanggil logika langsung dari pembaca byte. Buat antarmuka kedua —
+katakanlah `ClientCommands` — dengan cara yang sama: turunkan dari **aksi
+pemain** (jalan, bicara, pakai barang, tukar barang), bukan dari opcode.
+Tabel aksi di audit di atas adalah daftar bahannya.
+
+**2. Subsistem pertukaran barang antar pemain** (`sd->exchange`). Satu-
+satunya sisa binding yang butuh blok tersendiri (`getExchangeItem`), dan
+satu-satunya subsistem besar yang benar-benar belum ada setelah BL_ITEM.
+Logikanya berharga apa pun protokolnya.
+
+**3. Pasang/lepas perlengkapan dan pakai barang.** Menutup `takeOff` dan
+`throwItem`, dua dari empat binding terakhir. Butuh jalur masuk (butir 1)
+atau setidaknya method yang bisa dipanggil skrip langsung.
+
+**4. Uji dengan pemain sungguhan online.** Tik durasi mantra dan seluruh
+gerak mob **belum pernah berjalan** — keduanya hanya menyala untuk pemain
+yang online, dan tik AI mob melewati peta ber-`map.users == 0`. Peringatan
+#26 lahir persis dari kait timer yang hanya menyala saat server hidup.
+
+**5. Trek B — dekoder EPF, editor, klien libGDX.** Belum dimulai, dan ini
+jalur menuju arah final project (klien sendiri). B1 dekoder EPF prasyarat
+sisanya; `rtk/SObj.tbl` (18.954 entri) masih di RTK-Server, belum disalin.
+
+**6. C2 — empat berkas meta hilang.** Kecil tapi kasat mata: tooltip barang
+tidak muncul tanpa itu.
+
+**7. C3 — warp antar map server.** Butuh dua map server berjalan; nilainya
+baru terasa kalau memang mau menjalankan lebih dari satu.
+
+**8. Terjemahan Indonesia — ~3.800 titik dialog.** Kata kunci `speech`
+sudah selesai; dialognya belum. Baca `luascript/GLOSARIUM.md` dulu.
+
+**9. Empat method terakhir di `sl.c`** — lihat rinciannya di bawah.
+
+---
+
+#### Prioritas lama — 26 Agustus 2026 (sore)
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
@@ -1505,6 +1554,62 @@ jadi tidak muncul di daftar celah.
 bukan dua bank melainkan satu — lihat Peringatan #49.
 
 ~~**4. Sisa administratif.**~~ **SELESAI 27 Agustus 2026.**
+
+#### ⚠️ AUDIT 27 Agustus 2026 — apa yang SEBENARNYA belum selesai
+
+Diperiksa ke sumber C, bukan ke catatan di berkas ini. Hasilnya
+mengoreksi anggapan bahwa "porting hampir selesai".
+
+| | Keadaan |
+|---|---|
+| **Binding skrip** | **hampir selesai** — 4 dari 258 method masih di `sl.c` |
+| **Trek A (A1–A5)** | **selesai secara fungsi**, dua sisa sengaja dibiarkan (lihat bawah) |
+| **Trek C** | **BELUM** — C1 dan C4 selesai, **C2 dan C3 belum tersentuh** |
+| **Paket KELUAR** | luas — didorong kebutuhan binding |
+| **Paket MASUK** | ⚠️ **5 dari 54 opcode** (~9%) |
+
+**Temuan terbesar: arah MASUK nyaris belum diport.** `clif_parse()` di C
+melayani **54 opcode**; port ini melayani **lima**: `0x06`/`0x32` (jalan),
+`0x39` (menu & input), `0x3A` (dialog NPC), `0x43` (klik). Ditambah `0x10`
+(perkenalan) di jalur autentikasi.
+
+Yang **belum ada jalurnya sama sekali** — dikelompokkan menurut aksi
+pemain, bukan menurut opcode, karena format kabelnya akan diganti:
+
+| Aksi pemain | Opcode C | Catatan |
+|---|---|---|
+| **Bicara / berbisik** | `0x0E` say, `0x19` wisp | `speak` sudah ada di sisi skrip, tapi pemain tidak bisa mengetik |
+| **Pertukaran barang antar pemain** | `0x29` hand item, `0x2A` hand gold, `0x4A` exchange | menutup `getExchangeItem`, sisa binding terakhir |
+| **Pakai / lepas perlengkapan** | `0x12`/`0x1E` wield, `0x1F` unequip | menutup `takeOff` |
+| **Pakai / makan barang** | `0x1A` eat, `0x1C` use | |
+| **Jatuhkan barang & emas** | `0x08` drop, `0x24` dropgold, `0x17` throw | menutup `throwItem`; BL_ITEM-nya sudah ada |
+| **Pungut barang** | `0x07` getitem | `pickUp` sudah ada di sisi skrip |
+| **Merapal mantra** | `0x0F` magic, `0x30` change spell | |
+| **Menyerang** | `0x13` attack | `swingTarget` sudah ada |
+| **Grup** | `0x2E` addgroup | `setGrpDmg` menunggu id grup yang nyata |
+| **Papan & pos** | `0x3B`, `0x34` postitem, `0x41` parcel | sisi tampilannya sudah ada |
+| Sisanya | ~20 opcode | emosi, profil, kota, minimap, ranking, daftar teman/hunter, daftar abaikan |
+
+⚠️ **Tapi ini BUKAN berarti 49 opcode harus diport.** Format kabelnya akan
+diganti (lihat bagian teratas berkas ini). Yang berharga adalah **logika di
+balik aksinya** — subsistem pertukaran, pasang/lepas perlengkapan, pakai
+barang — bukan pembacaan bytenya. Rancang jalur masuk protokol baru dulu,
+lalu sambungkan logikanya ke sana.
+
+**Dua sisa Trek A yang sengaja dibiarkan:**
+- `Clif.sendMyStatus()` masih **TAHAP 1** — klan, gelar, pasangan, dan TNL
+  dikirim kosong. Sengaja: paket ini akan ditulis ulang.
+- Penyaring **`clif_isignore`** (daftar abaikan pemain) belum ada, jadi
+  obrolan tidak bisa disaring.
+
+**Trek C yang belum:**
+- **C2 — 4 berkas meta hilang.** `conf/login.conf` meminta lima
+  (`RidableAnimals`, `CharicInfo0/1`, `ItemInfo0/1`); `meta/` hanya punya
+  `RidableAnimals`. Inilah sebab tooltip barang hilang. Kandidatnya ada di
+  `RTK-Server/rtk/decrypted/` tapi namanya tidak cocok persis.
+- **C3 — warp antar map server.** Masih ditolak dengan pesan jelas
+  (`Clif.java:1528`). Butuh dua map server berjalan dengan pembagian peta
+  berbeda.
 
 **4. Empat method terakhir di `sl.c`** — dan ketiganya tertunda karena
 alasan yang berbeda-beda, bukan karena besar:

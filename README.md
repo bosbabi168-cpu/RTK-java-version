@@ -768,6 +768,21 @@ Titik berangkat untuk sesi berikutnya.
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
 | **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
+| **Paket MASUK** | ⚠️ **5 dari 54 opcode** — lihat catatan audit di bawah |
+| Trek A | selesai fungsinya; `sendMyStatus` sengaja dibiarkan TAHAP 1 |
+| Trek C | C1 dan C4 selesai; **C2 dan C3 belum tersentuh** |
+
+⚠️ **Audit 27 Agustus 2026.** Binding skrip hampir selesai (4 dari ±258
+method tersisa), tetapi **porting belum**. `clif_parse()` di C melayani
+**54 opcode klien**; port ini melayani **lima** — jalan, menu & input,
+dialog NPC, klik. Semua yang *dimulai pemain* selain berjalan dan bicara
+dengan NPC belum punya jalur: mengobrol, memakai perlengkapan, memakai
+barang, menjatuhkan, memungut, merapal, menyerang, dan **bertukar barang
+dengan pemain lain**.
+
+Itu bukan berarti 49 paket menunggu disalin — format kabelnya memang akan
+diganti. Yang berharga adalah **logika di balik tiap aksinya**, bukan
+pembacaan bytenya. Roadmap berurutnya ada di `CLAUDE.md`.
 
 Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
 **stub** — `talk` (698x), `sendAction` (905x), `playSound` (632x),
