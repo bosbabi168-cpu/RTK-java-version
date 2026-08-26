@@ -49,6 +49,12 @@ public final class User extends BlockList
     public int might;
     public int will;
     public int grace;
+    /** Id benda yang terakhir melukai pemain ini ({@code sd->attacker}). */
+    public long attacker;
+
+    /** Nyawa sesaat SEBELUM pukulan terakhir ({@code sd->lastvita}). */
+    public long lastVita;
+
     /**
      * Hasil kait {@code hitCritChance}: 0 = meleset, 1 = kena biasa,
      * 2 = kritis. Diisi <b>oleh skrip Lua</b>, dibaca {@link Combat}.

@@ -51,6 +51,14 @@ public final class Mob extends BlockList
     public long attacker;
 
     /**
+     * Kerusakan dan hasil lemparan kritis pukulan berikutnya — pasangan
+     * {@code User.damage}/{@code User.critChance}. Diisi skrip Lua atau
+     * {@code removeHealth}, bukan dihitung server.
+     */
+    public double damage;
+    public int critChance;
+
+    /**
      * Tabel ancaman: id pemain &rarr; total kerusakan yang ia timbulkan.
      *
      * <p>Diisi lewat {@code player:addThreat(mobId, damage)} dari skrip.

@@ -124,6 +124,157 @@ public final class Combat {
         kaitPerlengkapan(engine, sd, penyerang, sasaran);
     }
 
+    /** Keadaan pemain: {@code enum { PC_ALIVE, PC_DIE, ... }} di map.h. */
+    private static final int PC_DIE = 1;
+
+    /**
+     * pcl_removehealth(damage, penyerang): kurangi nyawa pemain.
+     *
+     * <p>Argumen keduanya menentukan <b>siapa yang dianggap melukai</b>.
+     * Bila diberikan, ia jadi penyerang baru; bila tidak, penyerang lama
+     * yang dipakai. Nilai kerusakannya disimpan pada <b>penyerang</b>, bukan
+     * pada korban — itulah cara C mengoper angka ke pipeline berikutnya.</p>
+     */
+    public static void removeHealth(User sd, int damage, long casterId) {
+        BlockList penyerang;
+        if (casterId > 0) {
+            sd.attacker = casterId;
+            penyerang = MapServer.blockById(casterId);
+            if (penyerang == null) {
+                penyerang = MapServer.userById(casterId);
+            }
+        } else {
+            penyerang = MapServer.blockById(sd.attacker);
+            if (penyerang == null) {
+                penyerang = MapServer.userById(sd.attacker);
+            }
+        }
+
+        if (penyerang instanceof User tsd) {
+            tsd.damage = damage;
+            tsd.critChance = 0;
+        } else if (penyerang instanceof Mob tmob) {
+            tmob.damage = damage;
+            tmob.critChance = 0;
+        } else {
+            sd.damage = damage;
+            sd.critChance = 0;
+        }
+
+        if (sd.status.state != PC_DIE) {
+            takeDamage(sd, damage, 0);
+            MapServer.clientView.playerStatusChanged(sd, Clif.SFLAG_HPMP);
+        }
+    }
+
+    /**
+     * clif_send_pc_healthscript(): terapkan kerusakan ke nyawa pemain,
+     * tampilkan bilah nyawanya, lalu sebarkan kait skrip.
+     *
+     * <p>Sekali lagi namanya di C menyesatkan — bagian paketnya cuma
+     * sepotong; sisanya logika: kerusakan negatif berarti <b>penyembuhan</b>,
+     * nyawa dijepit ke maksimum, dan tiga keluarga kait dipanggil
+     * ({@code passive_on_takingdamage} sebelum nyawa berubah,
+     * {@code passive_on_takedamage} / {@code on_takedamage_while_cast} /
+     * {@code on_takedamage} sesudahnya bila masih hidup).</p>
+     */
+    public static void takeDamage(User sd, int damage, int critical) {
+        var engine = MapServer.scriptEngine;
+        BlockList penyerangBl = MapServer.blockById(sd.attacker);
+        Object penyerang = penyerangBl != null ? penyerangBl : MapServer.userById(sd.attacker);
+
+        org.luaj.vm2.LuaValue korbanRef = engine == null ? null
+                : engine.playerRef(sd.scriptPlayer());
+        org.luaj.vm2.LuaValue lawanRef = engine == null ? null : refDari(engine, penyerang);
+
+        // Kait ini berjalan SEBELUM nyawa berubah — skrip masih melihat
+        // keadaan sebelum pukulan.
+        if (engine != null && damage > 0) {
+            for (int id : sd.status.spells) {
+                if (id > 0) {
+                    panggil(engine, MapServer.spellDb.nameOf(id),
+                            "passive_on_takingdamage", korbanRef, lawanRef);
+                }
+            }
+        }
+
+        long maxVita = sd.maxHp;
+        long vita = sd.status.hp;
+        sd.lastVita = vita;
+        // Kerusakan NEGATIF menyembuhkan; C memakai cabang terpisah supaya
+        // pengurangan tidak pernah menembus nol.
+        if (damage < 0) {
+            vita -= damage;
+        } else {
+            vita = vita < damage ? 0 : vita - damage;
+        }
+        if (vita > maxVita) {
+            vita = maxVita;
+        }
+        sd.status.hp = vita;
+
+        int persen;
+        if (vita == 0 || maxVita <= 0) {
+            persen = 0;
+        } else {
+            persen = (int) ((double) vita / (double) maxVita * 100);
+            // Sisa nyawa yang membulat jadi 0 tetap ditampilkan 1%, supaya
+            // bilahnya tidak terlihat kosong padahal pemain masih hidup.
+            if (persen == 0) {
+                persen = 1;
+            }
+        }
+
+        MapServer.clientView.playerHealthChanged(sd, critical, persen, damage);
+
+        if (engine == null) {
+            return;
+        }
+        if (sd.status.hp > 0 && damage > 0) {
+            for (int id : sd.status.spells) {
+                if (id > 0) {
+                    panggil(engine, MapServer.spellDb.nameOf(id),
+                            "passive_on_takedamage", korbanRef, lawanRef);
+                }
+            }
+            for (SkillInfo s : sd.status.duraAether) {
+                if (s.id > 0 && s.duration > 0) {
+                    panggil(engine, MapServer.spellDb.nameOf(s.id),
+                            "on_takedamage_while_cast", korbanRef, lawanRef);
+                }
+            }
+            for (int i = 0; i < 14; i++) {
+                Item it = sd.status.equipAt(i);
+                if (it != null && it.id > 0) {
+                    panggil(engine, MapServer.itemDb.info(it.id).name(),
+                            "on_takedamage", korbanRef, lawanRef);
+                }
+            }
+        }
+
+        if (sd.status.hp == 0) {
+            panggil(engine, "onDeathPlayer", null, korbanRef, null);
+            if (penyerang instanceof User pembunuh) {
+                panggil(engine, "onKill", null, korbanRef,
+                        engine.playerRef(pembunuh.scriptPlayer()));
+            }
+            for (Item it : sd.status.inventory) {
+                if (it != null && it.id > 0) {
+                    panggil(engine, MapServer.itemDb.info(it.id).name(),
+                            "on_death", korbanRef, null);
+                }
+            }
+        }
+    }
+
+    private static org.luaj.vm2.LuaValue refDari(org.rtk.map.script.ScriptEngine engine,
+                                                 Object o) {
+        if (o == null) {
+            return null;
+        }
+        return o instanceof User u ? engine.playerRef(u.scriptPlayer()) : engine.objectRef(o);
+    }
+
     // ------------------------------------------------------------------
 
     /**

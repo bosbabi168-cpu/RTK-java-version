@@ -67,6 +67,16 @@ public interface ClientView {
      */
     void chatLineToPlayer(User sd, int type, long speakerId, String text);
 
+    /** Kotak teks menimpa layar pemain. */
+    void popupToPlayer(User sd, String text);
+
+    /**
+     * Nyawa pemain berubah, dan angka kerusakannya perlu terlihat.
+     *
+     * @param percent sisa nyawa dalam persen (0..100)
+     */
+    void playerHealthChanged(User sd, int critical, int percent, int damage);
+
     // ------------------------------------------------------------------
     // Benda di dunia (pemain, NPC, atau mob)
     // ------------------------------------------------------------------

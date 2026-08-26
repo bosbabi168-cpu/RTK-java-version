@@ -52,6 +52,16 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void popupToPlayer(User sd, String text) {
+        Clif.popup(sd, text);
+    }
+
+    @Override
+    public void playerHealthChanged(User sd, int critical, int percent, int damage) {
+        Clif.sendPcHealth(sd, critical, percent, damage);
+    }
+
+    @Override
     public void chatLineToPlayer(User sd, int type, long speakerId, String text) {
         Clif.chatSelf(sd, type, speakerId, text);
     }

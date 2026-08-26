@@ -344,6 +344,30 @@ final class Bindings {
             return LuaValue.FALSE;
         });
 
+        // ---- nyawa & layar ----
+        player.addMethod("removeHealth", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.User sd) {
+                org.rtk.map.Combat.removeHealth(sd, args.optint(2, 0), args.optlong(3, 0));
+            }
+            return LuaValue.NONE;
+        });
+        player.addMethod("popUp", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.User sd) {
+                org.rtk.map.MapServer.clientView.popupToPlayer(sd, args.optjstring(2, ""));
+            }
+            return LuaValue.NONE;
+        });
+        /**
+         * pcl_freeasync(): batalkan coroutine dialog yang sedang menggantung.
+         * Dipakai skrip untuk keluar dari percakapan di tengah jalan.
+         */
+        player.addMethod("freeAsync", (self, args) -> {
+            engine.cancel((ScriptPlayer) self);
+            return LuaValue.NONE;
+        });
+
         // ---- obrolan ----
         // pcl_talkself(type, teks, id): satu baris obrolan yang HANYA pemain
         // ini melihatnya. Argumen ke-3 opsional; 0 = seolah dirinya sendiri.

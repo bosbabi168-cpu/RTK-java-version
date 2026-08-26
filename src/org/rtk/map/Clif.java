@@ -295,6 +295,63 @@ public final class Clif {
     }
 
     /**
+     * clif_popup() — kotak teks menimpa layar. Opcode 0x0A ragam 0x08.
+     */
+    public static void popup(User sd, String text) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        String msg = text == null ? "" : text;
+        byte[] raw = msg.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        head(s, 0x0A, raw.length + 5);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, 0x08);
+        s.wfifoWBE(6, raw.length);
+        s.wfifoBytes(8, raw);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_send_pc_healthscript() — bagian <b>paketnya</b>: bilah nyawa dan
+     * angka kerusakan di atas pemain. Opcode 0x13, panjang isi 12.
+     *
+     * <p>⚠️ Disiarkan ke seluruh area, <b>kecuali</b> bila pemain sedang
+     * ber-{@code state == 2} (tak terlihat) — saat itu hanya dirinya yang
+     * melihat. Itu ada di C dan bukan kelalaian.</p>
+     */
+    public static void sendPcHealth(User sd, int critical, int percent, int damage) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        java.util.function.Consumer<User> tulis = to -> {
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                return;
+            }
+            ts.wfifoB(0, 0xAA);
+            ts.wfifoWBE(1, 12);
+            ts.wfifoB(3, 0x13);
+            ts.wfifoLBE(5, (int) sd.id);
+            ts.wfifoB(9, critical);
+            ts.wfifoB(10, percent);
+            ts.wfifoLBE(11, damage);
+            ts.wfifoSet(encrypt(ts, to));
+        };
+        if (sd.status.state == 2) {
+            tulis.accept(sd);
+            return;
+        }
+        map.foreachInArea(sd.x, sd.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (bl instanceof User to) {
+                tulis.accept(to);
+            }
+        });
+    }
+
+    /**
      * Paket obrolan (opcode 0x0D) yang dikirim <b>hanya ke pemain ini</b> —
      * bagian kirim dari {@code pcl_talkself}.
      *
