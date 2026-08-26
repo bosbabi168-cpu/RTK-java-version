@@ -12,6 +12,26 @@ ditulis dalam C — sumbernya: [unkmc/RTK-Server](https://github.com/unkmc/RTK-S
 > Project ini menerjemahkan inti server C tersebut ke Java, dan menjalankan
 > konten Lua-nya **tanpa diubah** lewat LuaJ.
 
+## Arah project (diperbarui 26 Agustus 2026)
+
+**Protokol RetroTK akan diganti dengan rancangan sendiri, dan klien dibuat
+sendiri memakai libGDX.** Kompatibilitas byte-per-byte dengan klien RetroTK
+asli **bukan lagi tujuan**.
+
+Konsekuensinya untuk siapa pun yang membaca kode ini:
+
+- Yang **terbawa** ke protokol baru: 906 skrip Lua, 9.850 peta, 4.476 portal,
+  716 jenis mob, 2.545 item, dan binding logika permainan.
+- Yang **akan ditulis ulang**: seluruh lapisan paket `clif_*`. Karena itu
+  `Clif.sendMyStatus()` sengaja dibiarkan setengah jadi.
+- Kesetiaan pada sumber C tetap dijaga untuk **logika**, tidak untuk format
+  kabel.
+
+Sebelum keputusan ini, klien RetroTK asli sempat **berhasil masuk dunia**
+setelah empat bug server ditutup (lihat "Status & roadmap"). Keempatnya lolos
+dari 294 assertion uji — bukti bahwa uji buatan sendiri tidak bisa
+menggantikan klien nyata.
+
 ## Prasyarat
 
 - **JDK 25** (level bahasa project = 25). Untuk mesin pengembangan;

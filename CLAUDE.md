@@ -4,14 +4,46 @@ Panduan untuk sesi pengembangan (berbantuan AI maupun manusia) di project
 ini. Baca README.md untuk gambaran lengkap; file ini fokus ke hal yang
 harus diketahui SEBELUM mengubah kode.
 
+## ⚠️ ARAH PROJECT BERUBAH — 26 Agustus 2026 (FINAL)
+
+**Protokol RetroTK akan DIGANTI dengan rancangan sendiri, dan klien dibuat
+sendiri memakai libGDX.** Baca ini sebelum memutuskan apa pun.
+
+Yang berubah:
+
+| | Sebelum | Sekarang |
+|---|---|---|
+| Kompatibilitas byte-per-byte dengan klien RetroTK | tujuan utama | **bukan tujuan** |
+| Paket `clif_*` (`0x0D`, `0x07`, `0x33`, `0x58`, berkas meta C2) | prioritas tinggi | **rendah — akan ditulis ulang** |
+| Logika permainan (binding Lua, skrip, data dunia) | pendukung | **aset paling berharga** |
+
+Yang **terbawa utuh** ke protokol apa pun: 906 skrip Lua, 9.850 peta, 4.476
+portal, 716 jenis mob, 2.545 item, dan ~89 binding yang belum diport.
+
+Yang **akan dibuang**: format kabel. Karena itu `Clif.sendMyStatus()` sengaja
+dibiarkan **TAHAP 1** (struktur benar, isi kosong) — jangan habiskan waktu
+melengkapinya.
+
+⚠️ **PIUTANG ARSITEKTUR YANG MENDESAK.** Logika permainan saat ini memanggil
+paket **langsung** — `User.scriptRemoveSpell()` memanggil `Clif.removeSpell()`
+di tengah logikanya. Selama binding sisa diport dengan pola ini, penggantian
+protokol berarti menyentuh ulang semuanya. Sekarang baru **13 binding** yang
+terpengaruh; nanti **89**. Sisipkan lapisan pemberitahuan-ke-klien yang
+semantik (`spellRemoved(slot)`, `inventoryChanged()`) sebelum memport banyak
+binding lagi. Efek sampingnya: daftar method di antarmuka itu **adalah**
+spesifikasi protokol baru, diturunkan dari kebutuhan nyata skrip.
+
 ## Apa project ini
 
 Port Java SE dari **RTK-Server** (`../RTK-Server`), server MMO
 RetroTK/NexusTK yang aslinya ditulis dalam C (`rtk/src/`: login-server,
 char-server, map-server) + MySQL + skrip konten Lua (`rtklua/`, 907 file).
-Kebijakan port: **setia byte-per-byte terhadap protokol wire C** supaya
-klien RetroTK asli tetap kompatibel. Konten Lua TIDAK dikonversi — dijalankan
-apa adanya lewat LuaJ (keputusan desain, lihat README "Scripting engine").
+Konten Lua TIDAK dikonversi — dijalankan apa adanya lewat LuaJ (keputusan
+desain, lihat README "Scripting engine").
+
+Kebijakan port **dulunya** setia byte-per-byte terhadap protokol wire C.
+Sejak 26 Agustus 2026 itu tidak lagi berlaku (lihat bagian di atas); kesetiaan
+pada C tetap dipertahankan untuk **logika**, tidak untuk format kabel.
 
 ## Lokasi & layout (PENTING)
 
@@ -143,7 +175,46 @@ periksa dulu isi database `RTK` yang ada sebelum mengimpor ulang.
 Dump dibuat di MySQL 5.7; impor ke 8.0.46 berjalan tanpa penyesuaian
 (terbukti 21 Agustus 2026).
 
+## Terjemahan Indonesia (mulai 26 Agustus 2026)
+
+Sumber kebenaran: **`luascript/GLOSARIUM.md`** — baca sebelum menerjemahkan
+berkas baru, dan tambahkan entri ke sana alih-alih memutuskan sendiri.
+
+Keputusan gaya: **campuran menurut karakter** (tetua `Anda`, pedagang/mob
+`kau`), **nama diri dipertahankan** (`Mythic Nexus`, `Kugnae`, `Ju Jak`),
+nama guild diterjemahkan (`Guild Prajurit`).
+
+⚠️ **Nama barang/mob/NPC di skrip Lua adalah IDENTIFIER, bukan teks
+tampilan.** `player:addItem("apple", 1)` mencocokkan `ItmIdentifier`, dan
+`ItemDb.infoByName` diindeks dengan kolom itu. Menerjemahkannya di skrip akan
+membuat 586 pemanggilan `addItem` gagal menemukan barangnya — **secara
+senyap**. Terjemahan nama dikerjakan di kolom `*Description` di database
+(`database/terjemahan/`). Terverifikasi: **nol** skrip memakai nama tampilan.
+
+⚠️ **Kata kunci `speech` adalah YANG DIKETIK PEMAIN.** Sudah diterjemahkan
+(174 penggantian, 62 berkas). Dari 231 kata kunci hanya ~90 kosakata pemain;
+sisanya 38 perintah GM (`/...`) dan ~80 kode debug grafis (`ptile`, `nweapc`).
+**Aturannya per-berkas, bukan per-kata**: `Accepted/speech.lua`, `Tools/`,
+`God_Tools*`, `gm_click*` dikecualikan — `pass` di `speech.lua` berarti petak
+bisa dilewati, di `sya.lua` berarti izin lewat.
+
+⚠️ **Setiap kali kata kunci baru diterjemahkan, WAJIB cari ulang kalimat yang
+menyuruh pemain mengetiknya** (`say`/`tell me`/`ask me`/`type` + kata kunci).
+Kalau tidak, quest-nya tidak bisa diselesaikan dan gagalnya **senyap** — NPC
+tetap menjawab, hanya tidak pernah pada kata yang dianjurkannya sendiri.
+
 ## Audit skrip Lua (`./run.sh luaaudit`)
+
+⚠️ **Angka "belum diport" adalah BATAS BAWAH, bukan angka pasti.**
+`addLegend` dipakai 140x, terdaftar di `sl.c:6080`, dan tidak ada sama sekali
+di kode kita — tapi **tidak dilaporkan**, karena `jukebox.lua:115` kebetulan
+punya kunci tabel bernama sama dan audit menganggapnya "terdefinisi di
+korpus". Binding apa pun yang namanya sama dengan kunci tabel atau fungsi
+lokal di salah satu dari 907 berkas jadi tak terlihat. Silangkan ke `sl.c`,
+jangan percaya angkanya mentah.
+
+Pakai `-Drtk.audit.penuh=true` untuk daftar utuh — bawaannya terpotong di 10
+nama, sehingga 90 sisanya tidak pernah terbaca.
 
 `scripttest` hanya membuktikan 906 skrip **termuat**. Lua tidak memeriksa
 apa pun sampai barisnya benar-benar dijalankan, jadi salah ketik nama
@@ -584,9 +655,70 @@ padahal kodenya salah (opcode menu, tabel CRC, indeks id mob), dan
 ketiganya baru ketahuan setelah dicocokkan ke sumber C atau saat uji lain
 ikut rusak. Uji buatan sendiri tidak bisa menggantikan klien nyata.
 
-### STATUS TERAKHIR — 24 Agustus 2026
+### STATUS TERAKHIR — 26 Agustus 2026
 
 Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
+
+| | |
+|---|---|
+| Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
+| Gerbang regresi | 6/6 hijau |
+| Binding skrip | **89** belum diport (dari 100) |
+| Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
+| Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
+
+**Pemain sungguhan masuk dunia untuk pertama kalinya** setelah empat bug
+ditutup — semuanya lolos dari 294 assertion `cliftest`, dan semuanya
+diverifikasi ke sumber C:
+
+1. **`MapIntif.parseAuthAdd` memanggil `requestChar` dengan fd milik ruang
+   char server.** Di C (`intif.c:394`) authadd hanya `auth_add` + ack
+   `0x3002`; yang memanggil `intif_load` adalah `clif_accept2`
+   (`clif.c:409`) dengan fd klien asli. Akibatnya `User` hantu terdaftar di
+   `onlineChars[fd]`, sehingga paket perkenalan `0x10` klien tidak pernah
+   sampai ke `clientAuth()` dan klien menggantung di layar loading.
+2. **Paket perkenalan `0x10` tidak boleh didekripsi.** Cabang `!sd` di C
+   return **sebelum** `decrypt()` (`clif.c:11304` vs `11359`) — kunci sesi
+   diturunkan dari data karakter yang belum ada saat itu.
+3. **`clif_mystaytus` (0x39) dan `clif_spawn` tidak pernah diport** padahal
+   ada di `intif.c:229-230`. ⚠️ Ekspektasi lama di `ClifTest` (9 paket tanpa
+   `0x39`) justru **mengunci** kelalaian ini — uji yang mengesahkan
+   penyimpangan.
+4. **`Session.wfifoSet` tidak membersihkan buffer.** C menulis tiap paket di
+   offset **baru** pada buffer `CALLOC`, port ini memakai ulang offset yang
+   sama — sehingga byte yang tidak ditulis mewarisi paket sebelumnya yang
+   **sudah terenkripsi**, dan ikut terkirim karena beberapa paket
+   mendeklarasikan panjang lebih besar dari ladang yang benar-benar ditulis
+   (`0x1E` sisa 2 byte, `0x05` sisa 1, `0x15` sisa 5, `0x04` sisa 2).
+   Efek samping yang baru ketahuan: byte `[4]` tiga paket berisi `03` warisan
+   `sendTime`, padahal C mengirim `00`.
+
+**Yang tidak terpecahkan (dan tidak perlu lagi):** klien crash dengan
+`allocate_virtual_memory size a4270000` (2,75 GB). Sudah diaudit dan
+semuanya **cocok persis dengan C**: keempat paket pertama, `sendStatus`, dan
+seluruh rantai kripto (`populate_table`, `generate_key2`,
+`set_packet_indexes`, kedua array `isKey`).
+
+⚠️ **PELAJARAN METODE.** Tiga putaran bisect ternyata mengukur **crash Wine
+Gecko**, bukan bug paket — semuanya melaporkan `0x40000015` di alamat yang
+sama. Baru ketahuan setelah Wine Gecko 2.47.4 dipasang dan pesannya berubah.
+**Kalau gejalanya identik persis di beberapa percobaan, curigai lingkungan
+sebelum membangun analisis di atasnya.**
+
+**Klien yang benar: `../client-nexia-750/`, bukan `Origin Nexia`.**
+Origin Nexia terbukti dimodifikasi (3.089.920 vs 3.085.824 byte — selisih
+tepat satu page; `Meta.dat` 58.299 vs 39.517). Installer 750 adalah **Inno
+Setup 5.5.7**, diekstrak tanpa sudo:
+`wine setup.exe /VERYSILENT /DIR="Z:\..."`. Tidak perlu di-patch — `/etc/hosts`
+memetakan `tk0.kru.com` → 127.0.0.1, dan klien memakai ladang **hostname** di
+offset 18464, bukan ladang IP di 18432.
+Debug: `printf 'cont\nbt\nquit\n' | winedbg ./NexusTK.exe > berkas 2>&1`
+— **wajib `./`**, dan output ke berkas bukan pipe (pipe membuat debugger
+gagal attach).
+
+---
+
+### Status sebelumnya — 24 Agustus 2026
 
 | | |
 |---|---|
