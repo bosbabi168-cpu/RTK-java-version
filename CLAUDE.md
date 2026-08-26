@@ -851,6 +851,25 @@ byte-identik dengan `rtklua/`.
    - **`flags1` bergantung pada popup DAN papan sekaligus**, bukan salah
      satunya: kotak surat selalu memakai cabang bukan-popup.
 
+49. **"Bank klan" dan "bank subpath" adalah penyimpanan yang SAMA.**
+   `getClanBankItems` dan `getSubpathBankItems` di C membaca larik
+   {@code clan->clanbanks[]} yang identik; yang berbeda hanya <b>bentuk
+   keluarannya</b> — sepuluh ladang per barang versus lima (id, jumlah,
+   pemilik, ukiran, waktu). Membuat penyimpanan kedua untuk subpath akan
+   memecah isi bank yang seharusnya satu, dan barang yang dititipkan lewat
+   satu pintu tidak akan terlihat dari pintu lainnya.
+
+   Dua hal lagi di keluarga bank:
+   - **Penggabungan menuntut SEPULUH atribut sama persis** — id, pemilik,
+     waktu, ukiran, perlindungan, ikon & wujud kustom beserta warnanya.
+     Beda satu saja berarti slot terpisah. (Aturan yang sama dengan
+     penggabungan barang lantai jalur pemain; lihat Peringatan #31.)
+   - **Kolom `CbkPosition` dibaca tapi TIDAK dipakai menempatkan barang.**
+     C menyalin baris ke-{@code i} ke slot ke-{@code i}, jadi lubang nomor
+     slot di database <b>dirapatkan</b> saat dimuat. Ditiru apa adanya —
+     kalau tidak, nomor slot di memori berbeda dari yang dilihat C dan
+     penyimpanan berikutnya menggeser seluruh isinya.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -968,8 +987,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **535**, `dbtest` **170** assertion) |
-| Binding skrip | **27** belum diport (21 di `sl.c` + 6 salah ketik); global belum diport **0** |
+| Gerbang regresi | 6/6 hijau (`cliftest` **535**, `dbtest` **187** assertion) |
+| Binding skrip | **22** belum diport (16 di `sl.c` + 6 salah ketik); global belum diport **0** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -1001,6 +1020,10 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**13. Bank klan & subpath** — `getBankItems`, `getClanBankItems`,
+`getSubpathBankItems`, `clanBankDeposit`, `clanBankWithdraw`, plus
+`map/data/ClanDb` (tabel `Clans` + `ClanBanks`).
 
 **12. C4 — papan pesan** — `showBoard` (2x), `sendBoardQuestions` (2x),
 `powerBoard` (2x), plus `map/data/BoardDb` (tabel `BoardNames` dan
@@ -1425,7 +1448,7 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 21 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 16 method masih ada di `sl.c` tapi belum diport, plus 6
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
@@ -1454,9 +1477,8 @@ dari keluarga ini hanya **`showPost`** (baca satu kiriman, 0x300A) dan
 **menulis kiriman** (0x300C) — keduanya belum dipanggil skrip mana pun,
 jadi tidak muncul di daftar celah.
 
-**3. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
-`getClanBankItems`/`getSubpathBankItems`/`getBankItems` — 5 titik, dan
-logika bank utamanya sudah ada. Murah.
+~~**3. Bank klan & subpath.**~~ **SELESAI 27 Agustus 2026.** Ternyata
+bukan dua bank melainkan satu — lihat Peringatan #49.
 
 **4. Sisa administratif.** `setAccountBan`,
 `setHeroShow`, `setCaptchaKey`/`getCaptchaKey`, `addActivationKey`/

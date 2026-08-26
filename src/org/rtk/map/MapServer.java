@@ -91,6 +91,9 @@ public final class MapServer {
     /** Tampilan barang (itemdb_look / itemdb_lookcolor). */
     public static final org.rtk.map.data.ItemDb itemDb = new org.rtk.map.data.ItemDb();
 
+    /** Klan beserta bank bersamanya (tabel `Clans` + `ClanBanks`). */
+    public static final org.rtk.map.data.ClanDb clanDb = new org.rtk.map.data.ClanDb();
+
     /** Papan pesan: nama papan (BoardNames) dan gelar penulis (BoardTitles). */
     public static final org.rtk.map.data.BoardDb boardDb = new org.rtk.map.data.BoardDb();
 
@@ -187,6 +190,7 @@ public final class MapServer {
             floorItems.useIdIndex(npcs);   // barang lantai juga (map_additem)
             classDb.loadPaths(sql);        // kelas -> jalur, untuk powerBoard
             boardDb.load(sql);             // papan pesan + gelar penulis
+            clanDb.load(sql);              // klan; bank-nya dimuat saat dipakai
             mobs.loadSpawns(sql, serverId, world);
         }
         classDb.load(dbPath);

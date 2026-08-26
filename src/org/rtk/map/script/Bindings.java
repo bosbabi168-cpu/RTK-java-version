@@ -1057,6 +1057,70 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        // ---- bank pribadi, klan, dan subpath ----
+
+        /**
+         * pcl_getbankitems(): seluruh isi bank <b>pribadi</b> pemain.
+         *
+         * <p>Bentuk keluarannya <b>datar berselang sepuluh</b>: tiap barang
+         * memakai sepuluh indeks berurutan (id, jumlah, pemilik, waktu,
+         * ukiran, perlindungan, ikon, warna ikon, wujud, warna wujud).
+         * Skrip bank membacanya dengan langkah 10.</p>
+         */
+        player.addMethod("getBankItems", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return u == null ? new LuaTable() : bankTable(u.status.banks, 10);
+        });
+
+        /**
+         * pcl_getclanbankitems(): isi bank klan pemain, sepuluh ladang per
+         * barang.
+         */
+        player.addMethod("getClanBankItems", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null || u.status.clan == 0) {
+                return new LuaTable();
+            }
+            return bankTable(org.rtk.map.MapServer.clanDb.bank(
+                    org.rtk.map.MapServer.sql, (int) u.status.clan), 10);
+        });
+
+        /**
+         * pcl_getsubpathbankitems(): ⚠️ <b>penyimpanan yang SAMA</b> dengan
+         * bank klan — yang berbeda hanya bentuknya, <b>lima</b> ladang per
+         * barang (id, jumlah, pemilik, ukiran, waktu) alih-alih sepuluh.
+         * Lihat catatan di {@link org.rtk.map.data.ClanDb}.
+         */
+        player.addMethod("getSubpathBankItems", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null || u.status.clan == 0) {
+                return new LuaTable();
+            }
+            return bankTable(org.rtk.map.MapServer.clanDb.bank(
+                    org.rtk.map.MapServer.sql, (int) u.status.clan), 5);
+        });
+
+        /** pcl_clanbankdeposit(barang, jumlah, pemilik, waktu, ukiran, …). */
+        player.addMethod("clanBankDeposit", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null || u.status.clan == 0) {
+                return LuaValue.FALSE;
+            }
+            return LuaValue.valueOf(org.rtk.map.MapServer.clanDb.deposit(
+                    org.rtk.map.MapServer.sql, (int) u.status.clan, bankItemDari(args)));
+        });
+
+        /** pcl_clanbankwithdraw(barang, jumlah, …): gagal bila kurang. */
+        player.addMethod("clanBankWithdraw", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null || u.status.clan == 0) {
+                return LuaValue.FALSE;
+            }
+            var cari = bankItemDari(args);
+            return LuaValue.valueOf(org.rtk.map.MapServer.clanDb.withdraw(
+                    org.rtk.map.MapServer.sql, (int) u.status.clan, cari, cari.amount));
+        });
+
         // ---- papan pesan (Trek C4) ----
 
         /**
@@ -1646,6 +1710,60 @@ final class Bindings {
             }
         }
         return null;
+    }
+
+    /**
+     * Isi bank sebagai tabel Lua <b>datar</b>.
+     *
+     * @param stride 10 untuk bentuk bank penuh, 5 untuk bentuk subpath.
+     *               Keduanya membaca daftar yang sama; hanya ladang yang
+     *               ikut yang berbeda.
+     */
+    private static LuaValue bankTable(java.util.List<org.rtk.common.mmo.BankItem> isi,
+                                      int stride) {
+        LuaTable t = new LuaTable();
+        int x = 1;
+        for (var b : isi) {
+            if (b.itemId <= 0) {
+                continue;
+            }
+            if (stride == 5) {
+                t.set(x, LuaValue.valueOf((double) b.itemId));
+                t.set(x + 1, LuaValue.valueOf((double) b.amount));
+                t.set(x + 2, LuaValue.valueOf((double) b.owner));
+                t.set(x + 3, LuaValue.valueOf(b.realName == null ? "" : b.realName));
+                t.set(x + 4, LuaValue.valueOf((double) b.time));
+            } else {
+                t.set(x, LuaValue.valueOf((double) b.itemId));
+                t.set(x + 1, LuaValue.valueOf((double) b.amount));
+                t.set(x + 2, LuaValue.valueOf((double) b.owner));
+                t.set(x + 3, LuaValue.valueOf((double) b.time));
+                t.set(x + 4, LuaValue.valueOf(b.realName == null ? "" : b.realName));
+                t.set(x + 5, LuaValue.valueOf((double) b.protectedFlag));
+                t.set(x + 6, LuaValue.valueOf((double) b.customIcon));
+                t.set(x + 7, LuaValue.valueOf((double) b.customIconColor));
+                t.set(x + 8, LuaValue.valueOf((double) b.customLook));
+                t.set(x + 9, LuaValue.valueOf((double) b.customLookColor));
+            }
+            x += stride;
+        }
+        return t;
+    }
+
+    /** Bongkar sepuluh argumen bank klan jadi satu barang bank. */
+    private static org.rtk.common.mmo.BankItem bankItemDari(Varargs args) {
+        var b = new org.rtk.common.mmo.BankItem();
+        b.itemId = (long) args.optdouble(2, 0);
+        b.amount = (long) args.optdouble(3, 0);
+        b.owner = (long) args.optdouble(4, 0);
+        b.time = (long) args.optdouble(5, 0);
+        b.realName = args.optjstring(6, "");
+        b.protectedFlag = (long) args.optdouble(7, 0);
+        b.customIcon = (long) args.optdouble(8, 0);
+        b.customIconColor = (long) args.optdouble(9, 0);
+        b.customLook = (long) args.optdouble(10, 0);
+        b.customLookColor = (long) args.optdouble(11, 0);
+        return b;
     }
 
     /** itemdb_id(): argumen Lua yang boleh berupa nama ATAU nomor barang. */

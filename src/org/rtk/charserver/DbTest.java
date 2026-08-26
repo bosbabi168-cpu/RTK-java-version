@@ -71,6 +71,7 @@ public final class DbTest {
         "src/org/rtk/map/MobRegistry.java",
         "src/org/rtk/map/Parcels.java",
         "src/org/rtk/map/data/BoardDb.java",
+        "src/org/rtk/map/data/ClanDb.java",
         "src/org/rtk/charserver/Mapif.java",
         "src/org/rtk/map/MapServer.java",
         "src/org/rtk/login/LoginClif.java",
@@ -138,6 +139,7 @@ public final class DbTest {
         spellQueries(sql);
         parcelTest(sql);
         boardTest(sql);
+        clanBankTest(sql);
         charRoundTrip(sql);
     }
 
@@ -445,6 +447,83 @@ public final class DbTest {
         Integer mal = sql.queryInt("SELECT COUNT(*) FROM `Mail`");
         check("tabel Boards terbaca", brd != null);
         check("tabel Mail terbaca", mal != null);
+    }
+
+    /**
+     * Bank klan — titip, ambil, dan penggabungan barang sejenis.
+     *
+     * <p>Memakai id klan di luar rentang data asli dan membersihkan sendiri
+     * barisnya; tidak menyentuh bank klan yang ada.</p>
+     */
+    private static void clanBankTest(Sql sql) {
+        log.info("=== tahap 2e: bank klan ===");
+
+        final int klan = 999321;
+        sql.update("DELETE FROM `ClanBanks` WHERE `CbkClnId` = ?", klan);
+
+        var db = new org.rtk.map.data.ClanDb();
+        db.load(sql);
+        check("tabel Clans terbaca", db.count() >= 0);
+        check("bank klan uji mulai kosong", db.bank(sql, klan).isEmpty());
+
+        // --- titip ---
+        var a = new org.rtk.common.mmo.BankItem();
+        a.itemId = 7001;
+        a.amount = 5;
+        a.realName = "";
+        check("titip barang pertama", db.deposit(sql, klan, a));
+        check("isinya satu slot", db.bank(sql, klan).size() == 1);
+
+        // barang dengan sepuluh atribut SAMA digabung, bukan slot baru
+        var b = new org.rtk.common.mmo.BankItem();
+        b.itemId = 7001;
+        b.amount = 3;
+        b.realName = "";
+        check("titip barang sejenis", db.deposit(sql, klan, b));
+        check("barang sejenis DIGABUNG, bukan jadi slot kedua",
+                db.bank(sql, klan).size() == 1
+                        && db.bank(sql, klan).get(0).amount == 8);
+
+        // atribut berbeda -> slot terpisah
+        var c = new org.rtk.common.mmo.BankItem();
+        c.itemId = 7001;
+        c.amount = 1;
+        c.realName = "Ukiran";
+        check("titip barang berukir", db.deposit(sql, klan, c));
+        check("ukiran berbeda -> slot TERPISAH", db.bank(sql, klan).size() == 2);
+
+        // --- ambil ---
+        var ambil = new org.rtk.common.mmo.BankItem();
+        ambil.itemId = 7001;
+        ambil.amount = 3;
+        ambil.realName = "";
+        check("ambil sebagian", db.withdraw(sql, klan, ambil, 3));
+        check("jumlahnya berkurang", db.bank(sql, klan).get(0).amount == 5);
+
+        ambil.amount = 99;
+        check("ambil lebih banyak dari yang ada -> gagal",
+                !db.withdraw(sql, klan, ambil, 99));
+        check("gagal ambil tidak mengubah apa pun",
+                db.bank(sql, klan).get(0).amount == 5);
+
+        check("ambil seluruhnya", db.withdraw(sql, klan, ambil, 5));
+        check("slot yang habis dibuang", db.bank(sql, klan).size() == 1);
+
+        var takAda = new org.rtk.common.mmo.BankItem();
+        takAda.itemId = 999999;
+        check("ambil barang yang tidak ada -> gagal",
+                !db.withdraw(sql, klan, takAda, 1));
+
+        // --- bertahan lewat muat ulang ---
+        var db2 = new org.rtk.map.data.ClanDb();
+        db2.load(sql);
+        var isi = db2.bank(sql, klan);
+        check("isinya bertahan setelah dimuat ulang dari database",
+                isi.size() == 1 && isi.get(0).realName.equals("Ukiran"));
+
+        sql.update("DELETE FROM `ClanBanks` WHERE `CbkClnId` = ?", klan);
+        check("bersih setelah uji",
+                new org.rtk.map.data.ClanDb().bank(sql, klan).isEmpty());
     }
 
     private static void worldData(Sql sql) {
