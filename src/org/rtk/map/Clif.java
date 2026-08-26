@@ -164,11 +164,31 @@ public final class Clif {
         }
     }
 
-    /** Header bersama: 0xAA + panjang + opcode. */
+    /** Header bersama: 0xAA + panjang + opcode. Ladang [4] dibiarkan 0. */
     private static void head(Session s, int opcode, int payloadLen) {
         s.wfifoB(0, 0xAA);
         s.wfifoWBE(1, payloadLen);
         s.wfifoB(3, opcode);
+    }
+
+    /**
+     * Header versi {@code WFIFOHEADER()} — sama dengan {@link #head} plus
+     * <b>nomor urut paket</b> di ladang [4].
+     *
+     * <p>Di C hanya sebagian paket dibangun lewat makro itu, dan sisanya
+     * meninggalkan [4] bernilai 0 karena buffernya {@code CALLOC}. Jadi
+     * <b>jangan diseragamkan</b>: pilih {@code head} atau {@code headSeq}
+     * menurut makro yang dipakai fungsi C-nya. Yang memakai
+     * {@code WFIFOHEADER}: 0x07, 0x0C ({@code clif_mob_move}), 0x0D
+     * ({@code clif_speak}), 0x13 ({@code clif_send_mob_health_sub}), 0x1F,
+     * 0x37, 0x3A, 0x3F, dan 0x51.</p>
+     *
+     * <p>Nomornya milik <b>sesi penerima</b>, bukan sesi pengirim — pada
+     * paket siaran tiap penerima punya hitungannya sendiri.</p>
+     */
+    private static void headSeq(Session s, int opcode, int payloadLen) {
+        head(s, opcode, payloadLen);
+        s.wfifoB(4, s.nextIncrement());
     }
 
     private static Session sessionOf(User sd) {
@@ -295,6 +315,924 @@ public final class Clif {
     }
 
     /**
+     * clif_popup() — kotak teks menimpa layar. Opcode 0x0A ragam 0x08.
+     */
+    public static void popup(User sd, String text) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        String msg = text == null ? "" : text;
+        byte[] raw = msg.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        head(s, 0x0A, raw.length + 5);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, 0x08);
+        s.wfifoWBE(6, raw.length);
+        s.wfifoBytes(8, raw);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_send_pc_healthscript() — bagian <b>paketnya</b>: bilah nyawa dan
+     * angka kerusakan di atas pemain. Opcode 0x13, panjang isi 12.
+     *
+     * <p>⚠️ Disiarkan ke seluruh area, <b>kecuali</b> bila pemain sedang
+     * ber-{@code state == 2} (tak terlihat) — saat itu hanya dirinya yang
+     * melihat. Itu ada di C dan bukan kelalaian.</p>
+     */
+    public static void sendPcHealth(User sd, int critical, int percent, int damage) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        java.util.function.Consumer<User> tulis = to -> {
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                return;
+            }
+            ts.wfifoB(0, 0xAA);
+            ts.wfifoWBE(1, 12);
+            ts.wfifoB(3, 0x13);
+            ts.wfifoLBE(5, (int) sd.id);
+            ts.wfifoB(9, critical);
+            ts.wfifoB(10, percent);
+            ts.wfifoLBE(11, damage);
+            ts.wfifoSet(encrypt(ts, to));
+        };
+        if (sd.status.state == 2) {
+            tulis.accept(sd);
+            return;
+        }
+        map.foreachInArea(sd.x, sd.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (bl instanceof User to) {
+                tulis.accept(to);
+            }
+        });
+    }
+
+    /**
+     * Paket obrolan (opcode 0x0D) yang dikirim <b>hanya ke pemain ini</b> —
+     * bagian kirim dari {@code pcl_talkself}.
+     *
+     * <p>Ladang [10] berisi {@code panjang + 2}, bukan panjang teksnya.
+     * Itu memang begitu di C; jangan "dibetulkan".</p>
+     *
+     * @param speakerId id benda yang dianggap berbicara; 0 = pemain sendiri
+     */
+    public static void chatSelf(User sd, int type, long speakerId, String text) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        String msg = text == null ? "" : text;
+        byte[] raw = msg.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int len = raw.length;
+
+        head(s, 0x0D, 10 + len);
+        s.wfifoB(5, type);
+        s.wfifoLBE(6, (int) (speakerId == 0 ? sd.status.id : speakerId));
+        s.wfifoB(10, len + 2);
+        s.wfifoBytes(11, raw);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_speak() — satu baris obrolan yang <b>terdengar di sekitar</b>
+     * sebuah benda. Opcode 0x0D, disiarkan ke seluruh pemain di area
+     * (AREA, jadi pembicara sendiri ikut mendengar bila ia pemain).
+     *
+     * <p>Inilah yang membuat NPC dan mob benar-benar bersuara di layar —
+     * jalur di balik {@code talk}, method skrip terbanyak kedua (698x).</p>
+     *
+     * <p>⚠️ <b>Bedanya dengan {@link #chatSelf} halus dan mudah tertukar</b>,
+     * padahal opcodenya sama. C membangun paket ini lewat
+     * {@code WFIFOHEADER} sehingga ia membawa nomor urut di [4], ladang
+     * panjangnya {@code panjang + 8} (bukan {@code 10 + panjang}), dan [10]
+     * berisi panjang teks apa adanya (bukan {@code panjang + 2}).
+     * Ketiganya diambil dari C; jangan diseragamkan.</p>
+     */
+    public static void speak(org.rtk.map.data.BlockList from, int type, String text) {
+        MapData map = MapServer.world.get(from.m);
+        if (map == null) {
+            return;
+        }
+        String msg = text == null ? "" : text;
+        byte[] raw = msg.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        map.foreachInArea(from.x, from.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (!(bl instanceof User to)) {
+                return;
+            }
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                return;
+            }
+            headSeq(ts, 0x0D, raw.length + 8);
+            ts.wfifoB(5, type);
+            ts.wfifoLBE(6, (int) from.id);
+            ts.wfifoB(10, raw.length);
+            ts.wfifoBytes(11, raw);
+            ts.wfifoSet(encrypt(ts, to));
+        });
+    }
+
+    /**
+     * clif_send_duration() — perbarui bilah durasi mantra di klien.
+     * Opcode 0x3A, dibangun lewat {@code WFIFOHEADER}.
+     *
+     * <p>Yang dikirim adalah <b>nama tampilan</b> mantra, dan bila
+     * penyihirnya orang lain namanya ikut dalam kurung:
+     * {@code "Kawlana's guard (Tester)"}. Waktu dalam <b>detik</b>.</p>
+     *
+     * <p>Mantra dengan {@code SplTicker = 0} sengaja tidak dikirim sama
+     * sekali — durasinya tetap berjalan di server, hanya tidak terlihat.
+     * Itu penyaring di C, bukan kelalaian.</p>
+     *
+     * <p>⚠️ Ada satu keanehan yang ditiru apa adanya: bila {@code id == 0}
+     * teksnya dipaksa menjadi {@code "Shield"} dengan panjang 6.</p>
+     */
+    public static void sendDuration(User sd, int id, int seconds, String casterName) {
+        Session s = sessionOf(sd);
+        if (s == null || !MapServer.spellDb.hasTicker(id)) {
+            return;
+        }
+        String teks;
+        if (id == 0) {
+            teks = "Shield";
+        } else if (casterName != null && !casterName.isEmpty()) {
+            teks = MapServer.spellDb.displayNameOf(id) + " (" + casterName + ")";
+        } else {
+            teks = MapServer.spellDb.displayNameOf(id);
+        }
+        byte[] raw = teks.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int len = raw.length;
+
+        headSeq(s, 0x3A, len + 7);
+        s.wfifoB(5, len);
+        s.wfifoBytes(6, raw);
+        s.wfifoLBE(len + 6, seconds);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_send_aether() — sisa aether sebuah mantra. Opcode 0x3F,
+     * juga lewat {@code WFIFOHEADER}.
+     *
+     * <p>Yang dikirim <b>nomor slot mantra di buku mantra</b> (1-basis),
+     * bukan id mantranya — klien menandai barisnya sendiri. Mantra yang
+     * tidak ada di buku pemain tidak dikirim sama sekali
+     * ({@code clif_findspell_pos} mengembalikan -1).</p>
+     */
+    public static void sendAether(User sd, int id, int seconds) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        int pos = -1;
+        for (int i = 0; i < sd.status.spells.length; i++) {
+            if (sd.status.spells[i] == id) {
+                pos = i;
+                break;
+            }
+        }
+        if (pos < 0) {
+            return;
+        }
+        headSeq(s, 0x3F, 8);
+        s.wfifoWBE(5, pos + 1);
+        s.wfifoLBE(7, seconds);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_sendaction() — benda memainkan gerakan (serang, lempar, duduk,
+     * sihir, makan). Opcode 0x1A, disiarkan ke SAMEAREA.
+     *
+     * <p>Ragam gerakan menurut komentar di C: 0 diam, 1 serang, 2 lempar,
+     * 3 tembak, 4 dan 5 duduk, 6 sihir, 7 dan 8 makan.</p>
+     *
+     * <p>Bunyi menyusul paketnya bila {@code sound > 0}; kait skrip
+     * {@code onAction} dipanggil pemanggilnya, bukan di sini.</p>
+     */
+    public static void sendAction(org.rtk.map.data.BlockList bl, int type, int time, int sound) {
+        byte[] buf = new byte[32];
+        buf[0] = (byte) 0xAA;
+        buf[1] = 0x00;
+        buf[2] = 0x0B;
+        buf[3] = 0x1A;
+        putBE32(buf, 5, (int) bl.id);
+        buf[9] = (byte) type;
+        buf[10] = 0x00;
+        buf[11] = (byte) time;
+        putBE16(buf, 12, 0);
+        sendToArea(bl, buf, buf.length, true);
+
+        if (sound > 0) {
+            playSound(bl, sound);
+        }
+    }
+
+    /**
+     * bll_throw() — animasi benda terlempar dari sebuah benda ke petak
+     * tujuan. Opcode 0x16, disiarkan ke SAMEAREA.
+     *
+     * <p>⚠️ Ladang [12] sengaja <b>nol</b>: itu yang membuat klien tidak
+     * meninggalkan gambar barang di tanah setelah animasinya selesai. Paket
+     * ini murni tampilan — barang yang benar-benar jatuh dibuat terpisah
+     * lewat {@code dropItemXY}.</p>
+     *
+     * <p>Ikonnya memakai penambah <b>49152</b>, rentang grafik barang, sama
+     * seperti ikon kustom barang lantai.</p>
+     */
+    public static void throwAnimation(org.rtk.map.data.BlockList from, int toX, int toY,
+                                      int icon, int color, int action) {
+        byte[] buf = new byte[32];
+        buf[0] = (byte) 0xAA;
+        putBE16(buf, 1, 0x1B);
+        buf[3] = 0x16;
+        buf[4] = 0x03;
+        putBE32(buf, 5, (int) from.id);
+        putBE16(buf, 9, icon + 49152);
+        buf[11] = (byte) color;
+        putBE32(buf, 12, 0);       // 0 = jangan tinggalkan gambar di tanah
+        putBE16(buf, 16, from.x);
+        putBE16(buf, 18, from.y);
+        putBE16(buf, 20, toX);
+        putBE16(buf, 22, toY);
+        putBE32(buf, 24, 0);
+        buf[28] = (byte) action;
+        buf[29] = 0x00;
+        sendToArea(from, buf, 30, true);
+    }
+
+    /**
+     * clif_sendadditem() — isi satu slot inventaris di layar pemain.
+     * Opcode 0x0F, panjangnya berubah-ubah menurut teksnya.
+     *
+     * <p>Jalur di balik {@code updateInv} (24x) dan setiap kali pemain
+     * mendapat barang. Nomor slot dikirim <b>1-basis</b>.</p>
+     *
+     * <p><b>Dua string, dan keduanya berbeda peran:</b> yang pertama adalah
+     * teks yang <b>dilihat pemain</b> — nama asli barang bila diukir, plus
+     * hiasan menurut jenisnya ({@code "Apel (5)"}, {@code "Obor [12 jam]"},
+     * {@code "[T3] Peta"}); yang kedua nama <b>jenis</b>-nya apa adanya,
+     * dipakai klien untuk mencocokkan gambar dan tooltip.</p>
+     *
+     * <p>⚠️ <b>Dua penjaga yang MENGHAPUS barangnya, bukan sekadar melewati:</b>
+     * barang ber-id di bawah 4, dan barang yang tidak ada di tabel `Items`,
+     * dikosongkan dari inventaris pemain. Itu penyapu data rusak di C —
+     * ditiru apa adanya, karena kalau tidak, barang hantu akan menumpuk di
+     * slot yang tidak bisa dipakai.</p>
+     *
+     * <p>⚠️ Ketahanan hanya dikirim untuk jenis <b>3..17</b> (perlengkapan).
+     * Jenis lain memakai ladang yang sama untuk penanda "bertumpuk".</p>
+     */
+    public static void sendAddItem(User sd, int slot) {
+        Session s = sessionOf(sd);
+        if (s == null || slot < 0 || slot >= sd.status.inventory.size()) {
+            return;
+        }
+        org.rtk.common.mmo.Item it = sd.status.inventory.get(slot);
+        var info = MapServer.itemDb.info(it.id);
+
+        // Penyapu data rusak: barangnya dibuang, bukan dilewati.
+        if (it.id < 4 || info.id() == 0) {
+            sd.status.inventory.remove(slot);
+            return;
+        }
+
+        String nama = it.realName != null && !it.realName.isEmpty()
+                ? it.realName : info.display();
+        String tampil;
+        if (it.amount > 1) {
+            tampil = nama + " (" + it.amount + ")";
+        } else if (info.type() == org.rtk.map.data.ItemDb.ITM_SMOKE) {
+            tampil = nama + " [" + it.dura + " " + info.text() + "]";
+        } else if (info.type() == org.rtk.map.data.ItemDb.ITM_BAG
+                || info.type() == org.rtk.map.data.ItemDb.ITM_QUIVER) {
+            tampil = nama + " [" + it.dura + "]";
+        } else if (info.type() == org.rtk.map.data.ItemDb.ITM_MAP) {
+            tampil = "[T" + it.dura + "] " + nama;
+        } else {
+            tampil = nama;
+        }
+
+        byte[] teks = tampil.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] jenis = info.display().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x0F);
+        s.wfifoB(5, slot + 1);
+
+        if (it.customIcon != 0) {
+            s.wfifoWBE(6, (int) (it.customIcon + 49152));
+            s.wfifoB(8, (int) it.customIconColor);
+        } else {
+            s.wfifoWBE(6, info.look().icon());
+            s.wfifoB(8, info.look().iconColor());
+        }
+
+        s.wfifoB(9, teks.length);
+        s.wfifoBytes(10, teks);
+        int len = teks.length + 10;
+
+        s.wfifoB(len, jenis.length);
+        s.wfifoBytes(len + 1, jenis);
+        len += jenis.length + 1;
+
+        s.wfifoLBE(len, it.amount);
+        len += 4;
+
+        boolean perlengkapan = info.type() >= org.rtk.map.data.ItemDb.ITM_EQUIP_MIN
+                && info.type() <= org.rtk.map.data.ItemDb.ITM_EQUIP_MAX;
+        if (perlengkapan) {
+            s.wfifoB(len, 0);
+            s.wfifoLBE(len + 1, it.dura);
+        } else {
+            s.wfifoB(len, MapServer.itemDb.stackAmountOf(it.id) > 1 ? 1 : 0);
+            s.wfifoLBE(len + 1, 0);
+        }
+        // Perlindungan: yang TERBESAR antara milik barangnya dan bawaan
+        // jenisnya yang menang — dua baris di C yang saling menimpa.
+        s.wfifoB(len + 5, (int) Math.max(it.protectedFlag,
+                MapServer.itemDb.protectedOf(it.id)));
+        len += 6;
+
+        String pemilik = it.owner != 0 ? MapServer.charName(it.owner) : "";
+        if (!pemilik.isEmpty()) {
+            byte[] o = pemilik.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoB(len, o.length);
+            s.wfifoBytes(len + 1, o);
+            len += o.length + 1;
+        } else {
+            s.wfifoB(len, 0);
+            len += 1;
+        }
+        s.wfifoWBE(len, 0);
+        len += 2;
+        s.wfifoB(len, 0);
+        len += 1;
+
+        s.wfifoWBE(1, len);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_senddelitem() — kosongkan satu slot inventaris di layar pemain.
+     * Opcode 0x10, panjang tetap.
+     *
+     * <p>⚠️ <b>Paket ini juga mengosongkan slotnya di server</b>, bukan
+     * sekadar memberi tahu klien — begitu di C, dan skrip mengandalkannya.</p>
+     *
+     * @param type alasan hilangnya, yang menentukan kalimat di layar klien:
+     *             0 dibuang, 1 dijatuhkan, 2 dimakan, 3 dihisap, 4 dilempar,
+     *             5 ditembakkan, 6 dipakai, 7 dikirim, 8 lapuk, 9 diberikan,
+     *             10 dijual, 11 dicabut, 12 nama barangnya, 13 patah
+     */
+    public static void sendDelItem(User sd, int slot, int type) {
+        if (slot >= 0 && slot < sd.status.inventory.size()) {
+            sd.status.inventory.remove(slot);
+        }
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        head(s, 0x10, 0x06);
+        s.wfifoB(5, slot + 1);
+        s.wfifoB(6, type);
+        s.wfifoB(7, 0);
+        s.wfifoB(8, 0);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_sendxychange() — geser kamera klien tanpa memindahkan pemain.
+     * Opcode 0x04, tata letak sama dengan {@link #sendXy}.
+     *
+     * <p>⚠️ <b>Offset kamera dijepit dengan cara yang aneh dan itu
+     * disengaja:</b> bila kamera akan menembus tepi peta, nilainya
+     * <b>dinaikkan atau diturunkan satu</b>, bukan dipotong ke batas. Angka
+     * 16 dan 14 adalah lebar dan tinggi layar dikurangi satu.</p>
+     */
+    public static void sendXyChange(User sd, int dx, int dy) {
+        Session s = sessionOf(sd);
+        MapData map = MapServer.world.get(sd.m);
+        if (s == null || map == null) {
+            return;
+        }
+        s.wfifoB(0, 0xAA);
+        s.wfifoWBE(1, 0x0A);
+        s.wfifoB(3, 0x04);
+        s.wfifoWBE(5, sd.x);
+        s.wfifoWBE(7, sd.y);
+
+        int kx = dx;
+        if (sd.x - kx < 0) {
+            kx--;
+        } else if (sd.x + (16 - kx) >= map.xs) {
+            kx++;
+        }
+        s.wfifoWBE(9, kx);
+        sd.viewX = kx;
+
+        int ky = dy;
+        if (sd.y - ky < 0) {
+            ky--;
+        } else if (sd.y + (14 - ky) >= map.ys) {
+            ky++;
+        }
+        s.wfifoWBE(11, ky);
+        sd.viewY = ky;
+
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_destroyold() — suruh klien membuang benda yang masih tergambar
+     * dari gambaran sebelumnya. Opcode 0x58 dengan [5] = 0.
+     *
+     * <p>Opcode yang sama dipakai {@link #guiText}; yang membedakan hanya
+     * ladang [5] — 0 membersihkan layar, 6 menampilkan teks.</p>
+     */
+    public static void destroyOld(User sd) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        head(s, 0x58, 3);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, 0x00);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_guitextsd() — teks besar melayang di tengah layar pemain
+     * (pengumuman event). Opcode 0x58 dengan [5] = 6.
+     *
+     * <p>⚠️ Ladang panjangnya ditulis {@code 8 + panjang + 3} — sudah
+     * memasukkan 3 byte indeks kunci yang biasanya ditambahkan
+     * {@code setPacketIndexes} sesudahnya. Jadi paket ini <b>menghitung
+     * ganda</b> dibanding paket lain. Itu ada di C dan ditiru apa adanya;
+     * lihat Peringatan #17 soal jebakan panjang paket.</p>
+     */
+    public static void guiText(User sd, String text) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] raw = (text == null ? "" : text)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x58);
+        s.wfifoB(5, 0x06);
+        s.wfifoWBE(6, raw.length);
+        s.wfifoBytes(8, raw);
+        s.wfifoWBE(1, 8 + raw.length + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_paperpopup() — kotak "kertas" berisi teks panjang, ukurannya
+     * ditentukan skrip. Opcode 0x35.
+     */
+    public static void paperPopup(User sd, String text, int width, int height) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] raw = (text == null ? "" : text)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        head(s, 0x35, raw.length + 11);
+        s.wfifoB(5, 0);
+        s.wfifoB(6, width);
+        s.wfifoB(7, height);
+        s.wfifoB(8, 0);
+        s.wfifoWBE(9, raw.length);
+        s.wfifoBytes(11, raw);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_sendurl() — buka alamat web di klien. Opcode 0x66.
+     *
+     * @param type 0 = peramban dalam permainan, 1 = buka peramban luar lalu
+     *             tutup klien, 2 = jendela sembul
+     */
+    public static void sendUrl(User sd, int type, String url) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] raw = (url == null ? "" : url)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x66);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, type);
+        s.wfifoWBE(6, raw.length);
+        s.wfifoBytes(8, raw);
+        s.wfifoWBE(1, raw.length + 8);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_send_timer() — pasang penghitung waktu di layar pemain.
+     * Opcode 0x67, panjang isi 7.
+     *
+     * @param type   1 dan 2 menghitung mundur; nilai lain hanya menampilkan
+     * @param length lama dalam <b>detik</b>
+     */
+    public static void sendTimer(User sd, int type, long length) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        head(s, 0x67, 7);
+        s.wfifoB(5, type);
+        s.wfifoLBE(6, (int) length);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_sendscriptsay() — pemain berbicara, dengan <b>namanya sendiri
+     * disisipkan di depan</b>. Opcode 0x0D.
+     *
+     * <p>Berbeda dari {@link #speak}, yang mengirim teks apa adanya atas nama
+     * sebuah benda. Di sini server yang menyusun {@code "Nama: pesan"}.</p>
+     *
+     * <p>⚠️ <b>Ragam 1 adalah berteriak</b>, dan tiga hal berubah sekaligus:
+     * pemisahnya {@code '!'} bukan {@code ':'}, dan siarannya ke
+     * <b>seluruh peta</b>, bukan hanya area pandang.</p>
+     *
+     * <p>Ragam &gt;= 10 menandai bahasa dan menambahkan awalan seperti
+     * {@code "EN[Nama]"}; itu <b>belum</b> diport — daftar bahasanya ada di
+     * C tapi tidak satu pun skrip memakainya.</p>
+     */
+    public static void scriptSay(User sd, String text, int type) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        String msg = text == null ? "" : text;
+        byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] raw = msg.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        byte[] buf = new byte[16 + nama.length + raw.length];
+        buf[0] = (byte) 0xAA;
+        putBE16(buf, 1, 10 + nama.length + raw.length);
+        buf[3] = 0x0D;
+        buf[5] = (byte) type;
+        putBE32(buf, 6, (int) sd.status.id);
+        buf[10] = (byte) (nama.length + raw.length + 2);
+        System.arraycopy(nama, 0, buf, 11, nama.length);
+        buf[11 + nama.length] = (byte) (type == 1 ? '!' : ':');
+        buf[12 + nama.length] = (byte) ' ';
+        System.arraycopy(raw, 0, buf, 13 + nama.length, raw.length);
+
+        if (type == 1) {
+            sendToMap(sd, buf, buf.length);
+        } else {
+            sendToArea(sd, buf, buf.length, true);
+        }
+    }
+
+    /**
+     * Bagian gambar-ulang {@code pcl_changeview()}: seluruh isi area pandang
+     * digambar ulang di layar pemain.
+     *
+     * <p>Urutannya diambil dari C dan <b>bukan sembarang</b>: benda
+     * bukan-karakter dulu (satu paket berkelompok), lalu sisa gambar lama
+     * dibuang, baru pemain, NPC, dan mob digambar. Membalik urutannya
+     * membuat benda yang baru digambar ikut terhapus {@code destroyOld}.</p>
+     */
+    public static void redrawSurroundings(User sd) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        java.util.List<org.rtk.map.data.BlockList> benda = new java.util.ArrayList<>();
+        map.foreachInArea(sd.x, sd.y, null, bl -> {
+            if (!(bl instanceof User)) {
+                benda.add(bl);
+            }
+        });
+        objectLookBatch(sd, benda);
+        destroyOld(sd);
+
+        map.foreachInArea(sd.x, sd.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (bl instanceof User other && other != sd) {
+                sendCharLook(sd, other);
+                sendCharLook(other, sd);
+            }
+        });
+        map.foreachInArea(sd.x, sd.y, null, bl -> {
+            if (bl instanceof Npc nd) {
+                sendNpcLook(sd, nd);
+            } else if (bl instanceof Mob mb) {
+                sendMobLook(sd, mb);
+            }
+        });
+    }
+
+    /** clif_send(..., SAMEMAP): siarkan ke seluruh pemain di peta yang sama. */
+    static void sendToMap(org.rtk.map.data.BlockList from, byte[] packet, int len) {
+        for (User to : MapServer.onlineChars.values()) {
+            if (to.m != from.m) {
+                continue;
+            }
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                continue;
+            }
+            ts.wfifoBytes(0, packet, len);
+            ts.wfifoSet(encrypt(ts, to));
+        }
+    }
+
+    /** Satu baris pada daftar isi papan. */
+    public record BoardEntry(int color, int postId, int titleId,
+                             int month, int day, String author, String topic) {
+    }
+
+    /**
+     * intif_parse_showpostresponse() bagian kliennya — daftar isi papan.
+     * Opcode 0x31.
+     *
+     * <p>⚠️ Opcode 0x31 dipakai <b>dua hal</b>: daftar ini dan formulir
+     * pertanyaan ({@link #sendBoardQuestions}, penanda 0x09 di [5]). Yang
+     * membedakan hanya ladang itu.</p>
+     *
+     * <p>Nama penulis digabung dengan <b>gelarnya</b> bila papannya bukan
+     * kotak surat dan kirimannya memang punya gelar: {@code "Prajurit Budi"}.
+     * Gelar diambil dari tabel {@code BoardTitles}.</p>
+     *
+     * <p>⚠️ Perhitungan offsetnya di C berjalan lewat satu penghitung
+     * {@code len} yang <b>maju tidak seragam</b> — bertambah panjang nama
+     * + 4 setelah nama, lalu 2 setelah tanggal. Ditiru apa adanya karena
+     * itulah yang menentukan letak tiap ladang.</p>
+     */
+    public static void sendBoardList(User sd, int board, int flags1, int flags2,
+                                     java.util.List<BoardEntry> isi) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        headSeq(s, 0x31, 0);
+        s.wfifoB(5, flags2);
+        s.wfifoB(6, flags1);
+        s.wfifoWBE(7, board);
+
+        byte[] namaPapan = MapServer.boardDb.nameOf(board)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoB(9, namaPapan.length);
+        s.wfifoBytes(10, namaPapan);
+        int len = namaPapan.length + 1;
+        int pos = len + 9;
+
+        if (isi.isEmpty()) {
+            s.wfifoB(pos, 0);
+        } else {
+            s.wfifoB(pos, isi.size());
+            len++;
+            for (BoardEntry e : isi) {
+                s.wfifoB(len + 9, e.color());
+                s.wfifoWBE(len + 10, e.postId());
+
+                String penulis = board != 0 && e.titleId() != 0
+                        ? MapServer.boardDb.titleOf(e.titleId()) + " " + e.author()
+                        : e.author();
+                byte[] pb = penulis.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+                s.wfifoB(len + 12, pb.length);
+                s.wfifoBytes(len + 13, pb);
+                len += pb.length + 4;
+
+                s.wfifoB(len + 9, e.month());
+                s.wfifoB(len + 10, e.day());
+                len += 2;
+
+                byte[] jb = e.topic().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+                s.wfifoB(len + 9, jb.length);
+                s.wfifoBytes(len + 10, jb);
+                len += jb.length + 1;
+            }
+        }
+        s.wfifoWBE(1, len + 9);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_mapselect() — daftar peta yang bisa dipilih pemain (peta rumah,
+     * teleporter). Opcode 0x2E.
+     *
+     * <p>⚠️ <b>Ekor tiap entri aneh dan disengaja:</b> setelah koordinat,
+     * C menulis jumlah entri lagi lalu <b>deretan 0..n-1</b> — di dalam
+     * perulangan, jadi seluruh deret itu berulang untuk <b>setiap</b> peta.
+     * Isinya tidak pernah dipakai server, tetapi klien mengharapkan
+     * panjangnya. Ditiru apa adanya.</p>
+     */
+    public static void mapSelection(User sd, String title,
+                                    java.util.List<Integer> x0,
+                                    java.util.List<Integer> y0,
+                                    java.util.List<String> names,
+                                    java.util.List<Integer> ids,
+                                    java.util.List<Integer> x1,
+                                    java.util.List<Integer> y1) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] judul = (title == null ? "" : title)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int n = names.size();
+
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x2E);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, judul.length);
+        s.wfifoBytes(6, judul);
+        int len = judul.length + 1;
+        s.wfifoB(len + 5, n);
+        s.wfifoB(len + 6, 0);
+        len += 2;
+
+        for (int i = 0; i < n; i++) {
+            s.wfifoWBE(len + 5, at(x0, i));
+            s.wfifoWBE(len + 7, at(y0, i));
+            len += 4;
+            byte[] nama = names.get(i)
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoB(len + 5, nama.length);
+            s.wfifoBytes(len + 6, nama);
+            len += nama.length + 1;
+            s.wfifoLBE(len + 5, at(ids, i));
+            s.wfifoWBE(len + 9, at(x1, i));
+            s.wfifoWBE(len + 11, at(y1, i));
+            len += 8;
+            s.wfifoWBE(len + 5, n);
+            len += 2;
+            for (int y = 0; y < n; y++) {
+                s.wfifoWBE(len + 5, y);
+                len += 2;
+            }
+        }
+        s.wfifoWBE(1, len + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    private static int at(java.util.List<Integer> l, int i) {
+        return i < l.size() ? l.get(i) : 0;
+    }
+
+    /**
+     * clif_sendpowerboard() — daftar pemain di peta ini beserta "power
+     * rating"-nya. Opcode 0x46.
+     *
+     * <p>⚠️ <b>Namanya menyesatkan: ini bukan papan pesan.</b> Meski
+     * bindingnya bernama {@code powerBoard} dan berada di kelompok yang sama
+     * dengan {@code showBoard}, isinya daftar pemain online — tidak
+     * menyentuh tabel {@code Boards} sama sekali.</p>
+     *
+     * <p>Dua penyaring yang ditiru: pemain ber-<b>path 0 atau 50</b>
+     * dilewati (belum berjalur / jalur khusus), dan path 5 dilaporkan
+     * sebagai 2. "Power rating" hanyalah {@code baseHp + baseMp}.</p>
+     */
+    public static void sendPowerBoard(User sd) {
+        Session s = sessionOf(sd);
+        MapData map = MapServer.world.get(sd.m);
+        if (s == null || map == null) {
+            return;
+        }
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x46);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, 1);
+
+        int[] len = new int[2];   // [0] byte terpakai, [1] jumlah pemain
+        for (User to : MapServer.onlineChars.values()) {
+            if (to.m != sd.m) {
+                continue;
+            }
+            int path = MapServer.classDb.pathOf(to.status.charClass);
+            if (path == 5) {
+                path = 2;
+            }
+            if (path == 0 || path == 50) {
+                continue;
+            }
+            byte[] nama = to.status.name
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoLBE(len[0] + 8, (int) to.id);
+            s.wfifoB(len[0] + 12, path);
+            s.wfifoLBE(len[0] + 13, (int) (to.status.baseHp + to.status.baseMp));
+            s.wfifoB(len[0] + 17, to.status.armorColor);
+            s.wfifoB(len[0] + 18, nama.length);
+            s.wfifoBytes(len[0] + 19, nama);
+            len[0] += nama.length + 11;
+            len[1]++;
+        }
+        s.wfifoWBE(6, len[1]);
+        s.wfifoWBE(1, len[0] + 5);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_sendBoardQuestionaire() — formulir bertanya di papan: daftar
+     * pertanyaan dengan jumlah baris jawaban masing-masing. Opcode 0x31
+     * dengan penanda 0x09 di [5].
+     *
+     * <p>Opcode 0x31 dipakai <b>dua hal berbeda</b>: penanda 0x09 formulir
+     * ini, sedangkan daftar isi papan memakai penanda lain. Yang membedakan
+     * hanya ladang [5].</p>
+     *
+     * <p>Byte tetap 1/2 di antara judul dan pertanyaan, serta 0x6B di
+     * ekornya, diambil apa adanya dari C — artinya tidak terdokumentasi.</p>
+     */
+    public static void sendBoardQuestions(User sd, java.util.List<String> headers,
+                                          java.util.List<String> questions,
+                                          java.util.List<Integer> inputLines) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        int count = headers.size();
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x31);
+        s.wfifoB(5, 0x09);
+        s.wfifoB(6, count);
+
+        int len = 7;
+        for (int i = 0; i < count; i++) {
+            byte[] judul = headers.get(i)
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            byte[] tanya = (i < questions.size() ? questions.get(i) : "")
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            int baris = i < inputLines.size() ? inputLines.get(i) : 1;
+
+            s.wfifoB(len, judul.length);
+            len += 1;
+            s.wfifoBytes(len, judul);
+            len += judul.length;
+            s.wfifoB(len, 1);
+            s.wfifoB(len + 1, 2);
+            len += 2;
+            s.wfifoB(len, baris);
+            len += 1;
+            s.wfifoB(len, tanya.length);
+            len += 1;
+            s.wfifoBytes(len, tanya);
+            len += tanya.length;
+            s.wfifoB(len, 1);
+            len += 1;
+        }
+        s.wfifoB(len, 0);
+        s.wfifoB(len + 1, 0x6B);
+        len += 2;
+
+        s.wfifoWBE(1, len + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_playsound() — mainkan bunyi di sekitar sebuah benda.
+     * Opcode 0x19, panjang isi 0x14, disiarkan ke SAMEAREA.
+     *
+     * <p>Ladang tetapnya diambil apa adanya dari C; artinya tidak
+     * terdokumentasi di sumber, jadi jangan "dirapikan".</p>
+     */
+    public static void playSound(org.rtk.map.data.BlockList src, int sound) {
+        MapData map = MapServer.world.get(src.m);
+        if (map == null) {
+            return;
+        }
+        map.foreachInArea(src.x, src.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (!(bl instanceof User to)) {
+                return;
+            }
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                return;
+            }
+            ts.wfifoB(0, 0xAA);
+            ts.wfifoWBE(1, 0x14);
+            ts.wfifoB(3, 0x19);
+            ts.wfifoB(4, 0x03);
+            ts.wfifoWBE(5, 3);
+            ts.wfifoWBE(7, sound);
+            ts.wfifoB(9, 100);
+            ts.wfifoWBE(10, 4);
+            ts.wfifoLBE(12, (int) src.id);
+            ts.wfifoB(16, 1);
+            ts.wfifoB(17, 0);
+            ts.wfifoB(18, 2);
+            ts.wfifoB(19, 2);
+            ts.wfifoWBE(20, 4);
+            ts.wfifoB(22, 0);
+            ts.wfifoSet(encrypt(ts, to));
+        });
+    }
+
+    /**
      * clif_removespell() — hapus satu mantra dari buku mantra klien.
      * Opcode 0x18, panjang isi 3.
      *
@@ -368,7 +1306,7 @@ public final class Clif {
         if (s == null) {
             return;
         }
-        head(s, 0x51, 5);
+        headSeq(s, 0x51, 5);
         s.wfifoB(5, flag);
         s.wfifoB(6, 0);
         s.wfifoB(7, 0);
@@ -379,7 +1317,7 @@ public final class Clif {
      * Tarik pemain kembali ke posisi menurut server, lalu buka kuncinya.
      * Urutannya (kunci, kirim posisi, buka) ditiru dari `clif_parsewalk`.
      */
-    private static void snapBack(User sd) {
+    static void snapBack(User sd) {
         blockMovement(sd, 0);
         sendXy(sd);
         blockMovement(sd, 1);
@@ -448,85 +1386,23 @@ public final class Clif {
      */
     public static void parseWalk(User sd) {
         Session s = sessionOf(sd);
-        MapData map = MapServer.world.get(sd.m);
-        if (s == null || map == null) {
+        if (s == null) {
             return;
         }
-
         int opcode = s.rfifoB(3) & 0xFF;
         int direction = s.rfifoB(5) & 0xFF;
-
-        // Hanya paket 0x06 yang membawa permintaan gambar ulang; 0x32 tidak.
-        int redrawX0 = 0;
-        int redrawY0 = 0;
-        int redrawW = 0;
-        int redrawH = 0;
-        int redrawCheck = 0;
-        if (opcode == 0x06) {
-            redrawX0 = s.rfifoWBE(12);
-            redrawY0 = s.rfifoWBE(14);
-            redrawW = s.rfifoB(16) & 0xFF;
-            redrawH = s.rfifoB(17) & 0xFF;
-            redrawCheck = s.rfifoWBE(18);
-        }
         int claimX = s.rfifoWBE(8);
         int claimY = s.rfifoWBE(10);
 
-        // klien dan server tidak sepakat soal posisi -> tarik kembali
-        if (claimX != sd.x || claimY != sd.y) {
-            log.debug("[CLIF] {} desinkron: klien mengira ({},{}), server ({},{})",
-                    sd.name(), claimX, claimY, sd.x, sd.y);
-            snapBack(sd);
-            return;
-        }
-
-        int oldX = sd.x;
-        int oldY = sd.y;
-        // Versi C memakai switch tanpa default: arah di luar 0..3 tidak
-        // menggeser apa pun. Jangan diganti dengan mask 0x03 — arah 4 akan
-        // berubah jadi "ke atas" dan klien cacat bisa berjalan menembus.
-        int nx = sd.x + (direction < 4 ? DX[direction] : 0);
-        int ny = sd.y + (direction < 4 ? DY[direction] : 0);
-
-        // jepit ke batas peta, seperti versi C
-        nx = Math.max(0, Math.min(nx, map.xs - 1));
-        ny = Math.max(0, Math.min(ny, map.ys - 1));
-
-        sd.blocked = false;
-        if (!sd.isGm()) {
-            if (!map.walkable(nx, ny)) {
-                sd.blocked = true;
-            } else {
-                for (org.rtk.map.data.BlockList bl : map.objectsAt(nx, ny)) {
-                    if (blocksMovement(sd, bl, map)) {
-                        sd.blocked = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (sd.blocked || sd.paralyzed) {
-            snapBack(sd);
-            return;
-        }
-
-        updateCamera(sd, map, direction, nx, ny);
-        sendWalkConfirm(sd, direction, oldX, oldY);
-
-        if (nx == sd.x && ny == sd.y) {
-            return; // terjepit di tepi: tidak benar-benar berpindah
-        }
-
-        broadcastWalk(sd, direction, oldX, oldY);
-        map.moveBlock(sd, nx, ny);
-
+        // Hanya paket 0x06 yang menitipkan permintaan gambar ulang; 0x32
+        // tidak. Lihat catatan kebocoran di ClientCommands.playerWalks.
+        ClientCommands.RedrawRequest redraw = null;
         if (opcode == 0x06) {
-            redrawArea(sd, map, redrawX0, redrawY0, redrawW, redrawH, redrawCheck);
+            redraw = new ClientCommands.RedrawRequest(
+                    s.rfifoWBE(12), s.rfifoWBE(14),
+                    s.rfifoB(16) & 0xFF, s.rfifoB(17) & 0xFF, s.rfifoWBE(18));
         }
-
-        fireWalkScripts(sd);
-        checkWarpTile(sd, map);
+        MapServer.commands.playerWalks(sd, direction, claimX, claimY, redraw);
     }
 
     /**
@@ -537,7 +1413,7 @@ public final class Clif {
      * pemain, NPC, mob, dan terakhir menampilkan diri kita kepada pemain
      * lain di petak yang sama.</p>
      */
-    private static void redrawArea(User sd, MapData map,
+    static void redrawArea(User sd, MapData map,
                                    int x0, int y0, int w, int h, int check) {
         sendMapData(sd, x0, y0, w, h, check);
 
@@ -576,7 +1452,7 @@ public final class Clif {
      * {@code clif_parsewalk}: syarat masuk peta tujuan diperiksa dulu, dan
      * bila gagal pemain didorong mundur disertai pesan penolakan.
      */
-    private static void checkWarpTile(User sd, MapData map) {
+    static void checkWarpTile(User sd, MapData map) {
         // C menjepit koordinat dulu sebelum menelusuri daftar portal
         int fx = Math.min(sd.x, map.xs - 1);
         int fy = Math.min(sd.y, map.ys - 1);
@@ -1136,25 +2012,10 @@ public final class Clif {
      */
     public static void parseClick(User sd) {
         Session s = sessionOf(sd);
-        MapData map = MapServer.world.get(sd.m);
-        if (s == null || map == null) {
+        if (s == null) {
             return;
         }
-        long id = s.rfifoLBE(6) & 0xFFFFFFFFL;
-        var bl = id == 0 ? MapServer.npcs.byId(sd.lastClick) : MapServer.npcs.byId(id);
-        if (bl == null) {
-            log.debug("[CLIF] {} mengklik id {} yang tidak dikenal", sd.name(), id);
-            return;
-        }
-        if (bl.m != sd.m) {
-            return;
-        }
-
-        sd.lastClick = bl.id;
-        if (bl instanceof Npc nd) {
-            clickNpc(sd, nd);
-        }
-        // TODO(A5): klik mob -> onLook + skrip "click" milik mob
+        MapServer.commands.playerClicks(sd, s.rfifoLBE(6) & 0xFFFFFFFFL);
     }
 
     /**
@@ -1164,7 +2025,7 @@ public final class Clif {
      * bicara oleh hampir semua NPC — kecuali NPC F1 dan NPC totem, karena
      * keduanya jalur keluar yang tidak boleh ikut tertutup.</p>
      */
-    private static void clickNpc(User sd, Npc nd) {
+    static void clickNpc(User sd, Npc nd) {
         if (MapServer.scriptEngine == null) {
             return;
         }
@@ -1244,57 +2105,34 @@ public final class Clif {
      */
     public static void parseMenuInput(User sd) {
         Session s = sessionOf(sd);
-        if (s == null || MapServer.scriptEngine == null) {
+        if (s == null) {
             return;
         }
-        var p = sd.scriptPlayer();
-        if (p.coroutine == null) {
-            return;   // hasCoref() di C: tidak ada yang menunggu
-        }
-
         int ragam = s.rfifoB(5) & 0xFF;
-        try {
-            switch (ragam) {
-                case 1 -> {
-                    // clif_parsemenu: id di [6] BE32, pilihan di [10] BE16
-                    int pilihan = s.rfifoWBE(10);
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(pilihan));
-                }
-                case 3 -> {
-                    // clif_parseinput: panjang di [12], teks di [13];
-                    // di C ada string kedua setelahnya — belum dipakai
-                    // primitif mana pun, jadi cukup yang pertama.
-                    int len = s.rfifoB(12) & 0xFF;
-                    StringBuilder sb = new StringBuilder(len);
-                    for (int i = 0; i < len; i++) {
-                        sb.append((char) (s.rfifoB(13 + i) & 0xFF));
-                    }
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(sb.toString()));
-                }
-                case 2 -> {
-                    // clif_parsebuy: NAMA barang di [13], panjangnya di [12]
-                    int len = s.rfifoB(12) & 0xFF;
-                    StringBuilder sb = new StringBuilder(len);
-                    for (int i = 0; i < len; i++) {
-                        sb.append((char) (s.rfifoB(13 + i) & 0xFF));
-                    }
-                    String nama = sb.toString();
-                    if (nama.isEmpty()) {
-                        MapServer.scriptEngine.cancel(p);
-                        return;
-                    }
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(nama));
-                }
-                case 4 -> {
-                    // clif_parsesell: nomor slot inventaris di [12]
-                    int slot = s.rfifoB(12) & 0xFF;
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(slot));
-                }
-                default -> MapServer.scriptEngine.cancel(p);   // 0 dan lainnya: batal
-            }
-        } catch (RuntimeException e) {
-            log.error("[CLIF] melanjutkan menu/input gagal untuk {}", sd.name(), e);
+        ClientCommands.Answer jawab = switch (ragam) {
+            // clif_parsemenu: id di [6] BE32, pilihan di [10] BE16
+            case 1 -> ClientCommands.Answer.choice(s.rfifoWBE(10));
+            // clif_parseinput: panjang di [12], teks di [13]. Di C ada
+            // string kedua setelahnya — belum dipakai primitif mana pun.
+            case 3 -> ClientCommands.Answer.text(teks(s, 12, 13));
+            // clif_parsebuy: NAMA barang, bukan indeksnya
+            case 2 -> ClientCommands.Answer.itemName(teks(s, 12, 13));
+            // clif_parsesell: nomor slot inventaris
+            case 4 -> ClientCommands.Answer.slot(s.rfifoB(12) & 0xFF);
+            // 0 dan lainnya: pemain membatalkan
+            default -> null;
+        };
+        MapServer.commands.playerAnswersMenu(sd, jawab);
+    }
+
+    /** Baca string berprefiks panjang: panjang di posLen, isi mulai posIsi. */
+    private static String teks(Session s, int posLen, int posIsi) {
+        int len = s.rfifoB(posLen) & 0xFF;
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            sb.append((char) (s.rfifoB(posIsi + i) & 0xFF));
         }
+        return sb.toString();
     }
 
     /**
@@ -1310,44 +2148,28 @@ public final class Clif {
      */
     public static void parseNpcDialog(User sd) {
         Session s = sessionOf(sd);
-        if (s == null || MapServer.scriptEngine == null) {
+        if (s == null) {
             return;
         }
-        var p = sd.scriptPlayer();
-        if (p.coroutine == null) {
-            log.debug("[CLIF] {} menjawab dialog padahal tidak ada yang menunggu", sd.name());
-            return;
-        }
-
         int ragam = s.rfifoB(5) & 0xFF;
         int pilihan = s.rfifoB(13) & 0xFF;
 
-        try {
-            switch (ragam) {
-                case 0x01 -> resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(pilihan));
-                case 0x02 -> {
-                    int menu = s.rfifoB(15) & 0xFF;
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(menu));
-                }
-                case 0x04 -> {
-                    if (pilihan != 0x02) {
-                        // pemain menutup kotak input: buang coroutine-nya
-                        MapServer.scriptEngine.cancel(p);
-                        return;
-                    }
-                    int len = s.rfifoB(15) & 0xFF;
-                    StringBuilder sb = new StringBuilder(len);
-                    for (int i = 0; i < len; i++) {
-                        sb.append((char) (s.rfifoB(16 + i) & 0xFF));
-                    }
-                    resumeWith(sd, p, org.luaj.vm2.LuaValue.valueOf(sb.toString()));
-                }
-                default -> log.debug("[CLIF] ragam dialog 0x{} belum ditangani",
-                        String.format("%02X", ragam));
+        ClientCommands.Answer jawab;
+        switch (ragam) {
+            case 0x01 -> jawab = ClientCommands.Answer.step(pilihan);
+            case 0x02 -> jawab = ClientCommands.Answer.choice(s.rfifoB(15) & 0xFF);
+            case 0x04 -> {
+                // [13] != 2 berarti pemain menutup kotak isian, bukan menjawab
+                jawab = pilihan != 0x02 ? null
+                        : ClientCommands.Answer.text(teks(s, 15, 16));
             }
-        } catch (RuntimeException e) {
-            log.error("[CLIF] melanjutkan dialog gagal untuk {}", sd.name(), e);
+            default -> {
+                log.debug("[CLIF] ragam dialog 0x{} belum ditangani",
+                        String.format("%02X", ragam));
+                return;
+            }
         }
+        MapServer.commands.playerAnswersDialog(sd, jawab);
     }
 
     /**
@@ -1834,152 +2656,528 @@ public final class Clif {
         s.wfifoB(9, st.side);
         s.wfifoLBE(10, (int) st.id);
 
+        int len = charBody(s, viewer, who, 5);
+        s.wfifoWBE(1, len + 60 + 3);
+        s.wfifoSet(encrypt(s, viewer));
+    }
+
+    /**
+     * Badan gambar pemain — bagian yang <b>sama persis</b> pada paket 0x33
+     * (menggambar pemain di petaknya) dan 0x1D (memperbarui wujudnya di
+     * tempat). Isinya identik di C; yang berbeda hanya asal offsetnya, 5 byte,
+     * karena 0x33 membawa x/y/side lebih dulu sedangkan 0x1D tidak.
+     *
+     * <p>⚠️ Yang <b>tidak</b> sama: pada {@code state == 4} (menyamar penuh)
+     * paket 0x1D memakai tata letak pendek sendiri dan tidak memanggil badan
+     * ini sama sekali. Lihat {@link #updateState}.</p>
+     *
+     * @param base offset ladang pertama badan ini — 5 untuk 0x33, 0 untuk 0x1D
+     * @return panjang nama yang ditulis; dipakai memilih ladang panjang paket
+     */
+    private static int charBody(Session s, User viewer, User who, int base) {
+        var st = who.status;
         if (st.state < 4) {
-            s.wfifoWBE(14, st.sex);
+            s.wfifoWBE(base + 9, st.sex);
         } else {
-            s.wfifoB(14, 1);
-            s.wfifoB(15, 15);
+            s.wfifoB(base + 9, 1);
+            s.wfifoB(base + 10, 15);
         }
 
         boolean stealth = (who.optFlags & User.OPT_STEALTH) != 0;
         if ((st.state == 2 || stealth) && who.id != viewer.id && viewer.isGm()) {
-            s.wfifoB(16, 5);            // GM tetap melihat yang tak terlihat
+            s.wfifoB(base + 11, 5);            // GM tetap melihat yang tak terlihat
         } else {
-            s.wfifoB(16, st.state);
+            s.wfifoB(base + 11, st.state);
         }
         if (stealth && st.state == 0 && (!viewer.isGm() || who.id == viewer.id)) {
-            s.wfifoB(16, 2);
+            s.wfifoB(base + 11, 2);
         }
 
-        s.wfifoB(19, who.speed);
+        s.wfifoB(base + 14, who.speed);
         if (st.state == 3) {
-            s.wfifoWBE(17, st.disguise);
+            s.wfifoWBE(base + 12, st.disguise);
         } else if (st.state == 4) {
-            s.wfifoWBE(17, st.disguise + 32768);
-            s.wfifoB(19, st.disguiseColor);
+            s.wfifoWBE(base + 12, st.disguise + 32768);
+            s.wfifoB(base + 14, st.disguiseColor);
         } else {
-            s.wfifoWBE(17, 0);
+            s.wfifoWBE(base + 12, 0);
         }
 
-        s.wfifoB(20, 0);
-        s.wfifoB(21, st.face);
-        s.wfifoB(22, st.hair);
-        s.wfifoB(23, st.hairColor);
-        s.wfifoB(24, st.faceColor);
-        s.wfifoB(25, st.skinColor);
+        s.wfifoB(base + 15, 0);
+        s.wfifoB(base + 16, st.face);
+        s.wfifoB(base + 17, st.hair);
+        s.wfifoB(base + 18, st.hairColor);
+        s.wfifoB(base + 19, st.faceColor);
+        s.wfifoB(base + 20, st.skinColor);
 
         // zirah
         var armor = st.equipAt(Equip.ARMOR);
         if (armor == null) {
-            s.wfifoWBE(26, st.sex);
-            s.wfifoB(28, 0);
+            s.wfifoWBE(base + 21, st.sex);
+            s.wfifoB(base + 23, 0);
         } else {
-            s.wfifoWBE(26, armor.customLook != 0
+            s.wfifoWBE(base + 21, armor.customLook != 0
                     ? (int) armor.customLook : MapServer.itemDb.lookOf(armor.id));
-            s.wfifoB(28, st.armorColor > 0 ? st.armorColor
+            s.wfifoB(base + 23, st.armorColor > 0 ? st.armorColor
                     : (armor.customLook != 0 ? (int) armor.customLookColor
                                              : MapServer.itemDb.lookColorOf(armor.id)));
         }
         // mantel menimpa zirah di offset yang sama
         var coat = st.equipAt(Equip.COAT);
         if (coat != null) {
-            s.wfifoWBE(26, MapServer.itemDb.lookOf(coat.id));
-            s.wfifoB(28, st.armorColor > 0 ? st.armorColor
+            s.wfifoWBE(base + 21, MapServer.itemDb.lookOf(coat.id));
+            s.wfifoB(base + 23, st.armorColor > 0 ? st.armorColor
                     : MapServer.itemDb.lookColorOf(coat.id));
         }
 
-        pcSlot(s, st, Equip.WEAP, 29, 31, true);
-        pcSlot(s, st, Equip.SHIELD, 32, 34, true);
+        pcSlot(s, st, Equip.WEAP, base + 24, base + 26, true);
+        pcSlot(s, st, Equip.SHIELD, base + 27, base + 29, true);
 
         // helm bisa disembunyikan lewat setelan pemain (FLAG_HELM)
         var helm = st.equipAt(Equip.HELM);
         boolean helmOn = helm != null && (st.settingFlags & FLAG_HELM) != 0
                 && MapServer.itemDb.lookOf(helm.id) != -1;
         if (!helmOn) {
-            s.wfifoB(35, 0);
-            s.wfifoWBE(36, 0xFFFF);
+            s.wfifoB(base + 30, 0);
+            s.wfifoWBE(base + 31, 0xFFFF);
         } else {
-            s.wfifoB(35, 1);
+            s.wfifoB(base + 30, 1);
             if (helm.customLook != 0) {
-                s.wfifoB(36, (int) helm.customLook);
-                s.wfifoB(37, (int) helm.customLookColor);
+                s.wfifoB(base + 31, (int) helm.customLook);
+                s.wfifoB(base + 32, (int) helm.customLookColor);
             } else {
-                s.wfifoB(36, MapServer.itemDb.lookOf(helm.id));
-                s.wfifoB(37, MapServer.itemDb.lookColorOf(helm.id));
+                s.wfifoB(base + 31, MapServer.itemDb.lookOf(helm.id));
+                s.wfifoB(base + 32, MapServer.itemDb.lookColorOf(helm.id));
             }
         }
 
-        pcSlot(s, st, Equip.FACEACC, 38, 40, false);
+        pcSlot(s, st, Equip.FACEACC, base + 33, base + 35, false);
 
         var crown = st.equipAt(Equip.CROWN);
         if (crown == null) {
-            s.wfifoWBE(41, 0xFFFF);
-            s.wfifoB(43, 0);
+            s.wfifoWBE(base + 36, 0xFFFF);
+            s.wfifoB(base + 38, 0);
         } else {
-            s.wfifoB(35, 0xFF);   // di paket pemain nilainya 0xFF, bukan 0
-            s.wfifoWBE(41, crown.customLook != 0
+            s.wfifoB(base + 30, 0xFF);   // di paket pemain nilainya 0xFF, bukan 0
+            s.wfifoWBE(base + 36, crown.customLook != 0
                     ? (int) crown.customLook : MapServer.itemDb.lookOf(crown.id));
-            s.wfifoB(43, crown.customLook != 0
+            s.wfifoB(base + 38, crown.customLook != 0
                     ? (int) crown.customLookColor : MapServer.itemDb.lookColorOf(crown.id));
         }
 
-        pcSlot(s, st, Equip.FACEACCTWO, 44, 46, false);
+        pcSlot(s, st, Equip.FACEACCTWO, base + 39, base + 41, false);
 
         var mantle = st.equipAt(Equip.MANTLE);
         if (mantle == null) {
-            s.wfifoWBE(47, 0xFFFF);
-            s.wfifoB(49, 0xFF);
+            s.wfifoWBE(base + 42, 0xFFFF);
+            s.wfifoB(base + 44, 0xFF);
         } else {
-            s.wfifoWBE(47, MapServer.itemDb.lookOf(mantle.id));
-            s.wfifoB(49, MapServer.itemDb.lookColorOf(mantle.id));
+            s.wfifoWBE(base + 42, MapServer.itemDb.lookOf(mantle.id));
+            s.wfifoB(base + 44, MapServer.itemDb.lookColorOf(mantle.id));
         }
 
         var neck = st.equipAt(Equip.NECKLACE);
         boolean neckOn = neck != null && (st.settingFlags & FLAG_NECKLACE) != 0
                 && MapServer.itemDb.lookOf(neck.id) != -1;
         if (!neckOn) {
-            s.wfifoWBE(50, 0xFFFF);
-            s.wfifoB(52, 0);
+            s.wfifoWBE(base + 45, 0xFFFF);
+            s.wfifoB(base + 47, 0);
         } else {
-            s.wfifoWBE(50, MapServer.itemDb.lookOf(neck.id));
-            s.wfifoB(52, MapServer.itemDb.lookColorOf(neck.id));
+            s.wfifoWBE(base + 45, MapServer.itemDb.lookOf(neck.id));
+            s.wfifoB(base + 47, MapServer.itemDb.lookColorOf(neck.id));
         }
 
         var boots = st.equipAt(Equip.BOOTS);
         if (boots == null) {
-            s.wfifoWBE(53, st.sex);
-            s.wfifoB(55, 0);
+            s.wfifoWBE(base + 48, st.sex);
+            s.wfifoB(base + 50, 0);
         } else {
-            s.wfifoWBE(53, boots.customLook != 0
+            s.wfifoWBE(base + 48, boots.customLook != 0
                     ? (int) boots.customLook : MapServer.itemDb.lookOf(boots.id));
-            s.wfifoB(55, boots.customLook != 0
+            s.wfifoB(base + 50, boots.customLook != 0
                     ? (int) boots.customLookColor : MapServer.itemDb.lookColorOf(boots.id));
         }
 
-        s.wfifoB(56, 0);    // warna nama
-        s.wfifoB(57, 128);  // warna garis tepi; 128 = hitam
-        s.wfifoB(58, 0);    // 1 = PK, 2 = segrup, 3 = seklan
+        s.wfifoB(base + 51, 0);    // warna nama
+        s.wfifoB(base + 52, 128);  // warna garis tepi; 128 = hitam
+        s.wfifoB(base + 53, 0);    // 1 = PK, 2 = segrup, 3 = seklan
 
         if (viewer.status.clan == st.clan && st.clan > 0 && viewer.status.id != st.id) {
-            s.wfifoB(58, 3);
+            s.wfifoB(base + 53, 3);
         }
         if (st.pk > 0) {
-            s.wfifoB(58, 1);
+            s.wfifoB(base + 53, 1);
         }
 
         int len;
         String nama = st.name == null ? "" : st.name;
         if (st.state != 2 && st.state != 5) {
             len = Math.min(nama.length(), 255);
-            s.wfifoB(59, len);
-            s.wfifoStringRaw(60, nama.substring(0, len));
+            s.wfifoB(base + 54, len);
+            s.wfifoStringRaw(base + 55, nama.substring(0, len));
         } else {
-            s.wfifoB(59, 0);
+            s.wfifoB(base + 54, 0);
             len = 0;
         }
+        return len;
+    }
 
-        s.wfifoWBE(1, len + 60 + 3);
+    /**
+     * clif_updatestate(): gambar ulang wujud pemain {@code who} di layar
+     * {@code viewer} <b>tanpa memindahkannya</b>. Opcode 0x1D.
+     *
+     * <p>Isinya sama dengan paket 0x33 (lihat {@link #charBody}) hanya tanpa
+     * x/y/side di depan — dipakai saat pemain menyamar, menghilang, mati jadi
+     * hantu, atau berganti perlengkapan.</p>
+     *
+     * <p>⚠️ Pada {@code state == 4} paket ini memakai <b>tata letak pendek
+     * sendiri</b>: hanya wujud samaran dan nama, panjang {@code len + 13}.
+     * Paket 0x33 tidak punya cabang itu — di sana state 4 tetap menulis badan
+     * penuh. Perbedaan itu ada di C dan bukan kelalaian.</p>
+     */
+    public static void updateState(User viewer, User who) {
+        Session s = sessionOf(viewer);
+        if (s == null) {
+            return;
+        }
+        var st = who.status;
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x1D);
+        s.wfifoLBE(5, (int) who.id);
+
+        if (st.state == 4) {
+            s.wfifoB(9, 1);
+            s.wfifoB(10, 15);
+            s.wfifoB(11, st.state);
+            s.wfifoWBE(12, st.disguise + 32768);
+            s.wfifoB(14, st.disguiseColor);
+
+            String nama = st.name == null ? "" : st.name;
+            int n = Math.min(nama.length(), 255);
+            s.wfifoB(16, n);
+            s.wfifoStringRaw(17, nama.substring(0, n));
+            // C: len += strlen(name) + 1, dari len = 0
+            s.wfifoWBE(1, n + 1 + 13);
+            s.wfifoSet(encrypt(s, viewer));
+            return;
+        }
+
+        int len = charBody(s, viewer, who, 0);
+        s.wfifoWBE(1, len + 55 + 3);
         s.wfifoSet(encrypt(s, viewer));
+    }
+
+    /**
+     * clif_object_look_sub2(): gambarkan <b>satu benda bukan-karakter</b> di
+     * layar {@code sd} — mob biasa dan NPC yang sebenarnya benda peta.
+     * Opcode 0x07 dengan jumlah benda tetap 1.
+     *
+     * <p>Pasangannya {@link #sendMobLook}/{@link #sendNpcLook} (0x33) untuk
+     * yang <b>berwujud karakter</b>. Pembagiannya bukan menurut jenis benda
+     * melainkan menurut cara ia digambar: {@code MobIsChar}/{@code npcType}.</p>
+     *
+     * <p>Grafiknya dikirim {@code 32768 + look} — bit tinggi itu yang
+     * membedakan gambar benda dari gambar petak.</p>
+     *
+     * <p><b>Belum lengkap:</b> daftar animasi berdurasi milik mob
+     * ({@code mob->da[]}, ladang [21] dan seterusnya) ikut kosong karena
+     * subsistem durasi belum diport; ladang jumlahnya ditulis 0 sehingga
+     * panjang paket tetap 20. Lengkapi bersama {@code setDuration}.
+     * Cabang BL_ITEM juga belum ada — menunggu subsistem barang di lantai.</p>
+     */
+    public static void objectLook(User sd, org.rtk.map.data.BlockList b) {
+        Session s = sessionOf(sd);
+        if (s == null || b instanceof User) {
+            return;
+        }
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x07);
+        s.wfifoWBE(5, 1);
+        s.wfifoWBE(7, b.x);
+        s.wfifoWBE(9, b.y);
+        s.wfifoLBE(12, (int) b.id);
+
+        if (b instanceof Mob mb) {
+            if (mb.state == MobData.MOB_DEAD || mb.data.mobType == 1) {
+                return;
+            }
+            if (!mb.data.isNpc) {
+                s.wfifoB(11, 0x05);
+                s.wfifoWBE(16, 32768 + mb.look);
+                s.wfifoB(18, mb.lookColor);
+                s.wfifoB(19, mb.side);
+                s.wfifoB(20, 0);
+                s.wfifoB(21, 0);   // jumlah animasi berdurasi
+                s.wfifoB(22, 0);   // passflag
+            } else {
+                s.wfifoB(11, 12);
+                s.wfifoWBE(16, 32768 + mb.look);
+                s.wfifoB(18, mb.lookColor);
+                s.wfifoB(19, mb.side);
+                s.wfifoWBE(20, 0);
+                s.wfifoB(22, 0);
+            }
+        } else if (b instanceof Npc nd) {
+            if (nd.subtype != 0 || nd.npcType == 1) {
+                return;
+            }
+            s.wfifoB(11, 12);
+            s.wfifoWBE(16, (int) (32768 + nd.graphicId));
+            s.wfifoB(18, (int) nd.graphicColor);
+            s.wfifoB(19, nd.side);
+            s.wfifoWBE(20, 0);
+            s.wfifoB(22, 0);
+        } else if (b instanceof FloorItem fl) {
+            // Jebakan hanya digambar untuk pemain yang sudah menemukannya.
+            if (!fl.visibleTo(sd.id)) {
+                return;
+            }
+            s.wfifoB(11, 0x02);
+            // ⚠️ Hanya ikon KUSTOM yang ditambah 49152; ikon dari tabel
+            // `Items` dikirim MENTAH. Mudah salah karena benda lain
+            // (mob, NPC) selalu memakai penambah 32768.
+            if (fl.data.customIcon != 0) {
+                s.wfifoWBE(16, (int) (fl.data.customIcon + 49152));
+                s.wfifoB(18, (int) fl.data.customIconColor);
+            } else {
+                var look = MapServer.itemDb.look(fl.data.id);
+                s.wfifoWBE(16, look.icon());
+                s.wfifoB(18, look.iconColor());
+            }
+            s.wfifoB(19, 0);
+            s.wfifoWBE(20, 0);
+            s.wfifoB(22, 0);
+        } else {
+            return;
+        }
+
+        s.wfifoWBE(1, 20);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * Bagian penyiaran {@code bll_updatestate()}: gambar ulang sebuah benda
+     * pada pemain di sekitarnya, di tempatnya sekarang.
+     *
+     * <p>Paket yang dipakai ditentukan oleh <b>cara benda itu digambar</b>,
+     * bukan jenisnya: pemain lewat 0x1D, mob dan NPC yang berwujud karakter
+     * ({@code subtype}/{@code npcType == 1}) lewat 0x33, sisanya lewat paket
+     * benda 0x07. Pembagian itu diambil dari {@code bll_updatestate} di
+     * {@code sl.c}.</p>
+     */
+    public static void broadcastLook(org.rtk.map.data.BlockList bl) {
+        MapData map = MapServer.world.get(bl.m);
+        if (map == null) {
+            return;
+        }
+        map.foreachInArea(bl.x, bl.y, org.rtk.map.data.BlockList.Type.PC, o -> {
+            if (!(o instanceof User to)) {
+                return;
+            }
+            if (bl instanceof User who) {
+                updateState(to, who);
+            } else if (bl instanceof Mob mb) {
+                if (mb.data.subtype == 1) {
+                    sendMobLook(to, mb);
+                } else {
+                    objectLook(to, mb);
+                }
+            } else if (bl instanceof Npc nd) {
+                if (nd.npcType == 1) {
+                    sendNpcLook(to, nd);
+                } else {
+                    objectLook(to, nd);
+                }
+            } else if (bl instanceof FloorItem) {
+                objectLook(to, bl);
+            }
+        });
+    }
+
+    /**
+     * clif_mob_look_start / clif_object_look_sub / clif_mob_look_close:
+     * satu paket 0x07 berisi <b>beberapa benda sekaligus</b>.
+     *
+     * <p>Bedanya dengan {@link #objectLook} halus tapi nyata: yang ini
+     * dibangun lewat {@code WFIFOHEADER} sehingga membawa nomor urut di [4],
+     * dan sanggup memuat banyak benda. Untuk satu mob biasa isinya berakhir
+     * <b>byte-identik</b> dengan versi satu-benda kecuali ladang [4] itu —
+     * C memang menyediakan dua jalan ke paket yang sama.</p>
+     *
+     * <p>⚠️ <b>Entri saling menimpa satu byte, dan itu disengaja.</b> Tiap
+     * entri panjangnya 15 byte tetapi menulis sampai {@code len+22}; entri
+     * berikutnya mulai di {@code len+15}, jadi byte "passflag" di
+     * {@code len+22} persis ditimpa oleh ladang x entri sesudahnya. Hanya
+     * entri terakhir yang passflag-nya bertahan — karena itu penutupnya
+     * menambah satu byte lagi. Menyusun ulang jadi entri rapi 15 byte akan
+     * menggeser seluruh paket.</p>
+     *
+     * <p>Mob mati, mob berwujud karakter ({@code mobType == 1}), NPC
+     * berwujud karakter, dan pemain <b>dilewati</b> — mereka digambar lewat
+     * 0x33. Benda yang dilewati tidak menambah hitungan.</p>
+     */
+    public static void objectLookBatch(User sd, java.util.List<
+            ? extends org.rtk.map.data.BlockList> objects) {
+        Session s = sessionOf(sd);
+        if (s == null || objects == null || objects.isEmpty()) {
+            return;
+        }
+        int len = 0;      // sd->mob_len
+        int count = 0;    // sd->mob_count
+        boolean adaBarang = false;   // sd->mob_item
+
+        for (org.rtk.map.data.BlockList b : objects) {
+            if (b instanceof User) {
+                continue;
+            }
+            int tipe;
+            int look = 0;
+            int grafik = -1;   // nilai yang benar-benar ditulis; -1 = pakai 32768 + look
+            int lookColor;
+            int side;
+            if (b instanceof Mob mb) {
+                if (mb.state == MobData.MOB_DEAD || mb.data.mobType == 1) {
+                    continue;
+                }
+                tipe = mb.data.isNpc ? 12 : 0x05;
+                look = mb.look;
+                lookColor = mb.lookColor;
+                side = mb.side;
+            } else if (b instanceof Npc nd) {
+                if (nd.subtype != 0 || nd.npcType == 1) {
+                    continue;
+                }
+                tipe = 12;
+                look = (int) nd.graphicId;
+                lookColor = (int) nd.graphicColor;
+                side = nd.side;
+            } else if (b instanceof FloorItem fl) {
+                if (!fl.visibleTo(sd.id)) {
+                    continue;
+                }
+                tipe = 0x02;
+                // Lihat catatan di objectLook: hanya ikon KUSTOM yang
+                // ditambah 49152, sisanya mentah dari tabel `Items`.
+                if (fl.data.customIcon != 0) {
+                    grafik = (int) (fl.data.customIcon + 49152);
+                    lookColor = (int) fl.data.customIconColor;
+                } else {
+                    var l = MapServer.itemDb.look(fl.data.id);
+                    grafik = l.icon();
+                    lookColor = l.iconColor();
+                }
+                side = 0;
+                adaBarang = true;   // sd->mob_item: penutupnya tidak menambah byte
+            } else {
+                continue;
+            }
+
+            s.wfifoWBE(len + 7, b.x);
+            s.wfifoWBE(len + 9, b.y);
+            s.wfifoB(len + 11, tipe);
+            s.wfifoLBE(len + 12, (int) b.id);
+            s.wfifoWBE(len + 16, grafik >= 0 ? grafik : 32768 + look);
+            s.wfifoB(len + 18, lookColor);
+            s.wfifoB(len + 19, side);
+            if (tipe == 0x05) {
+                s.wfifoB(len + 20, 0);
+                s.wfifoB(len + 21, 0);   // jumlah animasi berdurasi mob
+            } else {
+                s.wfifoWBE(len + 20, 0);
+            }
+            s.wfifoB(len + 22, 0);       // passflag; ditimpa entri berikutnya
+            len += 15;
+            count++;
+        }
+
+        if (count == 0) {
+            return;
+        }
+        if (!adaBarang) {
+            s.wfifoB(len + 7, 0);
+            len++;
+        }
+        headSeq(s, 0x07, len + 4);
+        s.wfifoWBE(5, count);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_mob_move(): mob melangkah — beri tahu pemain di sekitarnya.
+     * Opcode 0x0C, sama dengan langkah pemain dan NPC.
+     *
+     * <p>Yang dikirim <b>petak asal</b> ({@code mob->bx}/{@code by} di C,
+     * disetel tepat sebelum {@code map_moveblock}) plus arahnya — klien yang
+     * memainkan animasi langkahnya sendiri.</p>
+     *
+     * <p>Berbeda dari siaran langkah pemain, paket ini dibangun per-sesi
+     * lewat {@code WFIFOHEADER}, jadi tiap penerima mendapat nomor urutnya
+     * sendiri. Mob mati tidak dikirim sama sekali.</p>
+     */
+    public static void mobMove(Mob mb, int fromX, int fromY) {
+        if (mb.state == MobData.MOB_DEAD) {
+            return;
+        }
+        MapData map = MapServer.world.get(mb.m);
+        if (map == null) {
+            return;
+        }
+        map.foreachInArea(mb.x, mb.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (!(bl instanceof User to)) {
+                return;
+            }
+            Session ts = MapServer.net.session(to.fd);
+            if (ts == null) {
+                return;
+            }
+            headSeq(ts, 0x0C, 11);
+            ts.wfifoLBE(5, (int) mb.id);
+            ts.wfifoWBE(9, fromX);
+            ts.wfifoWBE(11, fromY);
+            ts.wfifoB(13, mb.side);
+            ts.wfifoSet(encrypt(ts, to));
+        });
+    }
+
+    /**
+     * Gambar ulang jalur petak yang baru terbuka saat <b>mob</b> melangkah
+     * ({@code map_foreachinblock(...)} di {@code moveghost_mob}).
+     *
+     * <p>Mob berwujud karakter memakai 0x33, sisanya paket benda 0x07
+     * berkelompok — pembagian yang sama dengan {@link #broadcastLook}.</p>
+     */
+    static void mobRevealStrip(Mob mb, MapData map, int x0, int y0, int x1, int y1) {
+        map.foreachInBlock(x0, y0, x1, y1, org.rtk.map.data.BlockList.Type.PC, bl -> {
+            if (!(bl instanceof User sd)) {
+                return;
+            }
+            if (mb.data.mobType == 1) {
+                sendMobLook(sd, mb);
+            } else {
+                objectLookBatch(sd, java.util.List.of(mb));
+            }
+        });
+    }
+
+    /**
+     * clif_lookgone(): sebuah benda lenyap — pemain di sekitarnya (AREA_WOS)
+     * harus berhenti menggambarnya.
+     *
+     * <p>Dua opcode berbeda, lagi-lagi menurut cara benda itu digambar: yang
+     * berwujud karakter (pemain, mob, NPC dengan {@code npcType == 1})
+     * dihapus dengan 0x0E, sisanya — NPC yang sebenarnya benda peta — dengan
+     * 0x5F.</p>
+     */
+    public static void lookGone(org.rtk.map.data.BlockList bl) {
+        boolean asChar = !(bl instanceof FloorItem)
+                && (!(bl instanceof Npc nd) || nd.npcType == 1);
+        byte[] buf = new byte[16];
+        buf[0] = (byte) 0xAA;
+        putBE16(buf, 1, 6);
+        buf[3] = (byte) (asChar ? 0x0E : 0x5F);
+        buf[4] = 0x03;
+        putBE32(buf, 5, (int) bl.id);
+        sendToArea(bl, buf, buf.length, false);
     }
 
     /**
@@ -2168,7 +3366,7 @@ public final class Clif {
      *   <li>NPC bertipe 2 (dekorasi) tidak menghalangi.</li>
      * </ul>
      */
-    private static boolean blocksMovement(User sd, org.rtk.map.data.BlockList bl, MapData map) {
+    static boolean blocksMovement(User sd, org.rtk.map.data.BlockList bl, MapData map) {
         if (bl.id == sd.id) {
             return false;
         }
@@ -2195,7 +3393,7 @@ public final class Clif {
      * seperti versi C: kamera hanya ikut bergerak bila pemain belum berada
      * di zona tepi peta.
      */
-    private static void updateCamera(User sd, MapData map, int direction, int nx, int ny) {
+    static void updateCamera(User sd, MapData map, int direction, int nx, int ny) {
         switch (direction) {
             case 0 -> {
                 if (ny <= sd.viewY || ((map.ys - 1 - ny) < 7 && sd.viewY > 7)) {
@@ -2228,7 +3426,7 @@ public final class Clif {
     }
 
     /** Konfirmasi langkah ke pemain yang bergerak. Opcode 0x26. */
-    private static void sendWalkConfirm(User sd, int direction, int oldX, int oldY) {
+    static void sendWalkConfirm(User sd, int direction, int oldX, int oldY) {
         Session s = sessionOf(sd);
         if (s == null) {
             return;
@@ -2244,7 +3442,7 @@ public final class Clif {
     }
 
     /** Beri tahu pemain lain di sekitar bahwa seseorang melangkah. Opcode 0x0C. */
-    private static void broadcastWalk(User sd, int direction, int oldX, int oldY) {
+    static void broadcastWalk(User sd, int direction, int oldX, int oldY) {
         byte[] buf = new byte[32];
         buf[0] = (byte) 0xAA;
         buf[1] = 0x00;
@@ -2277,24 +3475,41 @@ public final class Clif {
             return;
         }
         map.foreachInArea(src.x, src.y, org.rtk.map.data.BlockList.Type.PC, bl -> {
-            if (!(bl instanceof User to)) {
-                return;
+            if (bl instanceof User to) {
+                sendAnimationTo(to, src, anim, times);
             }
-            if ((to.status.settingFlags & FLAG_MAGIC) == 0) {
-                return;
-            }
-            Session ts = MapServer.net.session(to.fd);
-            if (ts == null) {
-                return;
-            }
-            ts.wfifoB(0, 0xAA);
-            ts.wfifoWBE(1, 0x0A);
-            ts.wfifoB(3, 0x29);
-            ts.wfifoLBE(5, (int) src.id);
-            ts.wfifoWBE(9, anim);
-            ts.wfifoWBE(11, times);
-            ts.wfifoSet(encrypt(ts, to));
         });
+    }
+
+    /**
+     * Badan {@code clif_sendanimation()} untuk <b>satu penonton</b>.
+     *
+     * <p>Perhatikan pembagian perannya, karena mudah tertukar: {@code viewer}
+     * adalah pemain yang <b>melihat</b>, {@code target} adalah benda tempat
+     * animasinya <b>dimainkan</b>. Di C keduanya dua argumen terpisah
+     * ({@code bl} dan {@code t}), dan {@code bll_selfanimation} memakainya
+     * untuk memainkan animasi pada dirinya sendiri tetapi hanya terlihat oleh
+     * satu orang.</p>
+     *
+     * <p>Penyaring FLAG_MAGIC ada di sisi <b>penerima</b>: pemain yang
+     * mematikan efek sihir tidak menerima paketnya sama sekali.</p>
+     */
+    public static void sendAnimationTo(User viewer, org.rtk.map.data.BlockList target,
+                                       int anim, int times) {
+        if ((viewer.status.settingFlags & FLAG_MAGIC) == 0) {
+            return;
+        }
+        Session ts = MapServer.net.session(viewer.fd);
+        if (ts == null) {
+            return;
+        }
+        ts.wfifoB(0, 0xAA);
+        ts.wfifoWBE(1, 0x0A);
+        ts.wfifoB(3, 0x29);
+        ts.wfifoLBE(5, (int) target.id);
+        ts.wfifoWBE(9, anim);
+        ts.wfifoWBE(11, times);
+        ts.wfifoSet(encrypt(ts, viewer));
     }
 
     /**
@@ -2389,7 +3604,7 @@ public final class Clif {
      * per perlengkapan dan {@code on_walk_passive} per mantra — menyusul
      * setelah subsistem barang & mantra diport.
      */
-    private static void fireWalkScripts(User sd) {
+    static void fireWalkScripts(User sd) {
         if (MapServer.scriptEngine == null) {
             return;
         }

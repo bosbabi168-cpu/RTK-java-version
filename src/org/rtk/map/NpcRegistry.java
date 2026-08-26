@@ -272,6 +272,27 @@ public final class NpcRegistry {
     }
 
     /**
+     * Bagian NPC dari {@code bll_delete()}: cabut NPC dari dunia, tetap
+     * maupun sementara.
+     *
+     * <p>Berbeda dari {@link #removeTemp}, ini <b>tidak menolak</b> NPC dari
+     * tabel — C pun tidak: {@code bll_delete} memanggil {@code FREE(bl)} pada
+     * benda apa pun kecuali pemain. NPC tetap yang dihapus baru kembali saat
+     * server dimuat ulang.</p>
+     */
+    public boolean remove(Npc nd, MapRegistry world) {
+        if (nd == null) {
+            return false;
+        }
+        MapData map = world.get(nd.m);
+        if (map != null && nd.onMap) {
+            map.delBlock(nd);
+        }
+        byId.remove(nd.id);
+        return npcs.remove(nd);
+    }
+
+    /**
      * npc_runtimers(): satu tik timer NPC — dipanggil tiap 100 ms.
      *
      * <p>Pola penghitungnya ditiru dari C: setiap tik menambah 100 ms ke
@@ -576,11 +597,11 @@ public final class NpcRegistry {
 
         map.moveBlock(nd, dx, dy);
 
-        if (!nothingNew && x1 > 0 && y1 > 0) {
-            Clif.npcRevealStrip(nd, map, x0, y0, x0 + (x1 - 1), y0 + (y1 - 1));
-        }
-
-        Clif.npcMove(nd, backX, backY);
+        boolean adaPetakBaru = !nothingNew && x1 > 0 && y1 > 0;
+        MapServer.clientView.npcMoved(nd, map, backX, backY,
+                adaPetakBaru ? x0 : -1, adaPetakBaru ? y0 : -1,
+                adaPetakBaru ? x0 + (x1 - 1) : -1,
+                adaPetakBaru ? y0 + (y1 - 1) : -1);
         return true;
     }
 
@@ -614,7 +635,7 @@ public final class NpcRegistry {
 
         tujuan.foreachInArea(x, y, org.rtk.map.data.BlockList.Type.PC, bl -> {
             if (bl instanceof User sd) {
-                Clif.sendNpcLook(sd, nd);
+                MapServer.clientView.npcAppearedTo(sd, nd);
             }
         });
     }
@@ -627,9 +648,20 @@ public final class NpcRegistry {
      * ber-state -1, dan GM level 50 ke atas — GM tinggi dilewati NPC begitu
      * saja.</p>
      */
-    private static boolean blockedBy(org.rtk.map.data.MapData map, int dx, int dy, Npc nd) {
+    /**
+     * Apakah petak tujuan ditempati sesuatu yang menghalangi.
+     *
+     * <p>Dipakai NPC <b>dan</b> mob: aturannya sama persis di C
+     * ({@code npc_move}'s helper dan {@code mob_move} memeriksa hal yang
+     * identik — NPC ber-subtype bukan 0 dilewati, mob mati dilewati, pemain
+     * tersembunyi / GM level 50+ / hantu di peta ber-show_ghosts dilewati).
+     * Karena itu satu helper melayani keduanya; {@code diri} cuma dipakai
+     * untuk melewati bendanya sendiri.</p>
+     */
+    static boolean blockedBy(org.rtk.map.data.MapData map, int dx, int dy,
+                             org.rtk.map.data.BlockList diri) {
         for (org.rtk.map.data.BlockList bl : map.objectsAt(dx, dy)) {
-            if (bl == nd) {
+            if (bl == diri) {
                 continue;
             }
             if (bl instanceof Npc other) {

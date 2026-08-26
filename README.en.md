@@ -578,7 +578,7 @@ leaving them stuck.
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ connects and authenticates to the char server, loads map geometry, accepts routed players, requests and receives character data |
 | map world (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometry + metadata + 8×8 spatial index, x±9/y±8 view area |
 | **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c`, ~22k lines) | `map/User.java`, `map/Pc.java`, `map/Clif.java`, `map/Npc*.java`, `map/Mob*.java` | ✅ **Track A complete** — world entry plus rendering of everything nearby (0x33), movement and warps, NPC dialog/menu/input (0x30/0x2F/0x39/0x3A), shops (buy and sell), NPCs and their timers, mobs: 716 types and 1,175 spawns, AI on a 50 ms tick, combat, death and drops. ⚠️ never yet tested against a real RetroTK client |
-| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **working via LuaJ** — all 906 original scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines with blocking dialogs, registries and inventory wired through to `CharStatus`. ⚠️ of the ~258 methods scripts call, **100 exist in `sl.c` but are not ported yet**; the most-used ones are now covered (`calcStat`, `addNPC`, `addSpell`, `callBase`, banking, `sendStatus`, `npc:move()`, `sendSide`). For current numbers: `./run.sh luaaudit` |
+| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **working via LuaJ** — all 906 original scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines with blocking dialogs, registries and inventory wired through to `CharStatus`. ⚠️ of the ~258 methods scripts call, only **4 exist in `sl.c` but are not ported yet**; the most-used ones are now covered (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus the whole floor-item family). For current numbers: `./run.sh luaaudit` |
 | save server (`saveif.c` — already disabled in C) | — | ❌ not ported (its connection timer is commented out in C) |
 
 ## Design notes
@@ -644,7 +644,7 @@ there are six regression gates, all of which must stay green:
 | `./run.sh maptest` | 3,544 map files parse correctly |
 | `./run.sh chartest` | character serialisation (29 assertions) |
 | `./run.sh worldtest` | map world + player placement (53 assertions) |
-| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing (294 assertions) |
+| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing, chat & actions, spell durations, mob movement, floor items, inventory, spell book, display & timers, forced save, BOD (535 assertions) |
 | `./run.sh dbtest` | database layer against live MySQL (132 assertions) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -761,18 +761,61 @@ the infrastructure (HikariCP, Log4j2, properties, NetBeans/`build.sh`
 builds, `run.sh` deployment) and the per-server networking architecture
 with its dedicated I/O thread.
 
-### Latest status — 24 August 2026
+### Latest status — 26 August 2026
 
 The starting point for the next session.
 
 | | |
 |---|---|
-| Regression gates | 6/6 green (`cliftest` 294 assertions) |
-| `logs/map.log` on a live server | **0 ERROR / 0 WARN**, stable across ~6 minutes of runtime |
+| Regression gates | 6/6 green (`cliftest` **552**, `dbtest` **187** assertions) |
+| `logs/map.log` on a live server | **0 ERROR / 0 WARN** |
 | All three servers | running side by side (`./run.sh all`), map↔char link stable |
-| Script bindings | 173 available; **100 not ported**; globals not ported: **1** |
+| Script bindings | **12 not ported** (**4** in `sl.c` + 8 typos / dead code); globals not ported: **0** |
+| Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
-| **Real RetroTK client** | ⚠️ **has never logged in successfully** |
+| **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
+| **Inbound packets** | ⚠️ **5 of 54 opcodes** — see the audit note below |
+| Track A | functionally done; `sendMyStatus` deliberately left at stage 1 |
+| Track C | C1 and C4 done; **C2 and C3 not started** |
+
+⚠️ **Audit, 27 August 2026.** Script bindings are nearly finished (4 of ~258
+methods left), but **porting is not**. `clif_parse()` in C serves **54
+client opcodes**; this port serves **five** — walk, menu/input, NPC dialog,
+click. Everything a player *initiates* beyond moving and talking to NPCs
+has no path yet: chatting, equipping, using items, dropping, picking up,
+casting, attacking, and **trading with another player**.
+
+That is not 49 packets waiting to be copied, though — the wire format is
+being replaced. What matters is the **logic behind each action**, not the
+byte decoding.
+
+**The inbound layer now exists** (27 August 2026): `ClientCommands` is the
+mirror of `ClientView` — same idea, opposite direction, and the *logic*
+implements it while the *protocol* calls it. The four `Clif.parse*` methods
+are now pure byte readers. A new protocol only needs a new reader; the
+logic in `MapCommands` stays untouched. See `CLAUDE.md` for the roadmap.
+
+The 26 August session closed two blocks: (1) bindings that were still
+**stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),
+`updateState` (434x), `delete`, `refresh`, `sendHealth`, `removeItemSlot`,
+`updatePath`; and (2) the **spell duration & aether subsystem**
+(`map/Durations.java`): `setDuration` (423x) plus 15 sibling bindings and
+the one-second `bl_duratimer()` tick; and (3) `moveGhost` (84x, how
+almost every mob AI moves) and `spawn` (381x, traps / event mobs / instance
+bosses), which together **emptied the stub list**; and (4) **BL_ITEM**,
+floor items — the last large subsystem that was missing entirely, which
+alone opened ~95 call sites; and (5) the remaining mob-movement variants
+(`moveIntent`, `checkMove`, `moveIgnoreObject`); and (6) the inventory
+packets (0x0F / 0x10) with `updateInv`, `hasEquipped`, and the `deduct*`
+family; and (7) the spell book (`getSpells`, `getSpellName`,
+`getUnknownSpells`, `getAllClassSpells`, `addHealth`); and (8) display &
+timers (`changeView`, `guitext`, `setTimer`, `selfAnimation`, `paperpopup`,
+`speak`, `sendURL`, `lock`/`unlock`); and (9) `forceSave`; and (10) the BOD subsystem; and (11) parcels, mail and gifts, and (12) message boards (Track C4); and (13) clan and subpath banks; and (14) the remaining admin bindings.
+
+⚠️ **The `luaaudit` number does not measure this work fairly.** A binding
+ported out of a *stub* never counted in the audit to begin with — as far as
+the audit is concerned the name was already "defined". See the "still
+stubbed" row above.
 
 To confirm this still holds:
 
@@ -800,26 +843,39 @@ clean: a stub logs one WARN and returns nil.
 
 | Method | Call sites | State |
 |---|---|---|
-| `sendAction` | 905x | stub |
-| `talk` | 698x | player: in-memory `outbox`; NPC/Mob: `log.debug` — **no 0x0D packet yet** |
-| `playSound` | 632x | stub |
-| `updateState` | 434x | stub |
-| `setDuration` | 423x | stub |
-| `spawn` | 381x | stub (NPC/Mob) |
-| `setAether` | 225x | stub |
-| `msg` | 133x | same as `talk` |
-| `delete` | 109x | stub (NPC/Mob) |
-| `dropItem` | 24x | needs the floor-item subsystem (BL_ITEM) |
+| `sendAction` | 905x | ✅ ported 26 Aug |
+| `talk` | 698x | ✅ ported 26 Aug (`clif_speak` 0x0D) |
+| `playSound` | 632x | ✅ ported 26 Aug |
+| `updateState` | 434x | ✅ ported 26 Aug |
+| `setDuration` | 423x | ✅ ported 26 Aug |
+| `spawn` | 381x | **still a stub** — needs `mobspawn_onetime` |
+| `setAether` | 225x | ✅ ported 26 Aug |
+| `msg` | 133x | ✅ ported 26 Aug |
+| `delete` | 109x | ✅ ported 26 Aug |
+| `moveGhost` | 84x | ✅ ported 26 Aug |
+| `dropItemXY` / `throw` / `dropItem` / `pickUp` | ~90x | ✅ ported 26 Aug (BL_ITEM) |
 
-`talk` / `msg` matter most — without them NPCs never actually speak
-on screen.
+**The stub list and BL_ITEM are both done.** What remains is inventory &
+equipment (~65 call sites, needs an inventory packet), then a long tail of
+small groups — see `CLAUDE.md` for the ranked roadmap.
 
-**3. BL_ITEM (floor items) does not exist yet** — a prerequisite for
-`dropItem`, for a real `...WithTraps` filter, and for mob drops that are
-visible on the ground.
+⚠️ Two freshly ported paths have **never run on a live server**: the
+duration tick and `moveGhost`. Both only fire for players who are actually
+online (the mob AI tick skips maps where `map.users == 0`), so a real
+client is needed to exercise them.
 
-**4. The rest of Track C** — C2 (meta files), C3 (cross-map-server warps),
-C4 (boards and mail, the least blocked).
+~~**3. BL_ITEM (floor items) does not exist yet**~~ — **done 26 August 2026**
+(`map/FloorItem`, `map/FloorItemRegistry`). The `...WithTraps` filter now
+genuinely differs from the plain variant, and mob drops are visible on the
+ground.
+
+~~**4. Inventory & equipment**~~ — **done 26 August 2026**, including the
+BOD subsystem (BOD = *Break on Death*), which turned out to be a temporary
+scratch list rather than the large subsystem the roadmap assumed.
+
+**5. The rest of Track C** — C2 (meta files), C3 (cross-map-server warps),
+and what is left of C4: only `showPost` (read one post) and writing posts.
+Parcels, mail, gifts and board display were finished on 26/27 August 2026.
 
 **Bugs found and closed in this round:** the stub list overwriting freshly
 ported bindings; LuaJ's `name` field crippling stub reporting so that only
@@ -897,9 +953,10 @@ a requirement after touching any binding or script hook.
 - **Boards and mail** (char server) — the least blocked item in this track:
   protocol and tables already exist, and it can be tested offline.
 
-**Script-binding priority.** Of the ~258 methods scripts call, **100 exist
-in `sl.c` but are not ported yet** (down from 110), and only **1 global**
-(`lock`) is still missing — down from 6.
+**Script-binding priority.** Of the ~258 methods scripts call, **4 exist
+in `sl.c` but are not ported yet** as of 27 August 2026 (110 → 100 → 4),
+and **no globals** are missing any more — down from 6. For current
+numbers, always run `./run.sh luaaudit`.
 
 Done on 21 August 2026, most-used first: `calcStat` (**249×**), `addNPC`
 (54×), `addSpell` (28×), `callBase` (12×), `hasSpell`, `bankDeposit` /

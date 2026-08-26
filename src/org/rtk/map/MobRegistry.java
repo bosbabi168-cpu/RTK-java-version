@@ -37,6 +37,18 @@ public final class MobRegistry {
     /** Id blok berikutnya untuk mob; mulai dari MOB_START_NUM seperti C. */
     private long nextId = Mob.MOB_START_NUM;
 
+    /**
+     * Daftarkan satu jenis mob. Dipakai {@link #loadTypes} dan uji yang
+     * berjalan tanpa database. Nama pertama menang bila ada {@code yname}
+     * ganda, seperti pencarian berurutan di C.
+     */
+    public void registerType(MobData d) {
+        types.put(d.id, d);
+        if (d.yname != null && !d.yname.isEmpty()) {
+            typesByName.putIfAbsent(d.yname.toLowerCase(), d);
+        }
+    }
+
     public MobData type(long mobId) {
         return types.get(mobId);
     }
@@ -118,10 +130,7 @@ public final class MobRegistry {
                     d.skinColor = rs.getInt("MobSkinColor");
                     d.state = rs.getInt("MobState");
 
-                    types.put(d.id, d);
-                    if (!d.yname.isEmpty()) {
-                        typesByName.putIfAbsent(d.yname.toLowerCase(), d);
-                    }
+                    registerType(d);
                 });
 
         if (rows < 0) {
@@ -269,9 +278,12 @@ public final class MobRegistry {
                 continue;
             }
 
-            // kelahiran ulang: hanya setelah jeda spawnTime berlalu
+            // kelahiran ulang: hanya setelah jeda spawnTime berlalu, dan
+            // hanya untuk mob tabel. Mob yang dilahirkan skrip sekali pakai
+            // (`mob->onetime` di C: `state == MOB_DEAD && !mob->onetime`).
             if (mob.state == MobData.MOB_DEAD) {
-                if (d.spawnTime > 0 && mob.lastDeath + d.spawnTime <= now) {
+                if (!mob.oneTime && d.spawnTime > 0
+                        && mob.lastDeath + d.spawnTime <= now) {
                     respawn(mob, world);
                 }
                 continue;
@@ -314,14 +326,50 @@ public final class MobRegistry {
      * {@code MobAI}: 0..3 dan 5 memakai tabel bersama {@code mob_ai_*},
      * sedangkan 4 memakai skrip milik mob itu sendiri ({@code yname}).
      */
+    /** Skrip AI yang dipakai mob ini, atau null bila MobAI di luar jangkauan. */
+    private static String aiRoot(MobData d) {
+        if (d.subtype >= 0 && d.subtype < AI_TABLES.length && AI_TABLES[d.subtype] != null) {
+            return AI_TABLES[d.subtype];
+        }
+        if (d.subtype == 4) {
+            return d.yname;   // skrip mob itu sendiri
+        }
+        return null;
+    }
+
+    /**
+     * Port {@code clif_send_mob_health()} — namanya di C <b>menyesatkan</b>:
+     * fungsi itu tidak mengirim paket apa pun, isinya murni memanggil kait
+     * {@code on_attacked} milik AI mob, dan parameter damage/critical-nya
+     * tidak pernah dipakai.
+     *
+     * <p>Argumen kedua adalah <b>penyerangnya</b>; bila tidak ketemu, C
+     * memakai <b>mob itu sendiri</b> ({@code map_id2bl(mob->bl.id)}), bukan
+     * nil — sama seperti jebakan {@code callBase}.</p>
+     */
+    public static void fireAttacked(org.rtk.map.script.ScriptEngine engine,
+                                    Mob mob, Object penyerang) {
+        if (engine == null || mob == null) {
+            return;
+        }
+        String root = aiRoot(mob.data);
+        if (root == null) {
+            return;
+        }
+        try {
+            org.luaj.vm2.LuaValue lawan = penyerang instanceof User u
+                    ? engine.playerRef(u.scriptPlayer())
+                    : engine.objectRef(penyerang != null ? penyerang : mob);
+            engine.doScript(root, "on_attacked", engine.objectRef(mob), lawan);
+        } catch (RuntimeException e) {
+            log.error("[MOB] kait on_attacked pada '{}' gagal", root, e);
+        }
+    }
+
     private boolean fireAi(org.rtk.map.script.ScriptEngine engine, Mob mob, String method) {
         MobData d = mob.data;
-        String root;
-        if (d.subtype >= 0 && d.subtype < AI_TABLES.length && AI_TABLES[d.subtype] != null) {
-            root = AI_TABLES[d.subtype];
-        } else if (d.subtype == 4) {
-            root = d.yname;   // skrip mob itu sendiri
-        } else {
+        String root = aiRoot(d);
+        if (root == null) {
             return false;     // MobAI di luar jangkauan: tidak ada kait
         }
 
@@ -443,6 +491,454 @@ public final class MobRegistry {
         if (map != null && mob.onMap) {
             map.delBlock(mob);
         }
+    }
+
+    /**
+     * moveghost_mob() (map/mob.c:1518) — mob melangkah satu petak ke arah
+     * yang sedang dihadapinya.
+     *
+     * <p>Ini {@code moveGhost}, method skrip belum-diport terbanyak (84x):
+     * hampir seluruh AI mob di {@code Accepted/Mobs/mob.lua} bergerak
+     * lewatnya. Strukturnya kembar dengan {@link NpcRegistry#move} — angka
+     * jalur petak yang baru terbuka pun sama persis, tidak simetris karena
+     * area pandang klien 19x17 dengan titik pandang bukan di tengah.</p>
+     *
+     * <p>Tiga penjaga yang ditiru dan mudah terlewat:</p>
+     * <ul>
+     *   <li><b>Mob tidak boleh menginjak portal</b> — dicek sebelum apa pun
+     *       yang lain, dan C langsung {@code return 0} di situ.</li>
+     *   <li><b>Penghalang tidak berlaku bila mob sedang mengejar sasaran.</b>
+     *       Di C ketiga cek tabrakan digabung {@code && mob->target == 0},
+     *       jadi mob yang punya target menembus apa pun. Itu di C, bukan
+     *       kelalaian port.</li>
+     *   <li><b>Menginjak jebakan memanggil kait {@code click} milik NPC
+     *       lantai</b> dengan (mob, npc) — {@code mob_trap_look}. Hanya satu
+     *       jebakan per langkah yang terpicu.</li>
+     * </ul>
+     *
+     * @return true bila mob benar-benar berpindah
+     */
+    public boolean moveGhost(org.rtk.map.script.ScriptEngine engine, Mob mob) {
+        return langkah(engine, mob, false);
+    }
+
+    /**
+     * move_mob_ignore_object() (map/mob.c:1330) — <b>persis</b>
+     * {@link #moveGhost}, hanya tanpa cek tabrakan.
+     *
+     * <p>Di C kedua fungsi itu disalin utuh; bedanya cuma satu blok yang
+     * <b>dikomentari</b> di versi ini:</p>
+     *
+     * <pre>{@code
+     * /*if((map_canmove(m,dx,dy)==1) || (mob->canmove==1)) {
+     *     mob->canmove=0;
+     *     return 0;
+     * }*&#47;
+     * }</pre>
+     *
+     * <p>Jadi mob menembus tembok <b>dan</b> benda lain — tapi
+     * <b>portal tetap menghentikannya</b>, karena penjaga portal ada di atas
+     * blok yang dikomentari itu. Dipakai skrip untuk hantu dan mob yang
+     * sengaja boleh lewat mana saja.</p>
+     *
+     * <p>⚠️ Sapuan {@code mob_move} tetap dijalankan di C dan hasilnya
+     * ditampung {@code cm = mob->canmove;} yang <b>tidak pernah dibaca</b> —
+     * kode mati. Tidak ditiru.</p>
+     */
+    public boolean moveIgnoreObject(org.rtk.map.script.ScriptEngine engine, Mob mob) {
+        return langkah(engine, mob, true);
+    }
+
+    /**
+     * Badan bersama {@code moveghost_mob} dan {@code move_mob_ignore_object}.
+     *
+     * @param abaikanTabrakan true = versi tembus segalanya; portal tetap
+     *                        menghentikan langkah pada kedua versi
+     */
+    private boolean langkah(org.rtk.map.script.ScriptEngine engine, Mob mob,
+                            boolean abaikanTabrakan) {
+        if (mob == null || mob.state == MobData.MOB_DEAD) {
+            return false;
+        }
+        MapData map = MapServer.world.get(mob.m);
+        if (map == null) {
+            return false;
+        }
+
+        final int backX = mob.x;
+        final int backY = mob.y;
+        final int direction = mob.side;
+        int dx = backX;
+        int dy = backY;
+
+        int x0 = backX;
+        int y0 = backY;
+        int x1 = 0;
+        int y1 = 0;
+        boolean nothingNew = false;
+
+        switch (direction) {
+            case 0 -> { // atas
+                if (backY > 0) {
+                    dy = backY - 1;
+                    x0 -= 9;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    y0 -= 9;
+                    y1 = 1;
+                    x1 = 19;
+                    if (y0 < 7) {
+                        nothingNew = true;
+                    }
+                    if (y0 == 7) {
+                        y1 += 7;
+                        y0 = 0;
+                    }
+                    if (x0 + 19 + 9 >= map.xs) {
+                        x1 += 9 - ((x0 + 19 + 9) - map.xs);
+                    }
+                    if (x0 <= 8) {
+                        x1 += x0;
+                        x0 = 0;
+                    }
+                }
+            }
+            case 1 -> { // kanan
+                if (backX < map.xs) {
+                    x0 += 10;
+                    y0 -= 8;
+                    if (y0 < 0) {
+                        y0 = 0;
+                    }
+                    dx = backX + 1;
+                    y1 = 17;
+                    x1 = 1;
+                    if (x0 > map.xs - 9) {
+                        nothingNew = true;
+                    }
+                    if (x0 == map.xs - 9) {
+                        x1 += 9;
+                    }
+                    if (y0 + 17 + 8 >= map.ys) {
+                        y1 += 8 - ((y0 + 17 + 8) - map.ys);
+                    }
+                    if (y0 <= 7) {
+                        y1 += y0;
+                        y0 = 0;
+                    }
+                }
+            }
+            case 2 -> { // bawah
+                if (backY < map.ys) {
+                    x0 -= 9;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    y0 += 9;
+                    dy = backY + 1;
+                    y1 = 1;
+                    x1 = 19;
+                    if (y0 + 8 > map.ys) {
+                        nothingNew = true;
+                    }
+                    if (y0 + 8 == map.ys) {
+                        y1 += 8;
+                    }
+                    if (x0 + 19 + 9 >= map.xs) {
+                        x1 += 9 - ((x0 + 19 + 9) - map.xs);
+                    }
+                    if (x0 <= 8) {
+                        x1 += x0;
+                        x0 = 0;
+                    }
+                }
+            }
+            case 3 -> { // kiri
+                if (backX > 0) {
+                    x0 -= 10;
+                    y0 -= 8;
+                    if (y0 < 0) {
+                        y0 = 0;
+                    }
+                    y1 = 17;
+                    x1 = 1;
+                    dx = backX - 1;
+                    if (x0 < 8) {
+                        nothingNew = true;
+                    }
+                    if (x0 == 8) {
+                        x0 = 0;
+                        x1 += 8;
+                    }
+                    if (y0 + 17 + 8 >= map.ys) {
+                        y1 += 8 - ((y0 + 17 + 8) - map.ys);
+                    }
+                    if (y0 <= 7) {
+                        y1 += y0;
+                        y0 = 0;
+                    }
+                }
+            }
+            default -> {
+                // Arah di luar 0..3 tidak menggeser apa pun — `switch` di C
+                // juga tanpa default. Lihat Peringatan #13.
+            }
+        }
+
+        if (dx >= map.xs) {
+            dx = map.xs - 1;
+        }
+        if (dy >= map.ys) {
+            dy = map.ys - 1;
+        }
+
+        // Mob tidak boleh menginjak portal.
+        if (map.warpAt(dx, dy) != null) {
+            return false;
+        }
+
+        // Mob yang sedang mengejar sasaran menembus penghalang — di C ketiga
+        // cek tabrakan bersyarat `&& mob->target == 0`. Versi
+        // move_mob_ignore_object melewati seluruh blok ini.
+        if (!abaikanTabrakan && mob.target == 0
+                && (NpcRegistry.blockedBy(map, dx, dy, mob) || !map.walkable(dx, dy))) {
+            return false;
+        }
+
+        if (x0 > map.xs) {
+            x0 = map.xs - 1;
+        }
+        if (y0 > map.ys) {
+            y0 = map.ys - 1;
+        }
+        if (x0 < 0) {
+            x0 = 0;
+        }
+        if (y0 < 0) {
+            y0 = 0;
+        }
+        if (dx >= map.xs || dx < 0) {
+            dx = backX;
+        }
+        if (dy >= map.ys || dy < 0) {
+            dy = backY;
+        }
+
+        if (dx == backX && dy == backY) {
+            return false;
+        }
+
+        map.moveBlock(mob, dx, dy);
+
+        boolean adaPetakBaru = !nothingNew && x1 > 0 && y1 > 0;
+        MapServer.clientView.mobMoved(mob, map, backX, backY,
+                adaPetakBaru ? x0 : -1, adaPetakBaru ? y0 : -1,
+                adaPetakBaru ? x0 + (x1 - 1) : -1,
+                adaPetakBaru ? y0 + (y1 - 1) : -1);
+
+        trapLook(engine, map, mob);
+        return true;
+    }
+
+    /**
+     * mobl_checkmove() — <b>uji coba</b> langkah berikutnya tanpa benar-benar
+     * melangkah: bolehkah mob maju satu petak ke arah yang dihadapinya?
+     *
+     * <p>Dipakai AI skrip untuk memutuskan berbelok sebelum menabrak.</p>
+     *
+     * <p>⚠️ <b>Dua beda halus dari {@link #moveGhost}, dan keduanya ada di
+     * C:</b></p>
+     * <ul>
+     *   <li>Petak tujuannya dihitung <b>sederhana</b> (±1 menurut arah),
+     *       tanpa perhitungan jalur pandang yang rumit itu — jadi tidak ada
+     *       cabang {@code nothingnew} di sini sama sekali.</li>
+     *   <li><b>Tidak ada pengecualian untuk mob yang sedang mengejar.</b>
+     *       {@code moveGhost} membiarkan mob ber-{@code target} menembus
+     *       penghalang, tetapi {@code checkMove} tetap menjawab "tidak
+     *       boleh". Jadi jawabannya bisa <b>berbeda</b> dari apa yang
+     *       sebenarnya terjadi kalau {@code moveGhost} dipanggil — itu di C,
+     *       bukan kelalaian port.</li>
+     * </ul>
+     */
+    public boolean checkMove(Mob mob) {
+        if (mob == null || mob.state == MobData.MOB_DEAD) {
+            return false;
+        }
+        MapData map = MapServer.world.get(mob.m);
+        if (map == null) {
+            return false;
+        }
+        int dx = mob.x;
+        int dy = mob.y;
+        switch (mob.side) {
+            case 0 -> dy -= 1;
+            case 1 -> dx += 1;
+            case 2 -> dy += 1;
+            case 3 -> dx -= 1;
+            default -> {
+                // arah tak sah tidak menggeser apa pun — lihat Peringatan #13
+            }
+        }
+        if (dx >= map.xs) {
+            dx = map.xs - 1;
+        }
+        if (dy >= map.ys) {
+            dy = map.ys - 1;
+        }
+        if (map.warpAt(dx, dy) != null) {
+            return false;
+        }
+        return !NpcRegistry.blockedBy(map, dx, dy, mob) && map.walkable(dx, dy);
+    }
+
+    /**
+     * move_mob_intent() (map/mob.c:2270) — <b>hadapkan</b> mob ke sasaran
+     * bila sasarannya tepat di sebelahnya.
+     *
+     * <p>⚠️ <b>Namanya menjanjikan gerakan, tapi ia tidak pernah bergerak.</b>
+     * Seluruh badan yang memindahkan mob <b>dikomentari</b> di sumber C;
+     * yang tersisa hanya: kalau sasaran bersebelahan (persis satu petak,
+     * lurus), putar menghadapnya dan kembalikan 1; selain itu kembalikan 0
+     * tanpa melakukan apa pun. Skrip AI memakainya sebagai "sudah cukup
+     * dekat untuk menyerang?", bukan sebagai perintah jalan.</p>
+     *
+     * <p>Siaran arah hanya dikirim bila arahnya <b>benar-benar berubah</b>.</p>
+     *
+     * @return true bila sasaran bersebelahan
+     */
+    public boolean moveIntent(Mob mob, org.rtk.map.data.BlockList sasaran) {
+        if (mob == null || sasaran == null) {
+            return false;
+        }
+        mob.canMove = false;
+        int ax = Math.abs(mob.x - sasaran.x);
+        int ay = Math.abs(mob.y - sasaran.y);
+        if (!((ax == 0 && ay == 1) || (ax == 1 && ay == 0))) {
+            return false;
+        }
+        int arahLama = mob.side;
+        if (mob.x < sasaran.x) {
+            mob.side = 1;
+        }
+        if (mob.x > sasaran.x) {
+            mob.side = 3;
+        }
+        if (mob.y < sasaran.y) {
+            mob.side = 2;
+        }
+        if (mob.y > sasaran.y) {
+            mob.side = 0;
+        }
+        if (arahLama != mob.side) {
+            MapServer.clientView.objectSideChanged(mob);
+        }
+        return true;
+    }
+
+    /**
+     * mob_trap_look(): mob menginjak NPC lantai (jebakan) — kait
+     * {@code click} miliknya dipanggil dengan (mob, npc).
+     *
+     * <p>Hanya <b>satu</b> jebakan per langkah yang terpicu; di C penjaganya
+     * {@code def[0]} yang langsung disetel 1 setelah pemicu pertama.</p>
+     */
+    private void trapLook(org.rtk.map.script.ScriptEngine engine, MapData map, Mob mob) {
+        if (engine == null) {
+            return;
+        }
+        for (org.rtk.map.data.BlockList bl : map.objectsAt(mob.x, mob.y)) {
+            if (!(bl instanceof Npc nd) || (nd.subtype != Npc.SUBTYPE_FLOOR
+                    && nd.subtype != 2)) {
+                continue;
+            }
+            try {
+                engine.doScript(nd.name, "click", engine.objectRef(mob),
+                        engine.objectRef(nd));
+            } catch (RuntimeException e) {
+                log.error("[MOB] kait jebakan '{}' gagal", nd.name, e);
+            }
+            return;   // def[0] = 1: cukup satu
+        }
+    }
+
+    /**
+     * mobspawn_onetime() (map/mob.c:225) — lahirkan mob dari skrip.
+     *
+     * <p>Ini {@code spawn}, stub besar terakhir (381x): jebakan, mob event,
+     * dan boss instance semuanya lahir lewat sini.</p>
+     *
+     * <p>Bedanya dari mob tabel {@code Spawns}: mob ini <b>sekali pakai</b> —
+     * setelah mati ia tidak lahir kembali, dan {@link #runTimers} melewatinya
+     * saat memeriksa kelahiran ulang. Titik awalnya tetap dicatat supaya
+     * skrip yang memindahkannya masih punya acuan.</p>
+     *
+     * @param owner id pemain yang "memiliki" mob ini (jebakan mencarinya);
+     *              0 bila tidak ada
+     * @return id blok mob yang lahir, urut
+     */
+    public java.util.List<Long> spawnOneTime(org.rtk.map.script.ScriptEngine engine,
+                                             long mobId, int m, int x, int y,
+                                             int amount, long owner) {
+        java.util.List<Long> lahir = new ArrayList<>();
+        MobData d = types.get(mobId);
+        MapData map = MapServer.world.get(m);
+        if (d == null || map == null || amount <= 0) {
+            return lahir;
+        }
+        for (int i = 0; i < amount; i++) {
+            Mob mob = new Mob();
+            mob.data = d;
+            mob.startM = m;
+            mob.startX = x;
+            mob.startY = y;
+            mob.m = m;
+            mob.x = Math.min(x, map.xs - 1);
+            mob.y = Math.min(y, map.ys - 1);
+            mob.owner = owner;
+            mob.oneTime = true;
+            mob.id = nextId++;
+            resetStats(mob);
+
+            if (!map.addBlock(mob)) {
+                continue;
+            }
+            add(mob);            // daftar tik + indeks id (map_addiddb)
+            lahir.add(mob.id);
+
+            // mob_respawn(): terlihat oleh sekitarnya, lalu dua kait lahir —
+            // yang umum lebih dulu, baru milik jenis mobnya sendiri.
+            MapServer.clientView.mobSpawned(mob);
+            if (engine != null) {
+                var ref = engine.objectRef(mob);
+                try {
+                    engine.doScript("on_spawn", null, ref);
+                    engine.doScript(mob.scriptName(), "on_spawn", ref);
+                } catch (RuntimeException e) {
+                    log.error("[MOB] kait on_spawn '{}' gagal", mob.scriptName(), e);
+                }
+            }
+        }
+        return lahir;
+    }
+
+    /**
+     * Bagian mob dari {@code bll_delete()}: cabut mob dari dunia
+     * <b>selamanya</b> — indeks blok, indeks id, dan daftar tik.
+     *
+     * <p>Bedanya dengan {@link #kill}: yang dibunuh tetap ada dan menunggu
+     * kelahiran ulang, yang dihapus tidak pernah kembali. Di C bedanya
+     * kelihatan karena {@code bll_delete} memanggil {@code FREE(bl)}.</p>
+     */
+    public boolean remove(Mob mob, MapRegistry world) {
+        MapData map = world.get(mob.m);
+        if (map != null && mob.onMap) {
+            map.delBlock(mob);
+        }
+        if (idIndex != null) {
+            idIndex.unregister(mob);
+        }
+        return mobs.remove(mob);
     }
 
     /**

@@ -49,6 +49,25 @@ public final class User extends BlockList
     public int might;
     public int will;
     public int grace;
+    /** Id benda yang terakhir melukai pemain ini ({@code sd->attacker}). */
+    public long attacker;
+
+    /** Nyawa sesaat SEBELUM pukulan terakhir ({@code sd->lastvita}). */
+    public long lastVita;
+
+    /**
+     * Hasil kait {@code hitCritChance}: 0 = meleset, 1 = kena biasa,
+     * 2 = kritis. Diisi <b>oleh skrip Lua</b>, dibaca {@link Combat}.
+     */
+    public int critChance;
+
+    /**
+     * Hasil kait {@code swingDamage}: kerusakan pukulan berikutnya. Diisi
+     * skrip, dan sengaja bertipe pecahan karena C memakai {@code float} lalu
+     * membulatkannya dengan {@code (int)(damage += 0.5f)}.
+     */
+    public double damage;
+
     public int armor;
 
     // ---- nilai turunan dari perlengkapan (pc_calcstat) ----
@@ -74,8 +93,87 @@ public final class User extends BlockList
 
     /** Jumlah anggota grup; >0 memicu pembaruan darah grup setelah status. */
     public int groupCount;
+
+    /** Id grup pemain ({@code sd->groupid}); 0 berarti tidak bergrup. */
+    public int groupId;
+
+    /**
+     * Daftar lawan PK: id pemain -&gt; detik epoch saat ditandai
+     * ({@code sd->pvp[20][2]} di C).
+     *
+     * <p>Batasnya <b>20</b> dan tidak pernah kedaluwarsa sendiri — waktunya
+     * dicatat tapi tidak pernah dibaca server. Penuh berarti penandaan baru
+     * diabaikan diam-diam.</p>
+     */
+    public final java.util.LinkedHashMap<Long, Long> pvp = new java.util.LinkedHashMap<>();
+
+    /** MAX PK: {@code for (x = 0; x < 20; x++)} di C. */
+    public static final int MAX_PVP = 20;
     public int speed;
     public int direction;
+
+    /**
+     * Gerakan terakhir yang dimainkan pemain ({@code sd->action} di C):
+     * 0 diam, 1 serang, 2 lempar, 3 tembak, 4/5 duduk, 6 sihir, 7/8 makan.
+     * Disetel {@code clif_sendaction()} dan dibaca skrip.
+     */
+    public int action;
+
+    /**
+     * Penghitung waktu yang tampil di layar pemain
+     * ({@code sd->disptimer*} di C).
+     *
+     * <p>{@code disptimerType} 1 dan 2 menghitung mundur; nilai lain hanya
+     * menampilkan angkanya. {@code disptimerTick} sisa detiknya. Berkurang
+     * satu tiap detik lewat {@link MapServer#duraTick}, dan saat habis kait
+     * {@code pc_timer.display_timer} dipanggil sekali lalu timernya mati.</p>
+     */
+    public int disptimerType;
+    public long disptimerTick;
+
+    /**
+     * Kalimat terakhir yang diucapkan pemain ({@code sd->speech} di C).
+     * Disetel {@code clif_sendscriptsay} dan dibaca skrip yang menanggapi
+     * kata kunci.
+     */
+    public String speech = "";
+
+    /**
+     * Barang yang <b>hancur pada sapuan yang sedang berjalan</b>
+     * ({@code sd->boditems} di C — BoD = <i>Break on Death</i>).
+     *
+     * <p>⚠️ Ini <b>bukan</b> penyimpanan permanen, melainkan daftar
+     * sementara: {@code deductDuraEquip} dan {@code checkInvBod} mengisinya
+     * sambil menghancurkan barang, memanggil kait
+     * {@code characterLog.bodLog} sekali di akhir, lalu
+     * <b>mengosongkannya</b>. Skrip membacanya lewat {@code getBODItem(n)}
+     * dan atribut {@code BODItemCount} — hanya di dalam kait itu.</p>
+     */
+    public final java.util.List<org.rtk.common.mmo.Item> bodItems =
+            new java.util.ArrayList<>();
+
+    /** Id jenis barang yang baru saja hancur ({@code sd->breakid}). */
+    public long breakId;
+
+    /** Slot yang sedang disapu ({@code sd->equipslot} / {@code sd->invslot}). */
+    public int equipSlot;
+    public int invSlot;
+
+    // ---- papan pesan (sd->board*) ----
+    /** Papan yang sedang dibuka; 0 berarti kotak surat, bukan papan. */
+    public int board;
+    /** Halaman daftar kiriman; tiap halaman 20 baris ({@code sd->bcount}). */
+    public int boardPage;
+    /** true bila daftarnya dibuka sebagai jendela sembul. */
+    public boolean boardPopup;
+    /**
+     * Hak menulis di papan yang sedang dibuka. Nilai <b>6</b> punya arti
+     * khusus — lihat {@link Boards#WRITE_ASK_SCRIPT}. Diisi skrip lewat
+     * atribut {@code boardCanWrite} pada papan ber-{@code BnmScripted}.
+     */
+    public int boardCanWrite;
+    /** Hak menghapus kiriman di papan yang sedang dibuka. */
+    public int boardCanDel;
 
     /**
      * Posisi kamera klien dalam petak layar (0..16 / 0..14).
@@ -314,7 +412,7 @@ public final class User extends BlockList
                         log.error("[PC] kait on_forget mantra {} gagal untuk {}", yname, name(), e);
                     }
                 }
-                Clif.removeSpell(this, i);
+                MapServer.clientView.playerSpellRemoved(this, i);
                 status.spells[i] = 0;
                 return; // C berhenti di kecocokan pertama
             }
@@ -585,6 +683,15 @@ public final class User extends BlockList
             case "side" -> (long) status.side;
             case "state" -> (long) status.state;
             case "maxSlots" -> status.maxSlots;
+            // Jumlah barang yang hancur pada sapuan BOD yang sedang berjalan.
+            // Hanya bermakna di dalam kait `characterLog.bodLog`; di luar itu
+            // selalu 0, karena daftarnya dikosongkan setiap sapuan selesai.
+            case "BODItemCount" -> (long) bodItems.size();
+            case "board" -> (long) board;
+            case "boardCanWrite" -> (long) boardCanWrite;
+            case "boardCanDel" -> (long) boardCanDel;
+            /** Id jenis barang yang paling akhir hancur ({@code sd->breakid}). */
+            case "breakId" -> breakId;
             // nilai turunan hasil calcStat — dibaca skrip pertarungan
             case "maxHealth" -> maxHp;
             case "maxMagic" -> maxMp;
@@ -606,6 +713,10 @@ public final class User extends BlockList
     public boolean scriptSetAttr(String name, long v) {
         switch (name) {
             case "money" -> status.money = v;
+            // Papan ber-BnmScripted memakai ini dari kait `check`; nilai 6
+            // bukan sekadar "boleh", lihat Boards.WRITE_ASK_SCRIPT.
+            case "boardCanWrite" -> boardCanWrite = (int) v;
+            case "boardCanDel" -> boardCanDel = (int) v;
             case "bankMoney" -> status.bankMoney = v;
             case "maxInv" -> status.maxInv = (int) v;
             case "health" -> status.hp = v;
@@ -642,9 +753,20 @@ public final class User extends BlockList
      */
     @Override
     public boolean scriptAddItem(String name, int amount) {
-        var db = MapServer.itemDb;
-        var info = db.infoByName(name);
-        if (info == null || amount <= 0) {
+        var info = MapServer.itemDb.infoByName(name);
+        return info != null && addItemById(info.id(), amount, -1);
+    }
+
+    /**
+     * Jalur yang sama, tapi barangnya disebut dengan <b>id</b> — dipakai
+     * memungut barang lantai, yang tidak pernah tahu namanya.
+     *
+     * @param dura ketahanan yang dibawa dari barang aslinya; negatif berarti
+     *             pakai bawaan jenisnya
+     */
+    public boolean addItemById(long itemId, int amount, int dura) {
+        var info = MapServer.itemDb.info(itemId);
+        if (info.id() == 0 || amount <= 0) {
             return false;
         }
         int stack = Math.max(1, info.stackAmount());
@@ -670,6 +792,7 @@ public final class User extends BlockList
             org.rtk.common.mmo.Item baru = new org.rtk.common.mmo.Item();
             baru.id = info.id();
             baru.amount = Math.min(stack, sisa);
+            baru.dura = dura >= 0 ? dura : info.durability();
             baru.pos = status.inventory.size();
             status.inventory.add(baru);
             sisa -= baru.amount;
@@ -699,6 +822,83 @@ public final class User extends BlockList
             }
         }
         return terbuang;
+    }
+
+    /**
+     * pcl_removeitemslot(): buang barang dari <b>satu slot tertentu</b>,
+     * bukan dari mana pun yang namanya cocok.
+     *
+     * <p>Dipakai skrip tas dan kerajinan yang sudah tahu slot mana yang
+     * dimaksud (27x) — mereka menyimpan nomor slot dari daftar yang
+     * ditampilkan ke pemain.</p>
+     *
+     * <p>⚠️ <b>Cabang "isi slot kurang dari yang diminta" selalu berakhir
+     * gagal, dan itu memang begitu di C.</b> Isi slotnya tetap dibuang,
+     * tetapi karena {@code amount} masih bersisa nilainya tidak pernah nol,
+     * sehingga fungsinya jatuh ke {@code return false} di bawah. Jadi
+     * pemanggil bisa menerima false <b>setelah</b> barangnya berkurang.
+     * Jangan "diperbaiki" — skrip yang ada mengandalkan perilaku ini.</p>
+     *
+     * @param type ragam pencatatan {@code pc_delitem} (10/9/11 di C); di sini
+     *             hanya ikut dicatat, tidak mengubah apa yang dibuang
+     */
+    public boolean scriptRemoveItemSlot(int slot, int amount, int type) {
+        if (slot < 0 || slot >= status.inventory.size() || amount <= 0) {
+            return false;
+        }
+        org.rtk.common.mmo.Item it = status.inventory.get(slot);
+        if (it.id <= 0) {
+            return false;
+        }
+        if (it.amount < amount && it.amount > 0) {
+            status.inventory.remove(slot);
+            return false;   // lihat catatan di atas
+        }
+        if (it.amount >= amount) {
+            it.amount -= amount;
+            if (it.amount <= 0) {
+                status.inventory.remove(slot);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * pcl_updatePath(): pemain berpindah jalur (path) dan tanda (mark).
+     *
+     * <p>Perubahannya <b>langsung ditulis ke database</b>, tidak menunggu
+     * simpan berkala — di C pun begitu, karena naik jalur adalah peristiwa
+     * yang tidak boleh hilang kalau server mati sebelum simpan berikutnya.</p>
+     */
+    public void scriptUpdatePath(int path, int mark) {
+        int p = Math.max(path, 0);
+        int mk = Math.max(mark, 0);
+        status.charClass = p;
+        status.mark = mk;
+        try {
+            MapServer.sql.update(
+                    "UPDATE `Character` SET `ChaPthId` = ?, `ChaMark` = ? WHERE `ChaId` = ?",
+                    p, mk, status.id);
+        } catch (RuntimeException e) {
+            log.error("[LUA] updatePath gagal menulis ke database", e);
+            return;
+        }
+        MapServer.clientView.playerIdentityChanged(this);
+    }
+
+    /** pcl_updateCountry(): pemain berpindah negara/kubu. */
+    public void scriptUpdateCountry(int country) {
+        status.country = country;
+        try {
+            MapServer.sql.update(
+                    "UPDATE `Character` SET `ChaNation` = ? WHERE `ChaId` = ?",
+                    country, status.id);
+        } catch (RuntimeException e) {
+            log.error("[LUA] updateCountry gagal menulis ke database", e);
+            return;
+        }
+        MapServer.clientView.playerStatusChanged(this, Clif.SFLAG_ALL);
     }
 
     /**

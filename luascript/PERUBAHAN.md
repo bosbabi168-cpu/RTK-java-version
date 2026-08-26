@@ -192,6 +192,22 @@ jadi tidak ada konten yang hilang saat pemindahan.
 `dialogs` (sistem banyak bahasa) — tabel itu tidak pernah ada, tetapi
 `getDialog` juga tidak pernah dipanggil dari mana pun, jadi kode mati.
 
+### 14. `Accepted/Scripts/Clone.lua:179` — `lock.registry` seharusnya `block.registry`
+
+Satu baris di antara **sembilan** baris `block.registry[...]` yang identik
+tertulis `lock.registry["gfxDye"]`. `lock` tidak pernah didefinisikan di
+berkas itu, jadi barisnya melempar "attempt to index nil" begitu kloning
+menyimpan warnanya — dan menghentikan tujuh baris sesudahnya.
+
+Menariknya, salah ketik ini **menyamar sebagai celah port**: `luaaudit`
+melaporkannya sebagai "global `lock` ada di `sl.c` tapi belum diport",
+karena di `sl.c` memang ada nama `lock` — tetapi sebagai **method**
+(`typel_extendproto(&pcl_type, "lock", pcl_lock)`), bukan global. Audit
+menyilangkan nama tanpa membedakan jenisnya, jadi salah ketik yang kebetulan
+senama dengan binding mana pun akan terlihat seperti pekerjaan porting yang
+tertinggal. Diperbaiki 26 Agustus 2026; dengan itu daftar "global belum
+diport" menjadi **kosong**.
+
 ---
 
 ## Perubahan di sisi mesin (bukan di skrip)

@@ -24,14 +24,40 @@ Yang **akan dibuang**: format kabel. Karena itu `Clif.sendMyStatus()` sengaja
 dibiarkan **TAHAP 1** (struktur benar, isi kosong) — jangan habiskan waktu
 melengkapinya.
 
-⚠️ **PIUTANG ARSITEKTUR YANG MENDESAK.** Logika permainan saat ini memanggil
-paket **langsung** — `User.scriptRemoveSpell()` memanggil `Clif.removeSpell()`
-di tengah logikanya. Selama binding sisa diport dengan pola ini, penggantian
-protokol berarti menyentuh ulang semuanya. Sekarang baru **13 binding** yang
-terpengaruh; nanti **89**. Sisipkan lapisan pemberitahuan-ke-klien yang
-semantik (`spellRemoved(slot)`, `inventoryChanged()`) sebelum memport banyak
-binding lagi. Efek sampingnya: daftar method di antarmuka itu **adalah**
-spesifikasi protokol baru, diturunkan dari kebutuhan nyata skrip.
+### Lapisan pemisah logika ↔ protokol (SUDAH ADA sejak 26 Agustus 2026)
+
+**`ClientView`** (`src/org/rtk/map/ClientView.java`) adalah batas antara
+logika permainan dan protokol. Logika memanggil **peristiwa** —
+`playerSpellRemoved(sd, slot)`, `npcMoved(...)` — dan implementasi yang
+menerjemahkannya jadi byte. Yang ada sekarang: **`RetroTkClientView`**
+(memetakan ke `Clif.*`). Protokol baru = tulis implementasi kedua lalu tukar
+`MapServer.clientView`; **logika tidak perlu disentuh sama sekali**.
+
+⚠️ **ATURAN: kode di luar lapisan protokol JANGAN memanggil `Clif.*`
+langsung.** Tambahkan peristiwa baru di `ClientView`, implementasikan di
+adapter. Ini berlaku terutama saat memport ~89 binding yang tersisa — pola
+lama (`User.scriptRemoveSpell()` → `Clif.removeSpell()`) adalah persis yang
+membuat penggantian protokol jadi mahal.
+
+Nama method menyebut **apa yang terjadi**, bukan paket apa yang dikirim.
+Daftar method di antarmuka itu pada akhirnya **adalah** spesifikasi protokol
+baru — diturunkan dari kebutuhan nyata skrip, bukan dikarang dari nol.
+
+Cakupan saat ini: seluruh panggilan keluar sudah lewat lapisan ini —
+**25 peristiwa** per 26 Agustus 2026 sore, naik dari 9 saat lapisan ini
+dibuat pagi harinya. Yang bertambah: `playerIdentityChanged`,
+`playerDurationChanged`, `playerAetherChanged`, `objectSpoke`,
+`objectActed`, `objectAppearanceChanged`, `objectRemoved`, `objectThrown`,
+`mobMoved`, `mobSpawned`, `floorItemAppeared`. Hitung ulang dengan
+`grep -c "^    void " src/org/rtk/map/ClientView.java`. Yang **belum**: arah **masuk** (`Clif.parseWalk`,
+`parseClick`, `parseMenuInput`, `parseNpcDialog`, `decrypt` di
+`MapServer.clientParse`) — itu loop dispatcher paket, urusan terpisah yang
+juga perlu dipindah saat protokol baru dirancang.
+
+⚠️ **Kebocoran yang diketahui:** `npcMoved()` masih membawa empat parameter
+petak-yang-baru-terlihat — konsep viewport RetroTK, bukan peristiwa
+permainan. Idealnya adapter menghitungnya sendiri dari arah gerak. Sudah
+ditandai di Javadoc-nya; rapikan saat protokol baru dirancang.
 
 ## Apa project ini
 
@@ -101,7 +127,10 @@ proses build di server.
   `./run.sh maptest` (3.544 berkas peta),
   `./run.sh chartest` (serialisasi karakter, 29 assertion),
   `./run.sh worldtest` (dunia peta + penempatan pemain, 53 assertion),
-  `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, toko, mob, AI & pertarungan — 294 assertion),
+  `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar
+  ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
+  durasi mantra, gerak mob, barang lantai, inventaris, buku mantra,
+  tampilan & timer, simpan paksa, BOD — **535 assertion**),
   `./run.sh dbtest` (lapisan database ke MySQL hidup — 132 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
@@ -547,6 +576,344 @@ byte-identik dengan `rtklua/`.
    Ditemukan 24 Agustus 2026 dengan membongkar bytecode-nya
    (`javap -p -c`), karena membaca sumbernya saja tidak menampakkan apa pun.
 
+28. **`MapData.delBlock` menolak benda dari peta lain — jangan dilonggarkan.**
+   Di C `map_delblock(bl)` selalu memakai `map[bl->m]`, jadi mustahil
+   mencabut benda dari peta yang bukan tempatnya. Di sini `delBlock` adalah
+   method instance, sehingga peta yang salah bisa dilewatkan; tanpa penjaga
+   `bl.m != id` bendanya **tidak** tercabut dari daftar peta aslinya padahal
+   `onMap` sudah dimatikan — dan `addBlock` berikutnya mendaftarkannya
+   **untuk kedua kalinya**. Efeknya setiap siaran ke area terkirim ganda dan
+   tiap sapuan menghitung bendanya dua kali. Lolos dari 294 assertion
+   `cliftest`; ketahuan 26 Agustus 2026 hanya karena nomor urut paket naik
+   dua per kiriman.
+
+29. **Nomor urut paket [4] hanya ada pada sebagian paket.** `WFIFOHEADER()`
+   di C menaikkan `session->increment` lalu menaruhnya di ladang [4]; paket
+   yang dibangun dengan `WBUF` atau `WFIFOHEAD` biasa meninggalkannya 0
+   (buffernya `CALLOC`). Di Java pilih `Clif.head()` atau `Clif.headSeq()`
+   menurut makro yang dipakai fungsi C-nya — **jangan diseragamkan**.
+   Yang memakai `WFIFOHEADER`: 0x07, 0x0C (hanya `clif_mob_move`), 0x0D
+   (`clif_speak`, **bukan** `pcl_talkself`), 0x13
+   (`clif_send_mob_health_sub`, **bukan** `clif_send_pc_healthscript`),
+   0x1F, 0x37, 0x3A, 0x3F, 0x51. Dua pasangan itu mudah tertukar karena
+   opcodenya sama persis; bedanya cuma makro pembangunnya.
+
+30. **Angka `luaaudit` tidak turun saat binding STUB diport.** Stub sudah
+   terdaftar di prototipe, jadi bagi audit namanya "terdefinisi" — memport
+   `sendAction` yang dipakai 905x tidak menggerakkan angkanya sedikit pun.
+   Karena itu jangan memakai angka audit sebagai ukuran kemajuan tanpa
+   melihat daftar stub di `Bindings.java` (`registerGlobals()`,
+   `definePlayer()`, `defineBlockList()`). Kebalikannya juga berlaku:
+   binding yang belum ada sama sekali baru terlihat setelah dipanggil.
+
+31. **Barang di lantai punya DUA aturan penggabungan yang berbeda.** Yang
+   dipakai tergantung siapa yang menjatuhkan, dan menyamakannya salah:
+   - **Jatuhan mob/skrip** (`mob_addtocurrent`, lewat `dropItem`) menggabung
+     bila **id barangnya sama** — itu saja.
+   - **Jatuhan pemain dari inventaris** (`pc_addtocurrent`, lewat
+     `forceDrop`) mensyaratkan **keduanya utuh** (dura penuh) **plus sepuluh
+     atribut sama persis**: id, pemilik, nama asli, ikon & wujud kustom
+     beserta warnanya, catatan, `custom`, dan `protected`. Ia juga
+     **mengosongkan daftar `looters`**.
+
+   Akibatnya pedang penyok tidak pernah menyatu dengan pedang mulus, dan
+   barang berukir (`realName` terisi) tetap terpisah. Kalau aturan longgar
+   dipakai untuk keduanya, barang unik pemain akan saling melebur diam-diam.
+
+32. **Tiga jebakan penamaan pada barang lantai.**
+   - **Barang ber-id 0 adalah UANG**, bukan barang. `pc_getitemscript`
+     menambahkannya ke emas pemain lalu membuang bendanya.
+   - **Kolom `ItmDroppable` artinya kebalikan namanya**: nilai bukan-nol
+     berarti barangnya **tidak bisa dipungut** pemain biasa. Dibaca lewat
+     `ItemDb.cannotBePickedUp()` supaya namanya tidak menyesatkan lagi.
+   - **`throw` bukan bagian dari barang lantai sama sekali** — isinya murni
+     animasi (0x16), dan ladang [12]-nya sengaja nol supaya klien tidak
+     meninggalkan gambar di tanah. Yang benar-benar menjatuhkan barang
+     adalah `dropItemXY`, yang biasanya dipanggil skrip tepat sesudahnya.
+
+33. **Jebakan disaring di DUA tempat, dengan aturan berbeda.**
+   - **Pencarian benda** (`map_foreachincell`) membuang **seluruh** barang
+     bertipe `ITM_TRAPS`, tanpa melihat `trapsTable`. Itulah satu-satunya
+     beda `getObjectsInCell` dan `getObjectsInCellWithTraps`. Sapuan area
+     (`map_foreachinarea`) **tidak** punya penyaring ini sama sekali.
+   - **Penggambaran** (`clif_object_look_sub`) memakai `trapsTable`:
+     jebakan hanya tergambar untuk pemain yang sudah menemukannya.
+
+   Menyamakan keduanya membuat jebakan terlihat oleh semua orang, atau tidak
+   pernah bisa ditemukan sama sekali.
+
+34. **Ikon barang lantai dikirim MENTAH; hanya ikon KUSTOM yang +49152.**
+   Benda lain (mob, NPC) selalu memakai penambah 32768, jadi menyeragamkan
+   ketiganya adalah kesalahan yang wajar tapi tetap salah. Lihat cabang
+   BL_ITEM di `Clif.objectLook`.
+
+35. **Tiga varian gerak mob yang TIDAK boleh diseragamkan.** Di C ketiganya
+   berdiri dari badan yang sama, tetapi masing-masing membuang bagian yang
+   berbeda — dan namanya tidak membantu:
+   - **`moveGhost`** (`moveghost_mob`) — langkah penuh. Mob yang sedang
+     mengejar (`target != 0`) **menembus penghalang**.
+   - **`moveIgnoreObject`** (`move_mob_ignore_object`) — salinan utuh
+     `moveghost_mob` dengan satu blok **dikomentari**: cek tembok dan benda.
+     Jadi ia menembus segalanya, **tetapi portal tetap menghentikannya**,
+     karena penjaga portal ada di atas blok yang dikomentari itu.
+   - **`checkMove`** (`mobl_checkmove`) — hanya bertanya, tidak melangkah.
+     Petak tujuannya dihitung sederhana (±1), tanpa perhitungan jalur
+     pandang. ⚠️ **Pengecualian `target` TIDAK berlaku di sini**, jadi
+     jawabannya bisa berbeda dari apa yang benar-benar terjadi kalau
+     `moveGhost` dipanggil. Itu di C, bukan kelalaian.
+
+   Dan yang paling menyesatkan: **`moveIntent` tidak pernah memindahkan mob
+   sama sekali.** Seluruh badan yang menggerakkannya dikomentari di sumber
+   C; yang tersisa hanya "kalau sasaran bersebelahan, putar menghadapnya dan
+   kembalikan 1". Skrip memakainya sebagai "sudah cukup dekat untuk
+   menyerang?", bukan sebagai perintah jalan.
+
+   Catatan kecil: `mob->canmove` **namanya terbalik dari artinya** —
+   nilai 1 berarti TIDAK boleh melangkah.
+
+36. **Paket inventaris 0x0F membawa DUA string dengan peran berbeda.**
+   Yang pertama adalah teks yang **dilihat pemain**: nama ukiran bila ada,
+   plus hiasan menurut jenis barangnya — `"Roti (5)"` bila jumlahnya lebih
+   dari satu, `"Obor [12 jam]"` untuk ITM_SMOKE, `"[T3] Peta"` untuk
+   ITM_MAP, `"Tas [40]"` untuk ITM_BAG dan ITM_QUIVER. Yang kedua adalah
+   nama **jenis**-nya apa adanya, dipakai klien mencocokkan gambar dan
+   tooltip. Menyamakan keduanya membuat barang berukir kehilangan gambarnya.
+
+   Dua hal lagi di paket yang sama:
+   - **Ketahanan hanya dikirim untuk jenis 3..17** (perlengkapan). Jenis
+     lain memakai ladang yang sama untuk penanda "bertumpuk".
+   - **Perlindungan yang menang adalah yang TERBESAR** antara milik
+     barangnya dan bawaan jenisnya — di C dua baris `if` yang saling
+     menimpa, bukan satu pilihan.
+
+37. **`clif_sendadditem` MENGHAPUS barang rusak, bukan melewatinya.**
+   Barang ber-id di bawah 4, dan barang yang tidak ada di tabel `Items`,
+   dikosongkan dari inventaris pemain saat paketnya hendak dikirim. Itu
+   penyapu data rusak di C dan ditiru apa adanya — kalau tidak, barang
+   hantu menumpuk di slot yang tidak bisa dipakai.
+
+   ⚠️ **Akibatnya penyapuan inventaris harus dari BELAKANG.** Menyapu maju
+   akan melewati satu slot setiap kali sebuah barang terbuang, karena
+   daftarnya menyusut di tengah perulangan. Lihat `Bindings.kirimInventaris`.
+
+   Terkait: **`clif_senddelitem` (0x10) juga mengosongkan slotnya di
+   server**, bukan sekadar memberi tahu klien. Skrip mengandalkan itu.
+
+38. **Daftar mantra dikembalikan BERSELANG-SELING, bukan berpasangan.**
+   `getUnknownSpells` dan `getAllClassSpells` mengisi tabel Lua dengan
+   indeks 1 = nama tampilan, 2 = nama skrip, 3 = nama tampilan, 4 = nama
+   skrip, dan seterusnya. Bentuk yang tidak biasa ini ada di C
+   (`x += 2` di kedua fungsi) dan skrip mengandalkannya — mengubahnya jadi
+   tabel pasangan akan memutus daftar mantra di menu.
+
+   Dua hal lagi di keluarga yang sama:
+   - **Delapan belas id mantra bukan mantra**, melainkan penanda bagian di
+     buku mantra (0, 100, 200, …, 7000, 10000). Daftar itu **tidak ada di
+     database** — di C ia deretan `case ... continue;`, jadi tidak bisa
+     disaring lewat SQL. Menyertakannya membuat baris kosong muncul di
+     daftar pilihan pemain. Lihat `SpellDb.isSectionMarker`.
+   - `getAllClassSpells` punya penjaga `if (found == 0)` yang **mati** di C
+     ({@code found} tak pernah disetel di fungsi itu), sehingga mantra yang
+     sudah dikuasai pemain **ikut** terdaftar. Hanya `getUnknownSpells`
+     yang benar-benar menyaringnya. Ditiru apa adanya.
+
+39. **Satu opcode, dua arti — 0x58 dan 0x04.**
+   - **0x58** membersihkan sisa gambar lama bila ladang [5] = 0
+     (`clif_destroyold`), dan menampilkan teks besar di tengah layar bila
+     [5] = 6 (`clif_guitextsd`). Dua fungsi yang sama sekali berbeda.
+   - **0x04** dipakai `clif_sendxy` (posisi pemain) <b>dan</b>
+     `clif_sendxychange` (geser kamera saja). Tata letaknya sama; bedanya
+     yang pertama menyertai perpindahan, yang kedua tidak.
+
+   Terkait, dua jebakan kecil di keluarga yang sama:
+   - **Ladang panjang `clif_guitextsd` menghitung 3 byte indeks kunci dua
+     kali** ({@code 8 + panjang + 3}, padahal `setPacketIndexes` menambahkan
+     3 lagi sesudahnya). Ada di C; jangan "dirapikan". Lihat Peringatan #17.
+   - **Offset kamera di tepi peta DIGESER satu, bukan dijepit** ke batas —
+     {@code dx--} / {@code dx++}, bukan {@code dx = batas}.
+
+40. **`lock` mengirim 0 dan `unlock` mengirim 1.** Terbalik dari namanya,
+   dan keduanya memakai paket yang sama (`clif_blockmovement`, 0x51).
+   Menukarnya membuat pemain terkunci persis ketika skrip bermaksud
+   melepasnya.
+
+   Terkait: **`speak` (`clif_sendscriptsay`) bukan `talk` (`clif_speak`)**,
+   walau keduanya opcode 0x0D. Yang ini <b>menyisipkan nama pemain</b> di
+   depan pesannya, dan ragam 1 mengubah tiga hal sekaligus: pemisahnya
+   {@code '!'} bukan {@code ':'}, dan siarannya ke seluruh peta, bukan area.
+
+41. **Menyimpan pemain yang sedang di dunia WAJIB menyegarkan posisinya
+   dulu.** `intif_save()` menyalin `bl.x/y/m` ke `status.last_pos` dan
+   samaran ke `status.disguise*` <b>tepat sebelum</b> blobnya disusun.
+   Tanpa itu yang tersimpan adalah posisi saat pemain <b>masuk</b>, dan
+   seluruh perjalanannya hilang. Di Java penyegaran itu sekarang ada di
+   dalam `MapIntif.saveChar(User, quit)` supaya tidak bisa terlewat lagi;
+   ragam `CharStatus` yang lama hanya untuk karakter yang tidak sedang di
+   dunia.
+
+   ⚠️ Ragam `quit` punya satu cabang tambahan: bila **peta tujuan pemain
+   tidak dimuat di server ini**, yang disimpan adalah **peta tujuan**, bukan
+   posisinya sekarang. Itu jalur perpindahan antar-map-server (Trek C3) —
+   pemain sudah "berangkat" secara logika meski raganya masih berdiri di
+   peta lama. Menghapusnya akan memulangkan pemain ke peta yang salah
+   begitu C3 hidup.
+
+42. **BOD = "Break on Death", dan ia BUKAN penyimpanan.** Namanya terdengar
+   seperti tas penyimpanan barang mati; sebenarnya `sd->boditems` adalah
+   **daftar gores sementara**: `deductDuraEquip` dan `checkInvBod`
+   mengisinya sambil menghancurkan barang, memanggil kait
+   `characterLog.bodLog` <b>sekali</b> di akhir, lalu
+   <b>mengosongkannya</b>. Skrip hanya bisa membacanya
+   (`getBODItem(n)`, atribut `BODItemCount`) <b>di dalam kait itu</b>; di
+   luar itu selalu kosong. Kolom sumbernya `ItmBoD`.
+
+   Perkiraan awal roadmap ("subsistem besar, kerjakan sebagai satu blok")
+   **terlalu tinggi** — isinya dua sapuan dan satu daftar.
+
+43. **Perlindungan barang MENYELAMATKAN barangnya DAN menghentikan seluruh
+   sapuan.** Bila barang yang hendak hancur punya perlindungan, C
+   mengurangi satu perlindungan, memulihkan ketahanannya penuh, memanggil
+   kait `equipRestore`/`invRestore`, lalu **`return 0` dari dalam
+   perulangan**. Akibatnya:
+   - slot-slot **sesudahnya tidak ikut diperiksa** pada pemanggilan itu;
+   - kait `bodLog` **tidak pernah dipanggil**, sehingga barang yang sudah
+     telanjur masuk daftar BOD pada sapuan yang sama tidak pernah dilaporkan
+     ke skrip log.
+
+   Terlihat seperti kelalaian, tetapi ditiru apa adanya. Menggantinya dengan
+   `continue` akan mengubah berapa banyak barang yang hilang saat mati.
+
+   Terkait: **peringatan ketahanan punya LIMA ambang** (50/25/10/5/1%),
+   masing-masing menaikkan bendera `repair` satu tingkat dan hanya berbunyi
+   bila benderanya persis satu di bawahnya. Port ini sempat hanya memuat
+   ambang 50%, jadi barang yang sudah menipis lewat itu tidak pernah
+   memperingatkan lagi. Sudah dilengkapi.
+
+44. **`Sql.queryInt` dulu mengembalikan 0 untuk SQL NULL.** `getInt`
+   memang begitu, jadi "tidak ada nilainya" dan "nilainya nol" jadi tak
+   terbedakan. Yang membuatnya berbahaya adalah **agregat**:
+   `SELECT MAX(x) ... WHERE ...` pada himpunan kosong menghasilkan **satu
+   baris berisi NULL**, bukan nol baris — sehingga pemanggilnya mengira
+   nilai tertingginya 0. Ketahuan pada nomor urut kiriman, yang seharusnya
+   mulai dari 0 tapi malah dari 1. Sekarang `queryInt` memeriksa
+   `wasNull()`; kalau menambah pembaca kolom baru, periksa hal yang sama.
+
+45. **Nomor urut kiriman dan surat adalah nomor PER PENERIMA, bukan kunci.**
+   `ParPosition` / `MalPosition` diisi "tertinggi milik penerima + 1".
+   Karena itu menghapus satu kiriman **tidak** menomori ulang sisanya —
+   lubang di tengah dibiarkan, dan kiriman berikutnya tetap mengambil
+   tertinggi + 1, bukan mengisi lubangnya. Menomori ulang akan memutus
+   `removeParcel`, yang menghapus **berdasarkan nomor itu**.
+
+   Dua hal lagi di keluarga yang sama:
+   - **`npcflag` mengubah arti `sender`**: bila bukan nol, pengirimnya NPC
+     dan idnya digeser `+ NPC_START_NUM - 2`.
+   - **`removeParcel` meminta sebelas argumen dan memakai satu.** Hanya
+     nomor urutnya yang menentukan baris mana yang terhapus; sisanya
+     peninggalan log yang dikomentari. Jangan menjadikannya penyaring.
+
+46. **`addGift`/`retrieveGift` badannya DIKOMENTARI SELURUHNYA di C.**
+   Keduanya tidak melakukan apa pun di server aslinya, jadi skrip yang
+   mengandalkannya memang sudah rusak di sana. Diport sebagai tiruan setia
+   yang mengembalikan nil — mengisinya dengan tebakan justru mengubah
+   perilaku.
+
+   ⚠️ Terkait pengujian: **`dbtest` menulis ke `logs/char.log`**, persis
+   seperti `cliftest` menulis ke `logs/map.log` (Peringatan di bagian
+   "Cara memastikan"). Baris ERROR dari uji yang gagal akan terlihat seperti
+   error server pada pemeriksaan berikutnya. Perhatikan cap waktunya.
+
+47. **Paket papan di C mengirim DUMP STRUCT MENTAH — port ini tidak.**
+   0x3009/0x300A/0x300C memakai
+   {@code memcpy(&a, ..., sizeof(struct board_show_0))}, sehingga panjangnya
+   bergantung pada padding kompilator. Itu **alasan yang sama** dengan blob
+   karakter (Peringatan #9): kedua ujungnya kode Java kita sendiri, jadi
+   tata letak C bukan kontrak yang harus dipatuhi. Ladangnya ditulis
+   eksplisit di `MapIntif.requestBoard` dan `Mapif.parseShowPosts`, dan
+   panjang paket 0x3009 di tabel dispatcher **-1**, bukan angka tetap.
+   Yang tetap ditiru adalah <b>semantiknya</b>.
+
+48. **Tiga nama menyesatkan sekaligus di keluarga papan.**
+   - **`powerBoard` bukan papan pesan.** Ia daftar pemain online di peta
+     beserta "power rating" ({@code baseHealth + baseMagic}), dan tidak
+     menyentuh tabel `Boards` sama sekali.
+   - **Papan 0 bukan papan.** Ia kotak surat pribadi, dibaca dari tabel
+     `Mail` dengan nama kolom yang sama sekali berbeda; hanya bentuk
+     hasilnya yang sama. Hak tulis/hapusnya selalu penuh.
+   - **`BoardNames` vs `BoardTitles`.** Yang pertama papannya, yang kedua
+     <b>gelar penulis</b> yang muncul di depan namanya pada daftar kiriman
+     ("Prajurit Budi"). Keduanya dibaca `BoardDb`.
+
+   Dua jebakan angka di keluarga yang sama:
+   - **`boardCanWrite == 6` menggantikan seluruh bendera, tidak di-OR** —
+     artinya "klien harus mengirim paket saat tombol tulis diklik", dipakai
+     papan yang dijawab skrip.
+   - **`flags1` bergantung pada popup DAN papan sekaligus**, bukan salah
+     satunya: kotak surat selalu memakai cabang bukan-popup.
+
+49. **"Bank klan" dan "bank subpath" adalah penyimpanan yang SAMA.**
+   `getClanBankItems` dan `getSubpathBankItems` di C membaca larik
+   {@code clan->clanbanks[]} yang identik; yang berbeda hanya <b>bentuk
+   keluarannya</b> — sepuluh ladang per barang versus lima (id, jumlah,
+   pemilik, ukiran, waktu). Membuat penyimpanan kedua untuk subpath akan
+   memecah isi bank yang seharusnya satu, dan barang yang dititipkan lewat
+   satu pintu tidak akan terlihat dari pintu lainnya.
+
+   Dua hal lagi di keluarga bank:
+   - **Penggabungan menuntut SEPULUH atribut sama persis** — id, pemilik,
+     waktu, ukiran, perlindungan, ikon & wujud kustom beserta warnanya.
+     Beda satu saja berarti slot terpisah. (Aturan yang sama dengan
+     penggabungan barang lantai jalur pemain; lihat Peringatan #31.)
+   - **Kolom `CbkPosition` dibaca tapi TIDAK dipakai menempatkan barang.**
+     C menyalin baris ke-{@code i} ke slot ke-{@code i}, jadi lubang nomor
+     slot di database <b>dirapatkan</b> saat dimuat. Ditiru apa adanya —
+     kalau tidak, nomor slot di memori berbeda dari yang dilihat C dan
+     penyimpanan berikutnya menggeser seluruh isinya.
+
+50. **Audit sempat menghitung pendaftaran yang DIKOMENTARI di `sl.c`.**
+   `LuaAudit.bacaNamaC()` menyapu sumber C dengan regex, dan regex tidak
+   tahu soal komentar — sehingga baris seperti
+   {@code //typel_extendproto(&pcl_type, "addActivationKey", ...)} ikut
+   terhitung "ada di sl.c". Akibatnya binding yang **tidak ada di server
+   aslinya pun** dilaporkan sebagai celah port yang menunggu dikerjakan.
+   Sekarang komentar dibuang lebih dulu; dua nama pindah ke kategori
+   "tidak ada di mana pun", tempatnya yang benar.
+
+   Ini pola yang sama dengan Peringatan #30 dan prototipe `FloorItem` yang
+   terlewat: **angka audit hanya sejujur cara ia mengumpulkan namanya.**
+   Sebelum memakainya sebagai ukuran, periksa dulu apa yang ia hitung.
+
+51. **`setIndDmg`/`setGrpDmg` BUKAN tabel ancaman.** Ancaman
+   ({@code addThreat}) menentukan siapa yang dikejar mob; dua tabel ini
+   hanya catatan siapa menyumbang kerusakan berapa, dipakai skrip untuk
+   membagi jatuhan dan pengalaman. Angkanya ditambahkan, batasnya 50 entri,
+   dan {@code setGrpDmg} mencatat menurut **id grup** pemain, bukan id
+   pemainnya.
+
+52. **Dua antarmuka, arah dan pemilik TERBALIK.** Ini yang paling mudah
+   tertukar saat menyentuh lapisan protokol:
+
+   | | `ClientView` | `ClientCommands` |
+   |---|---|---|
+   | Arah | logika &rarr; klien | klien &rarr; logika |
+   | Isi | apa yang **terjadi** | apa yang **diminta** |
+   | Diimplementasikan | lapisan **protokol** | lapisan **logika** |
+   | Dipanggil | lapisan **logika** | lapisan **protokol** |
+
+   Aturannya sepasang: **kode logika jangan memanggil `Clif`**, dan
+   **kode logika jangan membaca `rfifo*`**. Kalau sebuah baris di
+   `MapCommands` butuh `Session` atau opcode, baris itu salah tempat.
+
+   ⚠️ **Satu kebocoran yang disengaja dan sudah ditandai:**
+   `playerWalks` membawa `RedrawRequest` — permintaan klien RetroTK untuk
+   menggambar ulang sepetak wilayah, yang menumpang paket langkah yang
+   sama. Ia ada di sana karena **urutannya mengikat**: penggambaran harus
+   terjadi setelah pemain berpindah tetapi sebelum kait skrip dan
+   pemeriksaan portal — portal bisa memindahkannya ke peta lain, dan
+   menggambar ulang peta lama sesudah itu salah. Jadi tidak bisa dikerjakan
+   pemanggil setelah method-nya kembali. **Buang saat protokol baru
+   dirancang**; server baru tahu sendiri apa yang baru terlihat.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -581,6 +948,8 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
 | `map/class_db.c` `leveldb_read` | `map/data/ClassDb` | tabel pengalaman per path, dari `db/level_db.txt` |
 | `map/itemdb.c` `itemdb_look` | `map/data/ItemDb` | tampilan barang dari tabel `Items` |
 | `map/clif.c` `nexCRCC` + `clif_sendmapdata` | `map/Clif.nexCrc`, `Clif.sendMapData` | checksum petak peta; cocok = tidak dikirim ulang |
+| `map/pc.c` `bl_duratimer` + `sl.c` `pcl_setduration` dkk. | `map/Durations` | durasi & aether mantra; tik 1 detik, kait `while_cast`/`uncast` |
+| `map/map.h` `flooritem_data` + `map_additem`/`map_delitem` | `map/FloorItem`, `map/FloorItemRegistry` | barang di lantai (BL_ITEM); dua aturan gabung, penyaring jebakan |
 
 ## Scripting engine (org.rtk.map.script)
 
@@ -655,17 +1024,156 @@ padahal kodenya salah (opcode menu, tabel CRC, indeks id mob), dan
 ketiganya baru ketahuan setelah dicocokkan ke sumber C atau saat uji lain
 ikut rusak. Uji buatan sendiri tidak bisa menggantikan klien nyata.
 
-### STATUS TERAKHIR — 26 Agustus 2026
+### STATUS TERAKHIR — 26 Agustus 2026 (sore)
 
 Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau |
-| Binding skrip | **89** belum diport (dari 100) |
+| Gerbang regresi | 6/6 hijau (`cliftest` **552**, `dbtest` **187** assertion) |
+| Binding skrip | **12** belum diport (**4** di `sl.c` + 8 salah ketik / kode mati); global belum diport **0** |
+| **Paket MASUK** | ⚠️ **5 dari 54 opcode** — lihat "AUDIT 27 Agustus 2026" |
+| Trek A | selesai fungsinya; `sendMyStatus` sengaja TAHAP 1 |
+| Trek C | C1 & C4 selesai; **C2 dan C3 belum tersentuh** |
+| Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
+
+#### Yang dikerjakan pada sesi ini
+
+Dua blok, keduanya sudah lewat 6 gerbang + server hidup 0 ERROR / 0 WARN.
+
+**1. Binding yang masih stub — kategori paling berbahaya.** Stub tidak
+melempar error, hanya menulis WARN sekali lalu mengembalikan nil, jadi
+`map.log` tetap bersih sementara skripnya "berhasil" tanpa efek apa pun.
+Diport: `talk` (698x, `clif_speak` 0x0D — tanpa ini NPC tidak pernah
+bersuara di layar), `sendAction` (905x, 0x1A), `playSound` (632x),
+`updateState` (434x, 0x1D untuk pemain / 0x33 / 0x07), `delete` (109x),
+`delFromIDDB`, `sendHealth`, `refresh` (90x), `removeItemSlot` (27x),
+`updatePath` (25x), `updateCountry`.
+
+**2. Subsistem durasi & aether mantra** (`map/Durations.java`) —
+`setDuration` (423x) plus 15 binding sekeluarga dan tik satu detik
+`bl_duratimer()`. Ini **logika permainan, bukan protokol**, jadi tetap
+terpakai setelah protokol diganti.
+
+**3. `moveGhost` (84x) dan `spawn` (381x)** — dua penghambat terbesar yang
+tersisa. `moveGhost` (`moveghost_mob`, mob.c:1518) adalah cara hampir
+seluruh AI mob bergerak; `spawn` (`mobspawn_onetime`) melahirkan jebakan,
+mob event, dan boss instance. Ikut lahir: paket benda 0x07 **berkelompok**
+dan `clif_mob_move` (0x0C per-sesi).
+
+Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
+tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
+memanggilnya melempar error yang terlihat di `map.log`.
+
+**14. Sisa administratif** — `setPK`/`getPK`, `checkLevel`, `setHeroShow`,
+`setAccountBan`, `getCaptchaKey`/`setCaptchaKey`, `forceEquip`,
+`mapSelection` (0x2E), `setIndDmg`/`setGrpDmg`.
+
+**13. Bank klan & subpath** — `getBankItems`, `getClanBankItems`,
+`getSubpathBankItems`, `clanBankDeposit`, `clanBankWithdraw`, plus
+`map/data/ClanDb` (tabel `Clans` + `ClanBanks`).
+
+**12. C4 — papan pesan** — `showBoard` (2x), `sendBoardQuestions` (2x),
+`powerBoard` (2x), plus `map/data/BoardDb` (tabel `BoardNames` dan
+`BoardTitles`), `map/Boards` (hak akses + bendera tampilan), jalur
+antar-server 0x3009 -> 0x3809, dan paket klien 0x31 / 0x46. Ikut lahir:
+`ClassDb.loadPaths()` dari tabel `Paths`.
+
+**11. C4 — kiriman, surat, hadiah** — `sendParcel` (5x), `getParcel`,
+`getParcelList`, `removeParcel`, `sendMail` (3x), `updateMail`, plus
+`addGift`/`retrieveGift` sebagai tiruan setia (badannya dikomentari di C).
+Kiriman seluruhnya SQL sehingga teruji penuh di `dbtest`; surat lewat
+char server (0x300D/0x300F -> 0x380C, plus siaran 0x380D).
+
+**10. Subsistem BOD** — `deductDuraEquip`, `checkInvBod`, `getBODItem`,
+`expireItem`, `stripEquip` (9x), atribut `BODItemCount`. Ikut diperbaiki:
+`checkDura` hanya memport ambang 50% dari lima yang ada di C.
+
+**9. `forceSave` (15x)** — `intif_save()`. `MapIntif.saveChar` kini punya
+ragam yang menerima `User` dan menyegarkan posisi & samaran dari objek
+hidupnya lebih dulu; jalur keluar-dunia ikut memakainya.
+
+**8. Tampilan & timer** — `changeView` (22x), `guitext` (12x), `setTimer`
+(11x), `selfAnimation`/`selfAnimationXY` (19x), `paperpopup` (7x),
+`speak` (6x), `sendURL` (4x), `lock`/`unlock` (12x). Paket baru: 0x04
+(geser kamera), 0x58 (dua ragam), 0x35, 0x66, 0x67, dan 0x0D bernama.
+
+**7. Buku mantra** — `getSpells` (7x), `getSpellName` (4x),
+`getSpellYName` (3x), `getSpellNameFromYName` (4x), `getUnknownSpells`
+(4x), `getAllClassSpells`, plus `addHealth` (4x). Ikut dibereskan: empat
+berkas data (`ItemDb`, `SpellDb`, `NpcRegistry`, `MobRegistry`) masuk ke
+audit SQL `dbtest` — sebelumnya kueri mereka **tidak pernah** divalidasi
+skema hidup, sehingga kolom yang baru ditambahkan lolos tanpa diperiksa.
+
+**6. Inventaris & perlengkapan** — paket 0x0F (isi slot) dan 0x10
+(kosongkan slot), plus `updateInv` (24x), `refreshInventory`, `hasEquipped`
+(6x), `hasItemDura`, `deductDura`, `deductDuraInv`, `deductArmor`,
+`deductWeapon`. Ikut lahir: `MapServer.charName()` (port `map_id2name`) dan
+kolom `ItmText`/`ItmProtected` di `ItemDb`.
+
+**5. Gerak mob lanjutan** — `moveIntent` (11x), `checkMove` (9x),
+`moveIgnoreObject` (3x). Ketiganya varian dari mesin `moveGhost` yang sudah
+berdiri, jadi murah; tapi ketiganya punya perbedaan halus yang mudah
+diseragamkan secara keliru (Peringatan #35).
+
+**4. BL_ITEM — barang di lantai** (`map/FloorItem`, `map/FloorItemRegistry`).
+Subsistem besar terakhir yang belum ada sama sekali. Membuka `dropItemXY`
+(37x), `throw` (23x), `dropItem` (18x), `pickUp` (12x), `forceDrop`,
+`addTrapSpotters`/`getTrapSpotters` — ~95 titik panggilan — dan membuat
+`getObjectsInCellWithTraps` akhirnya berbeda dari varian biasa.
+
+⚠️ **Angka luaaudit tidak turun sebanyak pekerjaannya.** Binding yang
+diport dari keadaan *stub* **tidak pernah terhitung** di audit — bagi
+audit ia sudah "terdefinisi". Jadi 89 → 79 mengecilkan apa yang berubah;
+yang benar-benar bergerak ada di kolom "masih stub" di atas.
+
+#### Jebakan baru yang ditemukan sesi ini
+
+- **`MapData.delBlock` pada peta yang SALAH** diam-diam menyetel
+  `onMap = false` tanpa mencabut bendanya, sehingga `addBlock` berikutnya
+  mendaftarkannya **untuk kedua kalinya** — tiap siaran ke area lalu
+  terkirim ganda. Di C mustahil: `map_delblock(bl)` selalu memakai
+  `map[bl->m]`. Lolos dari 294 assertion `cliftest`; ketahuan hanya karena
+  nomor urut paket naik **dua** per kiriman. Sekarang dijaga:
+  `delBlock` menolak bila `bl.m != id`.
+- **Nomor urut paket ada di ladang [4], tapi hanya pada sebagian paket.**
+  `WFIFOHEADER()` di C menaikkan `session->increment` dan menaruhnya di
+  sana; paket yang dibangun dengan `WBUF`/`WFIFOHEAD` biasa meninggalkan
+  [4] bernilai 0. Di Java pembagiannya jadi `Clif.head()` vs
+  `Clif.headSeq()` — **jangan diseragamkan**. Yang memakai: 0x07, 0x0C
+  (`clif_mob_move` saja), 0x0D (`clif_speak`, bukan `pcl_talkself`), 0x13
+  (`clif_send_mob_health_sub`, bukan `..._healthscript`), 0x1F, 0x37,
+  0x3A, 0x3F, 0x51.
+- **0x33 dan 0x1D isinya identik, bergeser 5 byte** — 0x33 membawa
+  x/y/side lebih dulu. Karena itu badannya dipisah jadi
+  `Clif.charBody(base)`. **Kecuali** `state == 4`: hanya 0x1D yang punya
+  tata letak pendek untuk itu.
+- **`LuaAudit` mencetak "... dan N lagi" walau daftarnya tidak dipotong**,
+  sehingga `-Drtk.audit.penuh=true` tetap mengabarkan 73 nama tersembunyi
+  yang sebenarnya sudah tercetak semua. Sudah diperbaiki.
+
+#### Prasyarat yang masih menggantung
+
+⚠️ **Dua jalur baru belum pernah berjalan di server hidup, dan keduanya
+butuh pemain sungguhan online:**
+
+- **Tik durasi** — kait `while_cast` / `uncast` / `while_equipped` hanya
+  menyala untuk pemain yang online; tanpa pemain, `duraTick()` menyapu
+  daftar kosong.
+- **`moveGhost`** — tik AI mob **melewati peta tanpa pemain**
+  (`map.users == 0`), jadi tidak satu pun dari 1.175 mob bergerak saat
+  server diuji sendirian.
+
+Keduanya baru terbukti lewat `cliftest`. Peringatan #26 lahir persis dari
+kait timer yang hanya menyala saat server hidup, jadi **ini yang paling
+layak diperiksa lebih dulu** begitu ada klien yang bisa masuk.
+
+Belum ikut diport bersama BL_ITEM: **`sd->pickuptype`** (setelan pemain
+"pungut satu / pungut semua"); port ini berperilaku seperti nilai
+bawaannya, 0. `pc_npc_drop` sengaja dilewati — di C isinya sudah kode mati.
 
 **Pemain sungguhan masuk dunia untuk pertama kalinya** setelah empat bug
 ditutup — semuanya lolos dari 294 assertion `cliftest`, dan semuanya
@@ -762,21 +1270,22 @@ stub hanya menulis WARN sekali lalu mengembalikan nil. Yang terbesar:
 
 | Method | Pemakaian | Keadaan sekarang |
 |---|---|---|
-| `sendAction` | 905x | stub warn-once (pemain) |
-| `talk` | 698x | pemain: masuk `outbox` di memori (boneka uji); NPC/Mob: `log.debug` — **belum ada paket 0x0D** |
-| `playSound` | 632x | stub |
-| `updateState` | 434x | stub |
-| `setDuration` | 423x | stub |
-| `spawn` | 381x | stub (NPC/Mob) |
-| `setAether` | 225x | stub |
-| `msg` | 133x | seperti `talk` |
-| `delete` | 109x | stub (NPC/Mob) |
-| `refresh` | 90x | stub |
-| `dropItem` / `dropItemXY` | 24x | butuh subsistem barang di lantai (BL_ITEM) yang **belum diport sama sekali** |
+| `sendAction` | 905x | ✅ diport 26 Agu (0x1A + kait `onAction`) |
+| `talk` | 698x | ✅ diport 26 Agu (`clif_speak` 0x0D) |
+| `playSound` | 632x | ✅ diport 26 Agu |
+| `updateState` | 434x | ✅ diport 26 Agu (0x1D / 0x33 / 0x07) |
+| `setDuration` | 423x | ✅ diport 26 Agu (`map/Durations`) |
+| `spawn` | 381x | ✅ diport 26 Agu (`mobspawn_onetime`) |
+| `setAether` | 225x | ✅ diport 26 Agu |
+| `msg` | 133x | ✅ diport 26 Agu (`bll_talkcolor`) |
+| `delete` | 109x | ✅ diport 26 Agu |
+| `refresh` | 90x | ✅ diport 26 Agu |
+| `moveGhost` | 84x | ✅ diport 26 Agu (`moveghost_mob` + 0x07 berkelompok) |
+| `dropItem` / `dropItemXY` | 55x | ✅ diport 26 Agu (BL_ITEM) |
 
-`talk`/`msg` paling berdampak: tanpa keduanya NPC tidak pernah benar-benar
-bersuara di layar. Keduanya butuh paket obrolan 0x0D, yang juga membawa
-penyaring `clif_isignore` (lihat `clif_send_sub`).
+**Seluruh tabel ini sudah tertutup.** Yang tersisa dari daftar aslinya
+hanya penyaring `clif_isignore` (lihat `clif_send_sub`) pada jalur obrolan —
+daftar abaikan pemain belum ada.
 
 **3. BL_ITEM (barang di lantai) belum ada.** Ini prasyarat `dropItem`,
 `getObjectsInCellWithTraps` yang sungguhan (sekarang identik dengan varian
@@ -986,28 +1495,172 @@ NPC **dan** mob.
 
 ---
 
-#### Prioritas sekarang (setelah Trek A)
+#### ROADMAP — 27 Agustus 2026
 
-> Daftar penuh beserta angka terkini ada di **"STATUS TERAKHIR —
-> 24 Agustus 2026"** di bagian atas. Ringkasannya:
+> Disusun ulang setelah audit di atas. Urutannya mengikuti **apa yang
+> menghambat**, bukan jumlah pemakaian, karena binding sudah hampir habis.
 
-1. **Uji dengan klien RetroTK asli** — satu-satunya penghambat nyata,
-   tidak butuh kode baru, **belum pernah berhasil login**.
-2. **Binding yang masih stub** (`sendAction` 905x, `talk` 698x,
-   `playSound` 632x, …) — tidak melempar error sehingga `map.log` tetap
-   bersih, tapi juga tidak berfungsi.
-3. **BL_ITEM (barang di lantai)** — belum ada sama sekali; prasyarat
-   `dropItem` dan jatuhan mob yang terlihat di tanah.
-4. **C4 papan pesan & surat** — murni protokol char server
-   (0x3009–0x300F) dengan tabel yang sudah ada. Bisa diuji offline.
-5. **C2 berkas meta** dan **C3 warp antar-map-server** — bisa dibangun,
-   tapi **tidak bisa dibuktikan benar tanpa klien**, jadi kerjakan
-   bersamaan dengan butir 1.
+~~**1. Rancang protokol baru — arah MASUK.**~~ **LAPISANNYA BERDIRI
+27 Agustus 2026.** `ClientCommands` + `MapCommands` sudah ada, dan keempat
+`Clif.parse*` kini pembaca byte murni. Lihat Peringatan #52.
 
-⚠️ Ambil prioritas binding dari **`map.log` server yang berjalan**, bukan
-dari jumlah pemakaian di korpus — putaran 24 Agustus 2026 membuktikan yang
-benar-benar dipanggil saat server hidup berbeda dari yang paling banyak
-tertulis di skrip.
+**Sisa butir ini** (kerjakan satu helper per langkah, jangan sekaligus):
+lima helper yang isinya **logika** masih tinggal di `Clif` —
+`blocksMovement`, `updateCamera`, `fireWalkScripts`, `checkWarpTile`,
+`clickNpc`. Daftarnya ada di javadoc `MapCommands`.
+
+**2. Subsistem pertukaran barang antar pemain** (`sd->exchange`). Satu-
+satunya sisa binding yang butuh blok tersendiri (`getExchangeItem`), dan
+satu-satunya subsistem besar yang benar-benar belum ada setelah BL_ITEM.
+Logikanya berharga apa pun protokolnya.
+
+**3. Pasang/lepas perlengkapan dan pakai barang.** Menutup `takeOff` dan
+`throwItem`, dua dari empat binding terakhir. Butuh jalur masuk (butir 1)
+atau setidaknya method yang bisa dipanggil skrip langsung.
+
+**4. Uji dengan pemain sungguhan online.** Tik durasi mantra dan seluruh
+gerak mob **belum pernah berjalan** — keduanya hanya menyala untuk pemain
+yang online, dan tik AI mob melewati peta ber-`map.users == 0`. Peringatan
+#26 lahir persis dari kait timer yang hanya menyala saat server hidup.
+
+**5. Trek B — dekoder EPF, editor, klien libGDX.** Belum dimulai, dan ini
+jalur menuju arah final project (klien sendiri). B1 dekoder EPF prasyarat
+sisanya; `rtk/SObj.tbl` (18.954 entri) masih di RTK-Server, belum disalin.
+
+**6. C2 — empat berkas meta hilang.** Kecil tapi kasat mata: tooltip barang
+tidak muncul tanpa itu.
+
+**7. C3 — warp antar map server.** Butuh dua map server berjalan; nilainya
+baru terasa kalau memang mau menjalankan lebih dari satu.
+
+**8. Terjemahan Indonesia — ~3.800 titik dialog.** Kata kunci `speech`
+sudah selesai; dialognya belum. Baca `luascript/GLOSARIUM.md` dulu.
+
+**9. Empat method terakhir di `sl.c`** — lihat rinciannya di bawah.
+
+---
+
+#### Prioritas lama — 26 Agustus 2026 (sore)
+
+> Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
+> pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
+> sudah berubah.** 4 method masih ada di `sl.c` tapi belum diport, plus 8
+> yang tidak ada di mana pun (salah ketik / kode mati).
+
+~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
+Sisa yang berkaitan: `throwItem` (`clif_throwitem_script`, jalur klien
+melempar barang) dan `sd->pickuptype`.
+
+~~**1. Sisa inventaris & perlengkapan — menunggu subsistem BOD.**~~
+**SELESAI 26 Agustus 2026 (malam).** BOD ternyata **jauh lebih kecil dari
+dugaan** — lihat Peringatan #42.
+
+~~**2. Gerak mob lanjutan.**~~ **SELESAI 26 Agustus 2026 (malam).**
+Ketiganya memang varian dari mesin yang sama — lihat Peringatan #35 untuk
+tiga perbedaan halus yang mudah diseragamkan secara keliru.
+
+~~**2. Buku mantra.**~~ **SELESAI 26 Agustus 2026 (malam).** Dua di
+antaranya (`getUnknownSpells`, `getAllClassSpells`) menembak database tiap
+panggil, jadi ujinya ada di `dbtest`, bukan `cliftest`.
+
+~~**2. Tampilan & timer.**~~ **SELESAI 26 Agustus 2026 (malam).**
+Satu-satunya yang sengaja <b>tidak</b> diport: `testPacket` (4x) —
+alat debug GM yang menulis byte sembarang ke kabel dari tabel Lua.
+Nilainya nol bila protokol memang akan diganti, dan risikonya nyata.
+
+~~**2. C4 — papan pesan.**~~ **SELESAI 26/27 Agustus 2026.** Yang tersisa
+dari keluarga ini hanya **`showPost`** (baca satu kiriman, 0x300A) dan
+**menulis kiriman** (0x300C) — keduanya belum dipanggil skrip mana pun,
+jadi tidak muncul di daftar celah.
+
+~~**3. Bank klan & subpath.**~~ **SELESAI 27 Agustus 2026.** Ternyata
+bukan dua bank melainkan satu — lihat Peringatan #49.
+
+~~**4. Sisa administratif.**~~ **SELESAI 27 Agustus 2026.**
+
+#### ⚠️ AUDIT 27 Agustus 2026 — apa yang SEBENARNYA belum selesai
+
+Diperiksa ke sumber C, bukan ke catatan di berkas ini. Hasilnya
+mengoreksi anggapan bahwa "porting hampir selesai".
+
+| | Keadaan |
+|---|---|
+| **Binding skrip** | **hampir selesai** — 4 dari 258 method masih di `sl.c` |
+| **Trek A (A1–A5)** | **selesai secara fungsi**, dua sisa sengaja dibiarkan (lihat bawah) |
+| **Trek C** | **BELUM** — C1 dan C4 selesai, **C2 dan C3 belum tersentuh** |
+| **Paket KELUAR** | luas — didorong kebutuhan binding |
+| **Paket MASUK** | ⚠️ **5 dari 54 opcode** (~9%) |
+
+**Temuan terbesar: arah MASUK nyaris belum diport.** `clif_parse()` di C
+melayani **54 opcode**; port ini melayani **lima**: `0x06`/`0x32` (jalan),
+`0x39` (menu & input), `0x3A` (dialog NPC), `0x43` (klik). Ditambah `0x10`
+(perkenalan) di jalur autentikasi.
+
+Yang **belum ada jalurnya sama sekali** — dikelompokkan menurut aksi
+pemain, bukan menurut opcode, karena format kabelnya akan diganti:
+
+| Aksi pemain | Opcode C | Catatan |
+|---|---|---|
+| **Bicara / berbisik** | `0x0E` say, `0x19` wisp | `speak` sudah ada di sisi skrip, tapi pemain tidak bisa mengetik |
+| **Pertukaran barang antar pemain** | `0x29` hand item, `0x2A` hand gold, `0x4A` exchange | menutup `getExchangeItem`, sisa binding terakhir |
+| **Pakai / lepas perlengkapan** | `0x12`/`0x1E` wield, `0x1F` unequip | menutup `takeOff` |
+| **Pakai / makan barang** | `0x1A` eat, `0x1C` use | |
+| **Jatuhkan barang & emas** | `0x08` drop, `0x24` dropgold, `0x17` throw | menutup `throwItem`; BL_ITEM-nya sudah ada |
+| **Pungut barang** | `0x07` getitem | `pickUp` sudah ada di sisi skrip |
+| **Merapal mantra** | `0x0F` magic, `0x30` change spell | |
+| **Menyerang** | `0x13` attack | `swingTarget` sudah ada |
+| **Grup** | `0x2E` addgroup | `setGrpDmg` menunggu id grup yang nyata |
+| **Papan & pos** | `0x3B`, `0x34` postitem, `0x41` parcel | sisi tampilannya sudah ada |
+| Sisanya | ~20 opcode | emosi, profil, kota, minimap, ranking, daftar teman/hunter, daftar abaikan |
+
+⚠️ **Tapi ini BUKAN berarti 49 opcode harus diport.** Format kabelnya akan
+diganti (lihat bagian teratas berkas ini). Yang berharga adalah **logika di
+balik aksinya** — subsistem pertukaran, pasang/lepas perlengkapan, pakai
+barang — bukan pembacaan bytenya. Rancang jalur masuk protokol baru dulu,
+lalu sambungkan logikanya ke sana.
+
+**Dua sisa Trek A yang sengaja dibiarkan:**
+- `Clif.sendMyStatus()` masih **TAHAP 1** — klan, gelar, pasangan, dan TNL
+  dikirim kosong. Sengaja: paket ini akan ditulis ulang.
+- Penyaring **`clif_isignore`** (daftar abaikan pemain) belum ada, jadi
+  obrolan tidak bisa disaring.
+
+**Trek C yang belum:**
+- **C2 — 4 berkas meta hilang.** `conf/login.conf` meminta lima
+  (`RidableAnimals`, `CharicInfo0/1`, `ItemInfo0/1`); `meta/` hanya punya
+  `RidableAnimals`. Inilah sebab tooltip barang hilang. Kandidatnya ada di
+  `RTK-Server/rtk/decrypted/` tapi namanya tidak cocok persis.
+- **C3 — warp antar map server.** Masih ditolak dengan pesan jelas
+  (`Clif.java:1528`). Butuh dua map server berjalan dengan pembagian peta
+  berbeda.
+
+**4. Empat method terakhir di `sl.c`** — dan ketiganya tertunda karena
+alasan yang berbeda-beda, bukan karena besar:
+- **`testPacket`** (4x) — alat debug GM yang menulis byte sembarang ke
+  kabel dari tabel Lua. Nilainya nol bila protokol memang akan diganti,
+  dan risikonya nyata. **Sengaja tidak diport.**
+- **`getExchangeItem`** (2x) — butuh subsistem <b>pertukaran barang antar
+  pemain</b> (`sd->exchange`) yang belum ada sama sekali. Satu-satunya sisa
+  yang benar-benar butuh blok tersendiri.
+- **`throwItem`** (1x) dan **`takeOff`** (1x) — keduanya sisi <b>skrip</b>
+  dari aksi yang dimulai <b>klien</b>: keduanya membaca keadaan
+  ({@code sd->invslot}, {@code sd->throwx/throwy}, {@code sd->takeoffid})
+  yang diisi penangan paket masuk yang belum diport. Memanggilnya sekarang
+  akan bekerja pada slot 0 setiap kali. Port bersama penangan paketnya.
+
+**5. DELAPAN nama yang TIDAK ADA di mana pun** — `addGMSpells`,
+`bowShoot`, `buyCustom`, `hairFaceMenu`, `returnInn`, `totemName`, plus
+`addActivationKey` dan `checkActivationKey` yang pendaftarannya
+**dikomentari** di `sl.c` (lihat Peringatan #50). Semuanya salah ketik atau
+kode mati di konten. Diputuskan satu per satu, catat di
+`luascript/PERUBAHAN.md`; jangan diport.
+
+⚠️ Ambil prioritas binding dari **`map.log` server yang berjalan** bila
+memungkinkan, bukan dari jumlah pemakaian di korpus — putaran 24 Agustus
+2026 membuktikan yang benar-benar dipanggil saat server hidup berbeda dari
+yang paling banyak tertulis di skrip. Sekarang syaratnya lebih berat:
+setelah daftar stub habis, jalur yang tersisa (durasi, AI mob) **butuh
+pemain online** untuk menyala sama sekali.
 
 #### Trek B — aset & tooling (paralel)
 
@@ -1063,19 +1716,24 @@ Ingat: `.map` **big-endian** → `DataView.getUint16(off, false)`.
 
 **Jangan percaya angka yang ditulis di sini kalau `Bindings.java` sudah
 berubah — jalankan `./run.sh luaaudit`**, yang menghitungnya ulang dari
-mesin skrip yang hidup dan dari sumber `sl.c`. Angka di bawah keadaan
-21 Agustus 2026, setelah Trek A selesai:
+mesin skrip yang hidup dan dari sumber `sl.c`.
 
-| | 21 Agu | 24 Agu |
-|---|---|---|
-| tersedia saat runtime (prototipe Player/NPC/Mob) | 151 | **173** |
-| **ada di `sl.c` tapi belum diport** | 110 | **100** |
-| dipanggil tapi tidak ada di mana pun (salah ketik / kode mati) | 6 | 6 |
-| **global belum diport** | 6 | **1** (`lock`) |
+| | 21 Agu | 24 Agu | 26 Agu (sore) |
+|---|---|---|---|
+| tersedia saat runtime (prototipe Player/NPC/Mob/FloorItem) | 151 | 173 | **214** |
+| **ada di `sl.c` tapi belum diport** | 110 | 100 | **67** |
+| dipanggil tapi tidak ada di mana pun (salah ketik / kode mati) | 6 | 6 | 6 |
+| **global belum diport** | 6 | 1 | **1** (`lock`) |
 
 Sebagai pembanding, sebelum Trek A angkanya 12 binding riil dan 144 method
 belum ada; sebagian besar tertutup saat A4–A5 karena ternyata banyak
 "pekerjaan server" sebenarnya logika Lua yang hanya butuh jalur yang benar.
+
+⚠️ **Kolom 26 Agu turun jauh lebih sedikit daripada pekerjaannya** — lihat
+Peringatan #30. Sepuluh binding terbesar yang ditutup hari itu
+(`sendAction` 905x, `talk` 698x, `setDuration` 423x, `spawn` 381x, …)
+semuanya berangkat dari keadaan **stub**, dan stub tidak pernah terhitung
+di kolom ini sejak awal.
 
 **Sudah diport 21 Agustus 2026** (turun 117 → 110): `calcStat` (249×),
 `addNPC` (54×), `addSpell`, `hasSpell`, `bankDeposit`, `bankWithdraw`,
@@ -1131,8 +1789,10 @@ Catatan yang mudah salah pada kelompok ini:
   Sempat salah dibaca sebagai penyaring mob.
 - **`...WithTraps` bedanya cuma barang di lantai.** `map_foreachincell`
   melewati floor item bertipe `ITM_TRAPS`, versi `...withtraps`
-  menyertakannya. Subsistem BL_ITEM belum diport, jadi untuk sekarang
-  keduanya identik — tambahkan penyaringnya begitu BL_ITEM masuk.
+  menyertakannya. **Sejak BL_ITEM diport (26 Agustus 2026 sore) penyaring
+  itu aktif**, jadi keduanya benar-benar berbeda. Aturan lengkapnya —
+  termasuk kenapa `trapsTable` TIDAK ikut dilihat di sini — ada di
+  Peringatan #33.
 - **`objectRef()` dulu membungkus SEMUA benda sebagai NPC.** Untuk mob itu
   tidak terasa (prototipe NPC dan Mob berisi method yang sama), tetapi
   pemain yang ditemukan `getObjectsInCell(..., BL_PC)` jadi tidak punya

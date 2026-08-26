@@ -208,8 +208,1516 @@ public final class ClifTest {
         mapDataTest(map, sd);
         statusTest(sd);
         lookTest(map, sd);
-
         walkTest(map, sd);
+        bllTest(map, sd);
+        durationTest(map, sd);
+        ghostTest(map, sd);
+        floorItemTest(map, sd);
+        inventoryTest(map, sd);
+        spellBookTest(map, sd);
+        displayTest(map, sd);
+        saveTest(map, sd);
+        bodTest(map, sd);
+        adminTest(map, sd);
+    }
+
+    /**
+     * Sisa administratif: penandaan PK, pasang paksa perlengkapan, catatan
+     * kerusakan mob, dan paket pilihan peta.
+     *
+     * <p>Yang menyentuh database ({@code setHeroShow}, captcha) diuji di
+     * {@code dbtest}.</p>
+     */
+    private static void adminTest(MapData map, User sd) {
+        log.info("=== sisa administratif ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+
+        // --- penandaan PK: batas 20, tidak pernah kedaluwarsa ---
+        sd.pvp.clear();
+        long now = System.currentTimeMillis() / 1000;
+        sd.pvp.put(4242L, now);
+        check("getPK: yang ditandai terbaca", sd.pvp.containsKey(4242L));
+        check("getPK: yang tidak ditandai -> false", !sd.pvp.containsKey(9999L));
+
+        for (long i = 0; i < User.MAX_PVP + 5; i++) {
+            if (sd.pvp.size() < User.MAX_PVP) {
+                sd.pvp.put(1000 + i, now);
+            }
+        }
+        check("setPK: berhenti di batas 20, tidak tumbuh terus",
+                sd.pvp.size() == User.MAX_PVP);
+        sd.pvp.clear();
+
+        // --- forceEquip: nilai dari BAWAAN jenis, bukan salinan ---
+        var db = MapServer.itemDb;
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        var kosong = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+        db.register(new org.rtk.map.data.ItemDb.Info(7301, "zirah_uji", "Zirah Uji",
+                "", "", 4, 0, 0L, 1, 1, 1, 0, 0, 250, 2, 0, kosong, tanpaStat));
+
+        sd.status.equip.clear();
+        var lama = new org.rtk.common.mmo.Item();
+        lama.id = 7301;
+        lama.amount = 1;
+        lama.dura = 5;              // hampir rusak
+        lama.realName = "Bekas";
+        lama.pos = 4;
+        sd.status.equip.add(lama);
+
+        // panggil lewat prototipe skrip, seperti skrip Lua
+        panggilBinding(sd, "forceEquip", org.luaj.vm2.LuaValue.valueOf(7301), org.luaj.vm2.LuaValue.valueOf(4));
+        var baru = sd.status.equipAt(4);
+        check("forceEquip: slotnya terisi", baru != null);
+        check("forceEquip: ketahanan dari BAWAAN jenis, bukan salinan lama",
+                baru != null && baru.dura == 250);
+        check("forceEquip: ukiran lama TIDAK terbawa",
+                baru != null && (baru.realName == null || baru.realName.isEmpty()));
+        check("forceEquip: perlindungan dari bawaan jenisnya",
+                baru != null && baru.protectedFlag == 2);
+        check("forceEquip: slotnya tetap satu barang, bukan dua",
+                sd.status.equip.size() == 1);
+        sd.status.equip.clear();
+
+        // --- catatan kerusakan mob: DITAMBAHKAN, dan bukan tabel ancaman ---
+        MobData jenis = new MobData();
+        jenis.id = 950;
+        jenis.yname = "sasaran";
+        jenis.name = "Sasaran";
+        jenis.vita = 100;
+        Mob mb = new Mob();
+        mb.data = jenis;
+        mb.id = Mob.MOB_START_NUM + 91;
+        mb.m = 0;
+        mb.x = c[0];
+        mb.y = c[1];
+        MobRegistry.resetStats(mb);
+
+        MapServer.onlineChars.put(sd.fd, sd);
+        panggilMob(mb, "setIndDmg", org.luaj.vm2.LuaValue.valueOf((double) sd.status.id),
+                org.luaj.vm2.LuaValue.valueOf(30));
+        panggilMob(mb, "setIndDmg", org.luaj.vm2.LuaValue.valueOf((double) sd.status.id),
+                org.luaj.vm2.LuaValue.valueOf(20));
+        check("setIndDmg: kerusakan DITAMBAHKAN, bukan ditimpa",
+                mb.indDamage.getOrDefault(sd.status.id, 0.0) == 50.0);
+        check("setIndDmg: tabel ancaman TIDAK ikut terisi", mb.threat.isEmpty());
+
+        sd.groupId = 7;
+        panggilMob(mb, "setGrpDmg", org.luaj.vm2.LuaValue.valueOf((double) sd.status.id),
+                org.luaj.vm2.LuaValue.valueOf(15));
+        check("setGrpDmg: dicatat menurut id GRUP, bukan id pemain",
+                mb.groupDamage.getOrDefault(7, 0.0) == 15.0
+                        && !mb.groupDamage.containsKey((int) sd.status.id));
+        sd.groupId = 0;
+        MapServer.onlineChars.remove(sd.fd);
+
+        // --- paket pilihan peta ---
+        drain(s);
+        Clif.mapSelection(sd, "Pilih", java.util.List.of(3), java.util.List.of(4),
+                java.util.List.of("Rumah"), java.util.List.of(11),
+                java.util.List.of(5), java.util.List.of(6));
+        byte[] p = decrypt(drain(s), sd);
+        check("mapSelection: opcode 0x2E", (p[3] & 0xFF) == 0x2E);
+        int jl = p[5] & 0xFF;
+        check("mapSelection: judul di [6..]", new String(p, 6, jl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Pilih"));
+        int off = jl + 1;
+        check("mapSelection: jumlah peta", (p[off + 5] & 0xFF) == 1);
+        off += 2;
+        check("mapSelection: koordinat asal", be16(p, off + 5) == 3
+                && be16(p, off + 7) == 4);
+        off += 4;
+        int nl = p[off + 5] & 0xFF;
+        check("mapSelection: nama peta", new String(p, off + 6, nl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Rumah"));
+        off += nl + 1;
+        check("mapSelection: id peta dan koordinat tujuan",
+                be32(p, off + 5) == 11 && be16(p, off + 9) == 5
+                        && be16(p, off + 11) == 6);
+
+        drain(s);
+    }
+
+    /** Engine terpisah untuk uji administratif; lihat catatan di bodTest. */
+    private static org.rtk.map.script.ScriptEngine admEngine;
+    private static org.luaj.vm2.LuaValue admRef;
+
+    private static void panggilBinding(User sd, String nama, org.luaj.vm2.LuaValue... args) {
+        if (admEngine == null) {
+            admEngine = new org.rtk.map.script.ScriptEngine();
+            var p = new org.rtk.map.script.ScriptPlayer((int) sd.id, sd.status.name);
+            p.owner = sd;
+            admRef = admEngine.playerRef(p);
+        }
+        org.luaj.vm2.LuaValue[] all = new org.luaj.vm2.LuaValue[args.length + 1];
+        all[0] = admRef;
+        System.arraycopy(args, 0, all, 1, args.length);
+        admEngine.playerClass.proto.get(nama).invoke(org.luaj.vm2.LuaValue.varargsOf(all));
+    }
+
+    private static void panggilMob(Mob mb, String nama, org.luaj.vm2.LuaValue... args) {
+        if (admEngine == null) {
+            admEngine = new org.rtk.map.script.ScriptEngine();
+        }
+        org.luaj.vm2.LuaValue[] all = new org.luaj.vm2.LuaValue[args.length + 1];
+        all[0] = admEngine.objectRef(mb);
+        System.arraycopy(args, 0, all, 1, args.length);
+        admEngine.mobClass.proto.get(nama).invoke(org.luaj.vm2.LuaValue.varargsOf(all));
+    }
+
+    /**
+     * Subsistem BOD (<i>Break on Death</i>) — barang yang hancur saat
+     * pemain mati, plus kedaluwarsa dan lepas-paksa.
+     *
+     * <p>Yang dijaga: daftar BOD adalah <b>sementara</b> (dikosongkan tiap
+     * sapuan), perlindungan <b>menyelamatkan barang DAN menghentikan
+     * sapuan</b>, dan `stripEquip` punya tiga jalur berbeda tergantung ada
+     * tidaknya slot inventaris kosong.</p>
+     */
+    private static void bodTest(MapData map, User sd) {
+        log.info("=== BOD (Break on Death) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        var db = MapServer.itemDb;
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        var kosong = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+
+        // jubah: hancur saat mati (ItmBoD = 1), tanpa perlindungan bawaan
+        db.register(new org.rtk.map.data.ItemDb.Info(7201, "jubah", "Jubah", "", "",
+                4, 1, 0L, 1, 1, 1, 0, 0, 100, 0, 0, kosong, tanpaStat));
+        // jimat: ber-BoD TAPI terlindungi bawaan
+        db.register(new org.rtk.map.data.ItemDb.Info(7202, "jimat", "Jimat", "", "",
+                4, 1, 0L, 1, 1, 1, 0, 0, 100, 3, 0, kosong, tanpaStat));
+        // ramuan: barang inventaris ber-BoD
+        db.register(new org.rtk.map.data.ItemDb.Info(7203, "ramuan", "Ramuan", "", "",
+                18, 1, 0L, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+        // kartu: kedaluwarsa pada waktu MUTLAK di masa lalu
+        db.register(new org.rtk.map.data.ItemDb.Info(7204, "kartu", "Kartu", "", "",
+                18, 0, 1000L, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.maxInv = 20;
+        sd.bodItems.clear();
+        sd.status.state = 1;              // PC_DIE
+
+        // --- perlengkapan hancur, masuk daftar BOD, lalu daftarnya kosong ---
+        var jubah = new org.rtk.common.mmo.Item();
+        jubah.id = 7201;
+        jubah.amount = 1;
+        jubah.dura = 100;
+        jubah.pos = 0;
+        sd.status.equip.add(jubah);
+
+        Combat.deductDuraEquip(null, sd);
+        check("BOD: perlengkapan ber-BoD hancur saat pemain mati",
+                sd.status.equipAt(0) == null);
+        check("BOD: daftarnya DIKOSONGKAN setelah sapuan selesai",
+                sd.bodItems.isEmpty());
+        check("BOD: id barang yang hancur tercatat di breakId", sd.breakId == 7201);
+
+        // --- perlindungan menyelamatkan barang DAN menghentikan sapuan ---
+        sd.status.equip.clear();
+        var jimat = new org.rtk.common.mmo.Item();
+        jimat.id = 7202;
+        jimat.amount = 1;
+        jimat.dura = 100;
+        jimat.pos = 0;
+        sd.status.equip.add(jimat);
+        var jubah2 = new org.rtk.common.mmo.Item();
+        jubah2.id = 7201;
+        jubah2.amount = 1;
+        jubah2.dura = 100;
+        jubah2.pos = 1;
+        sd.status.equip.add(jubah2);
+
+        Combat.deductDuraEquip(null, sd);
+        check("BOD: barang terlindungi TIDAK hancur", sd.status.equipAt(0) != null);
+        check("BOD: ketahanannya dipulihkan penuh",
+                sd.status.equipAt(0).dura == 100);
+        check("BOD: perlindungannya berkurang satu",
+                sd.status.equipAt(0).protectedFlag == -1);
+        check("BOD: ⚠️ sapuan BERHENTI — slot sesudahnya tidak diperiksa",
+                sd.status.equipAt(1) != null);
+
+        // --- inventaris ---
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.addItemById(7203, 1, -1);
+        Combat.checkInvBod(null, sd);
+        check("BOD: barang inventaris ber-BoD hancur saat mati",
+                sd.status.inventory.isEmpty());
+
+        // yang TIDAK ber-BoD selamat, bahkan saat pemain mati
+        sd.status.inventory.clear();
+        sd.addItemById(7204, 1, -1);
+        Combat.checkInvBod(null, sd);
+        check("BOD: barang tanpa BoD selamat walau pemain mati",
+                sd.status.inventory.size() == 1);
+
+        // pemain hidup: tidak ada yang hancur
+        sd.status.state = 0;
+        sd.status.inventory.clear();
+        sd.addItemById(7203, 1, -1);
+        Combat.checkInvBod(null, sd);
+        check("BOD: pemain hidup -> tidak ada yang hancur",
+                sd.status.inventory.size() == 1);
+
+        // --- kedaluwarsa ---
+        sd.status.inventory.clear();
+        sd.addItemById(7204, 1, -1);          // ItmTimer = 1000 (masa lalu)
+        Combat.expireItems(sd);
+        check("expireItem: kedaluwarsa dari jenisnya dibuang",
+                sd.status.inventory.isEmpty());
+
+        sd.status.inventory.clear();
+        sd.addItemById(7203, 1, -1);
+        sd.status.inventory.get(0).time = 1000;   // waktu pada barangnya
+        Combat.expireItems(sd);
+        check("expireItem: kedaluwarsa dari barangnya sendiri juga dibuang",
+                sd.status.inventory.isEmpty());
+
+        sd.status.inventory.clear();
+        sd.addItemById(7203, 1, -1);
+        Combat.expireItems(sd);
+        check("expireItem: barang tanpa batas waktu tidak disentuh",
+                sd.status.inventory.size() == 1);
+
+        // --- stripEquip: tiga jalur ---
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.maxInv = 20;
+        var senjata = new org.rtk.common.mmo.Item();
+        senjata.id = 7201;
+        senjata.amount = 1;
+        senjata.dura = 100;
+        senjata.pos = 0;
+        sd.status.equip.add(senjata);
+
+        var p = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;   // binding dipanggil lewat ScriptPlayer
+        // jalur 1: ada tempat -> masuk inventaris
+        panggilStrip(sd, 0, 0, 0);
+        check("stripEquip: ada tempat -> barangnya masuk inventaris",
+                sd.status.equipAt(0) == null && sd.status.inventory.size() == 1);
+
+        // jalur 2: inventaris penuh + hancurkan -> lenyap, tidak tertinggal di lantai
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.equip.add(senjata);
+        sd.status.maxInv = 0;
+        int lantaiSebelum = MapServer.floorItems.count();
+        panggilStrip(sd, 0, 1, 0);
+        check("stripEquip: penuh + hancurkan -> tidak tertinggal di lantai",
+                sd.status.equipAt(0) == null
+                        && MapServer.floorItems.count() == lantaiSebelum);
+
+        // jalur 3: inventaris penuh + paksa -> tertinggal di lantai
+        sd.status.equip.clear();
+        sd.status.equip.add(senjata);
+        panggilStrip(sd, 0, 0, 1);
+        check("stripEquip: penuh + paksa -> tertinggal di lantai",
+                sd.status.equipAt(0) == null
+                        && MapServer.floorItems.count() == lantaiSebelum + 1);
+
+        // jalur 4: penuh, tanpa hancurkan/paksa -> TIDAK terjadi apa-apa
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        sd.status.equip.clear();
+        sd.status.equip.add(senjata);
+        panggilStrip(sd, 0, 0, 0);
+        check("stripEquip: penuh tanpa hancurkan/paksa -> barangnya TETAP dikenakan",
+                sd.status.equipAt(0) != null);
+
+        MapServer.scriptEngine = p;
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.maxInv = 20;
+        sd.status.state = 0;
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+    }
+
+    /**
+     * Engine terpisah untuk uji BOD — ⚠️ satu ScriptPlayer hanya boleh
+     * dipakai satu ScriptEngine (lihat catatan A4), jadi pemain uji di sini
+     * memakai objek skripnya sendiri.
+     */
+    private static org.rtk.map.script.ScriptEngine bodEngine;
+    private static org.luaj.vm2.LuaValue bodRef;
+
+    /** Panggil binding stripEquip lewat prototipe skrip, seperti skrip Lua. */
+    private static void panggilStrip(User sd, int slot, int hancurkan, int paksa) {
+        if (bodEngine == null) {
+            bodEngine = new org.rtk.map.script.ScriptEngine();
+            var p = new org.rtk.map.script.ScriptPlayer((int) sd.id, sd.status.name);
+            p.owner = sd;
+            bodRef = bodEngine.playerRef(p);
+        }
+        bodEngine.playerClass.proto.get("stripEquip").invoke(
+                org.luaj.vm2.LuaValue.varargsOf(new org.luaj.vm2.LuaValue[]{
+                    bodRef,
+                    org.luaj.vm2.LuaValue.valueOf(slot),
+                    org.luaj.vm2.LuaValue.valueOf(hancurkan),
+                    org.luaj.vm2.LuaValue.valueOf(paksa)}));
+    }
+
+    /**
+     * {@code forceSave} — penyegaran posisi & samaran sebelum blob dikirim.
+     *
+     * <p>Pengirimannya sendiri butuh tautan ke char server, jadi yang diuji
+     * di sini bagian yang berdiri sendiri: apa yang <b>ditulis ke
+     * CharStatus</b> tepat sebelum blobnya disusun. Itu justru bagian yang
+     * pernah salah — tanpa penyegaran, posisi tersimpan adalah posisi saat
+     * pemain masuk.</p>
+     */
+    private static void saveTest(MapData map, User sd) {
+        log.info("=== forceSave (penyegaran sebelum simpan) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        sd.graphicId = 77;
+        sd.graphicColor = 4;
+        sd.status.lastPos = new Point(9, 1, 1);   // nilai basi yang harus tertimpa
+        sd.status.disguise = 0;
+        sd.status.disguiseColor = 0;
+        sd.destMap = -1;
+
+        // Tanpa tautan char server pengirimannya gagal (-1), tetapi
+        // penyegarannya sudah terjadi — itu yang diperiksa.
+        MapIntif.saveChar(sd, false);
+        check("forceSave: posisi tersimpan disegarkan dari posisi HIDUP",
+                sd.status.lastPos.m == sd.m
+                        && sd.status.lastPos.x == sd.x
+                        && sd.status.lastPos.y == sd.y);
+        check("forceSave: samaran ikut disegarkan",
+                sd.status.disguise == 77 && sd.status.disguiseColor == 4);
+
+        // ragam quit dengan tujuan di peta yang TIDAK dimuat server ini
+        sd.destMap = 4242;                        // tidak ada di dunia uji
+        sd.destX = 55;
+        sd.destY = 66;
+        MapIntif.saveChar(sd, true);
+        check("saveChar quit: peta tujuan di server lain yang disimpan, "
+                + "bukan posisi sekarang",
+                sd.status.lastPos.m == 4242
+                        && sd.status.lastPos.x == 55
+                        && sd.status.lastPos.y == 66);
+
+        // tujuan yang ADA di server ini tidak mengambil alih
+        sd.destMap = 0;
+        sd.destX = 55;
+        sd.destY = 66;
+        MapIntif.saveChar(sd, true);
+        check("saveChar quit: tujuan di server INI tidak menimpa posisi hidup",
+                sd.status.lastPos.m == sd.m && sd.status.lastPos.x == sd.x);
+
+        sd.destMap = -1;
+        sd.graphicId = 0;
+        sd.graphicColor = 0;
+    }
+
+    /**
+     * Tampilan & timer: kamera, teks layar, kertas, URL, penghitung waktu,
+     * obrolan pemain, kunci gerak, dan animasi satu-penonton.
+     */
+    private static void displayTest(MapData map, User sd) {
+        log.info("=== tampilan & timer ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+        MapServer.onlineChars.put(sd.fd, sd);
+
+        // --- kamera ---
+        drain(s);
+        Clif.sendXyChange(sd, 8, 7);
+        byte[] p = decrypt(drain(s), sd);
+        check("changeView: opcode 0x04", (p[3] & 0xFF) == 0x04);
+        check("changeView: posisi pemain di [5],[7]",
+                be16(p, 5) == sd.x && be16(p, 7) == sd.y);
+        check("changeView: kamera ikut tersimpan di User",
+                sd.viewX == be16(p, 9) && sd.viewY == be16(p, 11));
+
+        // di tepi peta offsetnya DIGESER satu, bukan dipotong
+        placeAt(map, sd, c[0], c[1]);
+        int sebelum = sd.viewX;
+        Clif.sendXyChange(sd, 0, 0);
+        check("changeView: kamera di tepi digeser, bukan dijepit ke batas",
+                sd.viewX != sebelum || sd.viewX <= 0);
+        drain(s);
+
+        // --- teks layar (0x58 [5]=6) vs bersihkan layar (0x58 [5]=0) ---
+        Clif.guiText(sd, "Pengumuman");
+        p = decrypt(drain(s), sd);
+        check("guitext: opcode 0x58", (p[3] & 0xFF) == 0x58);
+        check("guitext: penanda 6 di [5]", (p[5] & 0xFF) == 0x06);
+        int gl = be16(p, 6);
+        check("guitext: panjang teks di [6]", gl == "Pengumuman".length());
+        check("guitext: isi teks di [8..]", new String(p, 8, gl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Pengumuman"));
+
+        drain(s);
+        Clif.destroyOld(sd);
+        p = decrypt(drain(s), sd);
+        check("destroyOld: opcode 0x58 juga, tapi penanda 0 di [5]",
+                (p[3] & 0xFF) == 0x58 && (p[5] & 0xFF) == 0x00);
+
+        // --- kertas ---
+        drain(s);
+        Clif.paperPopup(sd, "Surat rahasia", 12, 20);
+        p = decrypt(drain(s), sd);
+        check("paperpopup: opcode 0x35", (p[3] & 0xFF) == 0x35);
+        check("paperpopup: lebar & tinggi di [6],[7]",
+                (p[6] & 0xFF) == 12 && (p[7] & 0xFF) == 20);
+        int pl = be16(p, 9);
+        check("paperpopup: isi teks di [11..]", new String(p, 11, pl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Surat rahasia"));
+
+        // --- URL ---
+        drain(s);
+        Clif.sendUrl(sd, 2, "http://contoh");
+        p = decrypt(drain(s), sd);
+        check("sendURL: opcode 0x66", (p[3] & 0xFF) == 0x66);
+        check("sendURL: ragam di [5]", (p[5] & 0xFF) == 2);
+        check("sendURL: alamat di [8..]", new String(p, 8, be16(p, 6),
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("http://contoh"));
+
+        // --- penghitung waktu ---
+        drain(s);
+        Clif.sendTimer(sd, 1, 300);
+        p = decrypt(drain(s), sd);
+        check("setTimer: opcode 0x67", (p[3] & 0xFF) == 0x67);
+        check("setTimer: ragam di [5]", (p[5] & 0xFF) == 1);
+        check("setTimer: lama dalam detik di [6]", be32(p, 6) == 300);
+
+        // tiknya berkurang satu per detik, lalu mati saat habis
+        sd.disptimerType = 1;
+        sd.disptimerTick = 2;
+        Durations.tick(null, sd);
+        check("timer tampilan: berkurang satu tiap tik", sd.disptimerTick == 1);
+        Durations.tick(null, sd);
+        check("timer tampilan: habis -> ragamnya dinolkan",
+                sd.disptimerTick == 0 && sd.disptimerType == 0);
+        Durations.tick(null, sd);
+        check("timer tampilan: yang sudah mati tidak ditik lagi",
+                sd.disptimerTick == 0);
+
+        // --- obrolan pemain: nama disisipkan server ---
+        drain(s);
+        Clif.scriptSay(sd, "halo semua", 0);
+        p = decrypt(drain(s), sd);
+        check("speak: opcode 0x0D", (p[3] & 0xFF) == 0x0D);
+        check("speak: id pembicara di [6]", (be32(p, 6) & 0xFFFFFFFFL) == sd.status.id);
+        int nl = sd.status.name.length();
+        check("speak: nama pemain disisipkan di depan",
+                new String(p, 11, nl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals(sd.status.name));
+        check("speak: pemisah ':' untuk bicara biasa",
+                (p[11 + nl] & 0xFF) == ':' && (p[12 + nl] & 0xFF) == ' ');
+        check("speak: pesannya menyusul", new String(p, 13 + nl, 10,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("halo semua"));
+
+        drain(s);
+        Clif.scriptSay(sd, "tolong", 1);
+        p = decrypt(drain(s), sd);
+        check("speak ragam 1 (teriak): pemisahnya '!' bukan ':'",
+                (p[11 + nl] & 0xFF) == '!');
+
+        // --- kunci gerak: nilainya TERBALIK dari namanya ---
+        drain(s);
+        MapServer.clientView.playerMovementLocked(sd, true);
+        p = decrypt(drain(s), sd);
+        check("lock: opcode 0x51 dengan nilai 0", (p[3] & 0xFF) == 0x51
+                && (p[5] & 0xFF) == 0);
+        drain(s);
+        MapServer.clientView.playerMovementLocked(sd, false);
+        p = decrypt(drain(s), sd);
+        check("unlock: nilai 1 — terbalik dari namanya", (p[5] & 0xFF) == 1);
+
+        // --- animasi satu-penonton ---
+        drain(s);
+        Clif.sendAnimationTo(sd, sd, 42, 3);
+        p = decrypt(drain(s), sd);
+        check("selfAnimation: opcode 0x29", (p[3] & 0xFF) == 0x29);
+        check("selfAnimation: id benda yang dianimasikan di [5]",
+                (be32(p, 5) & 0xFFFFFFFFL) == sd.id);
+        check("selfAnimation: nomor animasi & pengulangan",
+                be16(p, 9) == 42 && be16(p, 11) == 3);
+
+        long flagAsli = sd.status.settingFlags;
+        sd.status.settingFlags = 0;      // FLAG_MAGIC mati
+        drain(s);
+        Clif.sendAnimationTo(sd, sd, 42, 3);
+        check("selfAnimation: pemain yang mematikan efek sihir tidak menerimanya",
+                drain(s).length == 0);
+        sd.status.settingFlags = flagAsli;
+
+        MapServer.onlineChars.remove(sd.fd);
+        drain(s);
+    }
+
+    /**
+     * Buku mantra: daftar id / nama tampilan / nama skrip, dan penanda
+     * bagian yang harus disaring.
+     *
+     * <p>Varian yang menembak database ({@code getUnknownSpells},
+     * {@code getAllClassSpells}) diuji di {@code dbtest}, bukan di sini.</p>
+     */
+    private static void spellBookTest(MapData map, User sd) {
+        log.info("=== buku mantra ===");
+
+        var db = MapServer.spellDb;
+        db.register(201, "api_kecil", "Api Kecil", 1, 0);
+        db.register(202, "tameng_angin", "Tameng Angin", 1, 3);
+        db.register(203, "hujan_es", "Hujan Es", 0, 1);
+
+        sd.status.spells = new int[]{201, 0, 203, 202};
+
+        var p = MapServer.spellDb;
+        check("getSpellNameFromYName: nama skrip -> nama tampilan",
+                p.displayNameOf(p.idOf("hujan_es")).equals("Hujan Es"));
+        check("getSpellNameFromYName: nama tak dikenal -> id 0",
+                p.idOf("tidak_ada_mantra_ini") == 0);
+
+        // slot kosong (id 0) tidak boleh ikut ke daftar mana pun
+        int terisi = 0;
+        for (int id : sd.status.spells) {
+            if (id != 0) {
+                terisi++;
+            }
+        }
+        check("buku mantra uji berisi tiga mantra + satu slot kosong",
+                terisi == 3 && sd.status.spells.length == 4);
+
+        check("nama tampilan dan nama skrip memang BERBEDA sumbernya",
+                p.displayNameOf(201).equals("Api Kecil")
+                        && p.nameOf(201).equals("api_kecil"));
+
+        // penanda bagian: bukan mantra, harus disaring dari daftar pilihan
+        check("penanda bagian dikenali (0, 100, 1000, 10000)",
+                org.rtk.map.data.SpellDb.isSectionMarker(0)
+                        && org.rtk.map.data.SpellDb.isSectionMarker(100)
+                        && org.rtk.map.data.SpellDb.isSectionMarker(1000)
+                        && org.rtk.map.data.SpellDb.isSectionMarker(10000));
+        check("mantra biasa BUKAN penanda bagian",
+                !org.rtk.map.data.SpellDb.isSectionMarker(201)
+                        && !org.rtk.map.data.SpellDb.isSectionMarker(99));
+
+        check("ticker dan dispel terbaca per mantra",
+                p.hasTicker(201) && !p.hasTicker(203) && p.dispelOf(202) == 3);
+
+        sd.status.spells = new int[0];
+    }
+
+    /**
+     * Paket inventaris (0x0F / 0x10) dan keluarga binding di sekitarnya.
+     *
+     * <p>Yang dijaga: dua string dengan peran berbeda pada paket 0x0F,
+     * hiasan teks yang berbeda per jenis barang, ketahanan yang hanya
+     * dikirim untuk perlengkapan, dan <b>penyapu data rusak</b> yang
+     * membuang barangnya alih-alih melewatinya.</p>
+     */
+    private static void inventoryTest(MapData map, User sd) {
+        log.info("=== inventaris (0x0F / 0x10) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+        var db = MapServer.itemDb;
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+        // pedang: perlengkapan (type 3) -> ketahanan ikut dikirim
+        db.register(new org.rtk.map.data.ItemDb.Info(7101, "klewang", "Klewang", "", "",
+                3, 0, 0, 1, 1, 1, 0, 0, 120, 7, 0,
+                new org.rtk.map.data.ItemDb.Look(0, 0, 88, 6), tanpaStat));
+        // roti: barang biasa bertumpuk (type 18)
+        db.register(new org.rtk.map.data.ItemDb.Info(7102, "roti", "Roti Tawar", "", "",
+                18, 0, 0, 1, 1, 20, 0, 0, 0, 0, 0,
+                new org.rtk.map.data.ItemDb.Look(0, 0, 12, 3), tanpaStat));
+        // obor: ITM_SMOKE -> teksnya "nama [dura satuan]"
+        db.register(new org.rtk.map.data.ItemDb.Info(7103, "obor", "Obor", "", "jam",
+                org.rtk.map.data.ItemDb.ITM_SMOKE, 0, 0, 1, 1, 1, 0, 0, 30, 0, 0,
+                new org.rtk.map.data.ItemDb.Look(0, 0, 5, 1), tanpaStat));
+        // peta: ITM_MAP -> teksnya "[Tdura] nama"
+        db.register(new org.rtk.map.data.ItemDb.Info(7104, "peta_uji", "Peta Uji", "", "",
+                org.rtk.map.data.ItemDb.ITM_MAP, 0, 0, 1, 1, 1, 0, 0, 3, 0, 0,
+                new org.rtk.map.data.ItemDb.Look(0, 0, 9, 2), tanpaStat));
+
+        sd.status.inventory.clear();
+        sd.status.maxInv = 20;
+
+        // --- perlengkapan: ketahanan dikirim ---
+        sd.addItemById(7101, 1, 120);
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        byte[] p = decrypt(drain(s), sd);
+        check("addItem: opcode 0x0F", (p[3] & 0xFF) == 0x0F);
+        check("addItem: nomor slot 1-basis di [5]", (p[5] & 0xFF) == 1);
+        check("addItem: ikon dari tabel Items di [6]", be16(p, 6) == 88);
+        check("addItem: warna ikon di [8]", (p[8] & 0xFF) == 6);
+        int tl = p[9] & 0xFF;
+        check("addItem: teks tampilan = nama tampilan",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Klewang"));
+        int off = 10 + tl;
+        int jl = p[off] & 0xFF;
+        check("addItem: string KEDUA = nama jenis, bukan teks hiasannya",
+                new String(p, off + 1, jl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Klewang"));
+        off += jl + 1;
+        check("addItem: jumlah di ladang berikutnya", be32(p, off) == 1);
+        off += 4;
+        check("addItem: perlengkapan -> penanda 0", (p[off] & 0xFF) == 0);
+        check("addItem: perlengkapan -> ketahanan ikut dikirim",
+                be32(p, off + 1) == 120);
+        check("addItem: perlindungan = yang TERBESAR antara barang & jenisnya",
+                (p[off + 5] & 0xFF) == 7);
+
+        // --- barang bertumpuk: penanda stack, ketahanan nol ---
+        sd.status.inventory.clear();
+        sd.addItemById(7102, 5, -1);
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        p = decrypt(drain(s), sd);
+        tl = p[9] & 0xFF;
+        check("addItem: jumlah >1 masuk ke TEKSNYA",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Roti Tawar (5)"));
+        off = 10 + tl;
+        off += (p[off] & 0xFF) + 1 + 4;
+        check("addItem: bertumpuk -> penanda 1", (p[off] & 0xFF) == 1);
+        check("addItem: bertumpuk -> ketahanan nol", be32(p, off + 1) == 0);
+
+        // --- hiasan teks per jenis ---
+        sd.status.inventory.clear();
+        sd.addItemById(7103, 1, 12);
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        p = decrypt(drain(s), sd);
+        tl = p[9] & 0xFF;
+        check("addItem: ITM_SMOKE -> 'nama [dura satuan]'",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Obor [12 jam]"));
+
+        sd.status.inventory.clear();
+        sd.addItemById(7104, 1, 3);
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        p = decrypt(drain(s), sd);
+        tl = p[9] & 0xFF;
+        check("addItem: ITM_MAP -> '[Tdura] nama'",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("[T3] Peta Uji"));
+
+        // --- nama ukiran menimpa nama jenis, tapi HANYA string pertama ---
+        sd.status.inventory.clear();
+        sd.addItemById(7101, 1, 120);
+        sd.status.inventory.get(0).realName = "Klewang Sakti";
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        p = decrypt(drain(s), sd);
+        tl = p[9] & 0xFF;
+        check("addItem: nama ukiran dipakai di teks tampilan",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Klewang Sakti"));
+        off = 10 + tl;
+        jl = p[off] & 0xFF;
+        check("addItem: string kedua TETAP nama jenisnya",
+                new String(p, off + 1, jl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Klewang"));
+
+        // --- penyapu data rusak MEMBUANG barangnya ---
+        sd.status.inventory.clear();
+        sd.addItemById(7102, 1, -1);
+        sd.status.inventory.get(0).id = 2;      // id < 4
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        check("addItem: barang ber-id < 4 DIBUANG, bukan dilewati",
+                sd.status.inventory.isEmpty() && drain(s).length == 0);
+
+        sd.status.inventory.clear();
+        sd.addItemById(7102, 1, -1);
+        sd.status.inventory.get(0).id = 999999; // tidak ada di tabel Items
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        check("addItem: barang tak dikenal DIBUANG juga",
+                sd.status.inventory.isEmpty() && drain(s).length == 0);
+
+        // --- 0x10 mengosongkan slot di SERVER, bukan cuma di klien ---
+        sd.status.inventory.clear();
+        sd.addItemById(7102, 3, -1);
+        drain(s);
+        Clif.sendDelItem(sd, 0, 6);
+        p = decrypt(drain(s), sd);
+        check("delItem: opcode 0x10", (p[3] & 0xFF) == 0x10);
+        check("delItem: slot 1-basis di [5]", (p[5] & 0xFF) == 1);
+        check("delItem: alasan di [6]", (p[6] & 0xFF) == 6);
+        check("delItem: slotnya ikut kosong di server",
+                sd.status.inventory.isEmpty());
+
+        // --- updateInv menyapu seluruh isi tas ---
+        sd.status.inventory.clear();
+        sd.addItemById(7101, 1, 120);
+        sd.addItemById(7102, 2, -1);
+        sd.addItemById(7104, 1, 3);
+        drain(s);
+        for (int i = sd.status.inventory.size() - 1; i >= 0; i--) {
+            Clif.sendAddItem(sd, i);
+        }
+        check("updateInv: satu paket 0x0F per slot terisi",
+                splitPackets(drain(s)).stream()
+                        .filter(o -> o[0] == 0x0F).count() == 3);
+
+        sd.status.inventory.clear();
+        drain(s);
+    }
+
+    /**
+     * Barang di lantai (BL_ITEM) — jatuhkan, gabung, pungut, dan jebakan.
+     *
+     * <p>Yang dijaga di sini adalah aturan yang mudah terbalik: barang
+     * sejenis di petak yang sama <b>digabung</b> alih-alih menumpuk jadi dua
+     * benda, barang ber-id 0 adalah <b>uang</b>, kolom {@code ItmDroppable}
+     * artinya "tidak bisa dipungut", dan jebakan disaring di <b>dua tempat
+     * berbeda</b> dengan aturan berbeda pula.</p>
+     */
+    private static void floorItemTest(MapData map, User sd) {
+        log.info("=== barang di lantai (BL_ITEM) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+
+        var db = MapServer.itemDb;
+        var kosongLook = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        // apel: bertumpuk 10, boleh dipungut
+        db.register(new org.rtk.map.data.ItemDb.Info(7001, "apel_uji", "Apel Uji", "", "",
+                18, 0, 0, 1, 1, 10, 0, 0, 50, 0, 0,
+                new org.rtk.map.data.ItemDb.Look(11, 2, 33, 4), tanpaStat));
+        // pedang: tidak bertumpuk
+        db.register(new org.rtk.map.data.ItemDb.Info(7002, "pedang_uji", "Pedang Uji", "", "",
+                3, 0, 0, 1, 1, 1, 0, 0, 100, 0, 0, kosongLook, tanpaStat));
+        // batu nisan: ItmDroppable != 0 -> TIDAK bisa dipungut
+        db.register(new org.rtk.map.data.ItemDb.Info(7003, "nisan_uji", "Nisan Uji", "", "",
+                18, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, kosongLook, tanpaStat));
+        // jebakan: ITM_TRAPS
+        db.register(new org.rtk.map.data.ItemDb.Info(7004, "jebakan_uji", "Jebakan Uji", "", "",
+                org.rtk.map.data.ItemDb.ITM_TRAPS, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0,
+                kosongLook, tanpaStat));
+
+        var reg = MapServer.floorItems;
+        reg.useIdIndex(MapServer.npcs);
+        int px = c[0];
+        int py = c[1];
+
+        // --- jatuhkan ---
+        drain(s);
+        FloorItem fl = reg.drop(sd, 7001, 3, 50, 0, 0, 0, px, py);
+        check("drop: barang lantai terbentuk", fl != null && fl.data.amount == 3);
+        check("drop: masuk indeks id global", MapServer.blockById(fl.id) == fl);
+        check("drop: berdiri di petaknya", map.objectsAt(px, py).contains(fl));
+        check("drop: idnya dari rentang FLOORITEM_START_NUM",
+                fl.id >= FloorItem.FLOORITEM_START_NUM);
+
+        byte[] p = decrypt(drain(s), sd);
+        check("drop: paket benda 0x07 terkirim", (p[3] & 0xFF) == 0x07);
+        check("drop: penanda barang 0x02 di [11]", (p[11] & 0xFF) == 0x02);
+        check("drop: ikon MENTAH dari tabel Items, bukan +49152",
+                be16(p, 16) == 33);
+        check("drop: warna ikon di [18]", (p[18] & 0xFF) == 4);
+
+        // --- barang sejenis digabung, bukan jadi dua benda ---
+        int sebelum = reg.count();
+        FloorItem fl2 = reg.drop(sd, 7001, 2, 50, 0, 0, 0, px, py);
+        check("drop: barang sejenis DIGABUNG, bukan jadi benda kedua",
+                fl2 == fl && reg.count() == sebelum && fl.data.amount == 5);
+        check("drop: jumlah sebelumnya tercatat di lastAmount", fl.lastAmount == 3);
+
+        // --- pungut ---
+        sd.status.inventory.clear();
+        sd.status.maxInv = 20;
+        check("pickUp: berhasil", reg.pickUp(sd, fl.id));
+        check("pickUp: seluruh tumpukan bertumpuk masuk sekaligus",
+                sd.status.inventory.size() == 1 && sd.status.inventory.get(0).amount == 5);
+        check("pickUp: barang lantai lenyap setelah habis",
+                MapServer.blockById(fl.id) == null && !map.objectsAt(px, py).contains(fl));
+
+        // --- barang TIDAK bertumpuk diambil sekeping demi sekeping ---
+        sd.status.inventory.clear();
+        FloorItem pedang = reg.drop(sd, 7002, 3, 100, 0, 0, 0, px, py);
+        reg.pickUp(sd, pedang.id);
+        check("pickUp: barang tak bertumpuk diambil satu per satu",
+                pedang.data.amount == 2 && sd.status.inventory.size() == 1);
+        check("pickUp: sisanya tetap di lantai",
+                map.objectsAt(px, py).contains(pedang));
+        reg.hapus(pedang);
+
+        // --- id 0 = uang ---
+        sd.status.inventory.clear();
+        long emasAwal = sd.scriptGetAttr("money");
+        FloorItem emas = reg.drop(sd, 0, 250, 0, 0, 0, 0, px, py);
+        check("pickUp: barang ber-id 0 masuk EMAS, bukan inventaris",
+                reg.pickUp(sd, emas.id)
+                        && sd.scriptGetAttr("money") == emasAwal + 250
+                        && sd.status.inventory.isEmpty());
+
+        // --- ItmDroppable != 0 berarti tidak bisa dipungut ---
+        FloorItem nisan = reg.drop(sd, 7003, 1, 1, 0, 0, 0, px, py);
+        sd.status.gmLevel = 0;
+        check("pickUp: ItmDroppable != 0 menolak pemain biasa",
+                !reg.pickUp(sd, nisan.id) && MapServer.blockById(nisan.id) == nisan);
+        sd.status.gmLevel = 99;
+        check("pickUp: GM tetap bisa memungutnya", reg.pickUp(sd, nisan.id));
+        sd.status.gmLevel = 0;
+
+        // --- forceDrop dari inventaris ---
+        sd.status.inventory.clear();
+        sd.addItemById(7001, 4, 50);
+        FloorItem jatuh = reg.dropFromInventory(sd, 0, 0);
+        check("forceDrop: sekeping jatuh, sisanya tetap di inventaris",
+                jatuh != null && jatuh.data.amount == 1
+                        && sd.status.inventory.get(0).amount == 3);
+        reg.hapus(jatuh);
+        sd.status.inventory.clear();
+
+        // --- aturan gabung jalur pemain JAUH lebih ketat dari jatuhan mob ---
+        sd.status.inventory.clear();
+        sd.addItemById(7002, 1, 100);            // pedang utuh
+        sd.status.inventory.get(0).dura = 100;
+        FloorItem utuh = reg.dropFromInventory(sd, 0, 1);
+        sd.status.inventory.clear();
+        sd.addItemById(7002, 1, 100);
+        sd.status.inventory.get(0).dura = 40;    // pedang penyok
+        FloorItem penyok = reg.dropFromInventory(sd, 0, 1);
+        check("drop pemain: barang penyok TIDAK menyatu dengan yang utuh",
+                penyok != utuh && reg.count() >= 2);
+
+        // sedangkan jatuhan mob menggabung hanya berdasarkan id
+        FloorItem mobDrop = reg.drop(null, 7002, 1, 40, 0, 0, 0, px, py);
+        check("drop mob: menggabung hanya berdasarkan id barang",
+                mobDrop == utuh || mobDrop == penyok);
+
+        for (FloorItem sisa : new java.util.ArrayList<>(reg.all())) {
+            reg.hapus(sisa);
+        }
+        sd.status.inventory.clear();
+
+        // --- jebakan: dua penyaring yang BERBEDA ---
+        FloorItem jebakan = reg.drop(sd, 7004, 1, 1, 0, 0, 0, px, py);
+        check("jebakan: dikenali sebagai ITM_TRAPS", jebakan.isTrap());
+        check("jebakan: belum terlihat oleh siapa pun", !jebakan.visibleTo(sd.id));
+        jebakan.addTrapSpotter(sd.id);
+        check("addTrapSpotters: pemain itu kini melihatnya",
+                jebakan.visibleTo(sd.id) && jebakan.spottedBy(sd.id));
+        check("addTrapSpotters: pemain lain tetap tidak melihatnya",
+                !jebakan.spottedBy(999999));
+
+        // penyaring pencarian benda TIDAK melihat trapsTable — ia membuang
+        // SEMUA jebakan, bahkan yang sudah ditemukan
+        drain(s);
+        Clif.objectLook(sd, jebakan);
+        check("jebakan: digambar untuk pemain yang sudah menemukannya",
+                drain(s).length > 0);
+        FloorItem jebakan2 = reg.drop(sd, 7004, 1, 1, 0, 0, 0, px + 1, py);
+        drain(s);
+        Clif.objectLook(sd, jebakan2);
+        check("jebakan: TIDAK digambar untuk yang belum menemukannya",
+                drain(s).length == 0);
+
+        // --- lookGone barang lantai memakai 0x5F, bukan 0x0E ---
+        drain(s);
+        Clif.lookGone(jebakan);
+        p = decrypt(drain(s), sd);
+        check("lookGone barang lantai: opcode 0x5F", (p[3] & 0xFF) == 0x5F);
+
+        reg.hapus(jebakan);
+        reg.hapus(jebakan2);
+
+        // --- animasi lempar (0x16) tidak menjatuhkan apa pun ---
+        int sebelumLempar = reg.count();
+        drain(s);
+        Clif.throwAnimation(sd, px + 3, py + 2, 77, 5, 2);
+        p = decrypt(drain(s), sd);
+        check("throw: opcode 0x16", (p[3] & 0xFF) == 0x16);
+        check("throw: id pelempar di [5]", (be32(p, 5) & 0xFFFFFFFFL) == sd.id);
+        check("throw: ikon + 49152 di [9]", be16(p, 9) == 77 + 49152);
+        check("throw: petak asal di [16],[18]", be16(p, 16) == px && be16(p, 18) == py);
+        check("throw: petak tujuan di [20],[22]",
+                be16(p, 20) == px + 3 && be16(p, 22) == py + 2);
+        check("throw: ladang [12] nol — jangan tinggalkan gambar di tanah",
+                be32(p, 12) == 0);
+        check("throw: tidak menjatuhkan barang apa pun",
+                reg.count() == sebelumLempar);
+
+        drain(s);
+    }
+
+    /**
+     * {@code moveGhost} (gerak mob) dan paket benda 0x07 <b>berkelompok</b>.
+     *
+     * <p>Yang dijaga: mob tidak menginjak portal, mob yang sedang mengejar
+     * sasaran menembus penghalang sementara yang tidak mengejar tertahan,
+     * dan tata letak paket berkelompok — termasuk byte passflag yang
+     * sengaja saling menimpa antar entri.</p>
+     */
+    private static void ghostTest(MapData map, User sd) {
+        log.info("=== moveGhost + paket benda berkelompok (0x07) ===");
+
+        int[] c = firstWalkable(map);
+        int px = -1;
+        int py = -1;
+        for (int y = 2; y < map.ys - 2 && px < 0; y++) {
+            for (int x = 2; x < map.xs - 3; x++) {
+                if (map.walkable(x, y) && map.walkable(x + 1, y)
+                        && map.walkable(x + 2, y)) {
+                    px = x;
+                    py = y;
+                    break;
+                }
+            }
+        }
+        check("ada tiga petak terbuka berderet untuk uji gerak", px >= 0);
+        placeAt(map, sd, px, py);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+
+        MobData jenis = new MobData();
+        jenis.id = 910;
+        jenis.yname = "hantu_uji";
+        jenis.name = "Hantu Uji";
+        jenis.vita = 20;
+        jenis.look = 42;
+        jenis.lookColor = 7;
+        jenis.subtype = 0;
+
+        Mob mb = new Mob();
+        mb.data = jenis;
+        mb.id = Mob.MOB_START_NUM + 77;
+        mb.m = 0;
+        mb.x = px + 1;
+        mb.y = py;
+        mb.startM = 0;
+        mb.startX = mb.x;
+        mb.startY = mb.y;
+        MobRegistry.resetStats(mb);
+        mb.side = 1;   // menghadap kanan
+        map.addBlock(mb);
+
+        MobRegistry reg = MapServer.mobs;
+        reg.registerType(jenis);
+        // Seperti di produksi: mob wajib masuk indeks id global, karena
+        // skrip merujuknya lewat id (lihat catatan A5 di CLAUDE.md).
+        reg.useIdIndex(MapServer.npcs);
+
+        // --- langkah biasa ---
+        drain(s);
+        boolean pindah = reg.moveGhost(null, mb);
+        check("moveGhost: mob berpindah satu petak ke kanan",
+                pindah && mb.x == px + 2 && mb.y == py);
+
+        List<int[]> keluar = splitPackets(drain(s));
+        check("moveGhost: siaran langkah 0x0C terkirim",
+                keluar.stream().anyMatch(o -> o[0] == 0x0C));
+
+        // --- petak asal, bukan tujuan, yang dikirim ---
+        map.moveBlock(mb, px + 1, py);
+        drain(s);
+        Clif.mobMove(mb, px, py);
+        byte[] p = decrypt(drain(s), sd);
+        check("mobMove: opcode 0x0C", (p[3] & 0xFF) == 0x0C);
+        check("mobMove: membawa nomor urut di [4]", (p[4] & 0xFF) != 0);
+        check("mobMove: id mob di [5]", (be32(p, 5) & 0xFFFFFFFFL) == mb.id);
+        check("mobMove: petak ASAL di [9],[11]", be16(p, 9) == px && be16(p, 11) == py);
+        check("mobMove: arah di [13]", (p[13] & 0xFF) == 1);
+
+        // --- mob mati tidak menyiarkan langkah ---
+        mb.state = MobData.MOB_DEAD;
+        drain(s);
+        Clif.mobMove(mb, px, py);
+        check("mobMove: mob mati tidak mengirim apa pun", drain(s).length == 0);
+        mb.state = MobData.MOB_ALIVE;
+
+        // --- penghalang: tertahan bila tidak mengejar, menembus bila mengejar ---
+        // Dijalankan SEBELUM uji portal: portal di petak tujuan akan
+        // menghentikan langkah lebih dulu, sehingga uji penghalangnya lulus
+        // karena alasan yang salah.
+        placeAt(map, sd, px + 1, py);       // pemain menghalangi
+        map.moveBlock(mb, px + 2, py);
+        mb.side = 3;                        // menghadap kiri, ke arah pemain
+        mb.target = 0;
+        check("moveGhost: tertahan pemain saat tidak mengejar",
+                !reg.moveGhost(null, mb) && mb.x == px + 2);
+        mb.target = sd.id;
+        check("moveGhost: menembus penghalang saat mengejar sasaran",
+                reg.moveGhost(null, mb) && mb.x == px + 1);
+        mb.target = 0;
+
+        // ⚠️ Blok ini WAJIB berjalan sebelum uji portal di bawah: begitu
+        // portal dipasang di (px+1, py), setiap langkah ke sana berhenti di
+        // penjaga portal dan uji tabrakan lulus karena alasan yang salah.
+        // Persis jebakan yang sama sudah sekali kejadian di berkas ini.
+        // --- checkMove: uji coba, TANPA memindahkan mob ---
+        placeAt(map, sd, px + 1, py);       // pemain menghalangi
+        map.moveBlock(mb, px, py);
+        mb.side = 1;                        // menghadap pemain
+        mb.target = 0;
+        check("checkMove: terhalang pemain -> false", !reg.checkMove(mb));
+        check("checkMove: tidak memindahkan mob", mb.x == px && mb.y == py);
+
+        // ⚠️ Beda halus yang disengaja: moveGhost MEMBIARKAN mob ber-target
+        // menembus penghalang, tapi checkMove tetap menjawab "tidak boleh".
+        mb.target = sd.id;
+        check("checkMove: pengecualian `target` TIDAK berlaku di sini",
+                !reg.checkMove(mb));
+        check("moveGhost: sedangkan moveGhost tetap menembusnya",
+                reg.moveGhost(null, mb) && mb.x == px + 1);
+        mb.target = 0;
+
+        placeAt(map, sd, c[0], c[1]);
+        map.moveBlock(mb, px, py);
+        mb.side = 1;
+        check("checkMove: petak kosong -> true", reg.checkMove(mb));
+        check("checkMove: tetap tidak memindahkan apa pun", mb.x == px);
+
+        // --- moveIgnoreObject: menembus penghalang, portal tetap menahan ---
+        placeAt(map, sd, px + 1, py);
+        map.moveBlock(mb, px, py);
+        mb.side = 1;
+        mb.target = 0;
+        check("moveIgnoreObject: menembus pemain yang menghalangi",
+                reg.moveIgnoreObject(null, mb) && mb.x == px + 1);
+        placeAt(map, sd, c[0], c[1]);
+
+        // --- moveIntent: MENGHADAP, bukan berjalan ---
+        map.moveBlock(mb, px + 1, py);
+        placeAt(map, sd, px + 2, py);       // pemain tepat di sebelah kanan
+        mb.side = 0;                        // menghadap atas
+        drain(s);
+        check("moveIntent: sasaran bersebelahan -> true",
+                reg.moveIntent(mb, sd));
+        check("moveIntent: mob BERPUTAR menghadap sasaran", mb.side == 1);
+        check("moveIntent: mob TIDAK berpindah", mb.x == px + 1 && mb.y == py);
+        check("moveIntent: perubahan arah disiarkan",
+                splitPackets(drain(s)).stream().anyMatch(o -> o[0] == 0x11));
+
+        drain(s);
+        check("moveIntent: dipanggil lagi tetap true", reg.moveIntent(mb, sd));
+        check("moveIntent: arah tidak berubah -> tidak menyiarkan apa pun",
+                drain(s).length == 0);
+
+        placeAt(map, sd, c[0], c[1]);       // pemain jauh
+        int arahSebelum = mb.side;
+        check("moveIntent: sasaran jauh -> false", !reg.moveIntent(mb, sd));
+        check("moveIntent: sasaran jauh tidak mengubah arah",
+                mb.side == arahSebelum);
+        check("moveIntent: sasaran null -> false", !reg.moveIntent(mb, null));
+
+        // --- portal menghentikan langkah, bahkan saat mengejar ---
+        placeAt(map, sd, c[0], c[1]);
+        map.moveBlock(mb, px, py);
+        mb.side = 1;
+        map.addWarp(px + 1, py, 1, 0, 0);
+        check("moveGhost: mob TIDAK menginjak portal",
+                !reg.moveGhost(null, mb) && mb.x == px);
+        mb.target = sd.id;
+        check("moveGhost: portal menghentikan langkah walau sedang mengejar",
+                !reg.moveGhost(null, mb) && mb.x == px);
+        mb.target = 0;
+
+        // --- paket benda berkelompok ---
+        placeAt(map, sd, px, py);
+        map.moveBlock(mb, px + 1, py);
+        Npc benda = new Npc();
+        benda.name = "benda_uji";
+        benda.npcId = 92;
+        benda.id = Npc.blockIdFor(92);
+        benda.m = 0;
+        benda.x = px + 2;
+        benda.y = py;
+        benda.graphicId = 55;
+        benda.graphicColor = 3;
+        benda.side = 2;
+        benda.npcType = 0;
+        benda.subtype = 0;
+        map.addBlock(benda);
+
+        drain(s);
+        Clif.objectLookBatch(sd, List.of(mb, benda));
+        p = decrypt(drain(s), sd);
+        check("batch: opcode 0x07", (p[3] & 0xFF) == 0x07);
+        check("batch: membawa nomor urut di [4]", (p[4] & 0xFF) != 0);
+        check("batch: jumlah benda 2 di [5]", be16(p, 5) == 2);
+        // entri 1 di offset 0, entri 2 di offset 15
+        check("batch: entri 1 posisi di [7],[9]",
+                be16(p, 7) == px + 1 && be16(p, 9) == py);
+        check("batch: entri 1 penanda mob 0x05 di [11]", (p[11] & 0xFF) == 0x05);
+        check("batch: entri 1 id di [12]", (be32(p, 12) & 0xFFFFFFFFL) == mb.id);
+        check("batch: entri 1 grafik 32768+look di [16]", be16(p, 16) == 32768 + 42);
+        check("batch: entri 2 mulai 15 byte kemudian",
+                be16(p, 22) == px + 2 && be16(p, 24) == py);
+        check("batch: entri 2 penanda NPC 12 di [26]", (p[26] & 0xFF) == 12);
+        check("batch: entri 2 id di [27]", (be32(p, 27) & 0xFFFFFFFFL) == benda.id);
+        check("batch: entri 2 grafik di [31]", be16(p, 31) == 32768 + 55);
+        // 2 entri x 15 + 1 byte penutup = 31, ladang panjang = 31 + 4 (+3)
+        check("batch: ladang panjang = 15*2 + 1 + 4 + 3", be16(p, 1) == 38);
+
+        // yang tidak boleh digambar tidak menambah hitungan
+        mb.state = MobData.MOB_DEAD;
+        drain(s);
+        Clif.objectLookBatch(sd, List.of(mb, benda));
+        p = decrypt(drain(s), sd);
+        check("batch: mob mati dilewati dan tidak dihitung", be16(p, 5) == 1);
+        mb.state = MobData.MOB_ALIVE;
+
+        drain(s);
+        Clif.objectLookBatch(sd, List.of(sd));
+        check("batch: pemain dilewati — tidak ada paket sama sekali",
+                drain(s).length == 0);
+
+        // --- spawn dari skrip ---
+        int sebelum = reg.all().size();
+        var ids = reg.spawnOneTime(null, 910, 0, px, py, 2, sd.id);
+        check("spawn: dua mob lahir", ids.size() == 2);
+        check("spawn: masuk daftar tik", reg.all().size() == sebelum + 2);
+        org.rtk.map.data.BlockList lahir = MapServer.blockById(ids.get(0));
+        check("spawn: masuk indeks id global (map_addiddb)", lahir instanceof Mob);
+        check("spawn: bertanda sekali pakai", lahir instanceof Mob m2 && m2.oneTime);
+        check("spawn: pemiliknya tercatat", lahir instanceof Mob m3 && m3.owner == sd.id);
+        check("spawn: lahir dalam keadaan hidup",
+                lahir instanceof Mob m4 && m4.isAlive());
+        check("spawn: jenis tak dikenal tidak melahirkan apa pun",
+                reg.spawnOneTime(null, 99999, 0, px, py, 1, 0).isEmpty());
+
+        for (long id : ids) {
+            if (MapServer.blockById(id) instanceof Mob dead) {
+                reg.remove(dead, MapServer.world);
+            }
+        }
+        map.delBlock(mb);
+        map.delBlock(benda);
+        drain(s);
+    }
+
+    /**
+     * Durasi & aether mantra ({@link Durations}) — logika dan paketnya.
+     *
+     * <p>Yang dijaga di sini adalah cabang-cabang yang mudah terbalik:
+     * merapal ulang mantra yang sisanya masih panjang <b>tidak</b> memperpanjang
+     * (kecuali {@code recast}), waktu di bawah satu detik dinaikkan jadi satu
+     * detik, satu baris memegang durasi dan aether sekaligus sehingga
+     * habisnya salah satu tidak boleh membuang barisnya, dan mantra ber-ticker
+     * 0 tidak mengirim paket apa pun meski durasinya jalan.</p>
+     */
+    private static void durationTest(MapData map, User sd) {
+        log.info("=== durasi & aether mantra (dura_aether) ===");
+
+        // SpellDb diisi tangan: uji ini tidak menyentuh MySQL.
+        MapServer.spellDb.register(101, "shield_spell", "Shield spell", 1, 0);
+        MapServer.spellDb.register(102, "diam_diam", "Diam-diam", 0, 5);
+        MapServer.spellDb.register(103, "racun", "Racun", 1, 2);
+
+        // ⚠️ Pemain dan engine SENDIRI. Satu ScriptPlayer hanya boleh
+        // dipakai satu ScriptEngine (udata-nya di-cache), jadi memakai `sd`
+        // di sini akan merusak uji dialog yang sudah mengikatnya ke engine
+        // lain — jebakan yang sudah pernah kejadian.
+        CharStatus dst = new CharStatus();
+        dst.id = 0x0DEDEDE;
+        dst.name = "Durasi";
+        dst.baseHp = 100;
+        dst.lastPos = new Point(0, sd.x, sd.y);
+        User sd2 = new User(21, dst);
+        sd2.m = 0;
+        sd2.x = sd.x;
+        sd2.y = sd.y;
+        org.rtk.common.Session s = MapServer.net.openTestSession(sd2.fd);
+        var engine = new org.rtk.map.script.ScriptEngine();
+
+        // --- pemasangan pertama ---
+        Durations.setDuration(engine, sd2, 101, 10000, 0, false);
+        check("setDuration: baris baru dibuat", sd2.status.duraAether.size() == 1);
+        check("setDuration: durasi tersimpan", Durations.duration(sd2, 101) == 10000);
+        check("setDuration: hasDuration true", Durations.hasDuration(sd2, 101));
+        check("setDuration: mantra lain tidak terpengaruh",
+                !Durations.hasDuration(sd2, 103));
+
+        // --- merapal ulang lebih panjang TIDAK memperpanjang ---
+        Durations.setDuration(engine, sd2, 101, 30000, 0, false);
+        check("merapal ulang lebih panjang tidak memperpanjang",
+                Durations.duration(sd2, 101) == 10000);
+        Durations.setDuration(engine, sd2, 101, 4000, 0, false);
+        check("merapal ulang lebih pendek MEMENDEKKAN",
+                Durations.duration(sd2, 101) == 4000);
+        Durations.setDuration(engine, sd2, 101, 30000, 0, true);
+        check("recast=1 menimpa walau lebih panjang",
+                Durations.duration(sd2, 101) == 30000);
+
+        // --- waktu di bawah satu detik ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 103, 200, 0, false);
+        check("waktu 200 ms dinaikkan jadi 1000", Durations.duration(sd2, 103) == 1000);
+
+        // --- paket durasi ---
+        sd2.status.duraAether.clear();
+        drain(s);
+        Durations.setDuration(engine, sd2, 101, 10000, 0, false);
+        byte[] p = decrypt(drain(s), sd2);
+        check("paket durasi: opcode 0x3A", (p[3] & 0xFF) == 0x3A);
+        check("paket durasi: membawa nomor urut di [4]", (p[4] & 0xFF) != 0);
+        int dl = p[5] & 0xFF;
+        check("paket durasi: nama TAMPILAN mantra, bukan nama skrip",
+                new String(p, 6, dl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Shield spell"));
+        check("paket durasi: sisa waktu dalam DETIK", be32(p, dl + 6) == 10);
+        check("paket durasi: ladang panjang = len + 7 + 3", be16(p, 1) == dl + 7 + 3);
+
+        // --- ticker 0 tidak mengirim apa pun ---
+        sd2.status.duraAether.clear();
+        drain(s);
+        Durations.setDuration(engine, sd2, 102, 10000, 0, false);
+        check("mantra ber-ticker 0: durasinya jalan", Durations.duration(sd2, 102) == 10000);
+        check("mantra ber-ticker 0: tidak ada paket terkirim", drain(s).length == 0);
+
+        // --- durasi dan aether berbagi satu baris ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 0, false);
+        Durations.setAether(sd2, 101, 8000);
+        check("durasi + aether memakai baris yang SAMA",
+                sd2.status.duraAether.size() == 1);
+        check("aether tersimpan", Durations.aether(sd2, 101) == 8000);
+        Durations.setDuration(engine, sd2, 101, 0, 0, false);
+        check("durasi dihentikan, barisnya TIDAK dibuang karena aether jalan",
+                sd2.status.duraAether.size() == 1 && Durations.aether(sd2, 101) == 8000);
+        check("durasi benar-benar nol", Durations.duration(sd2, 101) == 0);
+        Durations.flushAether(sd2, 99, 0, 0);
+        check("aether ikut habis -> barisnya baru dibuang",
+                sd2.status.duraAether.isEmpty());
+
+        // --- penyaring dispel pada flushDuration ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 0, false);   // dispel 0
+        Durations.setDuration(engine, sd2, 103, 5000, 0, false);   // dispel 2
+        Durations.flushDuration(engine, sd2, 1, 0, 0, true);
+        check("flushDuration(1): mantra dispel 0 terhapus",
+                !Durations.hasDuration(sd2, 101));
+        check("flushDuration(1): mantra dispel 2 kebal",
+                Durations.hasDuration(sd2, 103));
+        Durations.flushDuration(engine, sd2, 9, 0, 0, true);
+        check("flushDuration(9): yang kebal pun ikut terhapus",
+                sd2.status.duraAether.isEmpty());
+
+        // --- rentang minId/maxId ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 0, false);
+        Durations.setDuration(engine, sd2, 103, 5000, 0, false);
+        Durations.flushDuration(engine, sd2, 9, 101, 0, true);
+        check("minId>0 & maxId<=0: hanya mantra itu yang dihapus",
+                !Durations.hasDuration(sd2, 101) && Durations.hasDuration(sd2, 103));
+
+        // --- durasi dari penyihir tertentu ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 555, false);
+        check("hasDurationID cocok dengan penyihirnya",
+                Durations.hasDurationFrom(sd2, 101, 555));
+        check("hasDurationID tidak cocok dengan penyihir lain",
+                !Durations.hasDurationFrom(sd2, 101, 556));
+        check("getCasterID mengembalikan penyihirnya",
+                Durations.casterOf(sd2, 101) == 555);
+
+        // --- tik satu detik ---
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 2000, 0, false);
+        Durations.tick(engine, sd2);
+        check("tik: durasi berkurang 1000 ms", Durations.duration(sd2, 101) == 1000);
+        Durations.tick(engine, sd2);
+        check("tik: durasi habis -> baris dibuang", sd2.status.duraAether.isEmpty());
+
+        // aether habis lebih dulu, durasinya masih jalan
+        sd2.status.duraAether.clear();
+        Durations.setDuration(engine, sd2, 101, 5000, 0, false);
+        Durations.setAether(sd2, 101, 1000);
+        Durations.tick(engine, sd2);
+        check("tik: aether habis tapi barisnya tetap karena durasi jalan",
+                sd2.status.duraAether.size() == 1
+                        && Durations.aether(sd2, 101) == 0
+                        && Durations.duration(sd2, 101) == 4000);
+
+        sd2.status.duraAether.clear();
+        drain(s);
+    }
+
+    /**
+     * Paket di balik method {@code bll_*} yang dipakai hampir semua skrip:
+     * {@code talk} (0x0D), {@code sendAction} (0x1A), {@code updateState}
+     * (0x1D), paket benda 0x07, dan {@code lookgone} (0x0E/0x5F).
+     *
+     * <p>Ikut diperiksa <b>nomor urut paket</b> di ladang [4]: hanya paket
+     * yang di C dibangun lewat {@code WFIFOHEADER} yang membawanya, dan
+     * salah menyeragamkannya tidak akan kelihatan dari membaca kode.</p>
+     */
+    private static void bllTest(MapData map, User sd) {
+        log.info("=== bll_* (talk 0x0D, sendAction 0x1A, updateState 0x1D, objek 0x07) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+
+        // --- clif_speak (talk) ---
+        drain(s);
+        Clif.speak(sd, 3, "Halo dunia");
+        byte[] raw = drain(s);
+        check("talk: paket terkirim", raw.length > 0);
+        byte[] p = decrypt(raw, sd);
+        check("talk: opcode 0x0D", (p[3] & 0xFF) == 0x0D);
+        check("talk: ragam di [5]", (p[5] & 0xFF) == 3);
+        check("talk: id pembicara di [6]", (be32(p, 6) & 0xFFFFFFFFL) == sd.id);
+        check("talk: panjang teks APA ADANYA di [10] (bukan +2)",
+                (p[10] & 0xFF) == "Halo dunia".length());
+        check("talk: isi teks di [11..]", new String(p, 11, 10,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Halo dunia"));
+        // ladang panjang = strlen + 8, lalu setPacketIndexes menambah 3
+        check("talk: ladang panjang = panjang + 8 + 3",
+                be16(p, 1) == "Halo dunia".length() + 8 + 3);
+
+        // --- nomor urut WFIFOHEADER ---
+        int seq1 = p[4] & 0xFF;
+        check("talk: membawa nomor urut di [4] (WFIFOHEADER)", seq1 != 0);
+        drain(s);
+        Clif.speak(sd, 3, "lagi");
+        int seq2 = decrypt(drain(s), sd)[4] & 0xFF;
+        check("talk: nomor urut naik satu tiap paket",
+                seq2 == ((seq1 + 1) & 0xFF));
+
+        drain(s);
+        Clif.blockMovement(sd, 1);
+        byte[] blok = decrypt(drain(s), sd);
+        check("blockMovement: opcode 0x51", (blok[3] & 0xFF) == 0x51);
+        check("blockMovement: ikut membawa nomor urut",
+                (blok[4] & 0xFF) == ((seq2 + 1) & 0xFF));
+
+        // Paket yang di C TIDAK memakai WFIFOHEADER harus meninggalkan [4]=0
+        drain(s);
+        Clif.sendId(sd);
+        check("sendId: [4] tetap 0 — bukan paket WFIFOHEADER",
+                (decrypt(drain(s), sd)[4] & 0xFF) == 0);
+
+        // --- clif_sendaction ---
+        drain(s);
+        Clif.sendAction(sd, 1, 40, 0);
+        p = decrypt(drain(s), sd);
+        check("sendAction: opcode 0x1A", (p[3] & 0xFF) == 0x1A);
+        // C menulis 0x000B lalu setPacketIndexes menimpanya dengan nilai + 3
+        check("sendAction: ladang panjang 0x0B + 3 indeks kunci", be16(p, 1) == 0x0B + 3);
+        check("sendAction: id benda di [5]", (be32(p, 5) & 0xFFFFFFFFL) == sd.id);
+        check("sendAction: ragam gerakan di [9]", (p[9] & 0xFF) == 1);
+        check("sendAction: lama gerakan di [11]", (p[11] & 0xFF) == 40);
+        check("sendAction: [4] nol — dibangun dengan WBUF, bukan WFIFOHEADER",
+                (p[4] & 0xFF) == 0);
+
+        // --- clif_updatestate ---
+        drain(s);
+        Clif.updateState(sd, sd);
+        p = decrypt(drain(s), sd);
+        check("updateState: opcode 0x1D", (p[3] & 0xFF) == 0x1D);
+        check("updateState: id di [5]", (be32(p, 5) & 0xFFFFFFFFL) == sd.id);
+        check("updateState: sex di [9] — 5 byte lebih awal dari 0x33",
+                be16(p, 9) == sd.status.sex);
+        int nl = p[54] & 0xFF;
+        check("updateState: panjang nama di [54]", nl == sd.status.name.length());
+        check("updateState: nama di [55..]", new String(p, 55, nl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals(sd.status.name));
+        // C menulis len + 55 + 3; setPacketIndexes menambah 3 lagi
+        check("updateState: ladang panjang = len + 55 + 3 (+3 indeks kunci)",
+                be16(p, 1) == nl + 61);
+
+        // state 4 memakai tata letak pendek sendiri — cabang yang TIDAK ada
+        // pada paket 0x33
+        int stateAsli = sd.status.state;
+        sd.status.state = 4;
+        sd.status.disguise = 100;
+        drain(s);
+        Clif.updateState(sd, sd);
+        p = decrypt(drain(s), sd);
+        check("updateState state 4: penanda [9]=1 [10]=15",
+                (p[9] & 0xFF) == 1 && (p[10] & 0xFF) == 15);
+        check("updateState state 4: samaran + 32768 di [12]", be16(p, 12) == 100 + 32768);
+        check("updateState state 4: nama bergeser ke [17]", new String(p, 17,
+                sd.status.name.length(),
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals(sd.status.name));
+        check("updateState state 4: panjang = nama + 1 + 13 (+3 indeks kunci)",
+                be16(p, 1) == sd.status.name.length() + 1 + 13 + 3);
+        sd.status.state = stateAsli;
+
+        // --- paket benda 0x07 + lookgone ---
+        MobData jenis = new MobData();
+        jenis.id = 900;
+        jenis.yname = "batu";
+        jenis.name = "Batu";
+        jenis.vita = 10;
+        jenis.look = 77;
+        jenis.lookColor = 3;
+        jenis.subtype = 0;      // BUKAN karakter -> paket benda 0x07
+        Mob batu = new Mob();
+        batu.data = jenis;
+        batu.id = Mob.MOB_START_NUM + 5;
+        batu.m = 0;
+        batu.x = c[0];
+        batu.y = c[1];
+        MobRegistry.resetStats(batu);
+        map.addBlock(batu);
+
+        drain(s);
+        Clif.objectLook(sd, batu);
+        p = decrypt(drain(s), sd);
+        check("objek: opcode 0x07", (p[3] & 0xFF) == 0x07);
+        check("objek: jumlah benda 1 di [5]", be16(p, 5) == 1);
+        check("objek: posisi di [7],[9]", be16(p, 7) == c[0] && be16(p, 9) == c[1]);
+        check("objek: id blok di [12]", (be32(p, 12) & 0xFFFFFFFFL) == batu.id);
+        check("objek: penanda mob 0x05 di [11]", (p[11] & 0xFF) == 0x05);
+        check("objek: grafik 32768 + look di [16]", be16(p, 16) == 32768 + 77);
+        check("objek: warna grafik di [18]", (p[18] & 0xFF) == 3);
+        check("objek: panjang tetap 20 (+3 indeks kunci)", be16(p, 1) == 20 + 3);
+
+        // mob mati tidak digambar sama sekali
+        batu.state = MobData.MOB_DEAD;
+        drain(s);
+        Clif.objectLook(sd, batu);
+        check("objek: mob mati tidak mengirim apa pun", drain(s).length == 0);
+        batu.state = MobData.MOB_ALIVE;
+
+        // lookgone: mob selalu 0x0E, NPC benda peta 0x5F
+        drain(s);
+        Clif.lookGone(batu);
+        p = decrypt(drain(s), sd);
+        check("lookGone mob: opcode 0x0E", (p[3] & 0xFF) == 0x0E);
+        check("lookGone: [4] = 0x03", (p[4] & 0xFF) == 0x03);
+        check("lookGone: id benda di [5]", (be32(p, 5) & 0xFFFFFFFFL) == batu.id);
+
+        Npc benda = new Npc();
+        benda.name = "PapanNama";
+        benda.npcId = 91;
+        benda.id = Npc.blockIdFor(91);
+        benda.m = 0;
+        benda.x = c[0];
+        benda.y = c[1];
+        benda.npcType = 0;    // benda peta, bukan karakter
+        map.addBlock(benda);
+        drain(s);
+        Clif.lookGone(benda);
+        p = decrypt(drain(s), sd);
+        check("lookGone NPC benda peta: opcode 0x5F", (p[3] & 0xFF) == 0x5F);
+
+        map.delBlock(batu);
+        map.delBlock(benda);
     }
 
     /**

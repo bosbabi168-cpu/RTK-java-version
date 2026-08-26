@@ -60,6 +60,14 @@ public final class Npc extends BlockList
 
     // ---- perilaku ----
     /** {@code NpcIsChar}: 1 = tampil sebagai karakter, bukan grafik tunggal. */
+    /**
+     * {@code enum { SCRIPT, FLOOR }} (map/map.h:71) — nilai {@code subtype}.
+     * NPC ber-subtype 1 atau 2 adalah benda lantai (jebakan, dekorasi) yang
+     * kait {@code click}-nya ikut terpicu oleh mob yang menginjaknya.
+     */
+    public static final int SUBTYPE_SCRIPT = 0;
+    public static final int SUBTYPE_FLOOR = 1;
+
     public int npcType;
     public boolean f1Npc;
     public boolean shopNpc;

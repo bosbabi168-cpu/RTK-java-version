@@ -1,6 +1,8 @@
 package org.rtk.charserver;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,9 +32,24 @@ public final class Mapif {
     public static final int ALL = 0;
     public static final int ALLWOS = 1;
 
-    // packet lengths for 0x3000 .. 0x3008 (board/mail packets 0x3009+ are
-    // part of the not-yet-ported gameplay protocol)
-    private static final int[] PACKET_LEN_TABLE = {72, -1, 20, 24, -1, 6, 255, -1, 28};
+    /**
+     * Panjang paket 0x3000 .. 0x300F; -1 berarti panjangnya ada di paketnya
+     * sendiri (L di offset 2).
+     *
+     * <p>⚠️ <b>0x3009 sengaja -1, bukan panjang tetap.</b> Di C ia
+     * {@code sizeof(struct board_show_0) + 2} — dump struct mentah yang
+     * panjangnya bergantung padding kompilator. Port ini memakai tata letak
+     * sendiri dengan nama pemain berpanjang-variabel, jadi panjangnya ada di
+     * paketnya (lihat Peringatan #9 soal alasan yang sama pada blob
+     * karakter).</p>
+     *
+     * <p>Yang masih 0: 0x300A (baca satu kiriman) dan 0x300C (tulis
+     * kiriman) — belum diport. Paket ber-panjang 0 <b>diabaikan</b>
+     * dispatcher, sama seperti di C.</p>
+     */
+    private static final int[] PACKET_LEN_TABLE = {
+        72, -1, 20, 24, -1, 6, 255, -1, 28,
+        -1, 0, 4, 0, 4124, 20, 4124};
 
     /** Panjang tetap balasan 0x3803 sebelum blob: opcode+len+fd. */
     private static final int CHARLOAD_HEADER = 8;
@@ -53,6 +70,188 @@ public final class Mapif {
             }
         }
         return 0;
+    }
+
+    /**
+     * mapif_parse_showposts() (0x3009) — susun daftar isi papan, atau isi
+     * kotak surat bila {@code board == 0}.
+     *
+     * <p>⚠️ <b>Papan 0 BUKAN sebuah papan</b>: ia kotak surat pribadi, dan
+     * dibaca dari tabel {@code Mail} dengan nama kolom yang sama sekali
+     * berbeda. Satu-satunya hal yang sama adalah bentuk hasilnya.</p>
+     *
+     * <p>Keduanya diurutkan <b>menurun</b> menurut nomor urut dan dipotong
+     * 20 baris per halaman — kiriman terbaru di atas.</p>
+     */
+    static int parseShowPosts(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(2);
+        int board = s.rfifoL(4);
+        int page = s.rfifoL(8);
+        int flags = s.rfifoL(12);
+        boolean popup = s.rfifoB(16) != 0;
+        int nl = s.rfifoB(17) & 0xFF;
+        String nama = s.rfifoString(18, nl);
+
+        int flags1 = org.rtk.map.Boards.displayFlags1(flags, popup, board);
+        int flags2 = org.rtk.map.Boards.displayFlags2(board);
+
+        List<Object[]> isi = new ArrayList<>();
+        int offset = page * org.rtk.map.Boards.PER_PAGE;
+        int rows;
+        if (board == 0) {
+            rows = sql.forEachRow(
+                    "SELECT `MalNew`,`MalChaName`,`MalSubject`,`MalPosition`,"
+                    + "`MalMonth`,`MalDay`,`MalId` FROM `Mail`"
+                    + " WHERE `MalChaNameDestination` = ? AND `MalDeleted` = 0"
+                    + " ORDER BY `MalPosition` DESC LIMIT ?, ?",
+                    rs -> isi.add(new Object[]{
+                        rs.getInt("MalNew"), rs.getInt("MalPosition"),
+                        rs.getInt("MalId"), rs.getInt("MalMonth"), rs.getInt("MalDay"),
+                        str(rs.getString("MalChaName")), str(rs.getString("MalSubject"))}),
+                    nama, offset, org.rtk.map.Boards.PER_PAGE);
+        } else {
+            rows = sql.forEachRow(
+                    "SELECT `BrdHighlighted`,`BrdChaName`,`BrdTopic`,`BrdPosition`,"
+                    + "`BrdMonth`,`BrdDay`,`BrdBtlId` FROM `Boards`"
+                    + " WHERE `BrdBnmId` = ?"
+                    + " ORDER BY `BrdPosition` DESC LIMIT ?, ?",
+                    rs -> isi.add(new Object[]{
+                        rs.getInt("BrdHighlighted"), rs.getInt("BrdPosition"),
+                        rs.getInt("BrdBtlId"), rs.getInt("BrdMonth"), rs.getInt("BrdDay"),
+                        str(rs.getString("BrdChaName")), str(rs.getString("BrdTopic"))}),
+                    board, offset, org.rtk.map.Boards.PER_PAGE);
+        }
+        if (rows < 0) {
+            log.error("[CHAR] gagal membaca isi papan {}", board);
+            isi.clear();   // C: kirim header saja saat query gagal
+        }
+
+        s.wfifoW(0, 0x3809);
+        s.wfifoW(6, clientFd);
+        s.wfifoL(8, board);
+        s.wfifoL(12, flags1);
+        s.wfifoL(16, flags2);
+        s.wfifoL(20, isi.size());
+        int off = 24;
+        for (Object[] e : isi) {
+            s.wfifoL(off, (Integer) e[0]);
+            s.wfifoL(off + 4, (Integer) e[1]);
+            s.wfifoL(off + 8, (Integer) e[2]);
+            s.wfifoL(off + 12, (Integer) e[3]);
+            s.wfifoL(off + 16, (Integer) e[4]);
+            byte[] penulis = ((String) e[5])
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoB(off + 20, penulis.length);
+            s.wfifoBytes(off + 21, penulis);
+            off += 21 + penulis.length;
+            byte[] judul = ((String) e[6])
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoB(off, judul.length);
+            s.wfifoBytes(off + 1, judul);
+            off += 1 + judul.length;
+        }
+        s.wfifoL(2, off);
+        s.wfifoSet(off);
+        return 0;
+    }
+
+    private static String str(String v) {
+        return v == null ? "" : v;
+    }
+
+    /** Panjang ladang tetap pada paket surat 0x300D / 0x300F. */
+    private static final int MAIL_NAME_LEN = 16;
+    private static final int MAIL_TOPIC_LEN = 52;
+    private static final int MAIL_BODY_LEN = 4000;
+
+    /** FLAG_MAIL (common/mmo.h:55) — penanda "ada surat baru". */
+    public static final int FLAG_MAIL = 16;
+
+    /**
+     * mapif_parse_nmailwrite() (0x300D) / nmailwritecopy() (0x300F) —
+     * map server menitipkan surat, char server yang menuliskannya.
+     *
+     * <p>Tata letaknya tetap: nama pengirim di 4, penerima di 20, judul di
+     * 72, isi di 124. ⚠️ Perhatikan <b>lubang</b> antara penerima (16 byte
+     * dari offset 20, berakhir di 36) dan judul (offset 72): 36 byte tak
+     * terpakai. Itu ada di C — jangan dirapatkan.</p>
+     *
+     * <p>{@code MalPosition} adalah nomor urut <b>per penerima</b>, bukan
+     * kunci utama: yang dipakai adalah tertinggi + 1.</p>
+     *
+     * @param copy true untuk 0x300F, yang <b>tidak membalas apa pun</b> —
+     *             ia salinan untuk arsip pengirim, jadi map server tidak
+     *             menunggu jawabannya
+     */
+    static int parseMailWrite(int fd, boolean copy) {
+        Session s = net.session(fd);
+        int sfd = s.rfifoW(2);
+        String from = s.rfifoString(4, MAIL_NAME_LEN);
+        String to = s.rfifoString(20, MAIL_NAME_LEN);
+        String topic = s.rfifoString(72, MAIL_TOPIC_LEN);
+        String body = s.rfifoString(124, MAIL_BODY_LEN);
+
+        Integer toId = sql.queryInt(
+                "SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", to);
+        if (toId == null) {
+            log.info("[CHAR] surat dari '{}' gagal: penerima '{}' tidak ada", from, to);
+            if (!copy) {
+                balasSurat(s, sfd, 2);   // 2 = penerima tidak ditemukan
+            }
+            return 0;
+        }
+
+        Integer max = sql.queryInt(
+                "SELECT MAX(`MalPosition`) FROM `Mail` WHERE `MalChaNameDestination` = ?", to);
+        int pos = (max == null ? 0 : max) + 1;
+
+        int n = sql.update(
+                "INSERT INTO `Mail` (`MalChaName`, `MalChaNameDestination`, `MalPosition`,"
+                + " `MalSubject`, `MalBody`, `MalMonth`, `MalDay`, `MalNew`)"
+                + " VALUES (?, ?, ?, ?, ?, DATE_FORMAT(CURDATE(),'%m'),"
+                + " DATE_FORMAT(CURDATE(),'%d'), 1)",
+                from, to, pos, topic, body);
+        if (n <= 0) {
+            if (!copy) {
+                balasSurat(s, sfd, 1);   // 1 = gagal di database
+            }
+            return 0;
+        }
+
+        log.info("[CHAR] surat '{}' -> '{}' tersimpan di posisi {}", from, to, pos);
+        if (copy) {
+            return 0;   // salinan arsip: tidak ada balasan, tidak ada penanda
+        }
+        balasSurat(s, sfd, 0);
+        notifyNewMail(fd, toId, FLAG_MAIL);
+        return 0;
+    }
+
+    /** Balasan 0x380C: 0 berhasil, 1 gagal database, 2 penerima tak ditemukan. */
+    private static void balasSurat(Session s, int sfd, int hasil) {
+        s.wfifoW(0, 0x380C);
+        s.wfifoW(2, sfd);
+        s.wfifoW(6, hasil);
+        s.wfifoSet(8);
+    }
+
+    /**
+     * mapif_send_newmp(): beri tahu <b>semua</b> map server bahwa seorang
+     * pemain punya kiriman baru — yang bersangkutan mungkin sedang berada di
+     * map server lain.
+     */
+    static int notifyNewMail(int fromFd, long charId, int flags) {
+        byte[] data = new byte[8];
+        data[0] = 0x0D;
+        data[1] = 0x38;
+        data[2] = (byte) (charId & 0xFF);
+        data[3] = (byte) ((charId >> 8) & 0xFF);
+        data[4] = (byte) ((charId >> 16) & 0xFF);
+        data[5] = (byte) ((charId >> 24) & 0xFF);
+        data[6] = (byte) (flags & 0xFF);
+        data[7] = (byte) ((flags >> 8) & 0xFF);
+        return send(fromFd, data, 8, ALL);
     }
 
     /** mapif_parse_auth(): first packet of an incoming map-server link. */
@@ -314,6 +513,9 @@ public final class Mapif {
             case 0x3004: parseSaveChar(fd, false); break;
             case 0x3005: parseLogout(fd); break;
             case 0x3007: parseSaveChar(fd, true); break;
+            case 0x3009: parseShowPosts(fd); break;
+            case 0x300D: parseMailWrite(fd, false); break;
+            case 0x300F: parseMailWrite(fd, true); break;
             default:
                 log.debug("[CHAR] Packet {} not ported yet (see README roadmap)", String.format("0x%04X", cmd));
                 break;

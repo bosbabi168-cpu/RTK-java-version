@@ -147,8 +147,41 @@ public final class MapIntif {
     }
 
     /**
-     * intif_save() / intif_savequit() — kirim karakter untuk disimpan.
-     * Tata letak: W(0)=opcode, L(2)=panjang total, blob@6.
+     * intif_save() / intif_savequit() — simpan pemain yang <b>sedang di
+     * dunia</b>: sinkronkan dulu posisi dan samarannya dari objek hidupnya,
+     * baru kirim blobnya.
+     *
+     * <p>Ini yang dipakai {@code forceSave} dan jalur keluar-dunia. Tanpa
+     * penyegaran itu, posisi yang tersimpan adalah posisi saat pemain
+     * <b>masuk</b> — seluruh perjalanannya hilang.</p>
+     *
+     * <p>⚠️ Pada ragam {@code quit} ada satu cabang yang mudah terlewat:
+     * bila peta tujuan pemain <b>tidak dimuat di server ini</b>, yang
+     * disimpan adalah <b>peta tujuan</b>, bukan posisinya sekarang. Itu
+     * jalur perpindahan antar-map-server (Trek C3): pemain sudah "berangkat"
+     * secara logika meski raganya masih berdiri di peta lama.</p>
+     */
+    public static int saveChar(User sd, boolean quit) {
+        if (sd == null) {
+            return -1;
+        }
+        boolean tujuanDiServerLain = quit && sd.destMap >= 0
+                && MapServer.world.get(sd.destMap) == null;
+        if (tujuanDiServerLain) {
+            sd.status.lastPos = new org.rtk.common.mmo.Point(
+                    sd.destMap, sd.destX, sd.destY);
+        } else {
+            sd.status.lastPos = new org.rtk.common.mmo.Point(sd.m, sd.x, sd.y);
+        }
+        sd.status.disguise = (int) sd.graphicId;
+        sd.status.disguiseColor = (int) sd.graphicColor;
+        return saveChar(sd.status, quit);
+    }
+
+    /**
+     * Bagian kirimnya saja — dipakai bila pemanggilnya sudah menyegarkan
+     * posisi sendiri, atau menyimpan karakter yang tidak sedang di dunia.
+     * <p>Tata letak: W(0)=opcode, L(2)=panjang total, blob@6.</p>
      *
      * @param quit true memakai 0x3007 (simpan + logout), false 0x3004
      */
@@ -170,6 +203,160 @@ public final class MapIntif {
         s.wfifoBytes(6, blob);
         s.wfifoSet(6 + blob.length);
         log.info("[MAP] simpan karakter {} ({} byte){}", c.name, blob.length, quit ? " + logout" : "");
+        return 0;
+    }
+
+    /**
+     * nmail_sendmail() (0x300D) — titipkan surat ke char server.
+     *
+     * <p>Map server <b>tidak</b> menyentuh tabel {@code Mail} sendiri:
+     * pemain penerimanya bisa sedang berada di map server lain, dan char
+     * server yang memegang nama karakter. Panjangnya tetap 4124 byte.</p>
+     *
+     * <p>⚠️ Batasnya dijaga di sini persis seperti C: nama &gt; 16, judul
+     * &gt; 52, atau isi &gt; 4000 karakter membuat suratnya <b>tidak
+     * dikirim sama sekali</b> — bukan dipotong.</p>
+     *
+     * @param copy true mengirim 0x300F (salinan arsip pengirim), yang tidak
+     *             dibalas char server
+     */
+    public static boolean sendMail(User sd, String to, String topic, String body,
+                                   boolean copy) {
+        String tujuan = to == null ? "" : to;
+        String judul = topic == null ? "" : topic;
+        String isi = body == null ? "" : body;
+        if (tujuan.length() > 16 || judul.length() > 52 || isi.length() > 4000) {
+            log.warn("[MAP] surat dari {} ditolak: ladangnya melebihi batas", sd.name());
+            return false;
+        }
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa mengirim surat: belum terhubung ke char server");
+            return false;
+        }
+        s.wfifoW(0, copy ? 0x300F : 0x300D);
+        s.wfifoW(2, sd.fd);
+        s.wfifoStringRaw(4, sd.status.name);
+        s.wfifoStringRaw(20, tujuan);
+        s.wfifoStringRaw(72, judul);
+        s.wfifoStringRaw(124, isi);
+        s.wfifoSet(4124);
+        return true;
+    }
+
+    /**
+     * intif_parse (0x380C): hasil penulisan surat.
+     * 0 berhasil, 1 gagal database, 2 penerima tidak ditemukan.
+     */
+    static int parseMailResult(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(2);
+        int hasil = s.rfifoW(6);
+        User sd = MapServer.onlineChars.get(clientFd);
+        if (sd == null) {
+            return 0;
+        }
+        String pesan = switch (hasil) {
+            case 0 -> "Suratmu terkirim.";
+            case 2 -> "Nama penerima tidak ditemukan.";
+            default -> "Surat gagal dikirim.";
+        };
+        MapServer.clientView.messageToPlayer(sd, 5, pesan);
+        return 0;
+    }
+
+    /**
+     * intif_parse (0x380D): seorang pemain punya kiriman baru.
+     *
+     * <p>Disiarkan char server ke <b>semua</b> map server, karena
+     * penerimanya bisa ada di mana saja. Yang tidak menampung pemain itu
+     * mengabaikannya.</p>
+     */
+    static int parseNewMailFlag(int fd) {
+        Session s = net.session(fd);
+        long charId = s.rfifoL(2) & 0xFFFFFFFFL;
+        int flags = s.rfifoW(6);
+        for (User sd : MapServer.onlineChars.values()) {
+            if (sd.status.id == charId) {
+                sd.flags |= flags;
+                MapServer.clientView.messageToPlayer(sd, 5, "Kamu punya surat baru.");
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * boards_showposts() (0x3009) — minta daftar isi papan dari char server.
+     *
+     * <p>⚠️ Tata letaknya <b>rancangan sendiri</b>, bukan tiruan
+     * {@code struct board_show_0}: kedua ujungnya kode Java kita, dan dump
+     * struct C bergantung pada padding kompilator. Alasan yang sama dengan
+     * blob karakter — lihat {@link org.rtk.map.Boards} dan Peringatan #9.</p>
+     *
+     * <p>Tata letak: [0..1] opcode, [2..3] fd klien, [4..7] id papan,
+     * [8..11] halaman, [12..15] bendera hak akses, [16] penanda popup,
+     * [17] panjang nama, [18..] nama pemain.</p>
+     */
+    public static boolean requestBoard(User sd, int board, int page, int flags,
+                                       boolean popup) {
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa membuka papan: belum terhubung ke char server");
+            return false;
+        }
+        byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoW(0, 0x3009);
+        s.wfifoW(2, sd.fd);
+        s.wfifoL(4, board);
+        s.wfifoL(8, page);
+        s.wfifoL(12, flags);
+        s.wfifoB(16, popup ? 1 : 0);
+        s.wfifoB(17, nama.length);
+        s.wfifoBytes(18, nama);
+        s.wfifoSet(18 + nama.length);
+        return true;
+    }
+
+    /**
+     * intif_parse_showpostresponse() (0x3809) — daftar isi papan datang;
+     * susun jadi paket klien 0x31.
+     *
+     * <p>Balasan char server: [2..5] panjang total, [6..7] fd klien,
+     * [8..11] id papan, [12..15] bendera1, [16..19] bendera2, [20..23]
+     * jumlah kiriman, lalu tiap kiriman: [0] warna, [4] id kiriman,
+     * [8] id gelar, [12] bulan, [16] hari, [20] panjang nama + nama,
+     * lalu panjang judul + judul.</p>
+     */
+    static int parseBoardList(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(6);
+        User sd = MapServer.onlineChars.get(clientFd);
+        if (sd == null) {
+            return 0;
+        }
+        int board = s.rfifoL(8);
+        int flags1 = s.rfifoL(12);
+        int flags2 = s.rfifoL(16);
+        int jumlah = s.rfifoL(20);
+
+        java.util.List<Clif.BoardEntry> isi = new java.util.ArrayList<>();
+        int off = 24;
+        for (int i = 0; i < jumlah; i++) {
+            int warna = s.rfifoL(off);
+            int postId = s.rfifoL(off + 4);
+            int gelar = s.rfifoL(off + 8);
+            int bulan = s.rfifoL(off + 12);
+            int hari = s.rfifoL(off + 16);
+            int nl = s.rfifoB(off + 20) & 0xFF;
+            String penulis = s.rfifoString(off + 21, nl);
+            off += 21 + nl;
+            int tl = s.rfifoB(off) & 0xFF;
+            String judul = s.rfifoString(off + 1, tl);
+            off += 1 + tl;
+            isi.add(new Clif.BoardEntry(warna, postId, gelar, bulan, hari, penulis, judul));
+        }
+        MapServer.clientView.boardListToPlayer(sd, board, flags1, flags2, isi);
         return 0;
     }
 
@@ -220,6 +407,9 @@ public final class MapIntif {
             case 0x3802: parseAuthAdd(fd); break;
             case 0x3803: parseCharLoad(fd); break;
             case 0x3804: parseCheckOnline(fd); break;
+            case 0x3809: parseBoardList(fd); break;
+            case 0x380C: parseMailResult(fd); break;
+            case 0x380D: parseNewMailFlag(fd); break;
             default:
                 log.debug("[MAP] Packet {} not ported yet (see README roadmap)", String.format("0x%04X", cmd));
                 break;

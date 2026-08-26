@@ -82,14 +82,48 @@ public final class MapServer {
     /** Jenis mob + mob yang hidup di server ini. */
     public static final MobRegistry mobs = new MobRegistry();
 
+    /**
+     * Barang yang tergeletak di petak peta (BL_ITEM). Tidak dimuat dari
+     * database — isinya lahir dan lenyap sepanjang server hidup.
+     */
+    public static final FloorItemRegistry floorItems = new FloorItemRegistry();
+
     /** Tampilan barang (itemdb_look / itemdb_lookcolor). */
     public static final org.rtk.map.data.ItemDb itemDb = new org.rtk.map.data.ItemDb();
+
+    /** Klan beserta bank bersamanya (tabel `Clans` + `ClanBanks`). */
+    public static final org.rtk.map.data.ClanDb clanDb = new org.rtk.map.data.ClanDb();
+
+    /** Papan pesan: nama papan (BoardNames) dan gelar penulis (BoardTitles). */
+    public static final org.rtk.map.data.BoardDb boardDb = new org.rtk.map.data.BoardDb();
 
     /** Nama mantra -> id (magicdb_id). */
     public static final org.rtk.map.data.SpellDb spellDb = new org.rtk.map.data.SpellDb();
 
     /** Tabel pengalaman per path, dari db/level_db.txt. */
     public static final org.rtk.map.data.ClassDb classDb = new org.rtk.map.data.ClassDb();
+
+    /**
+     * Jembatan logika permainan -&gt; klien. Tukar isinya untuk mengganti
+     * protokol; logika permainan tidak perlu diubah sama sekali.
+     *
+     * <p>⚠️ Kode logika <b>jangan</b> memanggil {@code Clif.*} langsung —
+     * lewat sini. Lihat {@link ClientView} untuk alasannya.</p>
+     */
+    public static ClientView clientView = new RetroTkClientView();
+
+    /**
+     * Jembatan klien -&gt; logika permainan: apa yang <b>diminta</b> pemain.
+     *
+     * <p>Pasangan masuk dari {@link #clientView}. Protokol baru cukup
+     * menulis pembaca yang memanggil method-method di {@link ClientCommands};
+     * isinya — {@link MapCommands} — tidak perlu disentuh.</p>
+     *
+     * <p>⚠️ Lapisan protokol memanggil ini; lapisan logika
+     * <b>mengimplementasikannya</b>. Arahnya kebalikan dari
+     * {@code clientView}, dan itu yang paling mudah tertukar.</p>
+     */
+    public static ClientCommands commands = new MapCommands();
 
     /** Lapisan jaringan + timer milik map server sendiri. */
     public static final NetServer net = new NetServer("map");
@@ -166,9 +200,36 @@ public final class MapServer {
             spellDb.load(sql);
             mobs.loadTypes(sql);
             mobs.useIdIndex(npcs);   // mob ikut indeks id global (map_addiddb)
+            floorItems.useIdIndex(npcs);   // barang lantai juga (map_additem)
+            classDb.loadPaths(sql);        // kelas -> jalur, untuk powerBoard
+            boardDb.load(sql);             // papan pesan + gelar penulis
+            clanDb.load(sql);              // klan; bank-nya dimuat saat dipakai
             mobs.loadSpawns(sql, serverId, world);
         }
         classDb.load(dbPath);
+    }
+
+    /** map_id2sd(): pemain online dengan id itu, atau null. */
+    public static User userById(long id) {
+        for (User u : onlineChars.values()) {
+            if (u.id == id || u.status.id == id) {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    /** map_name2sd(): pemain online dengan nama itu (abai besar-kecil), atau null. */
+    public static User userByName(String name) {
+        if (name == null) {
+            return null;
+        }
+        for (User u : onlineChars.values()) {
+            if (u.status.name.equalsIgnoreCase(name)) {
+                return u;
+            }
+        }
+        return null;
     }
 
     /**
@@ -176,6 +237,33 @@ public final class MapServer {
      * di {@link NpcRegistry} — namanya menyesatkan, isinya NPC <b>dan</b>
      * mob. Pemain dicari terpisah karena tidak masuk indeks itu.
      */
+    /**
+     * map_id2name(): nama karakter dari id-nya.
+     *
+     * <p>Pemain yang sedang online dijawab dari memori; sisanya ditanyakan
+     * ke tabel {@code Character}. Di C selalu ke database — di sini jalur
+     * memori didahulukan karena paket inventaris memanggilnya untuk
+     * <b>setiap barang bertuan</b> saat pemain masuk.</p>
+     *
+     * <p>Id 0 berarti tanpa pemilik; C mengembalikan {@code "None"} untuk
+     * itu, tetapi pemanggilnya ({@code clif_sendadditem}) sudah memeriksa
+     * nol lebih dulu sehingga teks itu tidak pernah terkirim. Di sini
+     * dikembalikan string kosong supaya perbedaannya tidak bisa bocor.</p>
+     */
+    public static String charName(long id) {
+        if (id == 0) {
+            return "";
+        }
+        for (User u : onlineChars.values()) {
+            if (u.id == id || u.status.id == id) {
+                return u.status.name;
+            }
+        }
+        String nama = sql.queryString(
+                "SELECT `ChaName` FROM `Character` WHERE `ChaId` = ?", id);
+        return nama == null ? "" : nama;
+    }
+
     public static org.rtk.map.data.BlockList blockById(long id) {
         if (npcs != null) {
             org.rtk.map.data.BlockList bl = npcs.byId(id);
@@ -228,6 +316,27 @@ public final class MapServer {
     }
 
     /** check_connect_char(): (re)establish the char-server link. */
+    /**
+     * Satu tik durasi mantra untuk <b>semua</b> pemain online.
+     *
+     * <p>Salinan daftarnya diambil dulu karena kait skrip
+     * ({@code uncast}, {@code while_cast}) boleh membuat pemain keluar
+     * dunia, dan itu mengubah {@code onlineChars} di tengah sapuan.</p>
+     */
+    static int duraTick() {
+        if (scriptEngine == null) {
+            return 0;
+        }
+        for (User sd : new java.util.ArrayList<>(onlineChars.values())) {
+            try {
+                Durations.tick(scriptEngine, sd);
+            } catch (RuntimeException e) {
+                log.error("[DURASI] tik gagal untuk '{}'", sd.status.name, e);
+            }
+        }
+        return 0;
+    }
+
     static int checkConnectChar() {
         if (charFd <= 0 || net.session(charFd) == null) {
             log.info("Attempt to connect to char-server...");
@@ -348,9 +457,9 @@ public final class MapServer {
             return;
         }
         Pc.despawn(world, sd);
-        // simpan + tandai offline lewat char server (0x3007)
-        sd.status.lastPos = new org.rtk.common.mmo.Point(sd.m, sd.x, sd.y);
-        MapIntif.saveChar(sd.status, true);
+        // simpan + tandai offline lewat char server (0x3007); penyegaran
+        // posisi & samaran dilakukan saveChar sendiri
+        MapIntif.saveChar(sd, true);
         log.info("[MAP] {} keluar dari dunia", sd.name());
     }
 
@@ -454,6 +563,12 @@ public final class MapServer {
         // mob_timer_spawns(): tik 50 ms untuk AI mob dan kelahiran ulang
         timers.insert(MobRegistry.TICK_MS, MobRegistry.TICK_MS,
                 (a, b) -> mobs.runTimers(scriptEngine, world), 0, 0);
+        // bl_duratimer(): tik 1 detik untuk durasi & aether mantra, kait
+        // `while_passive` / `while_equipped` / `while_cast`, dan `uncast`
+        // saat durasinya habis. Di C tiap pemain punya timernya sendiri;
+        // di sini satu timer menyapu semua pemain online, karena logika
+        // permainan berjalan di satu thread (lihat Peringatan #8).
+        timers.insert(1000, 1000, (a, b) -> duraTick(), 0, 0);
 
         log.info("RetroTK Map Server (Java skeleton) is ready! Listening at {}.", mapPort);
         ServerLog.addLog("Server Ready! Listening at %d.%n", mapPort);
