@@ -641,7 +641,7 @@ gerbang regresi yang harus selalu hijau:
 | `./run.sh maptest` | 3.544 berkas peta terbaca sesuai format |
 | `./run.sh chartest` | serialisasi karakter (29 assertion) |
 | `./run.sh worldtest` | dunia peta + penempatan pemain (53 assertion) |
-| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap, obrolan & gerakan, durasi mantra (365 assertion) |
+| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap, obrolan & gerakan, durasi mantra, gerak mob (399 assertion) |
 | `./run.sh dbtest` | lapisan database ke MySQL hidup (132 assertion) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -761,11 +761,11 @@ Titik berangkat untuk sesi berikutnya.
 
 | | |
 |---|---|
-| Gerbang regresi | 6/6 hijau (`cliftest` **365** assertion) |
+| Gerbang regresi | 6/6 hijau (`cliftest` **399** assertion) |
 | `logs/map.log` server hidup | **0 ERROR / 0 WARN** |
 | Ketiga server | jalan berdampingan (`./run.sh all`), tautan map↔char stabil |
-| Binding skrip | **79 belum diport** (73 di `sl.c` + 6 salah ketik); global belum diport **1** |
-| Binding yang masih **stub** | tinggal `spawn`, `sendSound`, `updateStatus` |
+| Binding skrip | **78 belum diport** (72 di `sl.c` + 6 salah ketik); global belum diport **1** |
+| Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
 | **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
 
@@ -774,7 +774,9 @@ Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
 `updateState` (434x), `delete`, `refresh`, `sendHealth`, `removeItemSlot`,
 `updatePath`; dan (2) **subsistem durasi & aether mantra**
 (`map/Durations.java`): `setDuration` (423x) plus 15 binding sekeluarga
-dan tik satu detik `bl_duratimer()`.
+dan tik satu detik `bl_duratimer()`; serta (3) `moveGhost` (84x, cara
+hampir seluruh AI mob bergerak) dan `spawn` (381x, jebakan / mob event /
+boss instance), yang bersama-sama **menghabiskan daftar stub**.
 
 ⚠️ **Angka `luaaudit` tidak mengukur pekerjaan ini dengan adil.** Binding
 yang diport dari keadaan *stub* tidak pernah terhitung di audit — bagi
@@ -816,11 +818,16 @@ hanya menulis WARN sekali lalu mengembalikan nil.
 | `setAether` | 225x | ✅ diport 26 Agu |
 | `msg` | 133x | ✅ diport 26 Agu |
 | `delete` | 109x | ✅ diport 26 Agu |
-| `moveGhost` | 84x | **belum diport** — kini yang terbanyak |
-| `dropItem` / `dropItemXY` | 55x | butuh subsistem barang di lantai (BL_ITEM) |
+| `moveGhost` | 84x | ✅ diport 26 Agu |
+| `dropItemXY` / `throw` / `dropItem` / `pickUp` | ~90x | butuh subsistem barang di lantai (BL_ITEM) |
 
-Yang tersisa dan paling menghambat sekarang: **`moveGhost`** (mob berjalan
-di server tapi belum tergambar berpindah di klien) dan **`spawn`**.
+**BL_ITEM kini penghambat terbesar** — satu-satunya subsistem besar yang
+belum ada sama sekali, dan ia sendirian menutup ~95 titik panggilan.
+
+⚠️ Dua jalur yang baru diport **belum pernah berjalan di server hidup**:
+tik durasi dan `moveGhost`. Keduanya hanya menyala untuk pemain yang
+benar-benar online (tik AI mob melewati peta ber-`map.users == 0`), jadi
+butuh klien sungguhan untuk mengujinya.
 
 **3. BL_ITEM (barang di lantai) belum ada sama sekali** — prasyarat
 `dropItem`, penyaring `...WithTraps` yang sungguhan, dan jatuhan mob yang

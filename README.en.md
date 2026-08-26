@@ -644,7 +644,7 @@ there are six regression gates, all of which must stay green:
 | `./run.sh maptest` | 3,544 map files parse correctly |
 | `./run.sh chartest` | character serialisation (29 assertions) |
 | `./run.sh worldtest` | map world + player placement (53 assertions) |
-| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing, chat & actions, spell durations (365 assertions) |
+| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing, chat & actions, spell durations, mob movement (399 assertions) |
 | `./run.sh dbtest` | database layer against live MySQL (132 assertions) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -767,11 +767,11 @@ The starting point for the next session.
 
 | | |
 |---|---|
-| Regression gates | 6/6 green (`cliftest` **365** assertions) |
+| Regression gates | 6/6 green (`cliftest` **399** assertions) |
 | `logs/map.log` on a live server | **0 ERROR / 0 WARN** |
 | All three servers | running side by side (`./run.sh all`), map↔char link stable |
-| Script bindings | **79 not ported** (73 in `sl.c` + 6 typos); globals not ported: **1** |
-| Bindings still **stubbed** | only `spawn`, `sendSound`, `updateStatus` remain |
+| Script bindings | **78 not ported** (72 in `sl.c` + 6 typos); globals not ported: **1** |
+| Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
 
@@ -780,7 +780,9 @@ The 26 August session closed two blocks: (1) bindings that were still
 `updateState` (434x), `delete`, `refresh`, `sendHealth`, `removeItemSlot`,
 `updatePath`; and (2) the **spell duration & aether subsystem**
 (`map/Durations.java`): `setDuration` (423x) plus 15 sibling bindings and
-the one-second `bl_duratimer()` tick.
+the one-second `bl_duratimer()` tick; and (3) `moveGhost` (84x, how
+almost every mob AI moves) and `spawn` (381x, traps / event mobs / instance
+bosses), which together **emptied the stub list**.
 
 ⚠️ **The `luaaudit` number does not measure this work fairly.** A binding
 ported out of a *stub* never counted in the audit to begin with — as far as
@@ -822,11 +824,16 @@ clean: a stub logs one WARN and returns nil.
 | `setAether` | 225x | ✅ ported 26 Aug |
 | `msg` | 133x | ✅ ported 26 Aug |
 | `delete` | 109x | ✅ ported 26 Aug |
-| `moveGhost` | 84x | **not ported** — now the biggest remaining one |
-| `dropItem` / `dropItemXY` | 55x | needs the floor-item subsystem (BL_ITEM) |
+| `moveGhost` | 84x | ✅ ported 26 Aug |
+| `dropItemXY` / `throw` / `dropItem` / `pickUp` | ~90x | needs the floor-item subsystem (BL_ITEM) |
 
-What blocks most now: **`moveGhost`** (mobs walk on the server but the
-client never sees them move) and **`spawn`**.
+**BL_ITEM is now the biggest blocker** — it is the only large subsystem
+still missing entirely, and it alone gates ~95 call sites.
+
+⚠️ Two freshly ported paths have **never run on a live server**: the
+duration tick and `moveGhost`. Both only fire for players who are actually
+online (the mob AI tick skips maps where `map.users == 0`), so a real
+client is needed to exercise them.
 
 **3. BL_ITEM (floor items) does not exist yet** — a prerequisite for
 `dropItem`, for a real `...WithTraps` filter, and for mob drops that are

@@ -716,9 +716,9 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **365** assertion) |
-| Binding skrip | **79** belum diport (73 di `sl.c` + 6 salah ketik) |
-| Binding yang masih **stub** | tinggal `spawn`, `sendSound`, `updateStatus` |
+| Gerbang regresi | 6/6 hijau (`cliftest` **399** assertion) |
+| Binding skrip | **78** belum diport (72 di `sl.c` + 6 salah ketik) |
+| Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
 
@@ -739,6 +739,16 @@ bersuara di layar), `sendAction` (905x, 0x1A), `playSound` (632x),
 `setDuration` (423x) plus 15 binding sekeluarga dan tik satu detik
 `bl_duratimer()`. Ini **logika permainan, bukan protokol**, jadi tetap
 terpakai setelah protokol diganti.
+
+**3. `moveGhost` (84x) dan `spawn` (381x)** — dua penghambat terbesar yang
+tersisa. `moveGhost` (`moveghost_mob`, mob.c:1518) adalah cara hampir
+seluruh AI mob bergerak; `spawn` (`mobspawn_onetime`) melahirkan jebakan,
+mob event, dan boss instance. Ikut lahir: paket benda 0x07 **berkelompok**
+dan `clif_mob_move` (0x0C per-sesi).
+
+Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
+tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
+memanggilnya melempar error yang terlihat di `map.log`.
 
 ⚠️ **Angka luaaudit tidak turun sebanyak pekerjaannya.** Binding yang
 diport dari keadaan *stub* **tidak pernah terhitung** di audit — bagi
@@ -772,17 +782,24 @@ yang benar-benar bergerak ada di kolom "masih stub" di atas.
 
 #### Prasyarat yang masih menggantung
 
-- **Tik durasi belum pernah berjalan dengan pemain sungguhan online.**
-  Kait `while_cast` / `uncast` / `while_equipped` baru terbukti lewat
-  `cliftest`, bukan lewat `map.log` — dan Peringatan #26 justru lahir dari
-  kait timer yang hanya menyala saat server hidup. Ini yang paling layak
-  diperiksa lebih dulu di sesi berikutnya.
-- **`moveGhost` (84x) belum diport** dan kini jadi method belum-diport
-  terbanyak. Ia butuh paket daftar benda 0x07 berkelompok
-  (`clif_mob_look_start/close`), bukan versi satu-benda yang sudah ada.
-- **BL_ITEM masih belum ada**, jadi `dropItem`/`dropItemXY` (55x gabungan)
-  tetap tertutup, dan penyaring `...WithTraps` masih identik dengan varian
-  biasa.
+⚠️ **Dua jalur baru belum pernah berjalan di server hidup, dan keduanya
+butuh pemain sungguhan online:**
+
+- **Tik durasi** — kait `while_cast` / `uncast` / `while_equipped` hanya
+  menyala untuk pemain yang online; tanpa pemain, `duraTick()` menyapu
+  daftar kosong.
+- **`moveGhost`** — tik AI mob **melewati peta tanpa pemain**
+  (`map.users == 0`), jadi tidak satu pun dari 1.175 mob bergerak saat
+  server diuji sendirian.
+
+Keduanya baru terbukti lewat `cliftest`. Peringatan #26 lahir persis dari
+kait timer yang hanya menyala saat server hidup, jadi **ini yang paling
+layak diperiksa lebih dulu** begitu ada klien yang bisa masuk.
+
+- **BL_ITEM masih belum ada**, dan kini ia **penghambat terbesar**: 
+  `dropItemXY` (37x), `throw` (23x), `dropItem` (18x), `pickUp` (12x) plus
+  `forceDrop`, `throwItem`, `addTrapSpotters`/`getTrapSpotters` bergantung
+  padanya, dan penyaring `...WithTraps` masih identik dengan varian biasa.
 
 **Pemain sungguhan masuk dunia untuk pertama kalinya** setelah empat bug
 ditutup — semuanya lolos dari 294 assertion `cliftest`, dan semuanya
@@ -1103,34 +1120,72 @@ NPC **dan** mob.
 
 ---
 
-#### Prioritas sekarang (setelah Trek A)
+#### Prioritas sekarang — 26 Agustus 2026 (sore)
 
-> Daftar penuh beserta angka terkini ada di **"STATUS TERAKHIR —
-> 24 Agustus 2026"** di bagian atas. Ringkasannya:
+> Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
+> pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
+> sudah berubah.** 72 method masih ada di `sl.c` tapi belum diport, plus 6
+> yang tidak ada di mana pun (salah ketik / kode mati).
 
-1. **Uji dengan klien RetroTK asli** — satu-satunya penghambat nyata,
-   tidak butuh kode baru, **belum pernah berhasil login**.
-2. **Tik durasi dengan pemain sungguhan online** — kait `while_cast` /
-   `uncast` / `while_equipped` baru terbukti lewat `cliftest`. Peringatan
-   #26 lahir persis dari kait timer yang hanya menyala saat server hidup.
-3. **`moveGhost` (84x)** — method belum-diport terbanyak sekarang; mob
-   berjalan tapi belum tergambar berpindah pada klien. Butuh paket daftar
-   benda 0x07 berkelompok (`clif_mob_look_start`/`_close`), bukan versi
-   satu-benda yang sudah ada.
-4. **`spawn` (381x)** — satu-satunya stub besar yang tersisa; butuh
-   `mobspawn_onetime`.
-5. **BL_ITEM (barang di lantai)** — belum ada sama sekali; prasyarat
-   `dropItem` dan jatuhan mob yang terlihat di tanah.
-6. **C4 papan pesan & surat** — murni protokol char server
-   (0x3009–0x300F) dengan tabel yang sudah ada. Bisa diuji offline.
-7. **C2 berkas meta** dan **C3 warp antar-map-server** — bisa dibangun,
-   tapi **tidak bisa dibuktikan benar tanpa klien**, jadi kerjakan
-   bersamaan dengan butir 1.
+**1. BL_ITEM — barang di lantai.** Penghambat terbesar sekarang, dan
+satu-satunya subsistem besar yang belum ada sama sekali. Membukanya
+sekaligus: `dropItemXY` (37x), `throw` (23x), `dropItem` (18x), `pickUp`
+(12x), `forceDrop`, `throwItem`, `addTrapSpotters`/`getTrapSpotters` —
+~95 titik panggilan. Juga membuat `getObjectsInCellWithTraps` benar-benar
+berbeda dari varian biasa, dan membuat jatuhan mob terlihat di tanah.
+Cabang `BL_ITEM` sudah ditulis di `clif_object_look_sub`; tinggal
+menyediakan bendanya.
 
-⚠️ Ambil prioritas binding dari **`map.log` server yang berjalan**, bukan
-dari jumlah pemakaian di korpus — putaran 24 Agustus 2026 membuktikan yang
-benar-benar dipanggil saat server hidup berbeda dari yang paling banyak
-tertulis di skrip.
+**2. Inventaris & perlengkapan.** `updateInv` (24x, `pc_loaditem`),
+`pickUp` (12x), `stripEquip` (9x), `hasEquipped` (6x), keluarga
+`deductDura*`/`deductArmor`/`deductWeapon` (6x), `forceEquip`, `takeOff`,
+`refreshInventory`, `hasItemDura`, `checkInvBod`, `expireItem` — ~65 titik.
+Butuh paket kirim-inventaris yang belum ada.
+
+**3. Gerak mob lanjutan.** `moveIntent` (11x), `checkMove` (9x),
+`moveIgnoreObject` (3x). **Murah sekarang**, karena seluruh mesin
+`moveGhost` sudah berdiri; ketiganya varian dari fungsi yang sama.
+
+**4. Buku mantra.** `getSpells` (7x), `getSpellName` (4x),
+`getSpellNameFromYName` (4x), `getUnknownSpells` (4x), `getSpellYName`
+(3x), `getAllClassSpells` (1x), `addHealth` (4x). **Juga murah** —
+`SpellDb` sudah memuat identifier, description, ticker, dan dispel;
+tinggal kolom kelas/level.
+
+**5. Tampilan & timer.** `changeView` (22x), `setTimer` (11x), `guitext`
+(12x), `selfAnimation`/`selfAnimationXY` (19x), `paperpopup` (7x),
+`lock`/`unlock` (12x, `lock` juga satu-satunya global belum diport),
+`speak` (6x), `sendURL` (4x), `testPacket` (4x). Sebagian besar paket
+murni — nilainya rendah bila protokol memang akan diganti, kecuali
+`setTimer` dan `lock`/`unlock` yang logika.
+
+**6. C4 — papan pesan & surat.** `sendMail`, `updateMail`, `sendParcel`
+(5x), `getParcel`, `removeParcel`, `getParcelList`, `showBoard`,
+`sendBoardQuestions`, `powerBoard`, `addGift`, `retrieveGift` — ~25 titik,
+plus protokol char server 0x3009–0x300F. Tabelnya (`Boards`,
+`BoardTitles`, `Mail`, `Parcels`) sudah ada, dan **bisa diuji offline**
+seperti gerbang regresi lain.
+
+**7. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
+`getClanBankItems`/`getSubpathBankItems`/`getBankItems` — 5 titik, dan
+logika bank utamanya sudah ada. Murah.
+
+**8. Sisa administratif.** `forceSave` (15x, `intif_save`), `setAccountBan`,
+`setHeroShow`, `setCaptchaKey`/`getCaptchaKey`, `addActivationKey`/
+`checkActivationKey`, `mapSelection`, `checkLevel`, `getPK`,
+`setIndDmg`/`setGrpDmg`.
+
+**9. Enam nama yang TIDAK ADA di mana pun** (`addGMSpells`, `bowShoot`,
+`buyCustom`, `hairFaceMenu`, `returnInn`, `totemName`) — salah ketik atau
+kode mati di konten. Diputuskan satu per satu, catat di
+`luascript/PERUBAHAN.md`; jangan diport.
+
+⚠️ Ambil prioritas binding dari **`map.log` server yang berjalan** bila
+memungkinkan, bukan dari jumlah pemakaian di korpus — putaran 24 Agustus
+2026 membuktikan yang benar-benar dipanggil saat server hidup berbeda dari
+yang paling banyak tertulis di skrip. Sekarang syaratnya lebih berat:
+setelah daftar stub habis, jalur yang tersisa (durasi, AI mob) **butuh
+pemain online** untuk menyala sama sekali.
 
 #### Trek B — aset & tooling (paralel)
 
