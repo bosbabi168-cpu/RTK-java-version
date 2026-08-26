@@ -129,7 +129,7 @@ proses build di server.
   `./run.sh worldtest` (dunia peta + penempatan pemain, 53 assertion),
   `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar
   ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
-  durasi mantra, gerak mob, barang lantai — **434 assertion**),
+  durasi mantra, gerak mob, barang lantai — **450 assertion**),
   `./run.sh dbtest` (lapisan database ke MySQL hidup — 132 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
@@ -646,6 +646,30 @@ byte-identik dengan `rtklua/`.
    ketiganya adalah kesalahan yang wajar tapi tetap salah. Lihat cabang
    BL_ITEM di `Clif.objectLook`.
 
+35. **Tiga varian gerak mob yang TIDAK boleh diseragamkan.** Di C ketiganya
+   berdiri dari badan yang sama, tetapi masing-masing membuang bagian yang
+   berbeda — dan namanya tidak membantu:
+   - **`moveGhost`** (`moveghost_mob`) — langkah penuh. Mob yang sedang
+     mengejar (`target != 0`) **menembus penghalang**.
+   - **`moveIgnoreObject`** (`move_mob_ignore_object`) — salinan utuh
+     `moveghost_mob` dengan satu blok **dikomentari**: cek tembok dan benda.
+     Jadi ia menembus segalanya, **tetapi portal tetap menghentikannya**,
+     karena penjaga portal ada di atas blok yang dikomentari itu.
+   - **`checkMove`** (`mobl_checkmove`) — hanya bertanya, tidak melangkah.
+     Petak tujuannya dihitung sederhana (±1), tanpa perhitungan jalur
+     pandang. ⚠️ **Pengecualian `target` TIDAK berlaku di sini**, jadi
+     jawabannya bisa berbeda dari apa yang benar-benar terjadi kalau
+     `moveGhost` dipanggil. Itu di C, bukan kelalaian.
+
+   Dan yang paling menyesatkan: **`moveIntent` tidak pernah memindahkan mob
+   sama sekali.** Seluruh badan yang menggerakkannya dikomentari di sumber
+   C; yang tersisa hanya "kalau sasaran bersebelahan, putar menghadapnya dan
+   kembalikan 1". Skrip memakainya sebagai "sudah cukup dekat untuk
+   menyerang?", bukan sebagai perintah jalan.
+
+   Catatan kecil: `mob->canmove` **namanya terbalik dari artinya** —
+   nilai 1 berarti TIDAK boleh melangkah.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -763,8 +787,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **434** assertion) |
-| Binding skrip | **73** belum diport (67 di `sl.c` + 6 salah ketik) |
+| Gerbang regresi | 6/6 hijau (`cliftest` **450** assertion) |
+| Binding skrip | **70** belum diport (64 di `sl.c` + 6 salah ketik) |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -796,6 +820,11 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**5. Gerak mob lanjutan** — `moveIntent` (11x), `checkMove` (9x),
+`moveIgnoreObject` (3x). Ketiganya varian dari mesin `moveGhost` yang sudah
+berdiri, jadi murah; tapi ketiganya punya perbedaan halus yang mudah
+diseragamkan secara keliru (Peringatan #35).
 
 **4. BL_ITEM — barang di lantai** (`map/FloorItem`, `map/FloorItemRegistry`).
 Subsistem besar terakhir yang belum ada sama sekali. Membuka `dropItemXY`
@@ -1177,7 +1206,7 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 67 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 64 method masih ada di `sl.c` tapi belum diport, plus 6
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
@@ -1190,40 +1219,40 @@ melempar barang) dan `sd->pickuptype`.
 `refreshInventory`, `hasItemDura`, `checkInvBod`, `expireItem` — ~65 titik.
 Butuh paket kirim-inventaris yang belum ada.
 
-**2. Gerak mob lanjutan.** `moveIntent` (11x), `checkMove` (9x),
-`moveIgnoreObject` (3x). **Murah sekarang**, karena seluruh mesin
-`moveGhost` sudah berdiri; ketiganya varian dari fungsi yang sama.
+~~**2. Gerak mob lanjutan.**~~ **SELESAI 26 Agustus 2026 (malam).**
+Ketiganya memang varian dari mesin yang sama — lihat Peringatan #35 untuk
+tiga perbedaan halus yang mudah diseragamkan secara keliru.
 
-**3. Buku mantra.** `getSpells` (7x), `getSpellName` (4x),
+**2. Buku mantra.** `getSpells` (7x), `getSpellName` (4x),
 `getSpellNameFromYName` (4x), `getUnknownSpells` (4x), `getSpellYName`
 (3x), `getAllClassSpells` (1x), `addHealth` (4x). **Juga murah** —
 `SpellDb` sudah memuat identifier, description, ticker, dan dispel;
 tinggal kolom kelas/level.
 
-**4. Tampilan & timer.** `changeView` (22x), `setTimer` (11x), `guitext`
+**3. Tampilan & timer.** `changeView` (22x), `setTimer` (11x), `guitext`
 (12x), `selfAnimation`/`selfAnimationXY` (19x), `paperpopup` (7x),
 `lock`/`unlock` (12x, `lock` juga satu-satunya global belum diport),
 `speak` (6x), `sendURL` (4x), `testPacket` (4x). Sebagian besar paket
 murni — nilainya rendah bila protokol memang akan diganti, kecuali
 `setTimer` dan `lock`/`unlock` yang logika.
 
-**5. C4 — papan pesan & surat.** `sendMail`, `updateMail`, `sendParcel`
+**4. C4 — papan pesan & surat.** `sendMail`, `updateMail`, `sendParcel`
 (5x), `getParcel`, `removeParcel`, `getParcelList`, `showBoard`,
 `sendBoardQuestions`, `powerBoard`, `addGift`, `retrieveGift` — ~25 titik,
 plus protokol char server 0x3009–0x300F. Tabelnya (`Boards`,
 `BoardTitles`, `Mail`, `Parcels`) sudah ada, dan **bisa diuji offline**
 seperti gerbang regresi lain.
 
-**6. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
+**5. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
 `getClanBankItems`/`getSubpathBankItems`/`getBankItems` — 5 titik, dan
 logika bank utamanya sudah ada. Murah.
 
-**7. Sisa administratif.** `forceSave` (15x, `intif_save`), `setAccountBan`,
+**6. Sisa administratif.** `forceSave` (15x, `intif_save`), `setAccountBan`,
 `setHeroShow`, `setCaptchaKey`/`getCaptchaKey`, `addActivationKey`/
 `checkActivationKey`, `mapSelection`, `checkLevel`, `getPK`,
 `setIndDmg`/`setGrpDmg`.
 
-**8. Enam nama yang TIDAK ADA di mana pun** (`addGMSpells`, `bowShoot`,
+**7. Enam nama yang TIDAK ADA di mana pun** (`addGMSpells`, `bowShoot`,
 `buyCustom`, `hairFaceMenu`, `returnInn`, `totemName`) — salah ketik atau
 kode mati di konten. Diputuskan satu per satu, catat di
 `luascript/PERUBAHAN.md`; jangan diport.

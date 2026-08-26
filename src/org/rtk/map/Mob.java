@@ -57,6 +57,16 @@ public final class Mob extends BlockList
     public long target;
 
     /**
+     * {@code mob->canmove}: penanda "langkah berikutnya terhalang", diisi
+     * sapuan {@code mob_move} pada petak tujuan. Dinolkan tiap kali
+     * {@code move_mob_intent} dipanggil.
+     *
+     * <p>⚠️ Namanya terbalik dari artinya: {@code canmove == 1} berarti
+     * <b>TIDAK</b> boleh melangkah.</p>
+     */
+    public boolean canMove;
+
+    /**
      * Id pemain yang terakhir melukai mob ini ({@code mob->attacker} di C).
      *
      * <p>Dipakai saat mob mati: dialah yang menerima jatuhan barang dan

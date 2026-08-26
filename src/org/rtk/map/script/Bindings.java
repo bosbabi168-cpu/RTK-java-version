@@ -1164,6 +1164,37 @@ final class Bindings {
             boolean pindah = org.rtk.map.MapServer.mobs.moveGhost(engine, mb);
             return LuaValue.valueOf(pindah ? 1 : 0);
         });
+
+        /**
+         * mobl_move_ignore_object() — melangkah sambil menembus tembok dan
+         * benda. Portal <b>tetap</b> menghentikannya.
+         */
+        klass.addMethod("moveIgnoreObject", (self, args) ->
+                LuaValue.valueOf(self instanceof org.rtk.map.Mob mb
+                        && org.rtk.map.MapServer.mobs.moveIgnoreObject(engine, mb)));
+
+        /**
+         * mobl_checkmove() — bolehkah mob maju satu petak ke arah yang
+         * dihadapinya? Tidak menggerakkan apa pun.
+         */
+        klass.addMethod("checkMove", (self, args) ->
+                LuaValue.valueOf(self instanceof org.rtk.map.Mob mb
+                        && org.rtk.map.MapServer.mobs.checkMove(mb)));
+
+        /**
+         * mobl_moveintent(idSasaran) — hadapkan mob ke sasaran bila
+         * bersebelahan. <b>Tidak memindahkan mob</b>; lihat catatan di
+         * {@code MobRegistry.moveIntent}.
+         */
+        klass.addMethod("moveIntent", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.valueOf(0);
+            }
+            org.rtk.map.data.BlockList sasaran =
+                    org.rtk.map.MapServer.blockById((long) args.optdouble(2, 0));
+            return LuaValue.valueOf(
+                    org.rtk.map.MapServer.mobs.moveIntent(mb, sasaran) ? 1 : 0);
+        });
     }
 
     /**

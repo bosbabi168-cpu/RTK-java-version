@@ -496,6 +496,66 @@ public final class ClifTest {
                 reg.moveGhost(null, mb) && mb.x == px + 1);
         mb.target = 0;
 
+        // ⚠️ Blok ini WAJIB berjalan sebelum uji portal di bawah: begitu
+        // portal dipasang di (px+1, py), setiap langkah ke sana berhenti di
+        // penjaga portal dan uji tabrakan lulus karena alasan yang salah.
+        // Persis jebakan yang sama sudah sekali kejadian di berkas ini.
+        // --- checkMove: uji coba, TANPA memindahkan mob ---
+        placeAt(map, sd, px + 1, py);       // pemain menghalangi
+        map.moveBlock(mb, px, py);
+        mb.side = 1;                        // menghadap pemain
+        mb.target = 0;
+        check("checkMove: terhalang pemain -> false", !reg.checkMove(mb));
+        check("checkMove: tidak memindahkan mob", mb.x == px && mb.y == py);
+
+        // ⚠️ Beda halus yang disengaja: moveGhost MEMBIARKAN mob ber-target
+        // menembus penghalang, tapi checkMove tetap menjawab "tidak boleh".
+        mb.target = sd.id;
+        check("checkMove: pengecualian `target` TIDAK berlaku di sini",
+                !reg.checkMove(mb));
+        check("moveGhost: sedangkan moveGhost tetap menembusnya",
+                reg.moveGhost(null, mb) && mb.x == px + 1);
+        mb.target = 0;
+
+        placeAt(map, sd, c[0], c[1]);
+        map.moveBlock(mb, px, py);
+        mb.side = 1;
+        check("checkMove: petak kosong -> true", reg.checkMove(mb));
+        check("checkMove: tetap tidak memindahkan apa pun", mb.x == px);
+
+        // --- moveIgnoreObject: menembus penghalang, portal tetap menahan ---
+        placeAt(map, sd, px + 1, py);
+        map.moveBlock(mb, px, py);
+        mb.side = 1;
+        mb.target = 0;
+        check("moveIgnoreObject: menembus pemain yang menghalangi",
+                reg.moveIgnoreObject(null, mb) && mb.x == px + 1);
+        placeAt(map, sd, c[0], c[1]);
+
+        // --- moveIntent: MENGHADAP, bukan berjalan ---
+        map.moveBlock(mb, px + 1, py);
+        placeAt(map, sd, px + 2, py);       // pemain tepat di sebelah kanan
+        mb.side = 0;                        // menghadap atas
+        drain(s);
+        check("moveIntent: sasaran bersebelahan -> true",
+                reg.moveIntent(mb, sd));
+        check("moveIntent: mob BERPUTAR menghadap sasaran", mb.side == 1);
+        check("moveIntent: mob TIDAK berpindah", mb.x == px + 1 && mb.y == py);
+        check("moveIntent: perubahan arah disiarkan",
+                splitPackets(drain(s)).stream().anyMatch(o -> o[0] == 0x11));
+
+        drain(s);
+        check("moveIntent: dipanggil lagi tetap true", reg.moveIntent(mb, sd));
+        check("moveIntent: arah tidak berubah -> tidak menyiarkan apa pun",
+                drain(s).length == 0);
+
+        placeAt(map, sd, c[0], c[1]);       // pemain jauh
+        int arahSebelum = mb.side;
+        check("moveIntent: sasaran jauh -> false", !reg.moveIntent(mb, sd));
+        check("moveIntent: sasaran jauh tidak mengubah arah",
+                mb.side == arahSebelum);
+        check("moveIntent: sasaran null -> false", !reg.moveIntent(mb, null));
+
         // --- portal menghentikan langkah, bahkan saat mengejar ---
         placeAt(map, sd, c[0], c[1]);
         map.moveBlock(mb, px, py);

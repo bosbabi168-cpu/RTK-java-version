@@ -519,6 +519,44 @@ public final class MobRegistry {
      * @return true bila mob benar-benar berpindah
      */
     public boolean moveGhost(org.rtk.map.script.ScriptEngine engine, Mob mob) {
+        return langkah(engine, mob, false);
+    }
+
+    /**
+     * move_mob_ignore_object() (map/mob.c:1330) — <b>persis</b>
+     * {@link #moveGhost}, hanya tanpa cek tabrakan.
+     *
+     * <p>Di C kedua fungsi itu disalin utuh; bedanya cuma satu blok yang
+     * <b>dikomentari</b> di versi ini:</p>
+     *
+     * <pre>{@code
+     * /*if((map_canmove(m,dx,dy)==1) || (mob->canmove==1)) {
+     *     mob->canmove=0;
+     *     return 0;
+     * }*&#47;
+     * }</pre>
+     *
+     * <p>Jadi mob menembus tembok <b>dan</b> benda lain — tapi
+     * <b>portal tetap menghentikannya</b>, karena penjaga portal ada di atas
+     * blok yang dikomentari itu. Dipakai skrip untuk hantu dan mob yang
+     * sengaja boleh lewat mana saja.</p>
+     *
+     * <p>⚠️ Sapuan {@code mob_move} tetap dijalankan di C dan hasilnya
+     * ditampung {@code cm = mob->canmove;} yang <b>tidak pernah dibaca</b> —
+     * kode mati. Tidak ditiru.</p>
+     */
+    public boolean moveIgnoreObject(org.rtk.map.script.ScriptEngine engine, Mob mob) {
+        return langkah(engine, mob, true);
+    }
+
+    /**
+     * Badan bersama {@code moveghost_mob} dan {@code move_mob_ignore_object}.
+     *
+     * @param abaikanTabrakan true = versi tembus segalanya; portal tetap
+     *                        menghentikan langkah pada kedua versi
+     */
+    private boolean langkah(org.rtk.map.script.ScriptEngine engine, Mob mob,
+                            boolean abaikanTabrakan) {
         if (mob == null || mob.state == MobData.MOB_DEAD) {
             return false;
         }
@@ -661,8 +699,9 @@ public final class MobRegistry {
         }
 
         // Mob yang sedang mengejar sasaran menembus penghalang — di C ketiga
-        // cek tabrakan bersyarat `&& mob->target == 0`.
-        if (mob.target == 0
+        // cek tabrakan bersyarat `&& mob->target == 0`. Versi
+        // move_mob_ignore_object melewati seluruh blok ini.
+        if (!abaikanTabrakan && mob.target == 0
                 && (NpcRegistry.blockedBy(map, dx, dy, mob) || !map.walkable(dx, dy))) {
             return false;
         }
@@ -699,6 +738,101 @@ public final class MobRegistry {
                 adaPetakBaru ? y0 + (y1 - 1) : -1);
 
         trapLook(engine, map, mob);
+        return true;
+    }
+
+    /**
+     * mobl_checkmove() — <b>uji coba</b> langkah berikutnya tanpa benar-benar
+     * melangkah: bolehkah mob maju satu petak ke arah yang dihadapinya?
+     *
+     * <p>Dipakai AI skrip untuk memutuskan berbelok sebelum menabrak.</p>
+     *
+     * <p>⚠️ <b>Dua beda halus dari {@link #moveGhost}, dan keduanya ada di
+     * C:</b></p>
+     * <ul>
+     *   <li>Petak tujuannya dihitung <b>sederhana</b> (±1 menurut arah),
+     *       tanpa perhitungan jalur pandang yang rumit itu — jadi tidak ada
+     *       cabang {@code nothingnew} di sini sama sekali.</li>
+     *   <li><b>Tidak ada pengecualian untuk mob yang sedang mengejar.</b>
+     *       {@code moveGhost} membiarkan mob ber-{@code target} menembus
+     *       penghalang, tetapi {@code checkMove} tetap menjawab "tidak
+     *       boleh". Jadi jawabannya bisa <b>berbeda</b> dari apa yang
+     *       sebenarnya terjadi kalau {@code moveGhost} dipanggil — itu di C,
+     *       bukan kelalaian port.</li>
+     * </ul>
+     */
+    public boolean checkMove(Mob mob) {
+        if (mob == null || mob.state == MobData.MOB_DEAD) {
+            return false;
+        }
+        MapData map = MapServer.world.get(mob.m);
+        if (map == null) {
+            return false;
+        }
+        int dx = mob.x;
+        int dy = mob.y;
+        switch (mob.side) {
+            case 0 -> dy -= 1;
+            case 1 -> dx += 1;
+            case 2 -> dy += 1;
+            case 3 -> dx -= 1;
+            default -> {
+                // arah tak sah tidak menggeser apa pun — lihat Peringatan #13
+            }
+        }
+        if (dx >= map.xs) {
+            dx = map.xs - 1;
+        }
+        if (dy >= map.ys) {
+            dy = map.ys - 1;
+        }
+        if (map.warpAt(dx, dy) != null) {
+            return false;
+        }
+        return !NpcRegistry.blockedBy(map, dx, dy, mob) && map.walkable(dx, dy);
+    }
+
+    /**
+     * move_mob_intent() (map/mob.c:2270) — <b>hadapkan</b> mob ke sasaran
+     * bila sasarannya tepat di sebelahnya.
+     *
+     * <p>⚠️ <b>Namanya menjanjikan gerakan, tapi ia tidak pernah bergerak.</b>
+     * Seluruh badan yang memindahkan mob <b>dikomentari</b> di sumber C;
+     * yang tersisa hanya: kalau sasaran bersebelahan (persis satu petak,
+     * lurus), putar menghadapnya dan kembalikan 1; selain itu kembalikan 0
+     * tanpa melakukan apa pun. Skrip AI memakainya sebagai "sudah cukup
+     * dekat untuk menyerang?", bukan sebagai perintah jalan.</p>
+     *
+     * <p>Siaran arah hanya dikirim bila arahnya <b>benar-benar berubah</b>.</p>
+     *
+     * @return true bila sasaran bersebelahan
+     */
+    public boolean moveIntent(Mob mob, org.rtk.map.data.BlockList sasaran) {
+        if (mob == null || sasaran == null) {
+            return false;
+        }
+        mob.canMove = false;
+        int ax = Math.abs(mob.x - sasaran.x);
+        int ay = Math.abs(mob.y - sasaran.y);
+        if (!((ax == 0 && ay == 1) || (ax == 1 && ay == 0))) {
+            return false;
+        }
+        int arahLama = mob.side;
+        if (mob.x < sasaran.x) {
+            mob.side = 1;
+        }
+        if (mob.x > sasaran.x) {
+            mob.side = 3;
+        }
+        if (mob.y < sasaran.y) {
+            mob.side = 2;
+        }
+        if (mob.y > sasaran.y) {
+            mob.side = 0;
+        }
+        if (arahLama != mob.side) {
+            MapServer.clientView.objectSideChanged(mob);
+        }
         return true;
     }
 
