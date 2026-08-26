@@ -1220,7 +1220,7 @@ RogueTrainerNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "lockpick" then
+		if speech == "congkel kunci" then
 			if npc.mapTitle == "Maso Sanctum" or npc.mapTitle == "Kwi-Sin Maso" or npc.mapTitle == "Ming-Ken Maso" or npc.mapTitle == "Ohaeng Maso" then
 				Tools.checkKarma(player)
 
@@ -1268,9 +1268,9 @@ RogueTrainerNpc = {
 					)
 				end
 			end
-		elseif speech == "quest" or speech == "minor" or speech == "minor quest" then
+		elseif speech == "misi" or speech == "kecil" or speech == "misi kecil" then
 			MinorQuest.quest(player, npc)
-		elseif speech == "complete" or speech "complete quest" then
+		elseif speech == "selesai" or speech "complete quest" then
 			MinorQuest.complete(player, npc)
 		end
 	end),

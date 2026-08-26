@@ -9,7 +9,7 @@ smelting = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "smelt" then
+		if speech == "lebur" then
 			local ore = {graphic = convertGraphic(721, "item"), color = 0}
 			local metal = {graphic = convertGraphic(291, "item"), color = 0}
 			player.npcGraphic = ore.graphic

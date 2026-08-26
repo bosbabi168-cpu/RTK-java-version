@@ -48,8 +48,8 @@ SplinterNpc = {
 			player:dialogSeq(
 				{
 					"A fine skill. Sure, you can make any armor, or those so-called 'superior' metal weapons. But we woodworkers are much more versatile.",
-					"Woodworking allows you to make wooden weapons and arrows. Also, woodworking is needed to make weaving tools. When you're ready, just tell me 'wood'.",
-					"If you do poor work, you'll end up with wood scraps. Show them to me, ask me about 'scraps' and we'll see what we can salvage."
+					"Pertukangan kayu memungkinkanmu membuat senjata kayu dan anak panah. Selain itu, pertukangan kayu dibutuhkan untuk membuat alat tenun. Kalau kau sudah siap, katakan saja 'kayu' padaku.",
+					"Kalau kerjamu buruk, yang tersisa cuma rongsokan kayu. Tunjukkan padaku, tanyakan 'rongsokan' dan kita lihat apa yang masih bisa diselamatkan."
 				},
 				0
 			)
@@ -116,11 +116,11 @@ SplinterNpc = {
 		Tools.configureDialog(player, npc)
 		local speech = string.lower(player.speech)
 
-		if speech == "wood" or speech == "scrap" or speech == "scraps" then
+		if speech == "kayu" or speech == "rongsokan" or speech == "rongsokan" then
 			crafting.craftingDialog(player, npc, speech)
 		end
 
-		if (speech == "waypoint" and not Waypoint.isEnabled(player, _waypointId)) then
+		if (speech == "titik jalan" and not Waypoint.isEnabled(player, _waypointId)) then
 			Waypoint.add(player, npc, _waypointId)
 			return
 		end

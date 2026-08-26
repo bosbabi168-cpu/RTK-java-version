@@ -17,13 +17,13 @@ ChuRuaRabbitNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if (speech == "hello") then
+		if (speech == "halo") then
 			Tools.checkKarma(player)
 
 			player:dialogSeq({t, "Hmmm..", "What is it you want?"}, 1)
 		end
 
-		if (speech == "tiger") then
+		if (speech == "harimau") then
 			Tools.checkKarma(player)
 
 			npc:talk(2, "Fool was I to go north for ginseng. He almost ate me!")

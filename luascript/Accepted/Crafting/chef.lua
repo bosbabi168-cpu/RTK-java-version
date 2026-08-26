@@ -14,7 +14,7 @@ chef = {
 
 		-- food preparation
 
-		if speech == "prepare noodles" then
+		if speech == "siapkan mi" then
 			local tNoodle = {graphic = convertGraphic(225, "item"), color = 0}
 
 			local isAccomplished = crafting.checkSkillLevel(

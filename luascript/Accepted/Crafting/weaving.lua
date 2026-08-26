@@ -9,7 +9,7 @@ weaving = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "weave" then
+		if speech == "tenun" then
 			if player:hasItem("weaving_tools", 1) ~= true and player:hasItem("fine_weaving_tools", 1) ~= true then
 				player:dialogSeq(
 					{t, "Without suitable tools, this is an impossible task."},

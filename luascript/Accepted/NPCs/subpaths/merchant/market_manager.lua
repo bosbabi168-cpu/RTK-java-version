@@ -11,7 +11,7 @@ MarketManagerNpc = {
 
 		local speech = string.lower(player.speech)
 
-		if speech == "special deal" and npc.mapTitle == "Nagnang Marketplace" and player.quest[
+		if speech == "penawaran khusus" and npc.mapTitle == "Nagnang Marketplace" and player.quest[
 			"spy_trials"
 		] == 6 then
 			player.quest["underground_casino_quest"] = 0

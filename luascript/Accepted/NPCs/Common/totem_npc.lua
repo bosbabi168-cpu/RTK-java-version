@@ -432,12 +432,12 @@ local _onSayClick = function(player, npc, totemIndex)
 
 	local speech = string.lower(player.speech)
 
-	if (speech == "forgive" or speech == "forgiveness") then
+	if (speech == "maafkan" or speech == "pengampunan") then
 		_forgiveCheck(player, npc)
 		return
 	end
 
-	if (totemIndex == 3 and speech == "chung ryong's might" or speech == "might") then
+	if (totemIndex == 3 and speech == "chung ryong's might" or speech == "kekuatan") then
 		_baekduCheck(player)
 		return
 	end

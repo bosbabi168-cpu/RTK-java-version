@@ -75,7 +75,7 @@ YonNpc = {
 			{
 				"I would be happy to tell you about weaving! Weaving requires three things: steady hands, some wool, and good weaving equipment.",
 				"You can get wool from sheep.\nYou'll have to see a woodworker in order to acquire your own weaving tools, but I can loan you the rest of the things you need. As for the steady hands, those come with practice.",
-				"Just say 'weave' to me when you're ready to give it a try!"
+				"Katakan saja 'tenun' padaku kalau kau sudah siap mencobanya!"
 			},
 			0
 		)
@@ -133,7 +133,7 @@ YonNpc = {
 		local yonDialog = Tools.configureDialog(player, npc)
 		local speech = string.lower(player.speech)
 
-		if speech == "weave" then
+		if speech == "tenun" then
 			Tools.checkKarma(player)
 
 			local item = Item("wool")
@@ -220,7 +220,7 @@ YonNpc = {
 			return
 		end
 
-		if speech == "twine" then
+		if speech == "benang" then
 			Tools.checkKarma(player)
 
 			if player.quest["wool_twine"] == 1 then
@@ -252,7 +252,7 @@ YonNpc = {
 			return
 		end
 
-		if (speech == "waypoint" and not Waypoint.isEnabled(player, _waypointId)) then
+		if (speech == "titik jalan" and not Waypoint.isEnabled(player, _waypointId)) then
 			Waypoint.add(player, npc, _waypointId)
 			return
 		end

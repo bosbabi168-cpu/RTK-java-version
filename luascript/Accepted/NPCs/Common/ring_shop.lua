@@ -116,7 +116,7 @@ RingShopNpc = {
 		player.lastClick = npc.ID
 
 		if npc.mapTitle == "Baegi Shop" then
-			if speech == "shard" and player.quest["claw_soe"] == 3 then
+			if speech == "serpihan" and player.quest["claw_soe"] == 3 then
 				player:dialogSeq(
 					{
 						t,

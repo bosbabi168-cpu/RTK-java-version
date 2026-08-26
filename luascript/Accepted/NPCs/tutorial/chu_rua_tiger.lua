@@ -11,33 +11,33 @@ ChuRuaTigerNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Warrior's Guild", "Forest", "Town", "Mage's Guild"}
+		local opts = {"Guild Prajurit", "Hutan", "Kota", "Guild Penyihir"}
 
-		if speech == "hello" then
+		if speech == "halo" then
 			Tools.checkKarma(player)
 
-			npc:talk(2, "Hello, Dinner!")
+			npc:talk(2, "Halo, Makan Malam!")
 		end
 
 		if speech == "ginseng" then
 			Tools.checkKarma(player)
 
-			npc:talk(2, "I'd rather eat you!")
+			npc:talk(2, "Aku lebih suka memakanmu!")
 		end
 
-		if (speech == "rabbit") then
+		if (speech == "kelinci") then
 			Tools.checkKarma(player)
 
 			player:dialogSeq(
 				{
 					t,
-					"What? Rabbit? Was it that foul hopping furre that trapped me in a pit?"
+					"Apa? Kelinci? Jadi makhluk berbulu peloncat busuk itu yang menjebakku di lubang?"
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"I'd love to rend his neck. Where did you see him?",
+				"Aku ingin sekali mencabik lehernya. Di mana kau melihatnya?",
 				opts,
 				{}
 			)
@@ -46,7 +46,7 @@ ChuRuaTigerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"So far? Oh well, I guess I'll have a snack beforehand... and you look tasty!"
+						"Sejauh itu? Yah, kurasa aku ngemil dulu... dan kau kelihatan lezat!"
 					},
 					1
 				)
@@ -55,11 +55,11 @@ ChuRuaTigerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Mmm. Well then I guess I'lll return him a favor with grinning teeth."
+						"Mmm. Kalau begitu akan kubalas budinya dengan gigi menyeringai."
 					},
 					1
 				)
-				player:sendMinitext("The tiger leaves to the south.")
+				player:sendMinitext("Harimau itu pergi ke selatan.")
 				player:warp(1117, player.x, player.y)
 
 				--npc:delete() -- need to work on this bit, need tiger to disappear but then respawn when player enters map
@@ -67,8 +67,8 @@ ChuRuaTigerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"What, did someone pull him out of a hat?",
-						"So far? Oh well, I guess I'll have a snack beforehand... and you look tasty!"
+						"Apa, memangnya ada yang menariknya keluar dari topi?",
+						"Sejauh itu? Yah, kurasa aku ngemil dulu... dan kau kelihatan lezat!"
 					},
 					1
 				)

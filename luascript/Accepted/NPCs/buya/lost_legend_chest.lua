@@ -40,7 +40,7 @@ LostLegendChestNpc = {
 			return
 		end
 
-		if speech == "legend" then
+		if speech == "legenda" then
 			Tools.checkKarma(player)
 
 			player.quest["lost_legend_chest_clicked"] = 1

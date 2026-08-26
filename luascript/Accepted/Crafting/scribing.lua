@@ -9,7 +9,7 @@ scribing = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "scribe" then
+		if speech == "juru tulis" then
 			if not crafting.checkSkillLegend(player, "scribing") then
 				player:dialogSeq(
 					{

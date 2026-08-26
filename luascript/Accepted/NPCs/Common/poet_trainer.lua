@@ -1102,9 +1102,9 @@ PoetTrainerNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		if speech == "quest" or speech == "minor" or speech == "minor quest" then
+		if speech == "misi" or speech == "kecil" or speech == "misi kecil" then
 			MinorQuest.quest(player, npc)
-		elseif speech == "complete" or speech "complete quest" then
+		elseif speech == "selesai" or speech "complete quest" then
 			MinorQuest.complete(player, npc)
 		end
 	end)

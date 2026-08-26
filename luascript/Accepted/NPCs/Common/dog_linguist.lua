@@ -12,7 +12,7 @@ DogLinguistNpc = {
 		player.lastClick = npc.ID
 
 		if player:hasLegend("dog_linguist") then
-			if speech == "secret" then
+			if speech == "rahasia" then
 				Tools.checkKarma(player)
 
 				if (npc.name == "Mutt" and (player.class == 3 or player.class == 8)) then
@@ -305,7 +305,7 @@ DogLinguistNpc = {
 						return
 					end
 				end
-			elseif speech == "cleanse" then
+			elseif speech == "sucikan" then
 				Tools.checkKarma(player)
 
 				--if player.quest["dog_linguist"] < 2 or player.quest["dog_linguist_subpath"] == 1 then player:dialogSeq({t,"I cannot help you until you have helped us."},0) return end
@@ -323,7 +323,7 @@ DogLinguistNpc = {
 		end
 
 		if npc.name == "Mutt" then
-			if speech == "hello!" then
+			if speech == "halo!" then
 				npc:talk(0, npc.name .. ": Bark!")
 			elseif speech == "bark!" then
 				player.quest["dog_linguist"] = 1

@@ -100,7 +100,7 @@ MinNpc = {
 			crafting.craftingDialog(player, npc, speech)
 		end
 
-		if speech == "virtue" and player.quest["gloth_clicked"] == 1 and player.quest["wind_armor"] == 1 then
+		if speech == "kebajikan" and player.quest["gloth_clicked"] == 1 and player.quest["wind_armor"] == 1 then
 			Tools.checkKarma(player)
 
 			if player.quest["min_clicked"] == 0 then
@@ -186,7 +186,7 @@ MinNpc = {
 			)
 		end
 
-		if speech == "weave wind" then
+		if speech == "tenun angin" then
 			Tools.checkKarma(player)
 
 			if player.quest["wind_armor"] == 0 then

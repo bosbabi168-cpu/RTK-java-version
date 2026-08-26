@@ -148,7 +148,7 @@ CartographerNpc = {
 
 	onSayClick = async(function(player, npc, speech)
 		local speech = string.lower(player.speech)
-		if speech == "draw" or speech == "draw map" or speech == "combine" then
+		if speech == "gambar" or speech == "gambar peta" or speech == "gabung" then
 			crafting.craftingDialog(player, npc, speech)
 		end
 	end),

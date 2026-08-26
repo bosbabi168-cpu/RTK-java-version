@@ -70,7 +70,7 @@ ShamanNpc = {
 		end
 
 		if npc.mapTitle == "Storm Shaman" then
-			if speech == "wilderness life" and player.quest["forgotten_path"] == 2 or player.quest[
+			if speech == "kehidupan liar" and player.quest["forgotten_path"] == 2 or player.quest[
 				"forgotten_path"
 			] == 3 then
 				player:dialogSeq(
@@ -96,7 +96,7 @@ ShamanNpc = {
 				)
 				player.quest["forgotten_path"] = 5
 			end
-			if speech == "elemental orb" and player.quest["forgotten_path"] == 5 then
+			if speech == "bola elemen" and player.quest["forgotten_path"] == 5 then
 				player:dialogSeq(
 					{
 						t,
