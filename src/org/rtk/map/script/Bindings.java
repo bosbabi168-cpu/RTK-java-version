@@ -836,6 +836,98 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        // ---- buku mantra ----
+
+        /** pcl_getspells(): id seluruh mantra yang dikuasai pemain. */
+        player.addMethod("getSpells", (self, args) ->
+                daftarMantra(pemainDari(self), 0));
+
+        /** pcl_getspellname(): nama TAMPILAN mantra yang dikuasai pemain. */
+        player.addMethod("getSpellName", (self, args) ->
+                daftarMantra(pemainDari(self), 1));
+
+        /** pcl_getspellyname(): nama SKRIP mantra yang dikuasai pemain. */
+        player.addMethod("getSpellYName", (self, args) ->
+                daftarMantra(pemainDari(self), 2));
+
+        /**
+         * pcl_getspellnamefromyname(namaSkrip): terjemahkan nama skrip
+         * mantra jadi nama tampilannya. Nama tak dikenal jadi id 0, dan
+         * nama tampilan id 0 memang kosong.
+         */
+        player.addMethod("getSpellNameFromYName", (self, args) ->
+                LuaValue.valueOf(org.rtk.map.MapServer.spellDb.displayNameOf(
+                        org.rtk.map.MapServer.spellDb.idOf(args.optjstring(2, "")))));
+
+        /**
+         * pcl_getunknownspells(jalur1, jalur2): mantra yang <b>boleh</b>
+         * dipelajari pemain tapi belum dikuasainya.
+         *
+         * <p>Syaratnya diambil apa adanya dari C: jalurnya 0 (umum) atau
+         * salah satu dari dua yang diminta, tandanya tidak melebihi tanda
+         * pemain, mantranya aktif, dan keselarasannya cocok — atau
+         * {@code -1}, yang berarti untuk semua keselarasan.</p>
+         */
+        player.addMethod("getUnknownSpells", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return new LuaTable();
+            }
+            java.util.List<Integer> ids = org.rtk.map.MapServer.spellDb.candidateSpells(
+                    org.rtk.map.MapServer.sql, args.optint(2, 0), args.optint(3, 0),
+                    u.status.mark, u.status.alignment);
+            java.util.Set<Integer> dikuasai = new java.util.HashSet<>();
+            for (int id : u.status.spells) {
+                dikuasai.add(id);
+            }
+            ids.removeIf(dikuasai::contains);
+            return pasanganNamaMantra(ids);
+        });
+
+        /**
+         * pcl_getallclassspells(jalur): SELURUH mantra aktif milik satu
+         * jalur, termasuk yang sudah dikuasai pemain.
+         *
+         * <p>⚠️ Di C ada penjaga {@code if (found == 0)} di sini juga, tetapi
+         * {@code found} tidak pernah disetel di fungsi ini — jadi penjaganya
+         * mati dan semua mantra ikut. Ditiru apa adanya.</p>
+         */
+        player.addMethod("getAllClassSpells", (self, args) ->
+                pasanganNamaMantra(org.rtk.map.MapServer.spellDb.classSpells(
+                        org.rtk.map.MapServer.sql, args.optint(2, 0))));
+
+        /**
+         * pcl_addhealth(jumlah): pemain dipulihkan.
+         *
+         * <p>Kerusakannya dikirim <b>negatif</b> ke jalur yang sama dengan
+         * luka ({@code clif_send_pc_healthscript(sd, -damage, 0)}) — itu
+         * yang membuat angkanya muncul hijau di layar. Kait
+         * {@code player_combat.on_healed} hanya dipanggil bila jumlahnya
+         * positif.</p>
+         */
+        player.addMethod("addHealth", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.NONE;
+            }
+            int jumlah = args.optint(2, 0);
+            if (jumlah > 0) {
+                org.rtk.map.data.BlockList penyerang = u.attacker > 0
+                        ? org.rtk.map.MapServer.blockById(u.attacker) : null;
+                var ref = engine.playerRef(u.scriptPlayer());
+                if (penyerang != null) {
+                    engine.doScript("player_combat", "on_healed", ref,
+                            engine.objectRef(penyerang));
+                } else {
+                    engine.doScript("player_combat", "on_healed", ref);
+                }
+            }
+            org.rtk.map.Combat.takeDamage(u, -jumlah, 0);
+            org.rtk.map.MapServer.clientView.playerStatusChanged(u,
+                    org.rtk.map.Clif.SFLAG_HPMP);
+            return LuaValue.NONE;
+        });
+
         /** pcl_updatePath(jalur, tanda): naik jalur; langsung ditulis ke database. */
         player.addMethod("updatePath", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
@@ -1082,6 +1174,52 @@ final class Bindings {
             prot = org.rtk.map.MapServer.itemDb.protectedOf(itemId);
         }
         org.rtk.map.MapServer.floorItems.drop(src, itemId, jumlah, dura, prot, 0, m, x, y);
+    }
+
+    /**
+     * Isi buku mantra pemain sebagai tabel Lua 1-basis.
+     *
+     * @param ragam 0 = id, 1 = nama tampilan, 2 = nama skrip. Ketiganya
+     *              fungsi terpisah di C dengan badan yang identik kecuali
+     *              satu baris.
+     */
+    private static LuaValue daftarMantra(org.rtk.map.User u, int ragam) {
+        LuaTable t = new LuaTable();
+        if (u == null) {
+            return t;
+        }
+        var db = org.rtk.map.MapServer.spellDb;
+        int i = 1;
+        for (int id : u.status.spells) {
+            if (id == 0) {
+                continue;
+            }
+            t.set(i++, switch (ragam) {
+                case 1 -> LuaValue.valueOf(db.displayNameOf(id));
+                case 2 -> LuaValue.valueOf(db.nameOf(id));
+                default -> LuaValue.valueOf(id);
+            });
+        }
+        return t;
+    }
+
+    /**
+     * Bentuk keluaran {@code getUnknownSpells} dan {@code getAllClassSpells}:
+     * tabel <b>berselang-seling</b> nama tampilan lalu nama skrip
+     * (indeks 1 nama, 2 yname, 3 nama, 4 yname, …).
+     *
+     * <p>Bentuk yang tidak biasa ini ada di C dan skrip mengandalkannya —
+     * mengubahnya jadi tabel pasangan akan memutus daftar mantra di menu.</p>
+     */
+    private static LuaValue pasanganNamaMantra(java.util.List<Integer> ids) {
+        LuaTable t = new LuaTable();
+        var db = org.rtk.map.MapServer.spellDb;
+        int x = 1;
+        for (int id : ids) {
+            t.set(x++, LuaValue.valueOf(db.displayNameOf(id)));
+            t.set(x++, LuaValue.valueOf(db.nameOf(id)));
+        }
+        return t;
     }
 
     /** itemdb_id(): argumen Lua yang boleh berupa nama ATAU nomor barang. */

@@ -129,7 +129,8 @@ proses build di server.
   `./run.sh worldtest` (dunia peta + penempatan pemain, 53 assertion),
   `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar
   ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
-  durasi mantra, gerak mob, barang lantai, inventaris — **474 assertion**),
+  durasi mantra, gerak mob, barang lantai, inventaris, buku mantra —
+  **481 assertion**),
   `./run.sh dbtest` (lapisan database ke MySQL hidup — 132 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
@@ -698,6 +699,24 @@ byte-identik dengan `rtklua/`.
    Terkait: **`clif_senddelitem` (0x10) juga mengosongkan slotnya di
    server**, bukan sekadar memberi tahu klien. Skrip mengandalkan itu.
 
+38. **Daftar mantra dikembalikan BERSELANG-SELING, bukan berpasangan.**
+   `getUnknownSpells` dan `getAllClassSpells` mengisi tabel Lua dengan
+   indeks 1 = nama tampilan, 2 = nama skrip, 3 = nama tampilan, 4 = nama
+   skrip, dan seterusnya. Bentuk yang tidak biasa ini ada di C
+   (`x += 2` di kedua fungsi) dan skrip mengandalkannya — mengubahnya jadi
+   tabel pasangan akan memutus daftar mantra di menu.
+
+   Dua hal lagi di keluarga yang sama:
+   - **Delapan belas id mantra bukan mantra**, melainkan penanda bagian di
+     buku mantra (0, 100, 200, …, 7000, 10000). Daftar itu **tidak ada di
+     database** — di C ia deretan `case ... continue;`, jadi tidak bisa
+     disaring lewat SQL. Menyertakannya membuat baris kosong muncul di
+     daftar pilihan pemain. Lihat `SpellDb.isSectionMarker`.
+   - `getAllClassSpells` punya penjaga `if (found == 0)` yang **mati** di C
+     ({@code found} tak pernah disetel di fungsi itu), sehingga mantra yang
+     sudah dikuasai pemain **ikut** terdaftar. Hanya `getUnknownSpells`
+     yang benar-benar menyaringnya. Ditiru apa adanya.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -815,8 +834,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **474** assertion) |
-| Binding skrip | **63** belum diport (57 di `sl.c` + 6 salah ketik) |
+| Gerbang regresi | 6/6 hijau (`cliftest` **481**, `dbtest` **141** assertion) |
+| Binding skrip | **56** belum diport (50 di `sl.c` + 6 salah ketik) |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -848,6 +867,13 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**7. Buku mantra** — `getSpells` (7x), `getSpellName` (4x),
+`getSpellYName` (3x), `getSpellNameFromYName` (4x), `getUnknownSpells`
+(4x), `getAllClassSpells`, plus `addHealth` (4x). Ikut dibereskan: empat
+berkas data (`ItemDb`, `SpellDb`, `NpcRegistry`, `MobRegistry`) masuk ke
+audit SQL `dbtest` — sebelumnya kueri mereka **tidak pernah** divalidasi
+skema hidup, sehingga kolom yang baru ditambahkan lolos tanpa diperiksa.
 
 **6. Inventaris & perlengkapan** — paket 0x0F (isi slot) dan 0x10
 (kosongkan slot), plus `updateInv` (24x), `refreshInventory`, `hasEquipped`
@@ -1240,7 +1266,7 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 57 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 50 method masih ada di `sl.c` tapi belum diport, plus 6
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
@@ -1259,36 +1285,34 @@ satu per satu.
 Ketiganya memang varian dari mesin yang sama — lihat Peringatan #35 untuk
 tiga perbedaan halus yang mudah diseragamkan secara keliru.
 
-**2. Buku mantra.** `getSpells` (7x), `getSpellName` (4x),
-`getSpellNameFromYName` (4x), `getUnknownSpells` (4x), `getSpellYName`
-(3x), `getAllClassSpells` (1x), `addHealth` (4x). **Juga murah** —
-`SpellDb` sudah memuat identifier, description, ticker, dan dispel;
-tinggal kolom kelas/level.
+~~**2. Buku mantra.**~~ **SELESAI 26 Agustus 2026 (malam).** Dua di
+antaranya (`getUnknownSpells`, `getAllClassSpells`) menembak database tiap
+panggil, jadi ujinya ada di `dbtest`, bukan `cliftest`.
 
-**3. Tampilan & timer.** `changeView` (22x), `setTimer` (11x), `guitext`
+**2. Tampilan & timer.** `changeView` (22x), `setTimer` (11x), `guitext`
 (12x), `selfAnimation`/`selfAnimationXY` (19x), `paperpopup` (7x),
 `lock`/`unlock` (12x, `lock` juga satu-satunya global belum diport),
 `speak` (6x), `sendURL` (4x), `testPacket` (4x). Sebagian besar paket
 murni — nilainya rendah bila protokol memang akan diganti, kecuali
 `setTimer` dan `lock`/`unlock` yang logika.
 
-**4. C4 — papan pesan & surat.** `sendMail`, `updateMail`, `sendParcel`
+**3. C4 — papan pesan & surat.** `sendMail`, `updateMail`, `sendParcel`
 (5x), `getParcel`, `removeParcel`, `getParcelList`, `showBoard`,
 `sendBoardQuestions`, `powerBoard`, `addGift`, `retrieveGift` — ~25 titik,
 plus protokol char server 0x3009–0x300F. Tabelnya (`Boards`,
 `BoardTitles`, `Mail`, `Parcels`) sudah ada, dan **bisa diuji offline**
 seperti gerbang regresi lain.
 
-**5. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
+**4. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
 `getClanBankItems`/`getSubpathBankItems`/`getBankItems` — 5 titik, dan
 logika bank utamanya sudah ada. Murah.
 
-**6. Sisa administratif.** `forceSave` (15x, `intif_save`), `setAccountBan`,
+**5. Sisa administratif.** `forceSave` (15x, `intif_save`), `setAccountBan`,
 `setHeroShow`, `setCaptchaKey`/`getCaptchaKey`, `addActivationKey`/
 `checkActivationKey`, `mapSelection`, `checkLevel`, `getPK`,
 `setIndDmg`/`setGrpDmg`.
 
-**7. Enam nama yang TIDAK ADA di mana pun** (`addGMSpells`, `bowShoot`,
+**6. Enam nama yang TIDAK ADA di mana pun** (`addGMSpells`, `bowShoot`,
 `buyCustom`, `hairFaceMenu`, `returnInn`, `totemName`) — salah ketik atau
 kode mati di konten. Diputuskan satu per satu, catat di
 `luascript/PERUBAHAN.md`; jangan diport.

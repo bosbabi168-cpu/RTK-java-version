@@ -61,6 +61,14 @@ public final class DbTest {
         "src/org/rtk/charserver/CharPersistence.java",
         "src/org/rtk/charserver/CharDb.java",
         "src/org/rtk/map/data/MapRegistry.java",
+        // Ditambahkan 26 Agustus 2026: keempatnya membaca tabel game dan
+        // sempat TIDAK terjangkau audit ini, sehingga kolom yang baru
+        // ditambahkan (`ItmText`, `ItmProtected`, `ItmDroppable`, kueri
+        // mantra per jalur) tidak pernah divalidasi MySQL.
+        "src/org/rtk/map/data/ItemDb.java",
+        "src/org/rtk/map/data/SpellDb.java",
+        "src/org/rtk/map/NpcRegistry.java",
+        "src/org/rtk/map/MobRegistry.java",
         "src/org/rtk/map/MapServer.java",
         "src/org/rtk/login/LoginClif.java",
         "src/org/rtk/login/LoginIntif.java",
@@ -124,6 +132,7 @@ public final class DbTest {
 
         auditSql(conf);
         worldData(sql);
+        spellQueries(sql);
         charRoundTrip(sql);
     }
 
@@ -262,6 +271,59 @@ public final class DbTest {
     // ------------------------------------------------------------------
     // Tahap 2 — data dunia
     // ------------------------------------------------------------------
+
+    /**
+     * Kueri buku mantra terhadap tabel `Spells` sungguhan.
+     *
+     * <p>{@code getUnknownSpells} dan {@code getAllClassSpells} menembak
+     * database tiap kali dipanggil, jadi keduanya tidak bisa diuji di
+     * {@code cliftest} yang berjalan tanpa MySQL.</p>
+     */
+    private static void spellQueries(Sql sql) {
+        log.info("=== tahap 2b: kueri buku mantra ===");
+
+        org.rtk.map.data.SpellDb db = new org.rtk.map.data.SpellDb();
+        int n = db.load(sql);
+        check("tabel Spells termuat", n > 0);
+
+        // Jalur 1 dipilih karena selalu ada isinya di data asli; kalau nanti
+        // kosong, ujinya akan berkata begitu alih-alih lolos diam-diam.
+        var jalur = db.classSpells(sql, 1);
+        check("getAllClassSpells(1) mengembalikan mantra", !jalur.isEmpty());
+
+        boolean adaPenanda = false;
+        for (int id : jalur) {
+            if (org.rtk.map.data.SpellDb.isSectionMarker(id)) {
+                adaPenanda = true;
+                break;
+            }
+        }
+        check("getAllClassSpells: penanda bagian TIDAK ikut", !adaPenanda);
+        check("getAllClassSpells: batas 255 dihormati", jalur.size() <= 255);
+
+        boolean semuaBernama = true;
+        for (int id : jalur) {
+            if (db.nameOf(id).isEmpty()) {
+                semuaBernama = false;
+                break;
+            }
+        }
+        check("getAllClassSpells: tiap id punya nama skrip", semuaBernama);
+
+        // tanda 0 = pemain baru: hasilnya harus subset dari tanda tinggi
+        var tandaRendah = db.candidateSpells(sql, 1, 0, 0, 0);
+        var tandaTinggi = db.candidateSpells(sql, 1, 0, 99, 0);
+        check("getUnknownSpells: tanda lebih tinggi membuka mantra >= tanda rendah",
+                tandaTinggi.size() >= tandaRendah.size());
+        check("getUnknownSpells: penanda bagian juga disaring di sini",
+                tandaTinggi.stream().noneMatch(
+                        org.rtk.map.data.SpellDb::isSectionMarker));
+
+        // jalur yang pasti tidak ada -> hanya mantra umum (SplPthId = 0)
+        var takAda = db.classSpells(sql, 9999);
+        check("getAllClassSpells: jalur tak dikenal mengembalikan kosong",
+                takAda.isEmpty());
+    }
 
     private static void worldData(Sql sql) {
         log.info("=== tahap 2: data dunia dari tabel asli ===");

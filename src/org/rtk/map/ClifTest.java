@@ -214,6 +214,60 @@ public final class ClifTest {
         ghostTest(map, sd);
         floorItemTest(map, sd);
         inventoryTest(map, sd);
+        spellBookTest(map, sd);
+    }
+
+    /**
+     * Buku mantra: daftar id / nama tampilan / nama skrip, dan penanda
+     * bagian yang harus disaring.
+     *
+     * <p>Varian yang menembak database ({@code getUnknownSpells},
+     * {@code getAllClassSpells}) diuji di {@code dbtest}, bukan di sini.</p>
+     */
+    private static void spellBookTest(MapData map, User sd) {
+        log.info("=== buku mantra ===");
+
+        var db = MapServer.spellDb;
+        db.register(201, "api_kecil", "Api Kecil", 1, 0);
+        db.register(202, "tameng_angin", "Tameng Angin", 1, 3);
+        db.register(203, "hujan_es", "Hujan Es", 0, 1);
+
+        sd.status.spells = new int[]{201, 0, 203, 202};
+
+        var p = MapServer.spellDb;
+        check("getSpellNameFromYName: nama skrip -> nama tampilan",
+                p.displayNameOf(p.idOf("hujan_es")).equals("Hujan Es"));
+        check("getSpellNameFromYName: nama tak dikenal -> id 0",
+                p.idOf("tidak_ada_mantra_ini") == 0);
+
+        // slot kosong (id 0) tidak boleh ikut ke daftar mana pun
+        int terisi = 0;
+        for (int id : sd.status.spells) {
+            if (id != 0) {
+                terisi++;
+            }
+        }
+        check("buku mantra uji berisi tiga mantra + satu slot kosong",
+                terisi == 3 && sd.status.spells.length == 4);
+
+        check("nama tampilan dan nama skrip memang BERBEDA sumbernya",
+                p.displayNameOf(201).equals("Api Kecil")
+                        && p.nameOf(201).equals("api_kecil"));
+
+        // penanda bagian: bukan mantra, harus disaring dari daftar pilihan
+        check("penanda bagian dikenali (0, 100, 1000, 10000)",
+                org.rtk.map.data.SpellDb.isSectionMarker(0)
+                        && org.rtk.map.data.SpellDb.isSectionMarker(100)
+                        && org.rtk.map.data.SpellDb.isSectionMarker(1000)
+                        && org.rtk.map.data.SpellDb.isSectionMarker(10000));
+        check("mantra biasa BUKAN penanda bagian",
+                !org.rtk.map.data.SpellDb.isSectionMarker(201)
+                        && !org.rtk.map.data.SpellDb.isSectionMarker(99));
+
+        check("ticker dan dispel terbaca per mantra",
+                p.hasTicker(201) && !p.hasTicker(203) && p.dispelOf(202) == 3);
+
+        sd.status.spells = new int[0];
     }
 
     /**

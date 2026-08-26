@@ -70,6 +70,66 @@ public final class SpellDb {
     }
 
     /**
+     * Id mantra yang <b>bukan mantra</b>: penanda bagian di buku mantra.
+     *
+     * <p>Di C daftar ini muncul sebagai deretan {@code case ... continue;}
+     * di {@code pcl_getunknownspells} dan {@code pcl_getallclassspells} —
+     * bukan kolom di database, jadi tidak bisa disaring lewat SQL.
+     * Menyertakannya membuat baris kosong muncul di daftar mantra pemain.</p>
+     */
+    private static final java.util.Set<Integer> PENANDA_BAGIAN = java.util.Set.of(
+            0, 100, 200, 300, 400, 500, 1000, 1500, 2000, 2500,
+            3000, 3500, 4000, 4500, 5000, 5500, 7000, 10000);
+
+    public static boolean isSectionMarker(int id) {
+        return PENANDA_BAGIAN.contains(id);
+    }
+
+    /**
+     * pcl_getunknownspells(): mantra yang syaratnya terpenuhi untuk pemain
+     * dengan tanda dan keselarasan tertentu.
+     *
+     * <p>Kueri ini menembak database tiap kali, sama seperti di C — daftar
+     * mantra bergantung pada tanda dan keselarasan pemain, jadi tidak bisa
+     * di-cache per jalur saja.</p>
+     *
+     * <p>{@code SplAlignment = -1} berarti "untuk semua keselarasan".</p>
+     */
+    public java.util.List<Integer> candidateSpells(Sql sql, int class1, int class2,
+                                                   int mark, int alignment) {
+        return kueriMantra(sql,
+                "SELECT `SplId` FROM `Spells` WHERE `SplPthId` IN (0, ?, ?)"
+                + " AND `SplMark` <= ? AND `SplActive` = 1"
+                + " AND (`SplAlignment` = ? OR `SplAlignment` = -1)",
+                class1, class2, mark, alignment);
+    }
+
+    /** pcl_getallclassspells(): seluruh mantra aktif milik satu jalur. */
+    public java.util.List<Integer> classSpells(Sql sql, int pathId) {
+        return kueriMantra(sql,
+                "SELECT `SplId` FROM `Spells` WHERE `SplActive` = 1 AND `SplPthId` = ?",
+                pathId);
+    }
+
+    /**
+     * Bagian bersama: jalankan kueri, buang penanda bagian, dan batasi 255
+     * seperti larik {@code idlist[255]} di C.
+     */
+    private java.util.List<Integer> kueriMantra(Sql sql, String q, Object... params) {
+        java.util.List<Integer> hasil = new java.util.ArrayList<>();
+        int rows = sql.forEachRow(q, rs -> {
+            int id = rs.getInt("SplId");
+            if (!isSectionMarker(id) && hasil.size() < 255) {
+                hasil.add(id);
+            }
+        }, params);
+        if (rows < 0) {
+            log.error("[SPELL] gagal membaca daftar mantra");
+        }
+        return hasil;
+    }
+
+    /**
      * Daftarkan satu mantra. Dipakai {@link #load} dan uji yang berjalan
      * tanpa database — nama pertama menang bila ada id/nama ganda, sama
      * seperti pencarian berurutan di C.
