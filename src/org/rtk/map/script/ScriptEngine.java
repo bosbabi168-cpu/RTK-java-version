@@ -58,6 +58,13 @@ public final class ScriptEngine {
     public final ScriptClass playerClass = new ScriptClass("Player");
     public final ScriptClass npcClass = new ScriptClass("NPC");
     public final ScriptClass mobClass = new ScriptClass("Mob");
+
+    /**
+     * Prototipe {@code FloorItem} ({@code fll_type} di sl.c) — barang yang
+     * tergeletak di petak. Ia mendapat seluruh method {@code bll_*} juga,
+     * karena {@code fll_staticinit()} memanggil {@code bll_extendproto}.
+     */
+    public final ScriptClass floorItemClass = new ScriptClass("FloorItem");
     public ScriptClass registryClass;
     public ScriptClass registryStringClass;
     public ScriptClass npcIntClass;
@@ -253,6 +260,19 @@ public final class ScriptEngine {
         Bindings.defineBlockList(this, mobClass);
         Bindings.defineMob(this, mobClass);
         registerClass(mobClass);
+
+        // fll_ctor(): FloorItem(id) mencari barang lantai lewat map_id2fl()
+        floorItemClass.ctor = args -> {
+            long id = (long) args.arg(2).optdouble(0);
+            org.rtk.map.FloorItem fl = org.rtk.map.MapServer.floorItems.byId(id);
+            if (fl == null) {
+                throw new org.luaj.vm2.LuaError("invalid floor item id (" + id + ")");
+            }
+            return fl;
+        };
+        Bindings.defineBlockList(this, floorItemClass);
+        Bindings.defineFloorItem(this, floorItemClass);
+        registerClass(floorItemClass);
 
         // registry views over the player (regl / reglstring / npcintregl / questregl)
         registryClass = Bindings.defineRegistry(this, "Registry",
@@ -810,6 +830,9 @@ public final class ScriptEngine {
         }
         if (obj instanceof org.rtk.map.Mob) {
             return newInstance(mobClass, obj);
+        }
+        if (obj instanceof org.rtk.map.FloorItem) {
+            return newInstance(floorItemClass, obj);
         }
         return newInstance(npcClass, obj);
     }

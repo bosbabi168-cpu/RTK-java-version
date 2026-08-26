@@ -681,6 +681,36 @@ final class Bindings {
                     args.optint(2, -1), args.optint(3, 0), args.optint(4, 0)));
         });
 
+        /**
+         * pcl_pickup(idBarangLantai) -&gt; {@code pc_getitemscript()}:
+         * pemain memungut barang yang tergeletak.
+         *
+         * <p>Yang dikirim skrip adalah <b>id blok barang lantai</b>, bukan id
+         * jenis barangnya — biasanya diperoleh dari
+         * {@code getObjectsInCell(..., BL_ITEM)}.</p>
+         */
+        player.addMethod("pickUp", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u != null && org.rtk.map.MapServer.floorItems
+                    .pickUp(u, (long) args.optdouble(2, 0)));
+        });
+
+        /**
+         * pcl_forcedrop(slot) -&gt; {@code pc_dropitemmap(sd, slot, 0)}:
+         * jatuhkan isi satu slot inventaris ke petak tempat pemain berdiri.
+         *
+         * <p>C memanggilnya dengan {@code type = 0}, yang berarti
+         * <b>sekeping</b>, bukan seluruh tumpukan.</p>
+         */
+        player.addMethod("forceDrop", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.MapServer.floorItems.dropFromInventory(u,
+                        args.optint(2, -1), 0);
+            }
+            return LuaValue.NONE;
+        });
+
         /** pcl_updatePath(jalur, tanda): naik jalur; langsung ditulis ke database. */
         player.addMethod("updatePath", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
@@ -899,6 +929,36 @@ final class Bindings {
         });
     }
 
+    /**
+     * Bagian bersama {@code bll_dropitem} / {@code bll_dropitemxy}: bongkar
+     * argumen lalu serahkan ke {@code mobdb_dropitem}.
+     *
+     * @param argPeta indeks argumen Lua untuk id pemain penerima jatuhan
+     *                (argumen terakhir di C, dan opsional)
+     */
+    private static void jatuhkan(org.rtk.map.data.BlockList src, Varargs args,
+                                 int m, int x, int y,
+                                 int argDura, int argProt, int argPemain) {
+        LuaValue jenis = args.arg(2);
+        long itemId = jenis.isnumber()
+                ? (long) jenis.todouble()
+                : org.rtk.map.MapServer.itemDb.idOf(jenis.optjstring(""));
+        if (itemId <= 0) {
+            return;
+        }
+        int jumlah = args.optint(3, 0);
+        int dura = args.optint(4, 0);
+        long prot = (long) args.optdouble(5, 0);
+        // 0 berarti "pakai bawaan jenis barangnya", bukan nol
+        if (dura == 0) {
+            dura = org.rtk.map.MapServer.itemDb.info(itemId).durability();
+        }
+        if (prot == 0) {
+            prot = org.rtk.map.MapServer.itemDb.protectedOf(itemId);
+        }
+        org.rtk.map.MapServer.floorItems.drop(src, itemId, jumlah, dura, prot, 0, m, x, y);
+    }
+
     /** magicdb_id() dari nama skrip mantra. */
     private static int mantraId(String nama) {
         return org.rtk.map.MapServer.spellDb.idOf(nama);
@@ -1106,6 +1166,44 @@ final class Bindings {
         });
     }
 
+    /**
+     * Method yang hanya dimiliki <b>FloorItem</b> ({@code fll_type} di sl.c).
+     *
+     * <p>Keduanya menyentuh {@code trapsTable}: daftar pemain yang sudah
+     * <b>menemukan</b> jebakan ini. Itu penyaring <b>penggambaran</b> —
+     * jebakan yang belum ditemukan tidak digambar untuk pemain itu, tetapi
+     * tetap ada di petaknya. Jangan tertukar dengan {@code looters}, yang
+     * mengatur siapa berhak memungut.</p>
+     */
+    static void defineFloorItem(ScriptEngine engine, ScriptClass klass) {
+        klass.getter = (self, attr) ->
+                self instanceof ScriptAttrs a ? a.scriptAttr(attr) : null;
+        klass.setter = (self, attr, value) ->
+                self instanceof ScriptAttrs a && a.scriptSetAttr(attr, value);
+
+        /** fll_addTrapSpotters(idPemain): pemain ini menemukan jebakannya. */
+        klass.addMethod("addTrapSpotters", (self, args) -> {
+            if (self instanceof org.rtk.map.FloorItem fl) {
+                fl.addTrapSpotter((long) args.optdouble(2, 0));
+            }
+            return LuaValue.TRUE;
+        });
+
+        /** fll_getTrapSpotters(): daftar id pemain yang sudah menemukannya. */
+        klass.addMethod("getTrapSpotters", (self, args) -> {
+            LuaTable t = new LuaTable();
+            if (self instanceof org.rtk.map.FloorItem fl) {
+                int i = 1;
+                for (int id : fl.data.trapsTable) {
+                    if (id != 0) {
+                        t.set(i++, LuaValue.valueOf(id));
+                    }
+                }
+            }
+            return t;
+        });
+    }
+
     // ------------------------------------------------------------------
     // Registries (regl_* / reglstring_* / npcintregl_* / questregl_*)
     // ------------------------------------------------------------------
@@ -1146,12 +1244,12 @@ final class Bindings {
      * @param hidupSaja true untuk varian {@code getAliveObjects*}
      */
     private static LuaValue objectsAtCell(ScriptEngine engine, int m, int x, int y,
-                                          int tipe, boolean hidupSaja) {
+                                          int tipe, boolean hidupSaja, boolean denganJebakan) {
         var map = org.rtk.map.MapServer.world.get(m);
         if (map == null) {
             return new LuaTable();
         }
-        return collect(engine, map.objectsAt(x, y), tipe, hidupSaja);
+        return collect(engine, map.objectsAt(x, y), tipe, hidupSaja, denganJebakan);
     }
 
     /**
@@ -1162,11 +1260,30 @@ final class Bindings {
     private static LuaValue collect(ScriptEngine engine,
                                     Iterable<? extends org.rtk.map.data.BlockList> src,
                                     int tipe, boolean hidupSaja) {
+        return collect(engine, src, tipe, hidupSaja, true);
+    }
+
+    /**
+     * @param denganJebakan false = padanan {@code map_foreachincell}, yang
+     *        melewati SELURUH barang lantai bertipe {@code ITM_TRAPS};
+     *        true = {@code map_foreachincellwithtraps}, yang menyertakannya.
+     *        ⚠️ Penyaring di sini <b>tidak</b> melihat {@code trapsTable} —
+     *        itu penyaring penggambaran, bukan penyaring pencarian benda.
+     *        Sapuan area ({@code map_foreachinarea}) di C tidak punya
+     *        penyaring ini sama sekali, jadi hanya varian per-petak yang
+     *        membedakannya.
+     */
+    private static LuaValue collect(ScriptEngine engine,
+                                    Iterable<? extends org.rtk.map.data.BlockList> src,
+                                    int tipe, boolean hidupSaja, boolean denganJebakan) {
         LuaTable t = new LuaTable();
         int flags = tipe <= 0 ? org.rtk.map.data.BlockList.BL_ALL : tipe;
         int i = 1;
         for (org.rtk.map.data.BlockList bl : src) {
             if ((flags & bl.blFlag()) == 0) {
+                continue;
+            }
+            if (!denganJebakan && bl instanceof org.rtk.map.FloorItem fl && fl.isTrap()) {
                 continue;
             }
             if (bl instanceof org.rtk.map.Mob mb && !mb.isAlive()) {
@@ -1261,18 +1378,18 @@ final class Bindings {
 
         klass.addMethod("getObjectsInCell", (self, args) -> objectsAtCell(engine,
                 args.optint(2, -1), args.optint(3, -1), args.optint(4, -1),
-                args.optint(5, -1), false));
+                args.optint(5, -1), false, false));
         klass.addMethod("getAliveObjectsInCell", (self, args) -> objectsAtCell(engine,
                 args.optint(2, -1), args.optint(3, -1), args.optint(4, -1),
-                args.optint(5, -1), true));
-        // Beda ...WithTraps hanya pada barang di lantai bertipe ITM_TRAPS;
-        // subsistem BL_ITEM belum diport, jadi untuk sekarang identik.
+                args.optint(5, -1), true, false));
+        // Beda ...WithTraps HANYA pada barang lantai bertipe ITM_TRAPS:
+        // varian biasa melewatinya, varian ini menyertakannya.
         klass.addMethod("getObjectsInCellWithTraps", (self, args) -> objectsAtCell(engine,
                 args.optint(2, -1), args.optint(3, -1), args.optint(4, -1),
-                args.optint(5, -1), false));
+                args.optint(5, -1), false, true));
         klass.addMethod("getAliveObjectsInCellWithTraps", (self, args) -> objectsAtCell(engine,
                 args.optint(2, -1), args.optint(3, -1), args.optint(4, -1),
-                args.optint(5, -1), true));
+                args.optint(5, -1), true, true));
 
         klass.addMethod("getObjectsInArea", (self, args) ->
                 objectsInArea(engine, self, args.optint(2, -1), false));
@@ -1391,6 +1508,54 @@ final class Bindings {
             }
             if (bl.id > 0) {
                 org.rtk.map.MapServer.clientView.objectRemoved(bl);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * bll_dropitem(barang, jumlah [, dura, protected, idPemain]) —
+         * jatuhkan barang ke petak tempat benda ini berdiri.
+         *
+         * <p>Nama barang boleh <b>teks atau nomor</b>. {@code dura} dan
+         * {@code protected} bernilai 0 berarti "pakai bawaan jenisnya" —
+         * bukan "nol"; itu cabang eksplisit di C.</p>
+         */
+        klass.addMethod("dropItem", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl == null) {
+                return LuaValue.NONE;
+            }
+            jatuhkan(bl, args, bl.m, bl.x, bl.y, 5, 6, 7);
+            return LuaValue.NONE;
+        });
+
+        /** bll_dropitemxy(...): sama, tapi peta dan petaknya disebut sendiri. */
+        klass.addMethod("dropItemXY", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl == null) {
+                return LuaValue.NONE;
+            }
+            jatuhkan(bl, args, args.optint(6, bl.m), args.optint(7, bl.x),
+                    args.optint(8, bl.y), 8, 9, 10);
+            return LuaValue.NONE;
+        });
+
+        /**
+         * bll_throw(x, y, ikon, warna, gerakan) — animasi benda terlempar
+         * dari sini ke petak tujuan (opcode 0x16).
+         *
+         * <p>⚠️ <b>Tidak menjatuhkan barang apa pun.</b> Namanya menyesatkan:
+         * ini murni animasi, dan ladang [12] sengaja 0 supaya klien
+         * <b>tidak</b> meninggalkan gambar di tanah. Yang benar-benar
+         * menjatuhkan barang adalah {@code dropItemXY}, yang biasanya
+         * dipanggil skrip tepat sesudahnya.</p>
+         */
+        klass.addMethod("throw", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl != null) {
+                org.rtk.map.MapServer.clientView.objectThrown(bl,
+                        args.optint(2, 0), args.optint(3, 0), args.optint(4, 0),
+                        args.optint(5, 0), args.optint(6, 0));
             }
             return LuaValue.NONE;
         });

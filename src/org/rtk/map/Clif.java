@@ -534,6 +534,39 @@ public final class Clif {
     }
 
     /**
+     * bll_throw() — animasi benda terlempar dari sebuah benda ke petak
+     * tujuan. Opcode 0x16, disiarkan ke SAMEAREA.
+     *
+     * <p>⚠️ Ladang [12] sengaja <b>nol</b>: itu yang membuat klien tidak
+     * meninggalkan gambar barang di tanah setelah animasinya selesai. Paket
+     * ini murni tampilan — barang yang benar-benar jatuh dibuat terpisah
+     * lewat {@code dropItemXY}.</p>
+     *
+     * <p>Ikonnya memakai penambah <b>49152</b>, rentang grafik barang, sama
+     * seperti ikon kustom barang lantai.</p>
+     */
+    public static void throwAnimation(org.rtk.map.data.BlockList from, int toX, int toY,
+                                      int icon, int color, int action) {
+        byte[] buf = new byte[32];
+        buf[0] = (byte) 0xAA;
+        putBE16(buf, 1, 0x1B);
+        buf[3] = 0x16;
+        buf[4] = 0x03;
+        putBE32(buf, 5, (int) from.id);
+        putBE16(buf, 9, icon + 49152);
+        buf[11] = (byte) color;
+        putBE32(buf, 12, 0);       // 0 = jangan tinggalkan gambar di tanah
+        putBE16(buf, 16, from.x);
+        putBE16(buf, 18, from.y);
+        putBE16(buf, 20, toX);
+        putBE16(buf, 22, toY);
+        putBE32(buf, 24, 0);
+        buf[28] = (byte) action;
+        buf[29] = 0x00;
+        sendToArea(from, buf, 30, true);
+    }
+
+    /**
      * clif_playsound() — mainkan bunyi di sekitar sebuah benda.
      * Opcode 0x19, panjang isi 0x14, disiarkan ke SAMEAREA.
      *
@@ -2383,6 +2416,26 @@ public final class Clif {
             s.wfifoB(19, nd.side);
             s.wfifoWBE(20, 0);
             s.wfifoB(22, 0);
+        } else if (b instanceof FloorItem fl) {
+            // Jebakan hanya digambar untuk pemain yang sudah menemukannya.
+            if (!fl.visibleTo(sd.id)) {
+                return;
+            }
+            s.wfifoB(11, 0x02);
+            // ⚠️ Hanya ikon KUSTOM yang ditambah 49152; ikon dari tabel
+            // `Items` dikirim MENTAH. Mudah salah karena benda lain
+            // (mob, NPC) selalu memakai penambah 32768.
+            if (fl.data.customIcon != 0) {
+                s.wfifoWBE(16, (int) (fl.data.customIcon + 49152));
+                s.wfifoB(18, (int) fl.data.customIconColor);
+            } else {
+                var look = MapServer.itemDb.look(fl.data.id);
+                s.wfifoWBE(16, look.icon());
+                s.wfifoB(18, look.iconColor());
+            }
+            s.wfifoB(19, 0);
+            s.wfifoWBE(20, 0);
+            s.wfifoB(22, 0);
         } else {
             return;
         }
@@ -2424,6 +2477,8 @@ public final class Clif {
                 } else {
                     objectLook(to, nd);
                 }
+            } else if (bl instanceof FloorItem) {
+                objectLook(to, bl);
             }
         });
     }
@@ -2465,7 +2520,8 @@ public final class Clif {
                 continue;
             }
             int tipe;
-            int look;
+            int look = 0;
+            int grafik = -1;   // nilai yang benar-benar ditulis; -1 = pakai 32768 + look
             int lookColor;
             int side;
             if (b instanceof Mob mb) {
@@ -2484,6 +2540,23 @@ public final class Clif {
                 look = (int) nd.graphicId;
                 lookColor = (int) nd.graphicColor;
                 side = nd.side;
+            } else if (b instanceof FloorItem fl) {
+                if (!fl.visibleTo(sd.id)) {
+                    continue;
+                }
+                tipe = 0x02;
+                // Lihat catatan di objectLook: hanya ikon KUSTOM yang
+                // ditambah 49152, sisanya mentah dari tabel `Items`.
+                if (fl.data.customIcon != 0) {
+                    grafik = (int) (fl.data.customIcon + 49152);
+                    lookColor = (int) fl.data.customIconColor;
+                } else {
+                    var l = MapServer.itemDb.look(fl.data.id);
+                    grafik = l.icon();
+                    lookColor = l.iconColor();
+                }
+                side = 0;
+                adaBarang = true;   // sd->mob_item: penutupnya tidak menambah byte
             } else {
                 continue;
             }
@@ -2492,7 +2565,7 @@ public final class Clif {
             s.wfifoWBE(len + 9, b.y);
             s.wfifoB(len + 11, tipe);
             s.wfifoLBE(len + 12, (int) b.id);
-            s.wfifoWBE(len + 16, 32768 + look);
+            s.wfifoWBE(len + 16, grafik >= 0 ? grafik : 32768 + look);
             s.wfifoB(len + 18, lookColor);
             s.wfifoB(len + 19, side);
             if (tipe == 0x05) {
@@ -2585,7 +2658,8 @@ public final class Clif {
      * 0x5F.</p>
      */
     public static void lookGone(org.rtk.map.data.BlockList bl) {
-        boolean asChar = !(bl instanceof Npc nd) || nd.npcType == 1;
+        boolean asChar = !(bl instanceof FloorItem)
+                && (!(bl instanceof Npc nd) || nd.npcType == 1);
         byte[] buf = new byte[16];
         buf[0] = (byte) 0xAA;
         putBE16(buf, 1, 6);

@@ -141,4 +141,15 @@ public final class RetroTkClientView implements ClientView {
     public void mobSpawned(Mob mb) {
         Clif.broadcastLook(mb);
     }
+
+    @Override
+    public void floorItemAppeared(FloorItem fl) {
+        Clif.broadcastLook(fl);
+    }
+
+    @Override
+    public void objectThrown(BlockList from, int toX, int toY,
+                             int icon, int color, int action) {
+        Clif.throwAnimation(from, toX, toY, icon, color, action);
+    }
 }

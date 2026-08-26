@@ -188,4 +188,23 @@ public interface ClientView {
 
     /** Satu mob lahir (atau lahir kembali) dan mulai terlihat di sekitarnya. */
     void mobSpawned(Mob mb);
+
+    // ------------------------------------------------------------------
+    // Barang di lantai
+    // ------------------------------------------------------------------
+
+    /**
+     * Sekeping barang jatuh ke petak dan mulai terlihat di sekitarnya.
+     *
+     * <p>Jebakan hanya terlihat oleh pemain yang sudah menemukannya —
+     * penyaringnya di sisi penerima, bukan di sini.</p>
+     */
+    void floorItemAppeared(FloorItem fl);
+
+    /**
+     * Sebuah benda melempar sesuatu ke petak lain — <b>animasinya saja</b>.
+     * Barang yang benar-benar mendarat (kalau ada) dilaporkan terpisah lewat
+     * {@link #floorItemAppeared}.
+     */
+    void objectThrown(BlockList from, int toX, int toY, int icon, int color, int action);
 }

@@ -212,6 +212,189 @@ public final class ClifTest {
         bllTest(map, sd);
         durationTest(map, sd);
         ghostTest(map, sd);
+        floorItemTest(map, sd);
+    }
+
+    /**
+     * Barang di lantai (BL_ITEM) — jatuhkan, gabung, pungut, dan jebakan.
+     *
+     * <p>Yang dijaga di sini adalah aturan yang mudah terbalik: barang
+     * sejenis di petak yang sama <b>digabung</b> alih-alih menumpuk jadi dua
+     * benda, barang ber-id 0 adalah <b>uang</b>, kolom {@code ItmDroppable}
+     * artinya "tidak bisa dipungut", dan jebakan disaring di <b>dua tempat
+     * berbeda</b> dengan aturan berbeda pula.</p>
+     */
+    private static void floorItemTest(MapData map, User sd) {
+        log.info("=== barang di lantai (BL_ITEM) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+
+        var db = MapServer.itemDb;
+        var kosongLook = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        // apel: bertumpuk 10, boleh dipungut
+        db.register(new org.rtk.map.data.ItemDb.Info(7001, "apel_uji", "Apel Uji", "",
+                18, 1, 1, 10, 0, 0, 50, 0, 0,
+                new org.rtk.map.data.ItemDb.Look(11, 2, 33, 4), tanpaStat));
+        // pedang: tidak bertumpuk
+        db.register(new org.rtk.map.data.ItemDb.Info(7002, "pedang_uji", "Pedang Uji", "",
+                3, 1, 1, 1, 0, 0, 100, 0, 0, kosongLook, tanpaStat));
+        // batu nisan: ItmDroppable != 0 -> TIDAK bisa dipungut
+        db.register(new org.rtk.map.data.ItemDb.Info(7003, "nisan_uji", "Nisan Uji", "",
+                18, 1, 1, 1, 0, 0, 1, 0, 1, kosongLook, tanpaStat));
+        // jebakan: ITM_TRAPS
+        db.register(new org.rtk.map.data.ItemDb.Info(7004, "jebakan_uji", "Jebakan Uji", "",
+                org.rtk.map.data.ItemDb.ITM_TRAPS, 1, 1, 1, 0, 0, 1, 0, 0,
+                kosongLook, tanpaStat));
+
+        var reg = MapServer.floorItems;
+        reg.useIdIndex(MapServer.npcs);
+        int px = c[0];
+        int py = c[1];
+
+        // --- jatuhkan ---
+        drain(s);
+        FloorItem fl = reg.drop(sd, 7001, 3, 50, 0, 0, 0, px, py);
+        check("drop: barang lantai terbentuk", fl != null && fl.data.amount == 3);
+        check("drop: masuk indeks id global", MapServer.blockById(fl.id) == fl);
+        check("drop: berdiri di petaknya", map.objectsAt(px, py).contains(fl));
+        check("drop: idnya dari rentang FLOORITEM_START_NUM",
+                fl.id >= FloorItem.FLOORITEM_START_NUM);
+
+        byte[] p = decrypt(drain(s), sd);
+        check("drop: paket benda 0x07 terkirim", (p[3] & 0xFF) == 0x07);
+        check("drop: penanda barang 0x02 di [11]", (p[11] & 0xFF) == 0x02);
+        check("drop: ikon MENTAH dari tabel Items, bukan +49152",
+                be16(p, 16) == 33);
+        check("drop: warna ikon di [18]", (p[18] & 0xFF) == 4);
+
+        // --- barang sejenis digabung, bukan jadi dua benda ---
+        int sebelum = reg.count();
+        FloorItem fl2 = reg.drop(sd, 7001, 2, 50, 0, 0, 0, px, py);
+        check("drop: barang sejenis DIGABUNG, bukan jadi benda kedua",
+                fl2 == fl && reg.count() == sebelum && fl.data.amount == 5);
+        check("drop: jumlah sebelumnya tercatat di lastAmount", fl.lastAmount == 3);
+
+        // --- pungut ---
+        sd.status.inventory.clear();
+        sd.status.maxInv = 20;
+        check("pickUp: berhasil", reg.pickUp(sd, fl.id));
+        check("pickUp: seluruh tumpukan bertumpuk masuk sekaligus",
+                sd.status.inventory.size() == 1 && sd.status.inventory.get(0).amount == 5);
+        check("pickUp: barang lantai lenyap setelah habis",
+                MapServer.blockById(fl.id) == null && !map.objectsAt(px, py).contains(fl));
+
+        // --- barang TIDAK bertumpuk diambil sekeping demi sekeping ---
+        sd.status.inventory.clear();
+        FloorItem pedang = reg.drop(sd, 7002, 3, 100, 0, 0, 0, px, py);
+        reg.pickUp(sd, pedang.id);
+        check("pickUp: barang tak bertumpuk diambil satu per satu",
+                pedang.data.amount == 2 && sd.status.inventory.size() == 1);
+        check("pickUp: sisanya tetap di lantai",
+                map.objectsAt(px, py).contains(pedang));
+        reg.hapus(pedang);
+
+        // --- id 0 = uang ---
+        sd.status.inventory.clear();
+        long emasAwal = sd.scriptGetAttr("money");
+        FloorItem emas = reg.drop(sd, 0, 250, 0, 0, 0, 0, px, py);
+        check("pickUp: barang ber-id 0 masuk EMAS, bukan inventaris",
+                reg.pickUp(sd, emas.id)
+                        && sd.scriptGetAttr("money") == emasAwal + 250
+                        && sd.status.inventory.isEmpty());
+
+        // --- ItmDroppable != 0 berarti tidak bisa dipungut ---
+        FloorItem nisan = reg.drop(sd, 7003, 1, 1, 0, 0, 0, px, py);
+        sd.status.gmLevel = 0;
+        check("pickUp: ItmDroppable != 0 menolak pemain biasa",
+                !reg.pickUp(sd, nisan.id) && MapServer.blockById(nisan.id) == nisan);
+        sd.status.gmLevel = 99;
+        check("pickUp: GM tetap bisa memungutnya", reg.pickUp(sd, nisan.id));
+        sd.status.gmLevel = 0;
+
+        // --- forceDrop dari inventaris ---
+        sd.status.inventory.clear();
+        sd.addItemById(7001, 4, 50);
+        FloorItem jatuh = reg.dropFromInventory(sd, 0, 0);
+        check("forceDrop: sekeping jatuh, sisanya tetap di inventaris",
+                jatuh != null && jatuh.data.amount == 1
+                        && sd.status.inventory.get(0).amount == 3);
+        reg.hapus(jatuh);
+        sd.status.inventory.clear();
+
+        // --- aturan gabung jalur pemain JAUH lebih ketat dari jatuhan mob ---
+        sd.status.inventory.clear();
+        sd.addItemById(7002, 1, 100);            // pedang utuh
+        sd.status.inventory.get(0).dura = 100;
+        FloorItem utuh = reg.dropFromInventory(sd, 0, 1);
+        sd.status.inventory.clear();
+        sd.addItemById(7002, 1, 100);
+        sd.status.inventory.get(0).dura = 40;    // pedang penyok
+        FloorItem penyok = reg.dropFromInventory(sd, 0, 1);
+        check("drop pemain: barang penyok TIDAK menyatu dengan yang utuh",
+                penyok != utuh && reg.count() >= 2);
+
+        // sedangkan jatuhan mob menggabung hanya berdasarkan id
+        FloorItem mobDrop = reg.drop(null, 7002, 1, 40, 0, 0, 0, px, py);
+        check("drop mob: menggabung hanya berdasarkan id barang",
+                mobDrop == utuh || mobDrop == penyok);
+
+        for (FloorItem sisa : new java.util.ArrayList<>(reg.all())) {
+            reg.hapus(sisa);
+        }
+        sd.status.inventory.clear();
+
+        // --- jebakan: dua penyaring yang BERBEDA ---
+        FloorItem jebakan = reg.drop(sd, 7004, 1, 1, 0, 0, 0, px, py);
+        check("jebakan: dikenali sebagai ITM_TRAPS", jebakan.isTrap());
+        check("jebakan: belum terlihat oleh siapa pun", !jebakan.visibleTo(sd.id));
+        jebakan.addTrapSpotter(sd.id);
+        check("addTrapSpotters: pemain itu kini melihatnya",
+                jebakan.visibleTo(sd.id) && jebakan.spottedBy(sd.id));
+        check("addTrapSpotters: pemain lain tetap tidak melihatnya",
+                !jebakan.spottedBy(999999));
+
+        // penyaring pencarian benda TIDAK melihat trapsTable — ia membuang
+        // SEMUA jebakan, bahkan yang sudah ditemukan
+        drain(s);
+        Clif.objectLook(sd, jebakan);
+        check("jebakan: digambar untuk pemain yang sudah menemukannya",
+                drain(s).length > 0);
+        FloorItem jebakan2 = reg.drop(sd, 7004, 1, 1, 0, 0, 0, px + 1, py);
+        drain(s);
+        Clif.objectLook(sd, jebakan2);
+        check("jebakan: TIDAK digambar untuk yang belum menemukannya",
+                drain(s).length == 0);
+
+        // --- lookGone barang lantai memakai 0x5F, bukan 0x0E ---
+        drain(s);
+        Clif.lookGone(jebakan);
+        p = decrypt(drain(s), sd);
+        check("lookGone barang lantai: opcode 0x5F", (p[3] & 0xFF) == 0x5F);
+
+        reg.hapus(jebakan);
+        reg.hapus(jebakan2);
+
+        // --- animasi lempar (0x16) tidak menjatuhkan apa pun ---
+        int sebelumLempar = reg.count();
+        drain(s);
+        Clif.throwAnimation(sd, px + 3, py + 2, 77, 5, 2);
+        p = decrypt(drain(s), sd);
+        check("throw: opcode 0x16", (p[3] & 0xFF) == 0x16);
+        check("throw: id pelempar di [5]", (be32(p, 5) & 0xFFFFFFFFL) == sd.id);
+        check("throw: ikon + 49152 di [9]", be16(p, 9) == 77 + 49152);
+        check("throw: petak asal di [16],[18]", be16(p, 16) == px && be16(p, 18) == py);
+        check("throw: petak tujuan di [20],[22]",
+                be16(p, 20) == px + 3 && be16(p, 22) == py + 2);
+        check("throw: ladang [12] nol — jangan tinggalkan gambar di tanah",
+                be32(p, 12) == 0);
+        check("throw: tidak menjatuhkan barang apa pun",
+                reg.count() == sebelumLempar);
+
+        drain(s);
     }
 
     /**

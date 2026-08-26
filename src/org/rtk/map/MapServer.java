@@ -82,6 +82,12 @@ public final class MapServer {
     /** Jenis mob + mob yang hidup di server ini. */
     public static final MobRegistry mobs = new MobRegistry();
 
+    /**
+     * Barang yang tergeletak di petak peta (BL_ITEM). Tidak dimuat dari
+     * database — isinya lahir dan lenyap sepanjang server hidup.
+     */
+    public static final FloorItemRegistry floorItems = new FloorItemRegistry();
+
     /** Tampilan barang (itemdb_look / itemdb_lookcolor). */
     public static final org.rtk.map.data.ItemDb itemDb = new org.rtk.map.data.ItemDb();
 
@@ -175,6 +181,7 @@ public final class MapServer {
             spellDb.load(sql);
             mobs.loadTypes(sql);
             mobs.useIdIndex(npcs);   // mob ikut indeks id global (map_addiddb)
+            floorItems.useIdIndex(npcs);   // barang lantai juga (map_additem)
             mobs.loadSpawns(sql, serverId, world);
         }
         classDb.load(dbPath);

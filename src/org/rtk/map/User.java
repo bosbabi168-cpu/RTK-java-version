@@ -668,9 +668,20 @@ public final class User extends BlockList
      */
     @Override
     public boolean scriptAddItem(String name, int amount) {
-        var db = MapServer.itemDb;
-        var info = db.infoByName(name);
-        if (info == null || amount <= 0) {
+        var info = MapServer.itemDb.infoByName(name);
+        return info != null && addItemById(info.id(), amount, -1);
+    }
+
+    /**
+     * Jalur yang sama, tapi barangnya disebut dengan <b>id</b> — dipakai
+     * memungut barang lantai, yang tidak pernah tahu namanya.
+     *
+     * @param dura ketahanan yang dibawa dari barang aslinya; negatif berarti
+     *             pakai bawaan jenisnya
+     */
+    public boolean addItemById(long itemId, int amount, int dura) {
+        var info = MapServer.itemDb.info(itemId);
+        if (info.id() == 0 || amount <= 0) {
             return false;
         }
         int stack = Math.max(1, info.stackAmount());
@@ -696,6 +707,7 @@ public final class User extends BlockList
             org.rtk.common.mmo.Item baru = new org.rtk.common.mmo.Item();
             baru.id = info.id();
             baru.amount = Math.min(stack, sisa);
+            baru.dura = dura >= 0 ? dura : info.durability();
             baru.pos = status.inventory.size();
             status.inventory.add(baru);
             sisa -= baru.amount;
