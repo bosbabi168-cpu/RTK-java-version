@@ -129,7 +129,7 @@ proses build di server.
   `./run.sh worldtest` (dunia peta + penempatan pemain, 53 assertion),
   `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar
   ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
-  durasi mantra, gerak mob, barang lantai — **450 assertion**),
+  durasi mantra, gerak mob, barang lantai, inventaris — **474 assertion**),
   `./run.sh dbtest` (lapisan database ke MySQL hidup — 132 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
@@ -670,6 +670,34 @@ byte-identik dengan `rtklua/`.
    Catatan kecil: `mob->canmove` **namanya terbalik dari artinya** —
    nilai 1 berarti TIDAK boleh melangkah.
 
+36. **Paket inventaris 0x0F membawa DUA string dengan peran berbeda.**
+   Yang pertama adalah teks yang **dilihat pemain**: nama ukiran bila ada,
+   plus hiasan menurut jenis barangnya — `"Roti (5)"` bila jumlahnya lebih
+   dari satu, `"Obor [12 jam]"` untuk ITM_SMOKE, `"[T3] Peta"` untuk
+   ITM_MAP, `"Tas [40]"` untuk ITM_BAG dan ITM_QUIVER. Yang kedua adalah
+   nama **jenis**-nya apa adanya, dipakai klien mencocokkan gambar dan
+   tooltip. Menyamakan keduanya membuat barang berukir kehilangan gambarnya.
+
+   Dua hal lagi di paket yang sama:
+   - **Ketahanan hanya dikirim untuk jenis 3..17** (perlengkapan). Jenis
+     lain memakai ladang yang sama untuk penanda "bertumpuk".
+   - **Perlindungan yang menang adalah yang TERBESAR** antara milik
+     barangnya dan bawaan jenisnya — di C dua baris `if` yang saling
+     menimpa, bukan satu pilihan.
+
+37. **`clif_sendadditem` MENGHAPUS barang rusak, bukan melewatinya.**
+   Barang ber-id di bawah 4, dan barang yang tidak ada di tabel `Items`,
+   dikosongkan dari inventaris pemain saat paketnya hendak dikirim. Itu
+   penyapu data rusak di C dan ditiru apa adanya — kalau tidak, barang
+   hantu menumpuk di slot yang tidak bisa dipakai.
+
+   ⚠️ **Akibatnya penyapuan inventaris harus dari BELAKANG.** Menyapu maju
+   akan melewati satu slot setiap kali sebuah barang terbuang, karena
+   daftarnya menyusut di tengah perulangan. Lihat `Bindings.kirimInventaris`.
+
+   Terkait: **`clif_senddelitem` (0x10) juga mengosongkan slotnya di
+   server**, bukan sekadar memberi tahu klien. Skrip mengandalkan itu.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -787,8 +815,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **450** assertion) |
-| Binding skrip | **70** belum diport (64 di `sl.c` + 6 salah ketik) |
+| Gerbang regresi | 6/6 hijau (`cliftest` **474** assertion) |
+| Binding skrip | **63** belum diport (57 di `sl.c` + 6 salah ketik) |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -820,6 +848,12 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**6. Inventaris & perlengkapan** — paket 0x0F (isi slot) dan 0x10
+(kosongkan slot), plus `updateInv` (24x), `refreshInventory`, `hasEquipped`
+(6x), `hasItemDura`, `deductDura`, `deductDuraInv`, `deductArmor`,
+`deductWeapon`. Ikut lahir: `MapServer.charName()` (port `map_id2name`) dan
+kolom `ItmText`/`ItmProtected` di `ItemDb`.
 
 **5. Gerak mob lanjutan** — `moveIntent` (11x), `checkMove` (9x),
 `moveIgnoreObject` (3x). Ketiganya varian dari mesin `moveGhost` yang sudah
@@ -1206,18 +1240,20 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 64 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 57 method masih ada di `sl.c` tapi belum diport, plus 6
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
 Sisa yang berkaitan: `throwItem` (`clif_throwitem_script`, jalur klien
 melempar barang) dan `sd->pickuptype`.
 
-**1. Inventaris & perlengkapan.** `updateInv` (24x, `pc_loaditem`),
-`pickUp` (12x), `stripEquip` (9x), `hasEquipped` (6x), keluarga
-`deductDura*`/`deductArmor`/`deductWeapon` (6x), `forceEquip`, `takeOff`,
-`refreshInventory`, `hasItemDura`, `checkInvBod`, `expireItem` — ~65 titik.
-Butuh paket kirim-inventaris yang belum ada.
+**1. Sisa inventaris & perlengkapan — SEMUANYA menunggu subsistem BOD.**
+Paket inventaris (0x0F/0x10) dan bagian yang berdiri sendiri sudah diport
+26 Agustus 2026 malam. Yang tersisa **semuanya** bergantung pada
+`sd->boditems` (simpanan barang yang patah / hilang saat mati), yang belum
+ada sama sekali: `stripEquip` (9x), `checkInvBod`, `getBODItem`,
+`deductDuraEquip`, `expireItem`. Kerjakan BOD sebagai satu blok, jangan
+satu per satu.
 
 ~~**2. Gerak mob lanjutan.**~~ **SELESAI 26 Agustus 2026 (malam).**
 Ketiganya memang varian dari mesin yang sama — lihat Peringatan #35 untuk

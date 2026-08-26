@@ -215,6 +215,33 @@ public final class MapServer {
      * di {@link NpcRegistry} — namanya menyesatkan, isinya NPC <b>dan</b>
      * mob. Pemain dicari terpisah karena tidak masuk indeks itu.
      */
+    /**
+     * map_id2name(): nama karakter dari id-nya.
+     *
+     * <p>Pemain yang sedang online dijawab dari memori; sisanya ditanyakan
+     * ke tabel {@code Character}. Di C selalu ke database — di sini jalur
+     * memori didahulukan karena paket inventaris memanggilnya untuk
+     * <b>setiap barang bertuan</b> saat pemain masuk.</p>
+     *
+     * <p>Id 0 berarti tanpa pemilik; C mengembalikan {@code "None"} untuk
+     * itu, tetapi pemanggilnya ({@code clif_sendadditem}) sudah memeriksa
+     * nol lebih dulu sehingga teks itu tidak pernah terkirim. Di sini
+     * dikembalikan string kosong supaya perbedaannya tidak bisa bocor.</p>
+     */
+    public static String charName(long id) {
+        if (id == 0) {
+            return "";
+        }
+        for (User u : onlineChars.values()) {
+            if (u.id == id || u.status.id == id) {
+                return u.status.name;
+            }
+        }
+        String nama = sql.queryString(
+                "SELECT `ChaName` FROM `Character` WHERE `ChaId` = ?", id);
+        return nama == null ? "" : nama;
+    }
+
     public static org.rtk.map.data.BlockList blockById(long id) {
         if (npcs != null) {
             org.rtk.map.data.BlockList bl = npcs.byId(id);

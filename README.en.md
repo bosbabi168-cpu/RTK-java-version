@@ -578,7 +578,7 @@ leaving them stuck.
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ connects and authenticates to the char server, loads map geometry, accepts routed players, requests and receives character data |
 | map world (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometry + metadata + 8×8 spatial index, x±9/y±8 view area |
 | **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c`, ~22k lines) | `map/User.java`, `map/Pc.java`, `map/Clif.java`, `map/Npc*.java`, `map/Mob*.java` | ✅ **Track A complete** — world entry plus rendering of everything nearby (0x33), movement and warps, NPC dialog/menu/input (0x30/0x2F/0x39/0x3A), shops (buy and sell), NPCs and their timers, mobs: 716 types and 1,175 spawns, AI on a 50 ms tick, combat, death and drops. ⚠️ never yet tested against a real RetroTK client |
-| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **working via LuaJ** — all 906 original scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines with blocking dialogs, registries and inventory wired through to `CharStatus`. ⚠️ of the ~258 methods scripts call, **64 exist in `sl.c` but are not ported yet**; the most-used ones are now covered (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus the whole floor-item family). For current numbers: `./run.sh luaaudit` |
+| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **working via LuaJ** — all 906 original scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines with blocking dialogs, registries and inventory wired through to `CharStatus`. ⚠️ of the ~258 methods scripts call, **57 exist in `sl.c` but are not ported yet**; the most-used ones are now covered (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus the whole floor-item family). For current numbers: `./run.sh luaaudit` |
 | save server (`saveif.c` — already disabled in C) | — | ❌ not ported (its connection timer is commented out in C) |
 
 ## Design notes
@@ -644,7 +644,7 @@ there are six regression gates, all of which must stay green:
 | `./run.sh maptest` | 3,544 map files parse correctly |
 | `./run.sh chartest` | character serialisation (29 assertions) |
 | `./run.sh worldtest` | map world + player placement (53 assertions) |
-| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing, chat & actions, spell durations, mob movement, floor items (450 assertions) |
+| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing, chat & actions, spell durations, mob movement, floor items, inventory (474 assertions) |
 | `./run.sh dbtest` | database layer against live MySQL (132 assertions) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -767,10 +767,10 @@ The starting point for the next session.
 
 | | |
 |---|---|
-| Regression gates | 6/6 green (`cliftest` **450** assertions) |
+| Regression gates | 6/6 green (`cliftest` **474** assertions) |
 | `logs/map.log` on a live server | **0 ERROR / 0 WARN** |
 | All three servers | running side by side (`./run.sh all`), map↔char link stable |
-| Script bindings | **70 not ported** (64 in `sl.c` + 6 typos); globals not ported: **1** |
+| Script bindings | **63 not ported** (57 in `sl.c` + 6 typos); globals not ported: **1** |
 | Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
@@ -785,7 +785,9 @@ almost every mob AI moves) and `spawn` (381x, traps / event mobs / instance
 bosses), which together **emptied the stub list**; and (4) **BL_ITEM**,
 floor items — the last large subsystem that was missing entirely, which
 alone opened ~95 call sites; and (5) the remaining mob-movement variants
-(`moveIntent`, `checkMove`, `moveIgnoreObject`).
+(`moveIntent`, `checkMove`, `moveIgnoreObject`); and (6) the inventory
+packets (0x0F / 0x10) with `updateInv`, `hasEquipped`, and the `deduct*`
+family.
 
 ⚠️ **The `luaaudit` number does not measure this work fairly.** A binding
 ported out of a *stub* never counted in the audit to begin with — as far as
@@ -844,9 +846,11 @@ client is needed to exercise them.
 genuinely differs from the plain variant, and mob drops are visible on the
 ground.
 
-**4. Inventory & equipment** — ~65 call sites (`updateInv` 24x,
-`stripEquip`, the `deductDura*` family); needs an inventory packet that
-does not exist yet. This is the next biggest blocker.
+**4. Inventory & equipment** — the packets (0x0F / 0x10) and the
+standalone bindings are **done**. What remains all depends on the **BOD
+subsystem** (`sd->boditems`, items that break or are lost on death), which
+does not exist yet: `stripEquip` (9x), `checkInvBod`, `getBODItem`,
+`deductDuraEquip`, `expireItem`. Do BOD as one block.
 
 **5. The rest of Track C** — C2 (meta files), C3 (cross-map-server warps),
 C4 (boards and mail, the least blocked).
@@ -927,8 +931,8 @@ a requirement after touching any binding or script hook.
 - **Boards and mail** (char server) — the least blocked item in this track:
   protocol and tables already exist, and it can be tested offline.
 
-**Script-binding priority.** Of the ~258 methods scripts call, **64 exist
-in `sl.c` but are not ported yet** as of 26 August 2026 (110 → 100 → 64),
+**Script-binding priority.** Of the ~258 methods scripts call, **57 exist
+in `sl.c` but are not ported yet** as of 26 August 2026 (110 → 100 → 57),
 and only **1 global** (`lock`) is still missing — down from 6. For current
 numbers, always run `./run.sh luaaudit`.
 

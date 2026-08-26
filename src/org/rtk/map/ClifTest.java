@@ -213,6 +213,171 @@ public final class ClifTest {
         durationTest(map, sd);
         ghostTest(map, sd);
         floorItemTest(map, sd);
+        inventoryTest(map, sd);
+    }
+
+    /**
+     * Paket inventaris (0x0F / 0x10) dan keluarga binding di sekitarnya.
+     *
+     * <p>Yang dijaga: dua string dengan peran berbeda pada paket 0x0F,
+     * hiasan teks yang berbeda per jenis barang, ketahanan yang hanya
+     * dikirim untuk perlengkapan, dan <b>penyapu data rusak</b> yang
+     * membuang barangnya alih-alih melewatinya.</p>
+     */
+    private static void inventoryTest(MapData map, User sd) {
+        log.info("=== inventaris (0x0F / 0x10) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+        var db = MapServer.itemDb;
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+        // pedang: perlengkapan (type 3) -> ketahanan ikut dikirim
+        db.register(new org.rtk.map.data.ItemDb.Info(7101, "klewang", "Klewang", "", "",
+                3, 1, 1, 1, 0, 0, 120, 7, 0,
+                new org.rtk.map.data.ItemDb.Look(0, 0, 88, 6), tanpaStat));
+        // roti: barang biasa bertumpuk (type 18)
+        db.register(new org.rtk.map.data.ItemDb.Info(7102, "roti", "Roti Tawar", "", "",
+                18, 1, 1, 20, 0, 0, 0, 0, 0,
+                new org.rtk.map.data.ItemDb.Look(0, 0, 12, 3), tanpaStat));
+        // obor: ITM_SMOKE -> teksnya "nama [dura satuan]"
+        db.register(new org.rtk.map.data.ItemDb.Info(7103, "obor", "Obor", "", "jam",
+                org.rtk.map.data.ItemDb.ITM_SMOKE, 1, 1, 1, 0, 0, 30, 0, 0,
+                new org.rtk.map.data.ItemDb.Look(0, 0, 5, 1), tanpaStat));
+        // peta: ITM_MAP -> teksnya "[Tdura] nama"
+        db.register(new org.rtk.map.data.ItemDb.Info(7104, "peta_uji", "Peta Uji", "", "",
+                org.rtk.map.data.ItemDb.ITM_MAP, 1, 1, 1, 0, 0, 3, 0, 0,
+                new org.rtk.map.data.ItemDb.Look(0, 0, 9, 2), tanpaStat));
+
+        sd.status.inventory.clear();
+        sd.status.maxInv = 20;
+
+        // --- perlengkapan: ketahanan dikirim ---
+        sd.addItemById(7101, 1, 120);
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        byte[] p = decrypt(drain(s), sd);
+        check("addItem: opcode 0x0F", (p[3] & 0xFF) == 0x0F);
+        check("addItem: nomor slot 1-basis di [5]", (p[5] & 0xFF) == 1);
+        check("addItem: ikon dari tabel Items di [6]", be16(p, 6) == 88);
+        check("addItem: warna ikon di [8]", (p[8] & 0xFF) == 6);
+        int tl = p[9] & 0xFF;
+        check("addItem: teks tampilan = nama tampilan",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Klewang"));
+        int off = 10 + tl;
+        int jl = p[off] & 0xFF;
+        check("addItem: string KEDUA = nama jenis, bukan teks hiasannya",
+                new String(p, off + 1, jl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Klewang"));
+        off += jl + 1;
+        check("addItem: jumlah di ladang berikutnya", be32(p, off) == 1);
+        off += 4;
+        check("addItem: perlengkapan -> penanda 0", (p[off] & 0xFF) == 0);
+        check("addItem: perlengkapan -> ketahanan ikut dikirim",
+                be32(p, off + 1) == 120);
+        check("addItem: perlindungan = yang TERBESAR antara barang & jenisnya",
+                (p[off + 5] & 0xFF) == 7);
+
+        // --- barang bertumpuk: penanda stack, ketahanan nol ---
+        sd.status.inventory.clear();
+        sd.addItemById(7102, 5, -1);
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        p = decrypt(drain(s), sd);
+        tl = p[9] & 0xFF;
+        check("addItem: jumlah >1 masuk ke TEKSNYA",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Roti Tawar (5)"));
+        off = 10 + tl;
+        off += (p[off] & 0xFF) + 1 + 4;
+        check("addItem: bertumpuk -> penanda 1", (p[off] & 0xFF) == 1);
+        check("addItem: bertumpuk -> ketahanan nol", be32(p, off + 1) == 0);
+
+        // --- hiasan teks per jenis ---
+        sd.status.inventory.clear();
+        sd.addItemById(7103, 1, 12);
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        p = decrypt(drain(s), sd);
+        tl = p[9] & 0xFF;
+        check("addItem: ITM_SMOKE -> 'nama [dura satuan]'",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Obor [12 jam]"));
+
+        sd.status.inventory.clear();
+        sd.addItemById(7104, 1, 3);
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        p = decrypt(drain(s), sd);
+        tl = p[9] & 0xFF;
+        check("addItem: ITM_MAP -> '[Tdura] nama'",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("[T3] Peta Uji"));
+
+        // --- nama ukiran menimpa nama jenis, tapi HANYA string pertama ---
+        sd.status.inventory.clear();
+        sd.addItemById(7101, 1, 120);
+        sd.status.inventory.get(0).realName = "Klewang Sakti";
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        p = decrypt(drain(s), sd);
+        tl = p[9] & 0xFF;
+        check("addItem: nama ukiran dipakai di teks tampilan",
+                new String(p, 10, tl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Klewang Sakti"));
+        off = 10 + tl;
+        jl = p[off] & 0xFF;
+        check("addItem: string kedua TETAP nama jenisnya",
+                new String(p, off + 1, jl, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .equals("Klewang"));
+
+        // --- penyapu data rusak MEMBUANG barangnya ---
+        sd.status.inventory.clear();
+        sd.addItemById(7102, 1, -1);
+        sd.status.inventory.get(0).id = 2;      // id < 4
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        check("addItem: barang ber-id < 4 DIBUANG, bukan dilewati",
+                sd.status.inventory.isEmpty() && drain(s).length == 0);
+
+        sd.status.inventory.clear();
+        sd.addItemById(7102, 1, -1);
+        sd.status.inventory.get(0).id = 999999; // tidak ada di tabel Items
+        drain(s);
+        Clif.sendAddItem(sd, 0);
+        check("addItem: barang tak dikenal DIBUANG juga",
+                sd.status.inventory.isEmpty() && drain(s).length == 0);
+
+        // --- 0x10 mengosongkan slot di SERVER, bukan cuma di klien ---
+        sd.status.inventory.clear();
+        sd.addItemById(7102, 3, -1);
+        drain(s);
+        Clif.sendDelItem(sd, 0, 6);
+        p = decrypt(drain(s), sd);
+        check("delItem: opcode 0x10", (p[3] & 0xFF) == 0x10);
+        check("delItem: slot 1-basis di [5]", (p[5] & 0xFF) == 1);
+        check("delItem: alasan di [6]", (p[6] & 0xFF) == 6);
+        check("delItem: slotnya ikut kosong di server",
+                sd.status.inventory.isEmpty());
+
+        // --- updateInv menyapu seluruh isi tas ---
+        sd.status.inventory.clear();
+        sd.addItemById(7101, 1, 120);
+        sd.addItemById(7102, 2, -1);
+        sd.addItemById(7104, 1, 3);
+        drain(s);
+        for (int i = sd.status.inventory.size() - 1; i >= 0; i--) {
+            Clif.sendAddItem(sd, i);
+        }
+        check("updateInv: satu paket 0x0F per slot terisi",
+                splitPackets(drain(s)).stream()
+                        .filter(o -> o[0] == 0x0F).count() == 3);
+
+        sd.status.inventory.clear();
+        drain(s);
     }
 
     /**
@@ -236,17 +401,17 @@ public final class ClifTest {
         var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         // apel: bertumpuk 10, boleh dipungut
-        db.register(new org.rtk.map.data.ItemDb.Info(7001, "apel_uji", "Apel Uji", "",
+        db.register(new org.rtk.map.data.ItemDb.Info(7001, "apel_uji", "Apel Uji", "", "",
                 18, 1, 1, 10, 0, 0, 50, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(11, 2, 33, 4), tanpaStat));
         // pedang: tidak bertumpuk
-        db.register(new org.rtk.map.data.ItemDb.Info(7002, "pedang_uji", "Pedang Uji", "",
+        db.register(new org.rtk.map.data.ItemDb.Info(7002, "pedang_uji", "Pedang Uji", "", "",
                 3, 1, 1, 1, 0, 0, 100, 0, 0, kosongLook, tanpaStat));
         // batu nisan: ItmDroppable != 0 -> TIDAK bisa dipungut
-        db.register(new org.rtk.map.data.ItemDb.Info(7003, "nisan_uji", "Nisan Uji", "",
+        db.register(new org.rtk.map.data.ItemDb.Info(7003, "nisan_uji", "Nisan Uji", "", "",
                 18, 1, 1, 1, 0, 0, 1, 0, 1, kosongLook, tanpaStat));
         // jebakan: ITM_TRAPS
-        db.register(new org.rtk.map.data.ItemDb.Info(7004, "jebakan_uji", "Jebakan Uji", "",
+        db.register(new org.rtk.map.data.ItemDb.Info(7004, "jebakan_uji", "Jebakan Uji", "", "",
                 org.rtk.map.data.ItemDb.ITM_TRAPS, 1, 1, 1, 0, 0, 1, 0, 0,
                 kosongLook, tanpaStat));
 

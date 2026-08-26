@@ -567,6 +567,146 @@ public final class Clif {
     }
 
     /**
+     * clif_sendadditem() — isi satu slot inventaris di layar pemain.
+     * Opcode 0x0F, panjangnya berubah-ubah menurut teksnya.
+     *
+     * <p>Jalur di balik {@code updateInv} (24x) dan setiap kali pemain
+     * mendapat barang. Nomor slot dikirim <b>1-basis</b>.</p>
+     *
+     * <p><b>Dua string, dan keduanya berbeda peran:</b> yang pertama adalah
+     * teks yang <b>dilihat pemain</b> — nama asli barang bila diukir, plus
+     * hiasan menurut jenisnya ({@code "Apel (5)"}, {@code "Obor [12 jam]"},
+     * {@code "[T3] Peta"}); yang kedua nama <b>jenis</b>-nya apa adanya,
+     * dipakai klien untuk mencocokkan gambar dan tooltip.</p>
+     *
+     * <p>⚠️ <b>Dua penjaga yang MENGHAPUS barangnya, bukan sekadar melewati:</b>
+     * barang ber-id di bawah 4, dan barang yang tidak ada di tabel `Items`,
+     * dikosongkan dari inventaris pemain. Itu penyapu data rusak di C —
+     * ditiru apa adanya, karena kalau tidak, barang hantu akan menumpuk di
+     * slot yang tidak bisa dipakai.</p>
+     *
+     * <p>⚠️ Ketahanan hanya dikirim untuk jenis <b>3..17</b> (perlengkapan).
+     * Jenis lain memakai ladang yang sama untuk penanda "bertumpuk".</p>
+     */
+    public static void sendAddItem(User sd, int slot) {
+        Session s = sessionOf(sd);
+        if (s == null || slot < 0 || slot >= sd.status.inventory.size()) {
+            return;
+        }
+        org.rtk.common.mmo.Item it = sd.status.inventory.get(slot);
+        var info = MapServer.itemDb.info(it.id);
+
+        // Penyapu data rusak: barangnya dibuang, bukan dilewati.
+        if (it.id < 4 || info.id() == 0) {
+            sd.status.inventory.remove(slot);
+            return;
+        }
+
+        String nama = it.realName != null && !it.realName.isEmpty()
+                ? it.realName : info.display();
+        String tampil;
+        if (it.amount > 1) {
+            tampil = nama + " (" + it.amount + ")";
+        } else if (info.type() == org.rtk.map.data.ItemDb.ITM_SMOKE) {
+            tampil = nama + " [" + it.dura + " " + info.text() + "]";
+        } else if (info.type() == org.rtk.map.data.ItemDb.ITM_BAG
+                || info.type() == org.rtk.map.data.ItemDb.ITM_QUIVER) {
+            tampil = nama + " [" + it.dura + "]";
+        } else if (info.type() == org.rtk.map.data.ItemDb.ITM_MAP) {
+            tampil = "[T" + it.dura + "] " + nama;
+        } else {
+            tampil = nama;
+        }
+
+        byte[] teks = tampil.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] jenis = info.display().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x0F);
+        s.wfifoB(5, slot + 1);
+
+        if (it.customIcon != 0) {
+            s.wfifoWBE(6, (int) (it.customIcon + 49152));
+            s.wfifoB(8, (int) it.customIconColor);
+        } else {
+            s.wfifoWBE(6, info.look().icon());
+            s.wfifoB(8, info.look().iconColor());
+        }
+
+        s.wfifoB(9, teks.length);
+        s.wfifoBytes(10, teks);
+        int len = teks.length + 10;
+
+        s.wfifoB(len, jenis.length);
+        s.wfifoBytes(len + 1, jenis);
+        len += jenis.length + 1;
+
+        s.wfifoLBE(len, it.amount);
+        len += 4;
+
+        boolean perlengkapan = info.type() >= org.rtk.map.data.ItemDb.ITM_EQUIP_MIN
+                && info.type() <= org.rtk.map.data.ItemDb.ITM_EQUIP_MAX;
+        if (perlengkapan) {
+            s.wfifoB(len, 0);
+            s.wfifoLBE(len + 1, it.dura);
+        } else {
+            s.wfifoB(len, MapServer.itemDb.stackAmountOf(it.id) > 1 ? 1 : 0);
+            s.wfifoLBE(len + 1, 0);
+        }
+        // Perlindungan: yang TERBESAR antara milik barangnya dan bawaan
+        // jenisnya yang menang — dua baris di C yang saling menimpa.
+        s.wfifoB(len + 5, (int) Math.max(it.protectedFlag,
+                MapServer.itemDb.protectedOf(it.id)));
+        len += 6;
+
+        String pemilik = it.owner != 0 ? MapServer.charName(it.owner) : "";
+        if (!pemilik.isEmpty()) {
+            byte[] o = pemilik.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoB(len, o.length);
+            s.wfifoBytes(len + 1, o);
+            len += o.length + 1;
+        } else {
+            s.wfifoB(len, 0);
+            len += 1;
+        }
+        s.wfifoWBE(len, 0);
+        len += 2;
+        s.wfifoB(len, 0);
+        len += 1;
+
+        s.wfifoWBE(1, len);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_senddelitem() — kosongkan satu slot inventaris di layar pemain.
+     * Opcode 0x10, panjang tetap.
+     *
+     * <p>⚠️ <b>Paket ini juga mengosongkan slotnya di server</b>, bukan
+     * sekadar memberi tahu klien — begitu di C, dan skrip mengandalkannya.</p>
+     *
+     * @param type alasan hilangnya, yang menentukan kalimat di layar klien:
+     *             0 dibuang, 1 dijatuhkan, 2 dimakan, 3 dihisap, 4 dilempar,
+     *             5 ditembakkan, 6 dipakai, 7 dikirim, 8 lapuk, 9 diberikan,
+     *             10 dijual, 11 dicabut, 12 nama barangnya, 13 patah
+     */
+    public static void sendDelItem(User sd, int slot, int type) {
+        if (slot >= 0 && slot < sd.status.inventory.size()) {
+            sd.status.inventory.remove(slot);
+        }
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        head(s, 0x10, 0x06);
+        s.wfifoB(5, slot + 1);
+        s.wfifoB(6, type);
+        s.wfifoB(7, 0);
+        s.wfifoB(8, 0);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
      * clif_playsound() — mainkan bunyi di sekitar sebuah benda.
      * Opcode 0x19, panjang isi 0x14, disiarkan ke SAMEAREA.
      *

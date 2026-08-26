@@ -325,6 +325,35 @@ public final class Combat {
     }
 
     /**
+     * clif_deductarmor(): tiap perlengkapan yang dikenakan punya
+     * <b>peluang 50%</b> ikut aus terkena satu pukulan.
+     *
+     * <p>C menulisnya sebagai 14 blok {@code if} yang isinya identik, satu
+     * per slot 0..13 — bukan sebuah daftar pilihan. Karena itu perulangan
+     * di sini setara persis, bukan penyederhanaan yang mengubah perilaku.</p>
+     */
+    public static void deductArmor(User sd, int hit) {
+        for (int slot = 0; slot < 14; slot++) {
+            Item it = sd.status.equipAt(slot);
+            if (it == null || it.id <= 0) {
+                continue;
+            }
+            if (java.util.concurrent.ThreadLocalRandom.current().nextInt(100) > 50) {
+                deductDura(sd, slot, hit);
+            }
+        }
+    }
+
+    /** clif_deductweapon(): hanya senjata, dengan peluang 50% yang sama. */
+    public static void deductWeapon(User sd, int hit) {
+        Item it = sd.status.equipAt(Equip.WEAP);
+        if (it != null && it.id > 0
+                && java.util.concurrent.ThreadLocalRandom.current().nextInt(100) > 50) {
+            deductDura(sd, Equip.WEAP, hit);
+        }
+    }
+
+    /**
      * clif_checkdura(): peringatkan pemain saat durabilitas menipis.
      * Bendera {@code repair} menjaga peringatannya hanya muncul sekali.
      */

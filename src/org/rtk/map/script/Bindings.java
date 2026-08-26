@@ -711,6 +711,131 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        /**
+         * pcl_updateinv() -&gt; {@code pc_loaditem()}: gambar ulang seluruh
+         * inventaris di layar pemain. Dipakai 24x, biasanya setelah skrip
+         * mengubah isi tas lewat jalur yang tidak mengirim paket sendiri.
+         */
+        player.addMethod("updateInv", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                kirimInventaris(u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_refreshInventory(): sama, tapi C menyapu <b>52 slot tetap</b>
+         * alih-alih {@code maxinv}. Di sini keduanya bertemu di titik yang
+         * sama karena inventarisnya daftar, bukan larik berlubang.
+         */
+        player.addMethod("refreshInventory", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                kirimInventaris(u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /** pcl_hasequipped(barang): apakah barang itu sedang dikenakan. */
+        player.addMethod("hasEquipped", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.FALSE;
+            }
+            long id = barangId(args.arg(2));
+            if (id <= 0) {
+                return LuaValue.FALSE;
+            }
+            for (var it : u.status.equip) {
+                if (it != null && it.id == id) {
+                    return LuaValue.TRUE;
+                }
+            }
+            return LuaValue.FALSE;
+        });
+
+        /**
+         * pcl_hasitemdura(barang, jumlah [, dura]): punya sekian barang itu
+         * <b>dengan ketahanan persis</b> segitu?
+         *
+         * <p>{@code dura} 0 berarti "ketahanan penuh bawaan jenisnya".
+         * Barangnya <b>tidak</b> dibuang — di C baris {@code pc_delitem}
+         * dikomentari, jadi ini murni pemeriksaan.</p>
+         */
+        player.addMethod("hasItemDura", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.FALSE;
+            }
+            long id = barangId(args.arg(2));
+            int perlu = Math.abs(args.optint(3, 0));
+            int dura = args.optint(4, 0);
+            if (id <= 0 || perlu <= 0) {
+                return LuaValue.FALSE;
+            }
+            if (dura == 0) {
+                dura = org.rtk.map.MapServer.itemDb.info(id).durability();
+            }
+            int sisa = perlu;
+            for (var it : u.status.inventory) {
+                if (it.id != id || it.dura != dura) {
+                    continue;
+                }
+                if (it.amount >= sisa) {
+                    return LuaValue.TRUE;
+                }
+                sisa -= it.amount;
+            }
+            return LuaValue.FALSE;
+        });
+
+        /** pcl_deductdura(slot, jumlah): ausi satu slot perlengkapan. */
+        player.addMethod("deductDura", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Combat.deductDura(u, args.optint(2, -1), args.optint(3, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_deductdurainv(slot, jumlah): ausi barang di <b>inventaris</b>.
+         * Berbeda dari {@code deductDura}, ia tidak memeriksa peta PvP dan
+         * tidak memicu peringatan ketahanan — di C memang menulis langsung.
+         */
+        player.addMethod("deductDuraInv", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            int slot = args.optint(2, -1);
+            if (u != null && slot >= 0 && slot < u.status.inventory.size()) {
+                u.status.inventory.get(slot).dura -= args.optint(3, 0);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_deductarmor(kerusakan) -&gt; {@code clif_deductarmor()}:
+         * setiap perlengkapan yang dikenakan punya <b>peluang 50%</b> ikut
+         * aus. C menulisnya sebagai 14 blok {@code if} yang identik; di sini
+         * satu perulangan, karena daftarnya persis slot 0..13.
+         */
+        player.addMethod("deductArmor", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Combat.deductArmor(u, args.optint(2, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        /** pcl_deductweapon(kerusakan): hanya senjata, peluang 50% juga. */
+        player.addMethod("deductWeapon", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Combat.deductWeapon(u, args.optint(2, 0));
+            }
+            return LuaValue.NONE;
+        });
+
         /** pcl_updatePath(jalur, tanda): naik jalur; langsung ditulis ke database. */
         player.addMethod("updatePath", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
@@ -957,6 +1082,25 @@ final class Bindings {
             prot = org.rtk.map.MapServer.itemDb.protectedOf(itemId);
         }
         org.rtk.map.MapServer.floorItems.drop(src, itemId, jumlah, dura, prot, 0, m, x, y);
+    }
+
+    /** itemdb_id(): argumen Lua yang boleh berupa nama ATAU nomor barang. */
+    private static long barangId(LuaValue v) {
+        return v.isnumber() ? (long) v.todouble()
+                : org.rtk.map.MapServer.itemDb.idOf(v.optjstring(""));
+    }
+
+    /**
+     * pc_loaditem(): kirim ulang seluruh slot inventaris.
+     *
+     * <p>Disapu dari belakang karena {@code sendAddItem} <b>membuang</b>
+     * barang rusak dari daftar (id &lt; 4 atau tidak ada di tabel `Items`) —
+     * menyapu maju akan melewati satu slot setiap kali itu terjadi.</p>
+     */
+    private static void kirimInventaris(org.rtk.map.User u) {
+        for (int i = u.status.inventory.size() - 1; i >= 0; i--) {
+            org.rtk.map.MapServer.clientView.playerInventorySlotChanged(u, i);
+        }
     }
 
     /** magicdb_id() dari nama skrip mantra. */

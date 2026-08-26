@@ -47,6 +47,16 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void playerInventorySlotChanged(User sd, int slot) {
+        Clif.sendAddItem(sd, slot);
+    }
+
+    @Override
+    public void playerInventorySlotCleared(User sd, int slot, int reason) {
+        Clif.sendDelItem(sd, slot, reason);
+    }
+
+    @Override
     public void playerSpellRemoved(User sd, int slot) {
         Clif.removeSpell(sd, slot);
     }

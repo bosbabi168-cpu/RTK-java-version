@@ -40,6 +40,7 @@ public final class ItemDb {
      * @param maxAmount   batas total yang boleh dimiliki; 0 = tanpa batas
      */
     public record Info(long id, String name, String display, String buyText,
+                       String text,
                        int type, int buyPrice, int sellPrice,
                        int stackAmount, int maxAmount, int sound, int durability,
                        int protectedValue, int droppable,
@@ -55,7 +56,7 @@ public final class ItemDb {
     private static final Stats TANPA_STAT =
             new Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     private static final Info TIDAK_DIKENAL =
-            new Info(0, "", "", "", 0, 0, 0, 1, 0, 0, 0, 0, 0, KOSONG, TANPA_STAT);
+            new Info(0, "", "", "", "", 0, 0, 0, 1, 0, 0, 0, 0, 0, KOSONG, TANPA_STAT);
 
     private final Map<Long, Look> byId = new HashMap<>();
     private final Map<Long, Info> infoById = new HashMap<>();
@@ -95,8 +96,21 @@ public final class ItemDb {
         return i == null ? 0 : i.id();
     }
 
-    /** Jenis barang {@code ITM_TRAPS} (itemdb.h:45) — jebakan di lantai. */
+    /**
+     * Jenis barang (enum di itemdb.h:23). Hanya yang benar-benar dipakai
+     * kode ini yang diberi nama.
+     *
+     * <p>⚠️ Rentang {@code 3..17} adalah <b>perlengkapan</b>: hanya jenis
+     * itu yang membawa ketahanan pada paket inventaris. Ini rentang, bukan
+     * daftar — jadi jangan diperiksa satu per satu.</p>
+     */
+    public static final int ITM_SMOKE = 2;
+    public static final int ITM_EQUIP_MIN = 3;
+    public static final int ITM_EQUIP_MAX = 17;
     public static final int ITM_TRAPS = 20;
+    public static final int ITM_BAG = 21;
+    public static final int ITM_MAP = 22;
+    public static final int ITM_QUIVER = 23;
 
     /** itemdb_protected(): nilai perlindungan bawaan barang. */
     public int protectedOf(long itemId) {
@@ -152,6 +166,7 @@ public final class ItemDb {
                 "SELECT `ItmId`,`ItmIdentifier`,`ItmType`,`ItmLook`,`ItmLookColor`,"
                 + "`ItmIcon`,`ItmIconColor`,`ItmBuyPrice`,`ItmSellPrice`,"
                 + "`ItmStackAmount`,`ItmMaximumAmount`,`ItmDescription`,`ItmBuyText`,"
+                + "`ItmText`,"
                 + "`ItmSound`,`ItmDurability`,`ItmProtected`,`ItmDroppable`,"
                 + "`ItmVita`,`ItmMana`,`ItmMight`,`ItmWill`,`ItmGrace`,`ItmArmor`,"
                 + "`ItmHit`,`ItmDam`,`ItmProtection`,`ItmHealing`,"
@@ -164,9 +179,11 @@ public final class ItemDb {
                     String nama = rs.getString("ItmIdentifier");
                     String tampil = rs.getString("ItmDescription");
                     String buyText = rs.getString("ItmBuyText");
+                    String teks = rs.getString("ItmText");
                     Info info = new Info(id, nama == null ? "" : nama,
                             tampil == null ? "" : tampil,
                             buyText == null ? "" : buyText,
+                            teks == null ? "" : teks,
                             rs.getInt("ItmType"),
                             rs.getInt("ItmBuyPrice"), rs.getInt("ItmSellPrice"),
                             rs.getInt("ItmStackAmount"), rs.getInt("ItmMaximumAmount"),

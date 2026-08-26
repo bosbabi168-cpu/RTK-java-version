@@ -74,6 +74,22 @@ public interface ClientView {
     /** Sisa aether sebuah mantra pemain berubah; 0 = habis. */
     void playerAetherChanged(User sd, int spellId, int seconds);
 
+    /**
+     * Satu slot inventaris pemain perlu digambar ulang di layarnya.
+     *
+     * <p>Dipakai baik saat barang masuk maupun saat isinya berubah —
+     * klien menggambar ulang slotnya apa adanya.</p>
+     */
+    void playerInventorySlotChanged(User sd, int slot);
+
+    /**
+     * Satu slot inventaris pemain dikosongkan.
+     *
+     * @param reason alasan hilangnya; menentukan kalimat di layar klien
+     *               (0 dibuang, 2 dimakan, 6 dipakai, 8 lapuk, 10 dijual, …)
+     */
+    void playerInventorySlotCleared(User sd, int slot, int reason);
+
     /** Satu mantra lenyap dari buku mantra pemain. */
     void playerSpellRemoved(User sd, int slot);
 
