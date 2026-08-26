@@ -184,6 +184,18 @@ public final class MapData {
         if (!bl.onMap) {
             return false;
         }
+        // Di C `map_delblock(bl)` selalu memakai `map[bl->m]` — mustahil
+        // mencabut benda dari peta yang bukan tempatnya. Di sini delBlock
+        // adalah method instance, jadi peta yang salah bisa dilewatkan; tanpa
+        // penjaga ini bendanya TIDAK tercabut dari daftar peta aslinya
+        // sementara `onMap` sudah dimatikan, sehingga `addBlock` berikutnya
+        // mendaftarkannya untuk KEDUA kalinya. Akibatnya setiap siaran ke
+        // area mengirim paket ganda dan tiap sapuan menghitungnya dua kali.
+        // Pernah kejadian dan lolos dari 294 assertion cliftest — baru
+        // ketahuan saat nomor urut paket naik dua per kiriman.
+        if (bl.m != id) {
+            return false;
+        }
         List<BlockList>[] idx = indexFor(bl);
         int i = bl.bx + bl.by * bxs;
         if (i >= 0 && i < idx.length && idx[i] != null) {

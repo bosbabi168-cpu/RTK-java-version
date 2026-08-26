@@ -214,11 +214,8 @@ final class Bindings {
             log.debug("[minitext->{}] {}", p.name, msg);
             return LuaValue.NONE;
         });
-        player.addMethod("talk", (self, args) -> {
-            ScriptPlayer p = (ScriptPlayer) self;
-            p.outbox.add("[talk] " + args.optjstring(3, args.optjstring(2, "")));
-            return LuaValue.NONE;
-        });
+        // `talk` didefinisikan di defineObjectQueries (bll_extendproto),
+        // bukan di sini — Player, NPC, dan Mob memakai yang sama persis.
 
         // ---- blocking dialog PRIMITIVES (pcl_menu / pcl_dialog / pcl_input /
         // pcl_menuseq / pcl_inputseq). The content layer in
@@ -669,9 +666,86 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        /**
+         * pcl_removeitemslot(slot, jumlah, ragam): buang barang dari slot
+         * tertentu. Lihat {@link org.rtk.map.User#scriptRemoveItemSlot} —
+         * ada satu cabang yang mengembalikan false setelah barangnya
+         * telanjur berkurang, dan itu memang perilaku C.
+         */
+        player.addMethod("removeItemSlot", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (!(p.owner instanceof org.rtk.map.User u)) {
+                return LuaValue.FALSE;
+            }
+            return LuaValue.valueOf(u.scriptRemoveItemSlot(
+                    args.optint(2, -1), args.optint(3, 0), args.optint(4, 0)));
+        });
+
+        /** pcl_updatePath(jalur, tanda): naik jalur; langsung ditulis ke database. */
+        player.addMethod("updatePath", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.User u) {
+                u.scriptUpdatePath(args.optint(2, 0), args.optint(3, 0));
+            }
+            return LuaValue.TRUE;
+        });
+
+        /** pcl_updateCountry(negara): pindah negara; langsung ke database juga. */
+        player.addMethod("updateCountry", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.User u) {
+                u.scriptUpdateCountry(args.optint(2, 0));
+            }
+            return LuaValue.TRUE;
+        });
+
+        /**
+         * pcl_sendhealth(kerusakan, kritis) -> {@code clif_send_pc_healthscript()}:
+         * pemain menerima kerusakan, dan angkanya muncul di atas kepalanya.
+         *
+         * <p>Dua penyesuaian yang diambil apa adanya dari C: kerusakan
+         * dibulatkan <b>menjauhi nol</b> (0,5 ke atas untuk positif, ke bawah
+         * untuk negatif), dan nomor kritis 1/2 diterjemahkan jadi 33/255 —
+         * itu nomor warna angkanya di klien, bukan besaran.</p>
+         */
+        player.addMethod("sendHealth", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (!(p.owner instanceof org.rtk.map.User u)) {
+                return LuaValue.NONE;
+            }
+            double dmg = args.optdouble(2, 0);
+            int damage = dmg > 0 ? (int) (dmg + 0.5) : (dmg < 0 ? (int) (dmg - 0.5) : 0);
+            int critical = args.optint(3, 0);
+            if (critical == 1) {
+                critical = 33;
+            } else if (critical == 2) {
+                critical = 255;
+            }
+            org.rtk.map.Combat.takeDamage(u, damage, critical);
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_refresh() — gambar ulang seluruh layar pemain.
+         *
+         * <p>C memanggil {@code pc_setpos()} lebih dulu; itu <b>tidak</b>
+         * menyentuh indeks blok (lihat Peringatan #11), hanya menyetel ulang
+         * posisi yang dianggap benar sebelum layar digambar ulang.</p>
+         */
+        player.addMethod("refresh", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            if (p.owner instanceof org.rtk.map.User u) {
+                org.rtk.map.Pc.setPos(u, u.m, u.x, u.y);
+                org.rtk.map.MapServer.clientView.playerViewRefreshed(u);
+            }
+            return LuaValue.NONE;
+        });
+
+        // Sisa stub: subsistem durasi/aether belum diport. `sendSound` dan
+        // `updateStatus` tidak ada di sl.c sama sekali — dibiarkan terdaftar
+        // supaya skrip yang memanggilnya tidak meledak.
         for (String name : new String[]{
-                "sendAction", "playSound", "updateState", "setDuration", "setAether",
-                "sendSound", "sendHealth", "refresh", "updateStatus"}) {
+                "setDuration", "setAether", "sendSound", "updateStatus"}) {
             player.addMethod(name, (self, args) -> {
                 engine.warnStub("player:" + name + "()");
                 return LuaValue.NONE;
@@ -785,10 +859,9 @@ final class Bindings {
             }
             return LuaValue.valueOf(cb.scriptCallBase(args.optjstring(2, "")));
         });
-        klass.addMethod("talk", (self, args) -> {
-            log.debug("[{}:talk] {}", klass.name, args.optjstring(3, args.optjstring(2, "")));
-            return LuaValue.NONE;
-        });
+        // `talk` ada di defineObjectQueries (bll_extendproto) — sebelumnya di
+        // sini hanya menulis log, dan definisi itu MENIMPA yang bersama
+        // karena dijalankan belakangan.
         /**
          * bll_sendanim(anim, kali): mainkan animasi pada benda ini untuk
          * pemain di sekitarnya.
@@ -810,8 +883,7 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
-        for (String name : new String[]{"playSound",
-                "spawn", "delete", "deliddb"}) {
+        for (String name : new String[]{"spawn"}) {
             klass.addMethod(name, (self, args) -> {
                 engine.warnStub(klass.name + ":" + name + "()");
                 return LuaValue.NONE;
@@ -1014,6 +1086,107 @@ final class Bindings {
             org.rtk.map.data.BlockList bl =
                     org.rtk.map.MapServer.blockById((long) args.optdouble(2, 0));
             return bl == null ? LuaValue.NIL : engine.objectRef(bl);
+        });
+
+        /**
+         * bll_talk(ragam, teks) -> {@code clif_speak()}: benda ini berbicara
+         * dan <b>semua pemain di sekitarnya mendengar</b>.
+         *
+         * <p>Method skrip terbanyak kedua (698x). Tanpa ini NPC dan mob
+         * tidak pernah benar-benar bersuara di layar — quest tetap berjalan
+         * di sisi server, tapi pemain tidak melihat sepatah kata pun.</p>
+         *
+         * <p>{@code outbox} tetap diisi untuk pemain karena uji memakai
+         * pemain tiruan yang tidak punya sesi jaringan.</p>
+         */
+        klass.addMethod("talk", (self, args) -> {
+            if (self instanceof ScriptPlayer p) {
+                p.outbox.add("[talk] " + args.optjstring(3, args.optjstring(2, "")));
+            }
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl != null) {
+                org.rtk.map.MapServer.clientView.objectSpoke(bl,
+                        args.optint(2, 0), args.optjstring(3, ""));
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * bll_sendaction(gerakan, lama) -> {@code clif_sendaction()}:
+         * benda ini menyerang, melempar, duduk, merapal, atau makan.
+         *
+         * <p>Method skrip terbanyak (905x). Kait {@code onAction} hanya
+         * dipanggil bila bendanya pemain — persis seperti di C.</p>
+         */
+        klass.addMethod("sendAction", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl == null) {
+                return LuaValue.NONE;
+            }
+            int action = args.optint(2, 0);
+            org.rtk.map.MapServer.clientView.objectActed(bl, action, args.optint(3, 0), 0);
+            if (bl instanceof org.rtk.map.User u) {
+                u.action = action;
+                engine.doScript("onAction", null, engine.playerRef(u.scriptPlayer()));
+            }
+            return LuaValue.NONE;
+        });
+
+        /** bll_playsound(bunyi) -> {@code clif_playsound()}. */
+        klass.addMethod("playSound", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl != null) {
+                org.rtk.map.MapServer.clientView.soundPlayed(bl, args.optint(2, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * bll_updatestate() -> gambar ulang benda ini pada pemain di
+         * sekitarnya, di tempatnya sekarang.
+         *
+         * <p>Dipakai skrip setiap kali wujud berubah tanpa berpindah:
+         * menyamar, menghilang, mati jadi hantu, berganti perlengkapan.</p>
+         */
+        klass.addMethod("updateState", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl == null) {
+                return LuaValue.FALSE;
+            }
+            org.rtk.map.MapServer.clientView.objectAppearanceChanged(bl);
+            return LuaValue.TRUE;
+        });
+
+        /**
+         * bll_delete(): cabut benda ini dari dunia untuk selamanya.
+         *
+         * <p>Pemain <b>dilewati</b> — di C {@code bll_delete} langsung
+         * return untuk BL_PC, karena benda pemain tidak boleh dibebaskan
+         * dari bawah sesinya.</p>
+         */
+        klass.addMethod("delete", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl == null || bl instanceof org.rtk.map.User) {
+                return LuaValue.NONE;
+            }
+            if (bl instanceof org.rtk.map.Mob mb) {
+                org.rtk.map.MapServer.mobs.remove(mb, org.rtk.map.MapServer.world);
+            } else if (bl instanceof org.rtk.map.Npc nd) {
+                org.rtk.map.MapServer.npcs.remove(nd, org.rtk.map.MapServer.world);
+            }
+            if (bl.id > 0) {
+                org.rtk.map.MapServer.clientView.objectRemoved(bl);
+            }
+            return LuaValue.NONE;
+        });
+
+        /** bll_deliddb(): cabut benda dari indeks id saja, tanpa menghapusnya. */
+        klass.addMethod("delFromIDDB", (self, args) -> {
+            org.rtk.map.data.BlockList bl = blockOf(self);
+            if (bl != null) {
+                org.rtk.map.MapServer.npcs.unregister(bl);
+            }
+            return LuaValue.NONE;
         });
 
         /** bll_getusers(): SEMUA pemain online, bukan hanya sepeta. */

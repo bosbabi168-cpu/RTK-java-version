@@ -272,6 +272,27 @@ public final class NpcRegistry {
     }
 
     /**
+     * Bagian NPC dari {@code bll_delete()}: cabut NPC dari dunia, tetap
+     * maupun sementara.
+     *
+     * <p>Berbeda dari {@link #removeTemp}, ini <b>tidak menolak</b> NPC dari
+     * tabel — C pun tidak: {@code bll_delete} memanggil {@code FREE(bl)} pada
+     * benda apa pun kecuali pemain. NPC tetap yang dihapus baru kembali saat
+     * server dimuat ulang.</p>
+     */
+    public boolean remove(Npc nd, MapRegistry world) {
+        if (nd == null) {
+            return false;
+        }
+        MapData map = world.get(nd.m);
+        if (map != null && nd.onMap) {
+            map.delBlock(nd);
+        }
+        byId.remove(nd.id);
+        return npcs.remove(nd);
+    }
+
+    /**
      * npc_runtimers(): satu tik timer NPC — dipanggil tiap 100 ms.
      *
      * <p>Pola penghitungnya ditiru dari C: setiap tik menambah 100 ms ke

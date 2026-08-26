@@ -32,6 +32,11 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void playerIdentityChanged(User sd) {
+        Clif.sendMyStatus(sd);
+    }
+
+    @Override
     public void playerSpellRemoved(User sd, int slot) {
         Clif.removeSpell(sd, slot);
     }
@@ -69,6 +74,26 @@ public final class RetroTkClientView implements ClientView {
     @Override
     public void soundPlayed(BlockList at, int sound) {
         Clif.playSound(at, sound);
+    }
+
+    @Override
+    public void objectSpoke(BlockList speaker, int type, String text) {
+        Clif.speak(speaker, type, text);
+    }
+
+    @Override
+    public void objectActed(BlockList bl, int action, int time, int sound) {
+        Clif.sendAction(bl, action, time, sound);
+    }
+
+    @Override
+    public void objectAppearanceChanged(BlockList bl) {
+        Clif.broadcastLook(bl);
+    }
+
+    @Override
+    public void objectRemoved(BlockList bl) {
+        Clif.lookGone(bl);
     }
 
     @Override

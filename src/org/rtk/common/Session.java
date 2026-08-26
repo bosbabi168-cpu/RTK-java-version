@@ -63,6 +63,23 @@ public class Session {
     public InetSocketAddress clientAddr;
     public String name = "";
 
+    /**
+     * Nomor urut paket keluar — {@code session[fd]->increment} di C.
+     *
+     * <p>Dinaikkan oleh {@code WFIFOHEADER()}, yang menaruh hasilnya di byte
+     * [4]. <b>Hanya paket yang di C dibangun lewat makro itu</b> yang
+     * membawanya (opcode 0x07, 0x0C, 0x0D, 0x13, 0x1F, 0x37, 0x3A, 0x51);
+     * paket lain meninggalkan [4] bernilai 0. Jangan diseragamkan — klien
+     * membedakan keduanya.</p>
+     */
+    private int increment;
+
+    /** WFIFOHEADER(): naikkan lalu ambil nomor urut berikutnya (0..255). */
+    public int nextIncrement() {
+        increment = (increment + 1) & 0xFF;
+        return increment;
+    }
+
     /** true bila handler accept belum dijalankan logic thread. */
     volatile boolean pendingAccept = false;
 

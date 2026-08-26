@@ -482,6 +482,25 @@ public final class MobRegistry {
     }
 
     /**
+     * Bagian mob dari {@code bll_delete()}: cabut mob dari dunia
+     * <b>selamanya</b> — indeks blok, indeks id, dan daftar tik.
+     *
+     * <p>Bedanya dengan {@link #kill}: yang dibunuh tetap ada dan menunggu
+     * kelahiran ulang, yang dihapus tidak pernah kembali. Di C bedanya
+     * kelihatan karena {@code bll_delete} memanggil {@code FREE(bl)}.</p>
+     */
+    public boolean remove(Mob mob, MapRegistry world) {
+        MapData map = world.get(mob.m);
+        if (map != null && mob.onMap) {
+            map.delBlock(mob);
+        }
+        if (idIndex != null) {
+            idIndex.unregister(mob);
+        }
+        return mobs.remove(mob);
+    }
+
+    /**
      * mob_respawn_getstats(): setel nilai awal mob dari jenisnya.
      * Dipanggil saat lahir dan saat lahir ulang.
      */

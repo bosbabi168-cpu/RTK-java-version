@@ -97,6 +97,13 @@ public final class User extends BlockList
     public int direction;
 
     /**
+     * Gerakan terakhir yang dimainkan pemain ({@code sd->action} di C):
+     * 0 diam, 1 serang, 2 lempar, 3 tembak, 4/5 duduk, 6 sihir, 7/8 makan.
+     * Disetel {@code clif_sendaction()} dan dibaca skrip.
+     */
+    public int action;
+
+    /**
      * Posisi kamera klien dalam petak layar (0..16 / 0..14).
      * Setara {@code sd->viewx} / {@code sd->viewy} di C: server ikut
      * melacaknya karena nilai ini dikirim balik pada tiap langkah.
@@ -718,6 +725,83 @@ public final class User extends BlockList
             }
         }
         return terbuang;
+    }
+
+    /**
+     * pcl_removeitemslot(): buang barang dari <b>satu slot tertentu</b>,
+     * bukan dari mana pun yang namanya cocok.
+     *
+     * <p>Dipakai skrip tas dan kerajinan yang sudah tahu slot mana yang
+     * dimaksud (27x) — mereka menyimpan nomor slot dari daftar yang
+     * ditampilkan ke pemain.</p>
+     *
+     * <p>⚠️ <b>Cabang "isi slot kurang dari yang diminta" selalu berakhir
+     * gagal, dan itu memang begitu di C.</b> Isi slotnya tetap dibuang,
+     * tetapi karena {@code amount} masih bersisa nilainya tidak pernah nol,
+     * sehingga fungsinya jatuh ke {@code return false} di bawah. Jadi
+     * pemanggil bisa menerima false <b>setelah</b> barangnya berkurang.
+     * Jangan "diperbaiki" — skrip yang ada mengandalkan perilaku ini.</p>
+     *
+     * @param type ragam pencatatan {@code pc_delitem} (10/9/11 di C); di sini
+     *             hanya ikut dicatat, tidak mengubah apa yang dibuang
+     */
+    public boolean scriptRemoveItemSlot(int slot, int amount, int type) {
+        if (slot < 0 || slot >= status.inventory.size() || amount <= 0) {
+            return false;
+        }
+        org.rtk.common.mmo.Item it = status.inventory.get(slot);
+        if (it.id <= 0) {
+            return false;
+        }
+        if (it.amount < amount && it.amount > 0) {
+            status.inventory.remove(slot);
+            return false;   // lihat catatan di atas
+        }
+        if (it.amount >= amount) {
+            it.amount -= amount;
+            if (it.amount <= 0) {
+                status.inventory.remove(slot);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * pcl_updatePath(): pemain berpindah jalur (path) dan tanda (mark).
+     *
+     * <p>Perubahannya <b>langsung ditulis ke database</b>, tidak menunggu
+     * simpan berkala — di C pun begitu, karena naik jalur adalah peristiwa
+     * yang tidak boleh hilang kalau server mati sebelum simpan berikutnya.</p>
+     */
+    public void scriptUpdatePath(int path, int mark) {
+        int p = Math.max(path, 0);
+        int mk = Math.max(mark, 0);
+        status.charClass = p;
+        status.mark = mk;
+        try {
+            MapServer.sql.update(
+                    "UPDATE `Character` SET `ChaPthId` = ?, `ChaMark` = ? WHERE `ChaId` = ?",
+                    p, mk, status.id);
+        } catch (RuntimeException e) {
+            log.error("[LUA] updatePath gagal menulis ke database", e);
+            return;
+        }
+        MapServer.clientView.playerIdentityChanged(this);
+    }
+
+    /** pcl_updateCountry(): pemain berpindah negara/kubu. */
+    public void scriptUpdateCountry(int country) {
+        status.country = country;
+        try {
+            MapServer.sql.update(
+                    "UPDATE `Character` SET `ChaNation` = ? WHERE `ChaId` = ?",
+                    country, status.id);
+        } catch (RuntimeException e) {
+            log.error("[LUA] updateCountry gagal menulis ke database", e);
+            return;
+        }
+        MapServer.clientView.playerStatusChanged(this, Clif.SFLAG_ALL);
     }
 
     /**

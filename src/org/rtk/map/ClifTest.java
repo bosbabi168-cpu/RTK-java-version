@@ -208,8 +208,173 @@ public final class ClifTest {
         mapDataTest(map, sd);
         statusTest(sd);
         lookTest(map, sd);
-
         walkTest(map, sd);
+        bllTest(map, sd);
+    }
+
+    /**
+     * Paket di balik method {@code bll_*} yang dipakai hampir semua skrip:
+     * {@code talk} (0x0D), {@code sendAction} (0x1A), {@code updateState}
+     * (0x1D), paket benda 0x07, dan {@code lookgone} (0x0E/0x5F).
+     *
+     * <p>Ikut diperiksa <b>nomor urut paket</b> di ladang [4]: hanya paket
+     * yang di C dibangun lewat {@code WFIFOHEADER} yang membawanya, dan
+     * salah menyeragamkannya tidak akan kelihatan dari membaca kode.</p>
+     */
+    private static void bllTest(MapData map, User sd) {
+        log.info("=== bll_* (talk 0x0D, sendAction 0x1A, updateState 0x1D, objek 0x07) ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+        org.rtk.common.Session s = MapServer.net.session(sd.fd);
+
+        // --- clif_speak (talk) ---
+        drain(s);
+        Clif.speak(sd, 3, "Halo dunia");
+        byte[] raw = drain(s);
+        check("talk: paket terkirim", raw.length > 0);
+        byte[] p = decrypt(raw, sd);
+        check("talk: opcode 0x0D", (p[3] & 0xFF) == 0x0D);
+        check("talk: ragam di [5]", (p[5] & 0xFF) == 3);
+        check("talk: id pembicara di [6]", (be32(p, 6) & 0xFFFFFFFFL) == sd.id);
+        check("talk: panjang teks APA ADANYA di [10] (bukan +2)",
+                (p[10] & 0xFF) == "Halo dunia".length());
+        check("talk: isi teks di [11..]", new String(p, 11, 10,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals("Halo dunia"));
+        // ladang panjang = strlen + 8, lalu setPacketIndexes menambah 3
+        check("talk: ladang panjang = panjang + 8 + 3",
+                be16(p, 1) == "Halo dunia".length() + 8 + 3);
+
+        // --- nomor urut WFIFOHEADER ---
+        int seq1 = p[4] & 0xFF;
+        check("talk: membawa nomor urut di [4] (WFIFOHEADER)", seq1 != 0);
+        drain(s);
+        Clif.speak(sd, 3, "lagi");
+        int seq2 = decrypt(drain(s), sd)[4] & 0xFF;
+        check("talk: nomor urut naik satu tiap paket",
+                seq2 == ((seq1 + 1) & 0xFF));
+
+        drain(s);
+        Clif.blockMovement(sd, 1);
+        byte[] blok = decrypt(drain(s), sd);
+        check("blockMovement: opcode 0x51", (blok[3] & 0xFF) == 0x51);
+        check("blockMovement: ikut membawa nomor urut",
+                (blok[4] & 0xFF) == ((seq2 + 1) & 0xFF));
+
+        // Paket yang di C TIDAK memakai WFIFOHEADER harus meninggalkan [4]=0
+        drain(s);
+        Clif.sendId(sd);
+        check("sendId: [4] tetap 0 — bukan paket WFIFOHEADER",
+                (decrypt(drain(s), sd)[4] & 0xFF) == 0);
+
+        // --- clif_sendaction ---
+        drain(s);
+        Clif.sendAction(sd, 1, 40, 0);
+        p = decrypt(drain(s), sd);
+        check("sendAction: opcode 0x1A", (p[3] & 0xFF) == 0x1A);
+        // C menulis 0x000B lalu setPacketIndexes menimpanya dengan nilai + 3
+        check("sendAction: ladang panjang 0x0B + 3 indeks kunci", be16(p, 1) == 0x0B + 3);
+        check("sendAction: id benda di [5]", (be32(p, 5) & 0xFFFFFFFFL) == sd.id);
+        check("sendAction: ragam gerakan di [9]", (p[9] & 0xFF) == 1);
+        check("sendAction: lama gerakan di [11]", (p[11] & 0xFF) == 40);
+        check("sendAction: [4] nol — dibangun dengan WBUF, bukan WFIFOHEADER",
+                (p[4] & 0xFF) == 0);
+
+        // --- clif_updatestate ---
+        drain(s);
+        Clif.updateState(sd, sd);
+        p = decrypt(drain(s), sd);
+        check("updateState: opcode 0x1D", (p[3] & 0xFF) == 0x1D);
+        check("updateState: id di [5]", (be32(p, 5) & 0xFFFFFFFFL) == sd.id);
+        check("updateState: sex di [9] — 5 byte lebih awal dari 0x33",
+                be16(p, 9) == sd.status.sex);
+        int nl = p[54] & 0xFF;
+        check("updateState: panjang nama di [54]", nl == sd.status.name.length());
+        check("updateState: nama di [55..]", new String(p, 55, nl,
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals(sd.status.name));
+        // C menulis len + 55 + 3; setPacketIndexes menambah 3 lagi
+        check("updateState: ladang panjang = len + 55 + 3 (+3 indeks kunci)",
+                be16(p, 1) == nl + 61);
+
+        // state 4 memakai tata letak pendek sendiri — cabang yang TIDAK ada
+        // pada paket 0x33
+        int stateAsli = sd.status.state;
+        sd.status.state = 4;
+        sd.status.disguise = 100;
+        drain(s);
+        Clif.updateState(sd, sd);
+        p = decrypt(drain(s), sd);
+        check("updateState state 4: penanda [9]=1 [10]=15",
+                (p[9] & 0xFF) == 1 && (p[10] & 0xFF) == 15);
+        check("updateState state 4: samaran + 32768 di [12]", be16(p, 12) == 100 + 32768);
+        check("updateState state 4: nama bergeser ke [17]", new String(p, 17,
+                sd.status.name.length(),
+                java.nio.charset.StandardCharsets.ISO_8859_1).equals(sd.status.name));
+        check("updateState state 4: panjang = nama + 1 + 13 (+3 indeks kunci)",
+                be16(p, 1) == sd.status.name.length() + 1 + 13 + 3);
+        sd.status.state = stateAsli;
+
+        // --- paket benda 0x07 + lookgone ---
+        MobData jenis = new MobData();
+        jenis.id = 900;
+        jenis.yname = "batu";
+        jenis.name = "Batu";
+        jenis.vita = 10;
+        jenis.look = 77;
+        jenis.lookColor = 3;
+        jenis.subtype = 0;      // BUKAN karakter -> paket benda 0x07
+        Mob batu = new Mob();
+        batu.data = jenis;
+        batu.id = Mob.MOB_START_NUM + 5;
+        batu.m = 0;
+        batu.x = c[0];
+        batu.y = c[1];
+        MobRegistry.resetStats(batu);
+        map.addBlock(batu);
+
+        drain(s);
+        Clif.objectLook(sd, batu);
+        p = decrypt(drain(s), sd);
+        check("objek: opcode 0x07", (p[3] & 0xFF) == 0x07);
+        check("objek: jumlah benda 1 di [5]", be16(p, 5) == 1);
+        check("objek: posisi di [7],[9]", be16(p, 7) == c[0] && be16(p, 9) == c[1]);
+        check("objek: id blok di [12]", (be32(p, 12) & 0xFFFFFFFFL) == batu.id);
+        check("objek: penanda mob 0x05 di [11]", (p[11] & 0xFF) == 0x05);
+        check("objek: grafik 32768 + look di [16]", be16(p, 16) == 32768 + 77);
+        check("objek: warna grafik di [18]", (p[18] & 0xFF) == 3);
+        check("objek: panjang tetap 20 (+3 indeks kunci)", be16(p, 1) == 20 + 3);
+
+        // mob mati tidak digambar sama sekali
+        batu.state = MobData.MOB_DEAD;
+        drain(s);
+        Clif.objectLook(sd, batu);
+        check("objek: mob mati tidak mengirim apa pun", drain(s).length == 0);
+        batu.state = MobData.MOB_ALIVE;
+
+        // lookgone: mob selalu 0x0E, NPC benda peta 0x5F
+        drain(s);
+        Clif.lookGone(batu);
+        p = decrypt(drain(s), sd);
+        check("lookGone mob: opcode 0x0E", (p[3] & 0xFF) == 0x0E);
+        check("lookGone: [4] = 0x03", (p[4] & 0xFF) == 0x03);
+        check("lookGone: id benda di [5]", (be32(p, 5) & 0xFFFFFFFFL) == batu.id);
+
+        Npc benda = new Npc();
+        benda.name = "PapanNama";
+        benda.npcId = 91;
+        benda.id = Npc.blockIdFor(91);
+        benda.m = 0;
+        benda.x = c[0];
+        benda.y = c[1];
+        benda.npcType = 0;    // benda peta, bukan karakter
+        map.addBlock(benda);
+        drain(s);
+        Clif.lookGone(benda);
+        p = decrypt(drain(s), sd);
+        check("lookGone NPC benda peta: opcode 0x5F", (p[3] & 0xFF) == 0x5F);
+
+        map.delBlock(batu);
+        map.delBlock(benda);
     }
 
     /**

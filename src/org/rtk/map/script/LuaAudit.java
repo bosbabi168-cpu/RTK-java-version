@@ -374,8 +374,11 @@ public final class LuaAudit {
         // -Drtk.audit.penuh=true mencetak daftar utuh; default 10 agar ringkas.
         long batas = Boolean.getBoolean("rtk.audit.penuh") ? Long.MAX_VALUE : 10;
         belumDiport.stream().limit(batas).forEach(a -> log.info("  {}", a));
-        if (belumDiport.size() > 10) {
-            log.info("  ... dan {} lagi", belumDiport.size() - 10);
+        // Baris "dan N lagi" hanya benar bila daftarnya MEMANG dipotong.
+        // Sebelumnya ia ikut tercetak pada mode penuh dan mengabarkan 73 nama
+        // tersembunyi yang sebenarnya sudah tercetak semua.
+        if (belumDiport.size() > batas) {
+            log.info("  ... dan {} lagi", belumDiport.size() - batas);
         }
     }
 

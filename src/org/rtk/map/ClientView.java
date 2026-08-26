@@ -56,6 +56,12 @@ public interface ClientView {
      */
     void playerStatusChanged(User sd, int flags);
 
+    /**
+     * Jati diri pemain berubah — jalur, tanda, gelar: hal yang menempel pada
+     * karakternya, bukan angka statusnya.
+     */
+    void playerIdentityChanged(User sd);
+
     /** Satu mantra lenyap dari buku mantra pemain. */
     void playerSpellRemoved(User sd, int slot);
 
@@ -92,6 +98,38 @@ public interface ClientView {
 
     /** Bunyi terdengar di sekitar sebuah benda. */
     void soundPlayed(BlockList at, int sound);
+
+    /**
+     * Sebuah benda berbicara, dan <b>semua yang berada di sekitarnya</b>
+     * mendengar — termasuk pembicaranya sendiri bila ia pemain.
+     *
+     * @param type ragam obrolan di C ({@code clif_speak}); menentukan warna
+     *             dan tempat teksnya muncul di klien
+     */
+    void objectSpoke(BlockList speaker, int type, String text);
+
+    /**
+     * Sebuah benda memainkan gerakan: menyerang, melempar, duduk, merapal,
+     * atau makan.
+     *
+     * @param action ragam gerakan (0 diam, 1 serang, 2 lempar, 3 tembak,
+     *               4/5 duduk, 6 sihir, 7/8 makan)
+     * @param time   lama gerakan
+     * @param sound  bunyi yang menyertainya; 0 = tanpa bunyi
+     */
+    void objectActed(BlockList bl, int action, int time, int sound);
+
+    /**
+     * Wujud sebuah benda berubah tanpa ia berpindah — menyamar, menghilang,
+     * berganti perlengkapan, mati jadi hantu.
+     *
+     * <p>Yang di sekitarnya perlu menggambar ulang benda itu <b>di tempat
+     * yang sama</b>; posisinya sendiri tidak ikut berubah.</p>
+     */
+    void objectAppearanceChanged(BlockList bl);
+
+    /** Sebuah benda lenyap dari dunia dan tidak boleh tergambar lagi. */
+    void objectRemoved(BlockList bl);
 
     /**
      * Pesan teks untuk seorang pemain.
