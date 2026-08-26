@@ -1057,6 +1057,101 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        // ---- kiriman & surat (Trek C4) ----
+
+        /**
+         * pcl_getparcel(): kiriman pertama yang menunggu pemain, atau nil.
+         *
+         * <p>Pesan "tidak ada kiriman" dikirim di sini, bukan di
+         * {@link org.rtk.map.Parcels}, supaya lapisan datanya tetap bebas
+         * protokol.</p>
+         */
+        player.addMethod("getParcel", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.FALSE;
+            }
+            var p = org.rtk.map.Parcels.first(org.rtk.map.MapServer.sql, u.status.id);
+            if (p == null) {
+                org.rtk.map.MapServer.clientView.messageToPlayer(u, 5,
+                        "Tidak ada kiriman yang menunggumu.");
+                return LuaValue.FALSE;
+            }
+            return engine.newInstance(engine.parcelClass, p);
+        });
+
+        /** pcl_getparcellist(): seluruh kiriman yang menunggu pemain. */
+        player.addMethod("getParcelList", (self, args) -> {
+            LuaTable t = new LuaTable();
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return t;
+            }
+            int i = 1;
+            for (var p : org.rtk.map.Parcels.list(org.rtk.map.MapServer.sql, u.status.id)) {
+                t.set(i++, engine.newInstance(engine.parcelClass, p));
+            }
+            return t;
+        });
+
+        /**
+         * pcl_removeparcel(pengirim, barang, jumlah, pos, …): buang satu
+         * kiriman.
+         *
+         * <p>⚠️ Dari sebelas argumen yang diminta, <b>hanya nomor urutnya
+         * (argumen ke-4) yang benar-benar dipakai</b> — sisanya peninggalan
+         * pencatatan log yang dikomentari di C. Jangan menjadikannya
+         * penyaring tambahan; skrip mengirim nilai seadanya ke sana.</p>
+         */
+        player.addMethod("removeParcel", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u != null
+                    && org.rtk.map.Parcels.remove(org.rtk.map.MapServer.sql, u.status.id, args.optint(5, -1)));
+        });
+
+        /**
+         * pcl_sendmail(penerima, judul, isi): titipkan surat lewat char
+         * server. Hasilnya datang belakangan lewat paket 0x380C, jadi
+         * nilai baliknya hanya "permintaannya terkirim".
+         */
+        player.addMethod("sendMail", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            return LuaValue.valueOf(u != null && org.rtk.map.MapIntif.sendMail(u,
+                    args.optjstring(2, ""), args.optjstring(3, ""),
+                    args.optjstring(4, ""), false));
+        });
+
+        /**
+         * pcl_updateMail(namaLama): pindahkan seluruh surat yang ditujukan
+         * ke nama lama menjadi ke nama pemain sekarang.
+         *
+         * <p>Dipakai saat karakter berganti nama — tanpa ini suratnya
+         * tertinggal di nama yang sudah tidak ada.</p>
+         */
+        player.addMethod("updateMail", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.FALSE;
+            }
+            int n = org.rtk.map.MapServer.sql.update(
+                    "UPDATE `Mail` SET `MalChaNameDestination` = ?"
+                    + " WHERE `MalChaNameDestination` = ?",
+                    u.status.name, args.optjstring(2, ""));
+            return LuaValue.valueOf(n >= 0);
+        });
+
+        /**
+         * pcl_addGift() / pcl_retrieveGift() — <b>seluruh badannya
+         * dikomentari di C</b>, jadi keduanya tidak melakukan apa pun dan
+         * tidak mengembalikan nilai yang berarti.
+         *
+         * <p>Diport sebagai tiruan yang setia: skrip mana pun yang
+         * mengandalkannya sudah rusak di server aslinya. Mengisinya dengan
+         * tebakan justru mengubah perilaku.</p>
+         */
+        player.addMethod("addGift", (self, args) -> LuaValue.NIL);
+        player.addMethod("retrieveGift", (self, args) -> LuaValue.NIL);
+
         // ---- BOD (Break on Death) ----
 
         /**
@@ -1783,6 +1878,41 @@ final class Bindings {
         });
     }
 
+    /**
+     * parcell_type: kiriman yang menunggu pemain.
+     *
+     * <p>Atributnya menggabungkan dua hal: sifat <b>barangnya</b> (id,
+     * jumlah, ukiran, wujud kustom) dan sifat <b>kirimannya</b> (pengirim,
+     * nomor urut, penanda NPC). Skrip pos membacanya untuk menyusun menu
+     * "kiriman menunggu".</p>
+     */
+    static void defineParcel(ScriptEngine engine, ScriptClass klass) {
+        klass.getter = (self, attr) -> {
+            if (!(self instanceof org.rtk.map.Parcels.Parcel p)) {
+                return null;
+            }
+            return switch (attr) {
+                case "id" -> LuaValue.valueOf((double) p.data.id);
+                case "amount" -> LuaValue.valueOf(p.data.amount);
+                case "owner" -> LuaValue.valueOf((double) p.data.owner);
+                case "realName" -> LuaValue.valueOf(p.data.realName);
+                case "engrave" -> LuaValue.valueOf(p.data.realName);
+                case "dura" -> LuaValue.valueOf(p.data.dura);
+                case "protected" -> LuaValue.valueOf((double) p.data.protectedFlag);
+                case "customLook" -> LuaValue.valueOf((double) p.data.customLook);
+                case "customLookC" -> LuaValue.valueOf((double) p.data.customLookColor);
+                case "customIcon" -> LuaValue.valueOf((double) p.data.customIcon);
+                case "customIconC" -> LuaValue.valueOf((double) p.data.customIconColor);
+                case "sender" -> LuaValue.valueOf((double) p.sender);
+                case "pos" -> LuaValue.valueOf(p.pos);
+                case "npcflag" -> LuaValue.valueOf(p.npcFlag);
+                case "name" -> LuaValue.valueOf(
+                        org.rtk.map.MapServer.itemDb.info(p.data.id).tampilan());
+                default -> null;
+            };
+        };
+    }
+
     // ------------------------------------------------------------------
     // Registries (regl_* / reglstring_* / npcintregl_* / questregl_*)
     // ------------------------------------------------------------------
@@ -2074,6 +2204,24 @@ final class Bindings {
             }
             return LuaValue.NONE;
         });
+
+        /**
+         * bll_sendparcel(penerima, pengirim, barang, jumlah, …): titipkan
+         * barang untuk pemain lain lewat tabel {@code Parcels}.
+         *
+         * <p>Ada di {@code bll_extendproto}, jadi NPC pos pun bisa
+         * mengirimkannya — dan memang itu pemakaian utamanya.</p>
+         */
+        klass.addMethod("sendParcel", (self, args) ->
+                LuaValue.valueOf(org.rtk.map.Parcels.send(
+                        org.rtk.map.MapServer.sql,
+                        (long) args.optdouble(2, 0), (long) args.optdouble(3, 0),
+                        (long) args.optdouble(4, 0), args.optint(5, 0),
+                        (long) args.optdouble(6, 0), args.optjstring(7, ""),
+                        args.optint(8, 0),
+                        (long) args.optdouble(9, 0), (long) args.optdouble(10, 0),
+                        (long) args.optdouble(11, 0), (long) args.optdouble(12, 0),
+                        (long) args.optdouble(13, 0), args.optint(14, 0))));
 
         /** bll_playsound(bunyi) -> {@code clif_playsound()}. */
         klass.addMethod("playSound", (self, args) -> {

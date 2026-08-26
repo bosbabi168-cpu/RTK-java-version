@@ -206,6 +206,86 @@ public final class MapIntif {
         return 0;
     }
 
+    /**
+     * nmail_sendmail() (0x300D) — titipkan surat ke char server.
+     *
+     * <p>Map server <b>tidak</b> menyentuh tabel {@code Mail} sendiri:
+     * pemain penerimanya bisa sedang berada di map server lain, dan char
+     * server yang memegang nama karakter. Panjangnya tetap 4124 byte.</p>
+     *
+     * <p>⚠️ Batasnya dijaga di sini persis seperti C: nama &gt; 16, judul
+     * &gt; 52, atau isi &gt; 4000 karakter membuat suratnya <b>tidak
+     * dikirim sama sekali</b> — bukan dipotong.</p>
+     *
+     * @param copy true mengirim 0x300F (salinan arsip pengirim), yang tidak
+     *             dibalas char server
+     */
+    public static boolean sendMail(User sd, String to, String topic, String body,
+                                   boolean copy) {
+        String tujuan = to == null ? "" : to;
+        String judul = topic == null ? "" : topic;
+        String isi = body == null ? "" : body;
+        if (tujuan.length() > 16 || judul.length() > 52 || isi.length() > 4000) {
+            log.warn("[MAP] surat dari {} ditolak: ladangnya melebihi batas", sd.name());
+            return false;
+        }
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa mengirim surat: belum terhubung ke char server");
+            return false;
+        }
+        s.wfifoW(0, copy ? 0x300F : 0x300D);
+        s.wfifoW(2, sd.fd);
+        s.wfifoStringRaw(4, sd.status.name);
+        s.wfifoStringRaw(20, tujuan);
+        s.wfifoStringRaw(72, judul);
+        s.wfifoStringRaw(124, isi);
+        s.wfifoSet(4124);
+        return true;
+    }
+
+    /**
+     * intif_parse (0x380C): hasil penulisan surat.
+     * 0 berhasil, 1 gagal database, 2 penerima tidak ditemukan.
+     */
+    static int parseMailResult(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(2);
+        int hasil = s.rfifoW(6);
+        User sd = MapServer.onlineChars.get(clientFd);
+        if (sd == null) {
+            return 0;
+        }
+        String pesan = switch (hasil) {
+            case 0 -> "Suratmu terkirim.";
+            case 2 -> "Nama penerima tidak ditemukan.";
+            default -> "Surat gagal dikirim.";
+        };
+        MapServer.clientView.messageToPlayer(sd, 5, pesan);
+        return 0;
+    }
+
+    /**
+     * intif_parse (0x380D): seorang pemain punya kiriman baru.
+     *
+     * <p>Disiarkan char server ke <b>semua</b> map server, karena
+     * penerimanya bisa ada di mana saja. Yang tidak menampung pemain itu
+     * mengabaikannya.</p>
+     */
+    static int parseNewMailFlag(int fd) {
+        Session s = net.session(fd);
+        long charId = s.rfifoL(2) & 0xFFFFFFFFL;
+        int flags = s.rfifoW(6);
+        for (User sd : MapServer.onlineChars.values()) {
+            if (sd.status.id == charId) {
+                sd.flags |= flags;
+                MapServer.clientView.messageToPlayer(sd, 5, "Kamu punya surat baru.");
+                return 0;
+            }
+        }
+        return 0;
+    }
+
     /** intif_parse_checkonline() (0x3804): kick a double-logged character. */
     static int parseCheckOnline(int fd) {
         Session s = net.session(fd);
@@ -253,6 +333,8 @@ public final class MapIntif {
             case 0x3802: parseAuthAdd(fd); break;
             case 0x3803: parseCharLoad(fd); break;
             case 0x3804: parseCheckOnline(fd); break;
+            case 0x380C: parseMailResult(fd); break;
+            case 0x380D: parseNewMailFlag(fd); break;
             default:
                 log.debug("[MAP] Packet {} not ported yet (see README roadmap)", String.format("0x%04X", cmd));
                 break;

@@ -789,6 +789,40 @@ byte-identik dengan `rtklua/`.
    ambang 50%, jadi barang yang sudah menipis lewat itu tidak pernah
    memperingatkan lagi. Sudah dilengkapi.
 
+44. **`Sql.queryInt` dulu mengembalikan 0 untuk SQL NULL.** `getInt`
+   memang begitu, jadi "tidak ada nilainya" dan "nilainya nol" jadi tak
+   terbedakan. Yang membuatnya berbahaya adalah **agregat**:
+   `SELECT MAX(x) ... WHERE ...` pada himpunan kosong menghasilkan **satu
+   baris berisi NULL**, bukan nol baris — sehingga pemanggilnya mengira
+   nilai tertingginya 0. Ketahuan pada nomor urut kiriman, yang seharusnya
+   mulai dari 0 tapi malah dari 1. Sekarang `queryInt` memeriksa
+   `wasNull()`; kalau menambah pembaca kolom baru, periksa hal yang sama.
+
+45. **Nomor urut kiriman dan surat adalah nomor PER PENERIMA, bukan kunci.**
+   `ParPosition` / `MalPosition` diisi "tertinggi milik penerima + 1".
+   Karena itu menghapus satu kiriman **tidak** menomori ulang sisanya —
+   lubang di tengah dibiarkan, dan kiriman berikutnya tetap mengambil
+   tertinggi + 1, bukan mengisi lubangnya. Menomori ulang akan memutus
+   `removeParcel`, yang menghapus **berdasarkan nomor itu**.
+
+   Dua hal lagi di keluarga yang sama:
+   - **`npcflag` mengubah arti `sender`**: bila bukan nol, pengirimnya NPC
+     dan idnya digeser `+ NPC_START_NUM - 2`.
+   - **`removeParcel` meminta sebelas argumen dan memakai satu.** Hanya
+     nomor urutnya yang menentukan baris mana yang terhapus; sisanya
+     peninggalan log yang dikomentari. Jangan menjadikannya penyaring.
+
+46. **`addGift`/`retrieveGift` badannya DIKOMENTARI SELURUHNYA di C.**
+   Keduanya tidak melakukan apa pun di server aslinya, jadi skrip yang
+   mengandalkannya memang sudah rusak di sana. Diport sebagai tiruan setia
+   yang mengembalikan nil — mengisinya dengan tebakan justru mengubah
+   perilaku.
+
+   ⚠️ Terkait pengujian: **`dbtest` menulis ke `logs/char.log`**, persis
+   seperti `cliftest` menulis ke `logs/map.log` (Peringatan di bagian
+   "Cara memastikan"). Baris ERROR dari uji yang gagal akan terlihat seperti
+   error server pada pemeriksaan berikutnya. Perhatikan cap waktunya.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -906,8 +940,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **535**, `dbtest` **141** assertion) |
-| Binding skrip | **40** belum diport (34 di `sl.c` + 6 salah ketik); global belum diport **0** |
+| Gerbang regresi | 6/6 hijau (`cliftest` **535**, `dbtest` **157** assertion) |
+| Binding skrip | **30** belum diport (24 di `sl.c` + 6 salah ketik); global belum diport **0** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -939,6 +973,12 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**11. C4 — kiriman, surat, hadiah** — `sendParcel` (5x), `getParcel`,
+`getParcelList`, `removeParcel`, `sendMail` (3x), `updateMail`, plus
+`addGift`/`retrieveGift` sebagai tiruan setia (badannya dikomentari di C).
+Kiriman seluruhnya SQL sehingga teruji penuh di `dbtest`; surat lewat
+char server (0x300D/0x300F -> 0x380C, plus siaran 0x380D).
 
 **10. Subsistem BOD** — `deductDuraEquip`, `checkInvBod`, `getBODItem`,
 `expireItem`, `stripEquip` (9x), atribut `BODItemCount`. Ikut diperbaiki:
@@ -1351,7 +1391,7 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 34 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 24 method masih ada di `sl.c` tapi belum diport, plus 6
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
@@ -1375,12 +1415,13 @@ Satu-satunya yang sengaja <b>tidak</b> diport: `testPacket` (4x) —
 alat debug GM yang menulis byte sembarang ke kabel dari tabel Lua.
 Nilainya nol bila protokol memang akan diganti, dan risikonya nyata.
 
-**2. C4 — papan pesan & surat.** `sendMail`, `updateMail`, `sendParcel`
-(5x), `getParcel`, `removeParcel`, `getParcelList`, `showBoard`,
-`sendBoardQuestions`, `powerBoard`, `addGift`, `retrieveGift` — ~25 titik,
-plus protokol char server 0x3009–0x300F. Tabelnya (`Boards`,
-`BoardTitles`, `Mail`, `Parcels`) sudah ada, dan **bisa diuji offline**
-seperti gerbang regresi lain.
+**2. C4 — sisa papan pesan.** Kiriman, surat, dan hadiah **sudah selesai**
+26 Agustus 2026. Yang tersisa hanya **tampilan papan**: `showBoard` (2x),
+`showPost`, `sendBoardQuestions` (2x), `powerBoard` (2x) — ~6 titik. Itu
+keluarga paketnya sendiri (0x3009 `boards_show`, 0x300A `read_post`,
+0x300C `boardpost`), dan panjangnya di C dihitung dari
+{@code sizeof(struct ...)} sehingga tidak bisa disalin sebagai angka.
+Kerjakan bersama strukturnya.
 
 **3. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
 `getClanBankItems`/`getSubpathBankItems`/`getBankItems` — 5 titik, dan

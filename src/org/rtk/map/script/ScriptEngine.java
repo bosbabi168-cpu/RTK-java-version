@@ -97,6 +97,12 @@ public final class ScriptEngine {
     }
     LuaValue gameRegistryUdata;
     public ScriptClass mapRegistryClass;
+    /**
+     * parcell_type: satu kiriman yang menunggu pemain. Atributnya campuran
+     * — barangnya sendiri plus pengirim, nomor urut, dan penanda NPC.
+     */
+    public final ScriptClass parcelClass = new ScriptClass("Parcel");
+
     /** biteml_type: barang milik pemain (inventaris/perlengkapan/bank). */
     public ScriptClass boundItemClass;
 
@@ -273,6 +279,9 @@ public final class ScriptEngine {
         Bindings.defineBlockList(this, floorItemClass);
         Bindings.defineFloorItem(this, floorItemClass);
         registerClass(floorItemClass);
+
+        Bindings.defineParcel(this, parcelClass);
+        registerClass(parcelClass);
 
         // registry views over the player (regl / reglstring / npcintregl / questregl)
         registryClass = Bindings.defineRegistry(this, "Registry",

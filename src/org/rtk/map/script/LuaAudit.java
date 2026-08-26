@@ -177,6 +177,13 @@ public final class LuaAudit {
         runtimeMethods.addAll(keysOf(engine.playerClass.proto));
         runtimeMethods.addAll(keysOf(engine.npcClass.proto));
         runtimeMethods.addAll(keysOf(engine.mobClass.proto));
+        // ⚠️ Prototipe yang TIDAK terdaftar di sini membuat method miliknya
+        // terhitung "belum diport" selamanya. `FloorItem` sempat terlewat,
+        // sehingga `addTrapSpotters`/`getTrapSpotters` tetap dilaporkan
+        // sebagai celah padahal sudah ada. Setiap kali ScriptEngine dapat
+        // prototipe baru, tambahkan di sini juga.
+        runtimeMethods.addAll(keysOf(engine.floorItemClass.proto));
+        runtimeMethods.addAll(keysOf(engine.boundItemClass.proto));
         log.info("tersedia saat runtime: {} global, {} method prototipe",
                 runtimeGlobals.size(), runtimeMethods.size());
 

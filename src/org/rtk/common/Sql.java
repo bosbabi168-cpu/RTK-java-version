@@ -102,7 +102,15 @@ public final class Sql {
              PreparedStatement st = prepare(c, sql, params);
              ResultSet rs = st.executeQuery()) {
             if (rs.next()) {
-                return rs.getInt(1);
+                int v = rs.getInt(1);
+                // ⚠️ `getInt` mengembalikan 0 untuk SQL NULL, sehingga "tidak
+                // ada nilainya" dan "nilainya nol" jadi tak terbedakan. Itu
+                // penting pada agregat: `SELECT MAX(x)` pada himpunan kosong
+                // menghasilkan SATU baris berisi NULL, bukan nol baris — jadi
+                // tanpa penjaga ini pemanggilnya mengira nilai tertingginya 0.
+                // Kejadian pada nomor urut kiriman, yang seharusnya mulai
+                // dari 0 tapi malah mulai dari 1.
+                return rs.wasNull() ? null : v;
             }
             return null;
         } catch (SQLException e) {

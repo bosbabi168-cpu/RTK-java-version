@@ -69,6 +69,7 @@ public final class DbTest {
         "src/org/rtk/map/data/SpellDb.java",
         "src/org/rtk/map/NpcRegistry.java",
         "src/org/rtk/map/MobRegistry.java",
+        "src/org/rtk/map/Parcels.java",
         "src/org/rtk/map/MapServer.java",
         "src/org/rtk/login/LoginClif.java",
         "src/org/rtk/login/LoginIntif.java",
@@ -133,6 +134,7 @@ public final class DbTest {
         auditSql(conf);
         worldData(sql);
         spellQueries(sql);
+        parcelTest(sql);
         charRoundTrip(sql);
     }
 
@@ -323,6 +325,72 @@ public final class DbTest {
         var takAda = db.classSpells(sql, 9999);
         check("getAllClassSpells: jalur tak dikenal mengembalikan kosong",
                 takAda.isEmpty());
+    }
+
+    /**
+     * Kiriman antar pemain (tabel {@code Parcels}) — seluruhnya SQL, jadi
+     * bisa diuji sungguhan tanpa klien sama sekali.
+     *
+     * <p>Memakai id karakter di luar rentang yang dipakai data asli, lalu
+     * membersihkan sendiri barisnya. Tidak menyentuh kiriman yang ada.</p>
+     */
+    private static void parcelTest(Sql sql) {
+        log.info("=== tahap 2c: kiriman (Parcels) ===");
+
+        final long penerima = 999000111L;
+        sql.update("DELETE FROM `Parcels` WHERE `ParChaIdDestination` = ?", penerima);
+        check("mulai dari keadaan kosong",
+                org.rtk.map.Parcels.list(sql, penerima).isEmpty());
+        check("getParcel pada kotak kosong mengembalikan null",
+                org.rtk.map.Parcels.first(sql, penerima) == null);
+
+        // --- nomor urut per penerima ---
+        check("kiriman pertama masuk",
+                org.rtk.map.Parcels.send(sql, penerima, 42, 7001, 3, 0, "", 0,
+                        0, 0, 0, 0, 0, 0));
+        check("kiriman kedua masuk",
+                org.rtk.map.Parcels.send(sql, penerima, 42, 7002, 1, 0, "Ukiran", 0,
+                        0, 0, 0, 0, 0, 0));
+
+        var daftar = org.rtk.map.Parcels.list(sql, penerima);
+        check("keduanya terbaca kembali", daftar.size() == 2);
+        check("nomor urutnya 0 lalu 1",
+                daftar.get(0).pos == 0 && daftar.get(1).pos == 1);
+        check("isi kiriman pertama utuh",
+                daftar.get(0).data.id == 7001 && daftar.get(0).data.amount == 3);
+        check("ukiran ikut tersimpan",
+                daftar.get(1).data.realName.equals("Ukiran"));
+
+        // --- pengirim NPC digeser ke rentang id NPC ---
+        check("kiriman dari NPC masuk",
+                org.rtk.map.Parcels.send(sql, penerima, 5, 7003, 1, 0, "", 1,
+                        0, 0, 0, 0, 0, 0));
+        var dariNpc = org.rtk.map.Parcels.list(sql, penerima).stream()
+                .filter(p -> p.npcFlag != 0).findFirst().orElse(null);
+        check("pengirim NPC digeser + NPC_START_NUM - 2",
+                dariNpc != null
+                        && dariNpc.sender == 5 + org.rtk.map.Npc.NPC_START_NUM - 2);
+
+        // --- menghapus TIDAK menomori ulang sisanya ---
+        check("hapus kiriman di posisi 0",
+                org.rtk.map.Parcels.remove(sql, penerima, 0));
+        daftar = org.rtk.map.Parcels.list(sql, penerima);
+        check("sisanya dua", daftar.size() == 2);
+        check("nomor urut sisanya TIDAK digeser ulang",
+                daftar.stream().noneMatch(p -> p.pos == 0));
+        org.rtk.map.Parcels.send(sql, penerima, 42, 7004, 1, 0, "", 0, 0, 0, 0, 0, 0, 0);
+        var terbaru = org.rtk.map.Parcels.list(sql, penerima).stream()
+                .max(java.util.Comparator.comparingInt(p -> p.pos)).orElseThrow();
+        check("kiriman baru memakai nomor TERTINGGI + 1, bukan lubang yang kosong",
+                terbaru.pos == 3);
+
+        // --- ketahanan 0 berarti bawaan jenisnya ---
+        check("hapus posisi yang tidak ada mengembalikan false",
+                !org.rtk.map.Parcels.remove(sql, penerima, 9999));
+
+        sql.update("DELETE FROM `Parcels` WHERE `ParChaIdDestination` = ?", penerima);
+        check("bersih setelah uji",
+                org.rtk.map.Parcels.list(sql, penerima).isEmpty());
     }
 
     private static void worldData(Sql sql) {
