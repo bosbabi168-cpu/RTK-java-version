@@ -143,6 +143,22 @@ public final class User extends BlockList
     public int equipSlot;
     public int invSlot;
 
+    // ---- papan pesan (sd->board*) ----
+    /** Papan yang sedang dibuka; 0 berarti kotak surat, bukan papan. */
+    public int board;
+    /** Halaman daftar kiriman; tiap halaman 20 baris ({@code sd->bcount}). */
+    public int boardPage;
+    /** true bila daftarnya dibuka sebagai jendela sembul. */
+    public boolean boardPopup;
+    /**
+     * Hak menulis di papan yang sedang dibuka. Nilai <b>6</b> punya arti
+     * khusus — lihat {@link Boards#WRITE_ASK_SCRIPT}. Diisi skrip lewat
+     * atribut {@code boardCanWrite} pada papan ber-{@code BnmScripted}.
+     */
+    public int boardCanWrite;
+    /** Hak menghapus kiriman di papan yang sedang dibuka. */
+    public int boardCanDel;
+
     /**
      * Posisi kamera klien dalam petak layar (0..16 / 0..14).
      * Setara {@code sd->viewx} / {@code sd->viewy} di C: server ikut
@@ -655,6 +671,9 @@ public final class User extends BlockList
             // Hanya bermakna di dalam kait `characterLog.bodLog`; di luar itu
             // selalu 0, karena daftarnya dikosongkan setiap sapuan selesai.
             case "BODItemCount" -> (long) bodItems.size();
+            case "board" -> (long) board;
+            case "boardCanWrite" -> (long) boardCanWrite;
+            case "boardCanDel" -> (long) boardCanDel;
             /** Id jenis barang yang paling akhir hancur ({@code sd->breakid}). */
             case "breakId" -> breakId;
             // nilai turunan hasil calcStat — dibaca skrip pertarungan
@@ -678,6 +697,10 @@ public final class User extends BlockList
     public boolean scriptSetAttr(String name, long v) {
         switch (name) {
             case "money" -> status.money = v;
+            // Papan ber-BnmScripted memakai ini dari kait `check`; nilai 6
+            // bukan sekadar "boleh", lihat Boards.WRITE_ASK_SCRIPT.
+            case "boardCanWrite" -> boardCanWrite = (int) v;
+            case "boardCanDel" -> boardCanDel = (int) v;
             case "bankMoney" -> status.bankMoney = v;
             case "maxInv" -> status.maxInv = (int) v;
             case "health" -> status.hp = v;

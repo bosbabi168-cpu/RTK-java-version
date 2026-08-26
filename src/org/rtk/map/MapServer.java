@@ -91,6 +91,9 @@ public final class MapServer {
     /** Tampilan barang (itemdb_look / itemdb_lookcolor). */
     public static final org.rtk.map.data.ItemDb itemDb = new org.rtk.map.data.ItemDb();
 
+    /** Papan pesan: nama papan (BoardNames) dan gelar penulis (BoardTitles). */
+    public static final org.rtk.map.data.BoardDb boardDb = new org.rtk.map.data.BoardDb();
+
     /** Nama mantra -> id (magicdb_id). */
     public static final org.rtk.map.data.SpellDb spellDb = new org.rtk.map.data.SpellDb();
 
@@ -182,6 +185,8 @@ public final class MapServer {
             mobs.loadTypes(sql);
             mobs.useIdIndex(npcs);   // mob ikut indeks id global (map_addiddb)
             floorItems.useIdIndex(npcs);   // barang lantai juga (map_additem)
+            classDb.loadPaths(sql);        // kelas -> jalur, untuk powerBoard
+            boardDb.load(sql);             // papan pesan + gelar penulis
             mobs.loadSpawns(sql, serverId, world);
         }
         classDb.load(dbPath);

@@ -823,6 +823,34 @@ byte-identik dengan `rtklua/`.
    "Cara memastikan"). Baris ERROR dari uji yang gagal akan terlihat seperti
    error server pada pemeriksaan berikutnya. Perhatikan cap waktunya.
 
+47. **Paket papan di C mengirim DUMP STRUCT MENTAH — port ini tidak.**
+   0x3009/0x300A/0x300C memakai
+   {@code memcpy(&a, ..., sizeof(struct board_show_0))}, sehingga panjangnya
+   bergantung pada padding kompilator. Itu **alasan yang sama** dengan blob
+   karakter (Peringatan #9): kedua ujungnya kode Java kita sendiri, jadi
+   tata letak C bukan kontrak yang harus dipatuhi. Ladangnya ditulis
+   eksplisit di `MapIntif.requestBoard` dan `Mapif.parseShowPosts`, dan
+   panjang paket 0x3009 di tabel dispatcher **-1**, bukan angka tetap.
+   Yang tetap ditiru adalah <b>semantiknya</b>.
+
+48. **Tiga nama menyesatkan sekaligus di keluarga papan.**
+   - **`powerBoard` bukan papan pesan.** Ia daftar pemain online di peta
+     beserta "power rating" ({@code baseHealth + baseMagic}), dan tidak
+     menyentuh tabel `Boards` sama sekali.
+   - **Papan 0 bukan papan.** Ia kotak surat pribadi, dibaca dari tabel
+     `Mail` dengan nama kolom yang sama sekali berbeda; hanya bentuk
+     hasilnya yang sama. Hak tulis/hapusnya selalu penuh.
+   - **`BoardNames` vs `BoardTitles`.** Yang pertama papannya, yang kedua
+     <b>gelar penulis</b> yang muncul di depan namanya pada daftar kiriman
+     ("Prajurit Budi"). Keduanya dibaca `BoardDb`.
+
+   Dua jebakan angka di keluarga yang sama:
+   - **`boardCanWrite == 6` menggantikan seluruh bendera, tidak di-OR** —
+     artinya "klien harus mengirim paket saat tombol tulis diklik", dipakai
+     papan yang dijawab skrip.
+   - **`flags1` bergantung pada popup DAN papan sekaligus**, bukan salah
+     satunya: kotak surat selalu memakai cabang bukan-popup.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -940,8 +968,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **535**, `dbtest` **157** assertion) |
-| Binding skrip | **30** belum diport (24 di `sl.c` + 6 salah ketik); global belum diport **0** |
+| Gerbang regresi | 6/6 hijau (`cliftest` **535**, `dbtest` **170** assertion) |
+| Binding skrip | **27** belum diport (21 di `sl.c` + 6 salah ketik); global belum diport **0** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -973,6 +1001,12 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**12. C4 — papan pesan** — `showBoard` (2x), `sendBoardQuestions` (2x),
+`powerBoard` (2x), plus `map/data/BoardDb` (tabel `BoardNames` dan
+`BoardTitles`), `map/Boards` (hak akses + bendera tampilan), jalur
+antar-server 0x3009 -> 0x3809, dan paket klien 0x31 / 0x46. Ikut lahir:
+`ClassDb.loadPaths()` dari tabel `Paths`.
 
 **11. C4 — kiriman, surat, hadiah** — `sendParcel` (5x), `getParcel`,
 `getParcelList`, `removeParcel`, `sendMail` (3x), `updateMail`, plus
@@ -1391,7 +1425,7 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 24 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 21 method masih ada di `sl.c` tapi belum diport, plus 6
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
@@ -1415,13 +1449,10 @@ Satu-satunya yang sengaja <b>tidak</b> diport: `testPacket` (4x) —
 alat debug GM yang menulis byte sembarang ke kabel dari tabel Lua.
 Nilainya nol bila protokol memang akan diganti, dan risikonya nyata.
 
-**2. C4 — sisa papan pesan.** Kiriman, surat, dan hadiah **sudah selesai**
-26 Agustus 2026. Yang tersisa hanya **tampilan papan**: `showBoard` (2x),
-`showPost`, `sendBoardQuestions` (2x), `powerBoard` (2x) — ~6 titik. Itu
-keluarga paketnya sendiri (0x3009 `boards_show`, 0x300A `read_post`,
-0x300C `boardpost`), dan panjangnya di C dihitung dari
-{@code sizeof(struct ...)} sehingga tidak bisa disalin sebagai angka.
-Kerjakan bersama strukturnya.
+~~**2. C4 — papan pesan.**~~ **SELESAI 26/27 Agustus 2026.** Yang tersisa
+dari keluarga ini hanya **`showPost`** (baca satu kiriman, 0x300A) dan
+**menulis kiriman** (0x300C) — keduanya belum dipanggil skrip mana pun,
+jadi tidak muncul di daftar celah.
 
 **3. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
 `getClanBankItems`/`getSubpathBankItems`/`getBankItems` — 5 titik, dan

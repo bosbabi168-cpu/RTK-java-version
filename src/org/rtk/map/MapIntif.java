@@ -286,6 +286,80 @@ public final class MapIntif {
         return 0;
     }
 
+    /**
+     * boards_showposts() (0x3009) — minta daftar isi papan dari char server.
+     *
+     * <p>⚠️ Tata letaknya <b>rancangan sendiri</b>, bukan tiruan
+     * {@code struct board_show_0}: kedua ujungnya kode Java kita, dan dump
+     * struct C bergantung pada padding kompilator. Alasan yang sama dengan
+     * blob karakter — lihat {@link org.rtk.map.Boards} dan Peringatan #9.</p>
+     *
+     * <p>Tata letak: [0..1] opcode, [2..3] fd klien, [4..7] id papan,
+     * [8..11] halaman, [12..15] bendera hak akses, [16] penanda popup,
+     * [17] panjang nama, [18..] nama pemain.</p>
+     */
+    public static boolean requestBoard(User sd, int board, int page, int flags,
+                                       boolean popup) {
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa membuka papan: belum terhubung ke char server");
+            return false;
+        }
+        byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoW(0, 0x3009);
+        s.wfifoW(2, sd.fd);
+        s.wfifoL(4, board);
+        s.wfifoL(8, page);
+        s.wfifoL(12, flags);
+        s.wfifoB(16, popup ? 1 : 0);
+        s.wfifoB(17, nama.length);
+        s.wfifoBytes(18, nama);
+        s.wfifoSet(18 + nama.length);
+        return true;
+    }
+
+    /**
+     * intif_parse_showpostresponse() (0x3809) — daftar isi papan datang;
+     * susun jadi paket klien 0x31.
+     *
+     * <p>Balasan char server: [2..5] panjang total, [6..7] fd klien,
+     * [8..11] id papan, [12..15] bendera1, [16..19] bendera2, [20..23]
+     * jumlah kiriman, lalu tiap kiriman: [0] warna, [4] id kiriman,
+     * [8] id gelar, [12] bulan, [16] hari, [20] panjang nama + nama,
+     * lalu panjang judul + judul.</p>
+     */
+    static int parseBoardList(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(6);
+        User sd = MapServer.onlineChars.get(clientFd);
+        if (sd == null) {
+            return 0;
+        }
+        int board = s.rfifoL(8);
+        int flags1 = s.rfifoL(12);
+        int flags2 = s.rfifoL(16);
+        int jumlah = s.rfifoL(20);
+
+        java.util.List<Clif.BoardEntry> isi = new java.util.ArrayList<>();
+        int off = 24;
+        for (int i = 0; i < jumlah; i++) {
+            int warna = s.rfifoL(off);
+            int postId = s.rfifoL(off + 4);
+            int gelar = s.rfifoL(off + 8);
+            int bulan = s.rfifoL(off + 12);
+            int hari = s.rfifoL(off + 16);
+            int nl = s.rfifoB(off + 20) & 0xFF;
+            String penulis = s.rfifoString(off + 21, nl);
+            off += 21 + nl;
+            int tl = s.rfifoB(off) & 0xFF;
+            String judul = s.rfifoString(off + 1, tl);
+            off += 1 + tl;
+            isi.add(new Clif.BoardEntry(warna, postId, gelar, bulan, hari, penulis, judul));
+        }
+        MapServer.clientView.boardListToPlayer(sd, board, flags1, flags2, isi);
+        return 0;
+    }
+
     /** intif_parse_checkonline() (0x3804): kick a double-logged character. */
     static int parseCheckOnline(int fd) {
         Session s = net.session(fd);
@@ -333,6 +407,7 @@ public final class MapIntif {
             case 0x3802: parseAuthAdd(fd); break;
             case 0x3803: parseCharLoad(fd); break;
             case 0x3804: parseCheckOnline(fd); break;
+            case 0x3809: parseBoardList(fd); break;
             case 0x380C: parseMailResult(fd); break;
             case 0x380D: parseNewMailFlag(fd); break;
             default:

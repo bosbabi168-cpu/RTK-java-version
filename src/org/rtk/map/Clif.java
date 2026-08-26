@@ -950,6 +950,186 @@ public final class Clif {
         }
     }
 
+    /** Satu baris pada daftar isi papan. */
+    public record BoardEntry(int color, int postId, int titleId,
+                             int month, int day, String author, String topic) {
+    }
+
+    /**
+     * intif_parse_showpostresponse() bagian kliennya — daftar isi papan.
+     * Opcode 0x31.
+     *
+     * <p>⚠️ Opcode 0x31 dipakai <b>dua hal</b>: daftar ini dan formulir
+     * pertanyaan ({@link #sendBoardQuestions}, penanda 0x09 di [5]). Yang
+     * membedakan hanya ladang itu.</p>
+     *
+     * <p>Nama penulis digabung dengan <b>gelarnya</b> bila papannya bukan
+     * kotak surat dan kirimannya memang punya gelar: {@code "Prajurit Budi"}.
+     * Gelar diambil dari tabel {@code BoardTitles}.</p>
+     *
+     * <p>⚠️ Perhitungan offsetnya di C berjalan lewat satu penghitung
+     * {@code len} yang <b>maju tidak seragam</b> — bertambah panjang nama
+     * + 4 setelah nama, lalu 2 setelah tanggal. Ditiru apa adanya karena
+     * itulah yang menentukan letak tiap ladang.</p>
+     */
+    public static void sendBoardList(User sd, int board, int flags1, int flags2,
+                                     java.util.List<BoardEntry> isi) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        headSeq(s, 0x31, 0);
+        s.wfifoB(5, flags2);
+        s.wfifoB(6, flags1);
+        s.wfifoWBE(7, board);
+
+        byte[] namaPapan = MapServer.boardDb.nameOf(board)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoB(9, namaPapan.length);
+        s.wfifoBytes(10, namaPapan);
+        int len = namaPapan.length + 1;
+        int pos = len + 9;
+
+        if (isi.isEmpty()) {
+            s.wfifoB(pos, 0);
+        } else {
+            s.wfifoB(pos, isi.size());
+            len++;
+            for (BoardEntry e : isi) {
+                s.wfifoB(len + 9, e.color());
+                s.wfifoWBE(len + 10, e.postId());
+
+                String penulis = board != 0 && e.titleId() != 0
+                        ? MapServer.boardDb.titleOf(e.titleId()) + " " + e.author()
+                        : e.author();
+                byte[] pb = penulis.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+                s.wfifoB(len + 12, pb.length);
+                s.wfifoBytes(len + 13, pb);
+                len += pb.length + 4;
+
+                s.wfifoB(len + 9, e.month());
+                s.wfifoB(len + 10, e.day());
+                len += 2;
+
+                byte[] jb = e.topic().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+                s.wfifoB(len + 9, jb.length);
+                s.wfifoBytes(len + 10, jb);
+                len += jb.length + 1;
+            }
+        }
+        s.wfifoWBE(1, len + 9);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_sendpowerboard() — daftar pemain di peta ini beserta "power
+     * rating"-nya. Opcode 0x46.
+     *
+     * <p>⚠️ <b>Namanya menyesatkan: ini bukan papan pesan.</b> Meski
+     * bindingnya bernama {@code powerBoard} dan berada di kelompok yang sama
+     * dengan {@code showBoard}, isinya daftar pemain online — tidak
+     * menyentuh tabel {@code Boards} sama sekali.</p>
+     *
+     * <p>Dua penyaring yang ditiru: pemain ber-<b>path 0 atau 50</b>
+     * dilewati (belum berjalur / jalur khusus), dan path 5 dilaporkan
+     * sebagai 2. "Power rating" hanyalah {@code baseHp + baseMp}.</p>
+     */
+    public static void sendPowerBoard(User sd) {
+        Session s = sessionOf(sd);
+        MapData map = MapServer.world.get(sd.m);
+        if (s == null || map == null) {
+            return;
+        }
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x46);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, 1);
+
+        int[] len = new int[2];   // [0] byte terpakai, [1] jumlah pemain
+        for (User to : MapServer.onlineChars.values()) {
+            if (to.m != sd.m) {
+                continue;
+            }
+            int path = MapServer.classDb.pathOf(to.status.charClass);
+            if (path == 5) {
+                path = 2;
+            }
+            if (path == 0 || path == 50) {
+                continue;
+            }
+            byte[] nama = to.status.name
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoLBE(len[0] + 8, (int) to.id);
+            s.wfifoB(len[0] + 12, path);
+            s.wfifoLBE(len[0] + 13, (int) (to.status.baseHp + to.status.baseMp));
+            s.wfifoB(len[0] + 17, to.status.armorColor);
+            s.wfifoB(len[0] + 18, nama.length);
+            s.wfifoBytes(len[0] + 19, nama);
+            len[0] += nama.length + 11;
+            len[1]++;
+        }
+        s.wfifoWBE(6, len[1]);
+        s.wfifoWBE(1, len[0] + 5);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_sendBoardQuestionaire() — formulir bertanya di papan: daftar
+     * pertanyaan dengan jumlah baris jawaban masing-masing. Opcode 0x31
+     * dengan penanda 0x09 di [5].
+     *
+     * <p>Opcode 0x31 dipakai <b>dua hal berbeda</b>: penanda 0x09 formulir
+     * ini, sedangkan daftar isi papan memakai penanda lain. Yang membedakan
+     * hanya ladang [5].</p>
+     *
+     * <p>Byte tetap 1/2 di antara judul dan pertanyaan, serta 0x6B di
+     * ekornya, diambil apa adanya dari C — artinya tidak terdokumentasi.</p>
+     */
+    public static void sendBoardQuestions(User sd, java.util.List<String> headers,
+                                          java.util.List<String> questions,
+                                          java.util.List<Integer> inputLines) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        int count = headers.size();
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x31);
+        s.wfifoB(5, 0x09);
+        s.wfifoB(6, count);
+
+        int len = 7;
+        for (int i = 0; i < count; i++) {
+            byte[] judul = headers.get(i)
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            byte[] tanya = (i < questions.size() ? questions.get(i) : "")
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            int baris = i < inputLines.size() ? inputLines.get(i) : 1;
+
+            s.wfifoB(len, judul.length);
+            len += 1;
+            s.wfifoBytes(len, judul);
+            len += judul.length;
+            s.wfifoB(len, 1);
+            s.wfifoB(len + 1, 2);
+            len += 2;
+            s.wfifoB(len, baris);
+            len += 1;
+            s.wfifoB(len, tanya.length);
+            len += 1;
+            s.wfifoBytes(len, tanya);
+            len += tanya.length;
+            s.wfifoB(len, 1);
+            len += 1;
+        }
+        s.wfifoB(len, 0);
+        s.wfifoB(len + 1, 0x6B);
+        len += 2;
+
+        s.wfifoWBE(1, len + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
     /**
      * clif_playsound() — mainkan bunyi di sekitar sebuah benda.
      * Opcode 0x19, panjang isi 0x14, disiarkan ke SAMEAREA.

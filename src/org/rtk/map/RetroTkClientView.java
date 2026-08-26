@@ -90,6 +90,24 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void boardListToPlayer(User sd, int board, int flags1, int flags2,
+                                  java.util.List<Clif.BoardEntry> isi) {
+        Clif.sendBoardList(sd, board, flags1, flags2, isi);
+    }
+
+    @Override
+    public void powerBoardToPlayer(User sd) {
+        Clif.sendPowerBoard(sd);
+    }
+
+    @Override
+    public void boardQuestionsToPlayer(User sd, java.util.List<String> headers,
+                                       java.util.List<String> questions,
+                                       java.util.List<Integer> inputLines) {
+        Clif.sendBoardQuestions(sd, headers, questions, inputLines);
+    }
+
+    @Override
     public void guiTextToPlayer(User sd, String text) {
         Clif.guiText(sd, text);
     }

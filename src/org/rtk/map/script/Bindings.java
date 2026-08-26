@@ -1057,6 +1057,71 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        // ---- papan pesan (Trek C4) ----
+
+        /**
+         * pcl_showboard(papan): buka daftar isi papan.
+         *
+         * <p>Argumennya boleh <b>nama atau nomor</b> papan. Papan <b>0</b>
+         * bukan papan melainkan <b>kotak surat</b> pemain — hak tulis dan
+         * hapusnya selalu penuh.</p>
+         */
+        player.addMethod("showBoard", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u == null) {
+                return LuaValue.NONE;
+            }
+            LuaValue arg = args.arg(2);
+            int id = arg.isnumber() ? (int) arg.todouble()
+                    : org.rtk.map.MapServer.boardDb.idOf(arg.optjstring(""));
+            org.rtk.map.Boards.show(engine, u, id, 0, true);
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_powerboard(): daftar pemain di peta ini.
+         *
+         * <p>⚠️ <b>Bukan papan pesan sama sekali</b>, meski namanya begitu
+         * dan letaknya di kelompok yang sama — ia daftar pemain online
+         * beserta "power rating" ({@code baseHealth + baseMagic}).</p>
+         */
+        player.addMethod("powerBoard", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.MapServer.clientView.powerBoardToPlayer(u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_sendboardquestions(judul[], pertanyaan[], barisJawaban[]):
+         * formulir bertanya di papan.
+         *
+         * <p>⚠️ Di C fungsi ini diakhiri {@code lua_yield} — skripnya
+         * <b>berhenti</b> sampai pemain menjawab. Jawabannya kembali lewat
+         * jalur dialog yang sama dengan {@code inputSeq}, jadi di sini ia
+         * ikut {@link ScriptEngine#yieldBlocking}.</p>
+         */
+        player.addMethod("sendBoardQuestions", (self, args) -> {
+            ScriptPlayer p = (ScriptPlayer) self;
+            java.util.List<String> judul = tableToStrings(args.arg(2));
+            java.util.List<String> tanya = tableToStrings(args.arg(3));
+            java.util.List<Integer> baris = new java.util.ArrayList<>();
+            LuaValue t = args.arg(4);
+            if (t.istable()) {
+                LuaTable tb = t.checktable();
+                for (int i = 1; i <= tb.length(); i++) {
+                    baris.add(tb.get(i).optint(1));
+                }
+            }
+            if (p.owner instanceof org.rtk.map.User u) {
+                org.rtk.map.MapServer.clientView.boardQuestionsToPlayer(u,
+                        judul, tanya, baris);
+            }
+            return engine.yieldBlocking(p,
+                    new ScriptPlayer.PendingDialog("boardQuestions", "", judul));
+        });
+
         // ---- kiriman & surat (Trek C4) ----
 
         /**

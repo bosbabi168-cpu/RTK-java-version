@@ -70,6 +70,8 @@ public final class DbTest {
         "src/org/rtk/map/NpcRegistry.java",
         "src/org/rtk/map/MobRegistry.java",
         "src/org/rtk/map/Parcels.java",
+        "src/org/rtk/map/data/BoardDb.java",
+        "src/org/rtk/charserver/Mapif.java",
         "src/org/rtk/map/MapServer.java",
         "src/org/rtk/login/LoginClif.java",
         "src/org/rtk/login/LoginIntif.java",
@@ -135,6 +137,7 @@ public final class DbTest {
         worldData(sql);
         spellQueries(sql);
         parcelTest(sql);
+        boardTest(sql);
         charRoundTrip(sql);
     }
 
@@ -391,6 +394,57 @@ public final class DbTest {
         sql.update("DELETE FROM `Parcels` WHERE `ParChaIdDestination` = ?", penerima);
         check("bersih setelah uji",
                 org.rtk.map.Parcels.list(sql, penerima).isEmpty());
+    }
+
+    /**
+     * Papan pesan: metadata dari {@code BoardNames} / {@code BoardTitles},
+     * dan bendera tampilan yang dihitung dari hak akses.
+     *
+     * <p>Bendera itu logika murni tanpa database, tetapi diuji di sini
+     * karena satu-satunya cara mengetahuinya benar adalah membandingkan
+     * dengan papan sungguhan.</p>
+     */
+    private static void boardTest(Sql sql) {
+        log.info("=== tahap 2d: papan pesan ===");
+
+        var db = new org.rtk.map.data.BoardDb();
+        int n = db.load(sql);
+        check("tabel BoardNames termuat", n > 0);
+        check("papan pertama punya nama", !db.nameOf(1).isEmpty());
+        check("nama papan bisa dicari balik", db.idOf(db.nameOf(1)) == 1);
+        check("papan tak dikenal menjawab kosong, bukan meledak",
+                db.nameOf(999999).isEmpty() && db.idOf("tidak_ada_papan") == 0);
+
+        // ⚠️ flags1 bergantung pada popup DAN papan sekaligus
+        var B = org.rtk.map.Boards.class;
+        check("flags1: popup + papan biasa + boleh tulis -> 2",
+                org.rtk.map.Boards.displayFlags1(
+                        org.rtk.map.Boards.CAN_WRITE, true, 5) == 2);
+        check("flags1: popup + papan biasa + TIDAK boleh tulis -> 0",
+                org.rtk.map.Boards.displayFlags1(0, true, 5) == 0);
+        check("flags1: bukan popup + boleh tulis -> 3",
+                org.rtk.map.Boards.displayFlags1(
+                        org.rtk.map.Boards.CAN_WRITE, false, 5) == 3);
+        check("flags1: bukan popup + tidak boleh tulis -> 1",
+                org.rtk.map.Boards.displayFlags1(0, false, 5) == 1);
+        check("flags1: kotak surat (papan 0) memakai cabang bukan-popup",
+                org.rtk.map.Boards.displayFlags1(
+                        org.rtk.map.Boards.CAN_WRITE, true, 0) == 3);
+        check("flags1: nilai 6 MENGGANTIKAN seluruh bendera, tidak di-OR",
+                org.rtk.map.Boards.displayFlags1(
+                        org.rtk.map.Boards.WRITE_ASK_SCRIPT, true, 5) == 6
+                        && org.rtk.map.Boards.displayFlags1(
+                                org.rtk.map.Boards.WRITE_ASK_SCRIPT, false, 5) == 6);
+
+        check("flags2: kotak surat 4, papan biasa 2",
+                org.rtk.map.Boards.displayFlags2(0) == 4
+                        && org.rtk.map.Boards.displayFlags2(7) == 2);
+
+        // kueri isi papan harus diterima skema hidup
+        Integer brd = sql.queryInt("SELECT COUNT(*) FROM `Boards`");
+        Integer mal = sql.queryInt("SELECT COUNT(*) FROM `Mail`");
+        check("tabel Boards terbaca", brd != null);
+        check("tabel Mail terbaca", mal != null);
     }
 
     private static void worldData(Sql sql) {

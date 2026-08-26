@@ -1,6 +1,8 @@
 package org.rtk.charserver;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,15 +36,20 @@ public final class Mapif {
      * Panjang paket 0x3000 .. 0x300F; -1 berarti panjangnya ada di paketnya
      * sendiri (L di offset 2).
      *
-     * <p>Yang masih 0: papan pesan (0x3009 boards_show, 0x300A read_post,
-     * 0x300C boardpost) — panjangnya di C dihitung dari
-     * {@code sizeof(struct ...)}, jadi tidak bisa disalin sebagai angka dan
-     * menunggu subsistem papannya diport. Paket ber-panjang 0 <b>diabaikan</b>
+     * <p>⚠️ <b>0x3009 sengaja -1, bukan panjang tetap.</b> Di C ia
+     * {@code sizeof(struct board_show_0) + 2} — dump struct mentah yang
+     * panjangnya bergantung padding kompilator. Port ini memakai tata letak
+     * sendiri dengan nama pemain berpanjang-variabel, jadi panjangnya ada di
+     * paketnya (lihat Peringatan #9 soal alasan yang sama pada blob
+     * karakter).</p>
+     *
+     * <p>Yang masih 0: 0x300A (baca satu kiriman) dan 0x300C (tulis
+     * kiriman) — belum diport. Paket ber-panjang 0 <b>diabaikan</b>
      * dispatcher, sama seperti di C.</p>
      */
     private static final int[] PACKET_LEN_TABLE = {
         72, -1, 20, 24, -1, 6, 255, -1, 28,
-        0, 0, 4, 0, 4124, 20, 4124};
+        -1, 0, 4, 0, 4124, 20, 4124};
 
     /** Panjang tetap balasan 0x3803 sebelum blob: opcode+len+fd. */
     private static final int CHARLOAD_HEADER = 8;
@@ -63,6 +70,94 @@ public final class Mapif {
             }
         }
         return 0;
+    }
+
+    /**
+     * mapif_parse_showposts() (0x3009) — susun daftar isi papan, atau isi
+     * kotak surat bila {@code board == 0}.
+     *
+     * <p>⚠️ <b>Papan 0 BUKAN sebuah papan</b>: ia kotak surat pribadi, dan
+     * dibaca dari tabel {@code Mail} dengan nama kolom yang sama sekali
+     * berbeda. Satu-satunya hal yang sama adalah bentuk hasilnya.</p>
+     *
+     * <p>Keduanya diurutkan <b>menurun</b> menurut nomor urut dan dipotong
+     * 20 baris per halaman — kiriman terbaru di atas.</p>
+     */
+    static int parseShowPosts(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(2);
+        int board = s.rfifoL(4);
+        int page = s.rfifoL(8);
+        int flags = s.rfifoL(12);
+        boolean popup = s.rfifoB(16) != 0;
+        int nl = s.rfifoB(17) & 0xFF;
+        String nama = s.rfifoString(18, nl);
+
+        int flags1 = org.rtk.map.Boards.displayFlags1(flags, popup, board);
+        int flags2 = org.rtk.map.Boards.displayFlags2(board);
+
+        List<Object[]> isi = new ArrayList<>();
+        int offset = page * org.rtk.map.Boards.PER_PAGE;
+        int rows;
+        if (board == 0) {
+            rows = sql.forEachRow(
+                    "SELECT `MalNew`,`MalChaName`,`MalSubject`,`MalPosition`,"
+                    + "`MalMonth`,`MalDay`,`MalId` FROM `Mail`"
+                    + " WHERE `MalChaNameDestination` = ? AND `MalDeleted` = 0"
+                    + " ORDER BY `MalPosition` DESC LIMIT ?, ?",
+                    rs -> isi.add(new Object[]{
+                        rs.getInt("MalNew"), rs.getInt("MalPosition"),
+                        rs.getInt("MalId"), rs.getInt("MalMonth"), rs.getInt("MalDay"),
+                        str(rs.getString("MalChaName")), str(rs.getString("MalSubject"))}),
+                    nama, offset, org.rtk.map.Boards.PER_PAGE);
+        } else {
+            rows = sql.forEachRow(
+                    "SELECT `BrdHighlighted`,`BrdChaName`,`BrdTopic`,`BrdPosition`,"
+                    + "`BrdMonth`,`BrdDay`,`BrdBtlId` FROM `Boards`"
+                    + " WHERE `BrdBnmId` = ?"
+                    + " ORDER BY `BrdPosition` DESC LIMIT ?, ?",
+                    rs -> isi.add(new Object[]{
+                        rs.getInt("BrdHighlighted"), rs.getInt("BrdPosition"),
+                        rs.getInt("BrdBtlId"), rs.getInt("BrdMonth"), rs.getInt("BrdDay"),
+                        str(rs.getString("BrdChaName")), str(rs.getString("BrdTopic"))}),
+                    board, offset, org.rtk.map.Boards.PER_PAGE);
+        }
+        if (rows < 0) {
+            log.error("[CHAR] gagal membaca isi papan {}", board);
+            isi.clear();   // C: kirim header saja saat query gagal
+        }
+
+        s.wfifoW(0, 0x3809);
+        s.wfifoW(6, clientFd);
+        s.wfifoL(8, board);
+        s.wfifoL(12, flags1);
+        s.wfifoL(16, flags2);
+        s.wfifoL(20, isi.size());
+        int off = 24;
+        for (Object[] e : isi) {
+            s.wfifoL(off, (Integer) e[0]);
+            s.wfifoL(off + 4, (Integer) e[1]);
+            s.wfifoL(off + 8, (Integer) e[2]);
+            s.wfifoL(off + 12, (Integer) e[3]);
+            s.wfifoL(off + 16, (Integer) e[4]);
+            byte[] penulis = ((String) e[5])
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoB(off + 20, penulis.length);
+            s.wfifoBytes(off + 21, penulis);
+            off += 21 + penulis.length;
+            byte[] judul = ((String) e[6])
+                    .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoB(off, judul.length);
+            s.wfifoBytes(off + 1, judul);
+            off += 1 + judul.length;
+        }
+        s.wfifoL(2, off);
+        s.wfifoSet(off);
+        return 0;
+    }
+
+    private static String str(String v) {
+        return v == null ? "" : v;
     }
 
     /** Panjang ladang tetap pada paket surat 0x300D / 0x300F. */
@@ -418,6 +513,7 @@ public final class Mapif {
             case 0x3004: parseSaveChar(fd, false); break;
             case 0x3005: parseLogout(fd); break;
             case 0x3007: parseSaveChar(fd, true); break;
+            case 0x3009: parseShowPosts(fd); break;
             case 0x300D: parseMailWrite(fd, false); break;
             case 0x300F: parseMailWrite(fd, true); break;
             default:

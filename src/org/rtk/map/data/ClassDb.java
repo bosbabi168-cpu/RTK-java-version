@@ -58,6 +58,33 @@ public final class ClassDb {
         return t[level];
     }
 
+    /**
+     * classdb_path(): jalur (path) sebuah kelas, dari tabel {@code Paths}.
+     *
+     * <p>⚠️ Yang dibaca kolom <b>{@code PthType}</b>, bukan {@code PthId} —
+     * di C ia diikat ke ladang bernama {@code path}, sehingga mudah
+     * disangka nomor barisnya sendiri. Kelas tak dikenal menjawab 0, dan
+     * 0 punya arti khusus di pemanggilnya (dilewati).</p>
+     */
+    private final java.util.Map<Integer, Integer> pathByClass = new java.util.HashMap<>();
+
+    public int pathOf(int classId) {
+        return pathByClass.getOrDefault(classId, 0);
+    }
+
+    /** Muat pemetaan kelas -&gt; jalur dari tabel {@code Paths}. */
+    public int loadPaths(org.rtk.common.Sql sql) {
+        pathByClass.clear();
+        int rows = sql.forEachRow("SELECT `PthId`,`PthType` FROM `Paths`",
+                rs -> pathByClass.put(rs.getInt("PthId"), rs.getInt("PthType")));
+        if (rows < 0) {
+            log.error("[CLASS] gagal membaca tabel Paths");
+            return 0;
+        }
+        log.info("[CLASS] {} jalur dimuat dari tabel Paths", pathByClass.size());
+        return pathByClass.size();
+    }
+
     public boolean isEmpty() {
         return levels.isEmpty();
     }

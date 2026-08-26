@@ -110,6 +110,23 @@ public interface ClientView {
      */
     void playerCameraChanged(User sd, int x, int y);
 
+    /**
+     * Daftar isi sebuah papan pesan (atau kotak surat) untuk pemain.
+     *
+     * @param flags1 bendera tombol tulis/hapus yang dihitung dari hak akses
+     * @param flags2 ragam papan: kotak surat atau papan biasa
+     */
+    void boardListToPlayer(User sd, int board, int flags1, int flags2,
+                           java.util.List<Clif.BoardEntry> isi);
+
+    /** Daftar pemain di peta ini beserta "power rating"-nya. */
+    void powerBoardToPlayer(User sd);
+
+    /** Formulir pertanyaan papan; jawabannya kembali lewat dialog. */
+    void boardQuestionsToPlayer(User sd, java.util.List<String> headers,
+                                java.util.List<String> questions,
+                                java.util.List<Integer> inputLines);
+
     /** Teks besar melayang di tengah layar pemain (pengumuman event). */
     void guiTextToPlayer(User sd, String text);
 
