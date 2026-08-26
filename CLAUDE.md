@@ -600,6 +600,47 @@ byte-identik dengan `rtklua/`.
    `definePlayer()`, `defineBlockList()`). Kebalikannya juga berlaku:
    binding yang belum ada sama sekali baru terlihat setelah dipanggil.
 
+31. **Barang di lantai punya DUA aturan penggabungan yang berbeda.** Yang
+   dipakai tergantung siapa yang menjatuhkan, dan menyamakannya salah:
+   - **Jatuhan mob/skrip** (`mob_addtocurrent`, lewat `dropItem`) menggabung
+     bila **id barangnya sama** — itu saja.
+   - **Jatuhan pemain dari inventaris** (`pc_addtocurrent`, lewat
+     `forceDrop`) mensyaratkan **keduanya utuh** (dura penuh) **plus sepuluh
+     atribut sama persis**: id, pemilik, nama asli, ikon & wujud kustom
+     beserta warnanya, catatan, `custom`, dan `protected`. Ia juga
+     **mengosongkan daftar `looters`**.
+
+   Akibatnya pedang penyok tidak pernah menyatu dengan pedang mulus, dan
+   barang berukir (`realName` terisi) tetap terpisah. Kalau aturan longgar
+   dipakai untuk keduanya, barang unik pemain akan saling melebur diam-diam.
+
+32. **Tiga jebakan penamaan pada barang lantai.**
+   - **Barang ber-id 0 adalah UANG**, bukan barang. `pc_getitemscript`
+     menambahkannya ke emas pemain lalu membuang bendanya.
+   - **Kolom `ItmDroppable` artinya kebalikan namanya**: nilai bukan-nol
+     berarti barangnya **tidak bisa dipungut** pemain biasa. Dibaca lewat
+     `ItemDb.cannotBePickedUp()` supaya namanya tidak menyesatkan lagi.
+   - **`throw` bukan bagian dari barang lantai sama sekali** — isinya murni
+     animasi (0x16), dan ladang [12]-nya sengaja nol supaya klien tidak
+     meninggalkan gambar di tanah. Yang benar-benar menjatuhkan barang
+     adalah `dropItemXY`, yang biasanya dipanggil skrip tepat sesudahnya.
+
+33. **Jebakan disaring di DUA tempat, dengan aturan berbeda.**
+   - **Pencarian benda** (`map_foreachincell`) membuang **seluruh** barang
+     bertipe `ITM_TRAPS`, tanpa melihat `trapsTable`. Itulah satu-satunya
+     beda `getObjectsInCell` dan `getObjectsInCellWithTraps`. Sapuan area
+     (`map_foreachinarea`) **tidak** punya penyaring ini sama sekali.
+   - **Penggambaran** (`clif_object_look_sub`) memakai `trapsTable`:
+     jebakan hanya tergambar untuk pemain yang sudah menemukannya.
+
+   Menyamakan keduanya membuat jebakan terlihat oleh semua orang, atau tidak
+   pernah bisa ditemukan sama sekali.
+
+34. **Ikon barang lantai dikirim MENTAH; hanya ikon KUSTOM yang +49152.**
+   Benda lain (mob, NPC) selalu memakai penambah 32768, jadi menyeragamkan
+   ketiganya adalah kesalahan yang wajar tapi tetap salah. Lihat cabang
+   BL_ITEM di `Clif.objectLook`.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -635,6 +676,7 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
 | `map/itemdb.c` `itemdb_look` | `map/data/ItemDb` | tampilan barang dari tabel `Items` |
 | `map/clif.c` `nexCRCC` + `clif_sendmapdata` | `map/Clif.nexCrc`, `Clif.sendMapData` | checksum petak peta; cocok = tidak dikirim ulang |
 | `map/pc.c` `bl_duratimer` + `sl.c` `pcl_setduration` dkk. | `map/Durations` | durasi & aether mantra; tik 1 detik, kait `while_cast`/`uncast` |
+| `map/map.h` `flooritem_data` + `map_additem`/`map_delitem` | `map/FloorItem`, `map/FloorItemRegistry` | barang di lantai (BL_ITEM); dua aturan gabung, penyaring jebakan |
 
 ## Scripting engine (org.rtk.map.script)
 
@@ -716,8 +758,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **399** assertion) |
-| Binding skrip | **78** belum diport (72 di `sl.c` + 6 salah ketik) |
+| Gerbang regresi | 6/6 hijau (`cliftest` **434** assertion) |
+| Binding skrip | **73** belum diport (67 di `sl.c` + 6 salah ketik) |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Klien RetroTK asli | **berhasil masuk dunia** — lalu perburuan dihentikan |
 | Terjemahan Indonesia | kata kunci `speech` selesai; dialog ~3.800 titik belum |
@@ -749,6 +791,12 @@ dan `clif_mob_move` (0x0C per-sesi).
 Dengan itu **daftar stub habis** — tidak ada lagi binding yang "berhasil"
 tanpa efek. Yang tersisa semuanya binding yang memang belum ada, dan
 memanggilnya melempar error yang terlihat di `map.log`.
+
+**4. BL_ITEM — barang di lantai** (`map/FloorItem`, `map/FloorItemRegistry`).
+Subsistem besar terakhir yang belum ada sama sekali. Membuka `dropItemXY`
+(37x), `throw` (23x), `dropItem` (18x), `pickUp` (12x), `forceDrop`,
+`addTrapSpotters`/`getTrapSpotters` — ~95 titik panggilan — dan membuat
+`getObjectsInCellWithTraps` akhirnya berbeda dari varian biasa.
 
 ⚠️ **Angka luaaudit tidak turun sebanyak pekerjaannya.** Binding yang
 diport dari keadaan *stub* **tidak pernah terhitung** di audit — bagi
@@ -796,10 +844,9 @@ Keduanya baru terbukti lewat `cliftest`. Peringatan #26 lahir persis dari
 kait timer yang hanya menyala saat server hidup, jadi **ini yang paling
 layak diperiksa lebih dulu** begitu ada klien yang bisa masuk.
 
-- **BL_ITEM masih belum ada**, dan kini ia **penghambat terbesar**: 
-  `dropItemXY` (37x), `throw` (23x), `dropItem` (18x), `pickUp` (12x) plus
-  `forceDrop`, `throwItem`, `addTrapSpotters`/`getTrapSpotters` bergantung
-  padanya, dan penyaring `...WithTraps` masih identik dengan varian biasa.
+Belum ikut diport bersama BL_ITEM: **`sd->pickuptype`** (setelan pemain
+"pungut satu / pungut semua"); port ini berperilaku seperti nilai
+bawaannya, 0. `pc_npc_drop` sengaja dilewati — di C isinya sudah kode mati.
 
 **Pemain sungguhan masuk dunia untuk pertama kalinya** setelah empat bug
 ditutup — semuanya lolos dari 294 assertion `cliftest`, dan semuanya
@@ -1124,58 +1171,53 @@ NPC **dan** mob.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 72 method masih ada di `sl.c` tapi belum diport, plus 6
+> sudah berubah.** 67 method masih ada di `sl.c` tapi belum diport, plus 6
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
-**1. BL_ITEM — barang di lantai.** Penghambat terbesar sekarang, dan
-satu-satunya subsistem besar yang belum ada sama sekali. Membukanya
-sekaligus: `dropItemXY` (37x), `throw` (23x), `dropItem` (18x), `pickUp`
-(12x), `forceDrop`, `throwItem`, `addTrapSpotters`/`getTrapSpotters` —
-~95 titik panggilan. Juga membuat `getObjectsInCellWithTraps` benar-benar
-berbeda dari varian biasa, dan membuat jatuhan mob terlihat di tanah.
-Cabang `BL_ITEM` sudah ditulis di `clif_object_look_sub`; tinggal
-menyediakan bendanya.
+~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
+Sisa yang berkaitan: `throwItem` (`clif_throwitem_script`, jalur klien
+melempar barang) dan `sd->pickuptype`.
 
-**2. Inventaris & perlengkapan.** `updateInv` (24x, `pc_loaditem`),
+**1. Inventaris & perlengkapan.** `updateInv` (24x, `pc_loaditem`),
 `pickUp` (12x), `stripEquip` (9x), `hasEquipped` (6x), keluarga
 `deductDura*`/`deductArmor`/`deductWeapon` (6x), `forceEquip`, `takeOff`,
 `refreshInventory`, `hasItemDura`, `checkInvBod`, `expireItem` — ~65 titik.
 Butuh paket kirim-inventaris yang belum ada.
 
-**3. Gerak mob lanjutan.** `moveIntent` (11x), `checkMove` (9x),
+**2. Gerak mob lanjutan.** `moveIntent` (11x), `checkMove` (9x),
 `moveIgnoreObject` (3x). **Murah sekarang**, karena seluruh mesin
 `moveGhost` sudah berdiri; ketiganya varian dari fungsi yang sama.
 
-**4. Buku mantra.** `getSpells` (7x), `getSpellName` (4x),
+**3. Buku mantra.** `getSpells` (7x), `getSpellName` (4x),
 `getSpellNameFromYName` (4x), `getUnknownSpells` (4x), `getSpellYName`
 (3x), `getAllClassSpells` (1x), `addHealth` (4x). **Juga murah** —
 `SpellDb` sudah memuat identifier, description, ticker, dan dispel;
 tinggal kolom kelas/level.
 
-**5. Tampilan & timer.** `changeView` (22x), `setTimer` (11x), `guitext`
+**4. Tampilan & timer.** `changeView` (22x), `setTimer` (11x), `guitext`
 (12x), `selfAnimation`/`selfAnimationXY` (19x), `paperpopup` (7x),
 `lock`/`unlock` (12x, `lock` juga satu-satunya global belum diport),
 `speak` (6x), `sendURL` (4x), `testPacket` (4x). Sebagian besar paket
 murni — nilainya rendah bila protokol memang akan diganti, kecuali
 `setTimer` dan `lock`/`unlock` yang logika.
 
-**6. C4 — papan pesan & surat.** `sendMail`, `updateMail`, `sendParcel`
+**5. C4 — papan pesan & surat.** `sendMail`, `updateMail`, `sendParcel`
 (5x), `getParcel`, `removeParcel`, `getParcelList`, `showBoard`,
 `sendBoardQuestions`, `powerBoard`, `addGift`, `retrieveGift` — ~25 titik,
 plus protokol char server 0x3009–0x300F. Tabelnya (`Boards`,
 `BoardTitles`, `Mail`, `Parcels`) sudah ada, dan **bisa diuji offline**
 seperti gerbang regresi lain.
 
-**7. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
+**6. Bank klan & subpath.** `clanBankDeposit`/`clanBankWithdraw`/
 `getClanBankItems`/`getSubpathBankItems`/`getBankItems` — 5 titik, dan
 logika bank utamanya sudah ada. Murah.
 
-**8. Sisa administratif.** `forceSave` (15x, `intif_save`), `setAccountBan`,
+**7. Sisa administratif.** `forceSave` (15x, `intif_save`), `setAccountBan`,
 `setHeroShow`, `setCaptchaKey`/`getCaptchaKey`, `addActivationKey`/
 `checkActivationKey`, `mapSelection`, `checkLevel`, `getPK`,
 `setIndDmg`/`setGrpDmg`.
 
-**9. Enam nama yang TIDAK ADA di mana pun** (`addGMSpells`, `bowShoot`,
+**8. Enam nama yang TIDAK ADA di mana pun** (`addGMSpells`, `bowShoot`,
 `buyCustom`, `hairFaceMenu`, `returnInn`, `totemName`) — salah ketik atau
 kode mati di konten. Diputuskan satu per satu, catat di
 `luascript/PERUBAHAN.md`; jangan diport.

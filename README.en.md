@@ -644,7 +644,7 @@ there are six regression gates, all of which must stay green:
 | `./run.sh maptest` | 3,544 map files parse correctly |
 | `./run.sh chartest` | character serialisation (29 assertions) |
 | `./run.sh worldtest` | map world + player placement (53 assertions) |
-| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing, chat & actions, spell durations, mob movement (399 assertions) |
+| `./run.sh cliftest` | client packets, movement, warps, rendering, map redraw, NPC dialogs, facing, chat & actions, spell durations, mob movement, floor items (434 assertions) |
 | `./run.sh dbtest` | database layer against live MySQL (132 assertions) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -767,10 +767,10 @@ The starting point for the next session.
 
 | | |
 |---|---|
-| Regression gates | 6/6 green (`cliftest` **399** assertions) |
+| Regression gates | 6/6 green (`cliftest` **434** assertions) |
 | `logs/map.log` on a live server | **0 ERROR / 0 WARN** |
 | All three servers | running side by side (`./run.sh all`), map↔char link stable |
-| Script bindings | **78 not ported** (72 in `sl.c` + 6 typos); globals not ported: **1** |
+| Script bindings | **73 not ported** (67 in `sl.c` + 6 typos); globals not ported: **1** |
 | Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
@@ -782,7 +782,9 @@ The 26 August session closed two blocks: (1) bindings that were still
 (`map/Durations.java`): `setDuration` (423x) plus 15 sibling bindings and
 the one-second `bl_duratimer()` tick; and (3) `moveGhost` (84x, how
 almost every mob AI moves) and `spawn` (381x, traps / event mobs / instance
-bosses), which together **emptied the stub list**.
+bosses), which together **emptied the stub list**; and (4) **BL_ITEM**,
+floor items — the last large subsystem that was missing entirely, which
+alone opened ~95 call sites.
 
 ⚠️ **The `luaaudit` number does not measure this work fairly.** A binding
 ported out of a *stub* never counted in the audit to begin with — as far as
@@ -825,10 +827,11 @@ clean: a stub logs one WARN and returns nil.
 | `msg` | 133x | ✅ ported 26 Aug |
 | `delete` | 109x | ✅ ported 26 Aug |
 | `moveGhost` | 84x | ✅ ported 26 Aug |
-| `dropItemXY` / `throw` / `dropItem` / `pickUp` | ~90x | needs the floor-item subsystem (BL_ITEM) |
+| `dropItemXY` / `throw` / `dropItem` / `pickUp` | ~90x | ✅ ported 26 Aug (BL_ITEM) |
 
-**BL_ITEM is now the biggest blocker** — it is the only large subsystem
-still missing entirely, and it alone gates ~95 call sites.
+**The stub list and BL_ITEM are both done.** What remains is inventory &
+equipment (~65 call sites, needs an inventory packet), then a long tail of
+small groups — see `CLAUDE.md` for the ranked roadmap.
 
 ⚠️ Two freshly ported paths have **never run on a live server**: the
 duration tick and `moveGhost`. Both only fire for players who are actually

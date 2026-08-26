@@ -641,7 +641,7 @@ gerbang regresi yang harus selalu hijau:
 | `./run.sh maptest` | 3.544 berkas peta terbaca sesuai format |
 | `./run.sh chartest` | serialisasi karakter (29 assertion) |
 | `./run.sh worldtest` | dunia peta + penempatan pemain (53 assertion) |
-| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap, obrolan & gerakan, durasi mantra, gerak mob (399 assertion) |
+| `./run.sh cliftest` | paket klien, gerakan, portal, penggambaran, gambar ulang peta, dialog NPC, arah hadap, obrolan & gerakan, durasi mantra, gerak mob, barang lantai (434 assertion) |
 | `./run.sh dbtest` | lapisan database ke MySQL hidup (132 assertion) |
 
 **`./run.sh scripttest`** (`map/script/ScriptTest.java`):
@@ -761,10 +761,10 @@ Titik berangkat untuk sesi berikutnya.
 
 | | |
 |---|---|
-| Gerbang regresi | 6/6 hijau (`cliftest` **399** assertion) |
+| Gerbang regresi | 6/6 hijau (`cliftest` **434** assertion) |
 | `logs/map.log` server hidup | **0 ERROR / 0 WARN** |
 | Ketiga server | jalan berdampingan (`./run.sh all`), tautan map↔char stabil |
-| Binding skrip | **78 belum diport** (72 di `sl.c` + 6 salah ketik); global belum diport **1** |
+| Binding skrip | **73 belum diport** (67 di `sl.c` + 6 salah ketik); global belum diport **1** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
 | **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
@@ -776,7 +776,9 @@ Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
 (`map/Durations.java`): `setDuration` (423x) plus 15 binding sekeluarga
 dan tik satu detik `bl_duratimer()`; serta (3) `moveGhost` (84x, cara
 hampir seluruh AI mob bergerak) dan `spawn` (381x, jebakan / mob event /
-boss instance), yang bersama-sama **menghabiskan daftar stub**.
+boss instance), yang bersama-sama **menghabiskan daftar stub**; serta (4)
+**BL_ITEM**, barang di lantai — subsistem besar terakhir yang belum ada
+sama sekali, yang sendirian membuka ~95 titik panggilan.
 
 ⚠️ **Angka `luaaudit` tidak mengukur pekerjaan ini dengan adil.** Binding
 yang diport dari keadaan *stub* tidak pernah terhitung di audit — bagi
@@ -819,10 +821,11 @@ hanya menulis WARN sekali lalu mengembalikan nil.
 | `msg` | 133x | ✅ diport 26 Agu |
 | `delete` | 109x | ✅ diport 26 Agu |
 | `moveGhost` | 84x | ✅ diport 26 Agu |
-| `dropItemXY` / `throw` / `dropItem` / `pickUp` | ~90x | butuh subsistem barang di lantai (BL_ITEM) |
+| `dropItemXY` / `throw` / `dropItem` / `pickUp` | ~90x | ✅ diport 26 Agu (BL_ITEM) |
 
-**BL_ITEM kini penghambat terbesar** — satu-satunya subsistem besar yang
-belum ada sama sekali, dan ia sendirian menutup ~95 titik panggilan.
+**Daftar stub dan BL_ITEM dua-duanya sudah beres.** Yang tersisa: inventaris
+& perlengkapan (~65 titik, butuh paket kirim-inventaris), lalu ekor panjang
+kelompok-kelompok kecil — lihat `CLAUDE.md` untuk roadmap berurut.
 
 ⚠️ Dua jalur yang baru diport **belum pernah berjalan di server hidup**:
 tik durasi dan `moveGhost`. Keduanya hanya menyala untuk pemain yang
