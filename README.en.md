@@ -770,7 +770,7 @@ The starting point for the next session.
 | Regression gates | 6/6 green (`cliftest` **572**, `dbtest` **187** assertions) |
 | `logs/map.log` on a live server | **0 ERROR / 0 WARN** |
 | All three servers | running side by side (`./run.sh all`), map↔char link stable |
-| Script bindings | **1 not ported** (`testPacket`, deliberate); globals **0** |
+| Script bindings | methods: **1** (`testPacket`, deliberate); ⚠️ globals: **59 still stubs** |
 | Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
@@ -853,6 +853,46 @@ clears the inventory slot **inside the packet function**. With two
 implementations live, that side effect runs twice and the second one throws
 away the *next* slot. While there was only ever one protocol, the answer was
 always "once" — and that is what hid it.
+
+### ⚠️ Deep audit, 27 August 2026 (evening)
+
+The previous roadmap called Track B the single blocker. **That was wrong.**
+The cause: the `luaaudit` numbers were taken at face value.
+
+`ScriptEngine` installs **63 global bindings as warn-once stubs**, and
+**59 of them are registered in `sl.c`** — real porting gaps. To the audit
+they are all "defined" (a stub is a legitimate function: it does not throw,
+it logs one WARN and returns nil), so the line
+`GLOBAL ada di sl.c tapi BELUM DIPORT: 0 nama` does not mean what it reads
+like.
+
+The largest:
+
+| Binding | Uses | What it is in C |
+|---|---|---|
+| `setTile` | 530x | write one tile + redraw for everyone in the area |
+| `setObject` | 362x | same, `obj` array |
+| `setPass` | 88x | same, `pass` array |
+| `getOfflineID` | 24x | a single name ↔ id query |
+| `setMap` | 23x | reload a `.map` file into a map slot |
+
+The top three are **three lines each**, and 980 call sites depend on them.
+The first call site is `Accepted/Tools/map_editor.lua` — the content already
+ships an in-game map editor that has been doing nothing all along.
+
+**The tool was fixed, not just noted**: `LuaAudit` now reads
+`ScriptEngine.stubNames()` and prints a dedicated
+**"GLOBAL masih STUB dan ADA di sl.c"** section, sorted by use count.
+
+⚠️ One gap still escapes even the new report: bindings that return a
+**constant** instead of being registered as stubs — `getXPforLevel` (12x,
+though the table already exists), `checkOnline`, `curServer`. All three are
+now marked at their source.
+
+Another finding: **map geometry is shared** between maps using the same file
+(9,850 maps → 2,919 files), so a `setTile` that writes straight through
+would change that tile on **every** map alike. It needs copy-on-write, and
+no test would catch it if missed.
 
 The 26 August session closed two blocks: (1) bindings that were still
 **stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

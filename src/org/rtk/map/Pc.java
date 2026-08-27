@@ -215,8 +215,11 @@ public final class Pc {
      * Objek pemain milik mesin skrip — satu per pemain, bukan salinan baru
      * tiap panggilan (lihat {@link User#scriptPlayer()}).
      *
-     * TODO(C1): registry yang ditulis skrip belum mengalir balik ke
-     * {@link org.rtk.common.mmo.CharStatus}, jadi belum ikut tersimpan.
+     * <p>Registry yang ditulis skrip mengalir langsung ke
+     * {@link org.rtk.common.mmo.CharStatus}: keduanya <b>objek yang sama</b>,
+     * disambungkan sekali lewat {@code ScriptPlayer.bindRegistries()}
+     * (Trek C1, selesai 21 Agustus 2026). Terbukti ujung-ke-ujung di
+     * {@code dbtest}.</p>
      */
     static org.rtk.map.script.ScriptPlayer scriptPlayerOf(User sd) {
         return sd.scriptPlayer();

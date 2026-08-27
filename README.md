@@ -764,7 +764,7 @@ Titik berangkat untuk sesi berikutnya.
 | Gerbang regresi | 6/6 hijau (`cliftest` **572**, `dbtest` **187** assertion) |
 | `logs/map.log` server hidup | **0 ERROR / 0 WARN** |
 | Ketiga server | jalan berdampingan (`./run.sh all`), tautan map↔char stabil |
-| Binding skrip | **1 belum diport** (`testPacket`, sengaja); global **0** |
+| Binding skrip | method **1** (`testPacket`, sengaja); ⚠️ global **59 masih stub** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
 | **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
@@ -847,6 +847,48 @@ mengosongkan slot inventaris **di dalam fungsi paketnya**. Dengan dua
 implementasi hidup, efek samping itu berjalan dua kali dan yang kedua
 membuang slot pemain berikutnya. Selama hanya ada satu protokol, jawabannya
 selalu "sekali" — dan itu yang menyembunyikannya.
+
+### ⚠️ Audit mendalam, 27 Agustus 2026 sore
+
+Roadmap sebelumnya menyebut Trek B sebagai penghambat tunggal. **Itu
+salah.** Sebabnya: angka `luaaudit` dipercaya mentah.
+
+`ScriptEngine` memasang **63 binding global sebagai stub warn-once**, dan
+**59 di antaranya terdaftar di `sl.c`** — celah port yang nyata. Bagi audit
+semuanya "terdefinisi" (stub adalah fungsi yang sah: ia tidak melempar,
+hanya menulis WARN sekali lalu mengembalikan nil), sehingga baris
+`GLOBAL ada di sl.c tapi BELUM DIPORT: 0 nama` tidak berarti apa yang
+dibacanya.
+
+Yang terbesar:
+
+| Binding | Pakai | Isinya di C |
+|---|---|---|
+| `setTile` | 530x | tulis satu petak + gambar ulang untuk yang di area |
+| `setObject` | 362x | sama, larik `obj` |
+| `setPass` | 88x | sama, larik `pass` |
+| `getOfflineID` | 24x | satu kueri nama ↔ id |
+| `setMap` | 23x | muat ulang berkas `.map` ke slot peta |
+
+Ketiga yang teratas isinya **tiga baris masing-masing**, dan 980 titik
+panggilan tergantung padanya. Titik panggilan pertamanya
+`Accepted/Tools/map_editor.lua` — kontennya sudah membawa editor peta dalam
+permainan, yang selama ini tidak melakukan apa-apa.
+
+**Alatnya sudah diperbaiki**, bukan cuma dicatat: `LuaAudit` kini membaca
+`ScriptEngine.stubNames()` dan mencetak bagian tersendiri
+**"GLOBAL masih STUB dan ADA di sl.c"**, diurutkan menurut jumlah
+pemakaian.
+
+⚠️ Satu celah masih lolos bahkan dari laporan baru: binding yang
+mengembalikan **nilai tetap** alih-alih dipasang sebagai stub —
+`getXPforLevel` (12x, padahal tabelnya sudah ada), `checkOnline`,
+`curServer`. Ketiganya kini bertanda di sumbernya.
+
+Temuan lain: **geometri peta dibagi antar peta** yang memakai berkas sama
+(9.850 peta → 2.919 berkas), jadi `setTile` yang menulis langsung akan
+mengubah petak itu di **setiap** peta sejenis. Butuh salin-saat-ditulis, dan
+tidak ada uji yang akan menangkapnya kalau terlewat.
 
 Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
 **stub** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

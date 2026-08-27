@@ -396,6 +396,9 @@ public final class ScriptEngine {
             int month = Calendar.getInstance().get(Calendar.MONTH); // 0..11
             return LuaValue.valueOf((month / 3) % 4 + 1);
         });
+        // ⚠️ Nilai TETAP, bukan stub — jadi ia tidak muncul di laporan stub
+        // LuaAudit. Server tunggal, jadi 0 memang jawaban yang benar untuk
+        // sekarang; kalau nanti ada lebih dari satu map server, ini berbohong.
         set("curServer", args -> LuaValue.valueOf(0));
 
         set("timeMS", args -> LuaValue.valueOf(System.currentTimeMillis()));
@@ -494,12 +497,19 @@ public final class ScriptEngine {
             log.info("[gmbroadcast] {}", args.optjstring(1, ""));
             return LuaValue.NONE;
         });
+        // ⚠️ Nilai TETAP, bukan stub — tidak terlihat di laporan stub
+        // LuaAudit. Tidak dipakai satu pun skrip saat ini (0x), jadi
+        // dibiarkan; kalau mulai dipakai, ia akan menjawab "tidak online"
+        // untuk semua orang tanpa memberi tanda apa pun.
         set("checkOnline", args -> LuaValue.valueOf(0));
         set("throw", args -> {
             throw new LuaError(args.optjstring(1, "script error"));
         });
         set("luaReload", args -> LuaValue.valueOf(reload()));
-        // TODO: read rtk/db/level_db.txt once the level tables are ported
+        // ⚠️ Nilai TETAP, bukan stub — tidak terlihat di laporan stub
+        // LuaAudit, padahal dipakai 12x. Tabel levelnya SUDAH ada di
+        // MapServer.classDb (dari db/level_db.txt); tinggal disambungkan.
+        // Lihat butir 1d roadmap.
         set("getXPforLevel", args -> LuaValue.valueOf(0));
 
         // every remaining engine function becomes a warn-once stub so the
@@ -527,6 +537,7 @@ public final class ScriptEngine {
         // tanpa penjaga di bawah sebuah nama yang baru diport akan
         // tertimpa stub-nya sendiri dan tetap mengembalikan nil — persis
         // yang sempat terjadi pada getMapXMax. Jangan hapus penjaganya.
+        stubNames.clear();
         for (String name : stubs) {
             if (!globals.get(name).isnil()) {
                 log.warn("[LUA] '{}' sudah diport tetapi masih terdaftar "
@@ -534,8 +545,23 @@ public final class ScriptEngine {
                 continue;
             }
             globals.set(name, stub(name));
+            stubNames.add(name);
         }
     }
+
+    /**
+     * Nama global yang terpasang sebagai <b>stub warn-once</b>.
+     *
+     * <p>⚠️ Ada supaya {@code LuaAudit} bisa memperhitungkannya. Tanpa ini
+     * stub terhitung "terdefinisi" — sebuah binding yang dipakai 530x bisa
+     * hilang tanpa satu baris pun laporan, dan itu benar-benar terjadi
+     * (Peringatan #30, angkanya di #73).</p>
+     */
+    public java.util.Set<String> stubNames() {
+        return java.util.Collections.unmodifiableSet(stubNames);
+    }
+
+    private final java.util.Set<String> stubNames = new java.util.TreeSet<>();
 
     private interface JavaFunc {
         Varargs invoke(Varargs args);
