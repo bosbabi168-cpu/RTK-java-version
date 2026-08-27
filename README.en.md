@@ -33,6 +33,34 @@ world** once four server bugs were fixed (see "Status & roadmap"). All four
 had slipped past 294 test assertions — evidence that self-written tests cannot
 substitute for a real client.
 
+### The client lives in a separate repository (27 August 2026)
+
+```
+GitHub/
+├── RTK-Server/          # original C source (reference)
+├── RTK-java-version/    # SERVER — this repository
+└── RTK-client/          # CLIENT — new repository, not yet committed
+```
+
+The client repository is **not committed yet**, and the raw NexusTK assets
+(1.9 GB) live inside it during development. The first commit happens only
+**after every asset has been replaced with original artwork**, so the private
+repository that eventually gets pushed never carries someone else's assets —
+not "removed later", but never in its history at all.
+
+The cost, chosen deliberately: **there are two copies of `Wire.java`.** It is
+the RTK2 protocol contract, and drift there throws no error — the client
+reads the wrong field and fails far from the cause. Three guards: bump
+`Wire.VERSION` on both sides for every change (the handshake rejects a
+version mismatch), copy the file whole instead of editing one side, and a
+sync gate that compares both files when the client repository is on the same
+machine.
+
+**The EPF decoder lives in the client repository.** The server never touches
+EPF — tile ids are passed through as plain numbers. That decoder also changes
+role: once the original artwork exists, it becomes a one-shot conversion tool.
+
+
 ## Requirements
 
 - **JDK 25** (the project's language level). That is for the development

@@ -71,6 +71,74 @@ petak-yang-baru-terlihat — konsep viewport RetroTK, bukan peristiwa
 permainan. Idealnya adapter menghitungnya sendiri dari arah gerak. Sudah
 ditandai di Javadoc-nya; rapikan saat protokol baru dirancang.
 
+## ⚠️ TREK B: REPO TERPISAH — keputusan user 27 Agustus 2026 (malam)
+
+**Klien dibuat di repo sendiri, bukan di repo ini.** Keputusan ini diambil
+sadar, dengan biayanya diketahui.
+
+```
+GitHub/
+├── RTK-Server/          # sumber C asli (rujukan)
+├── RTK-java-version/    # SERVER — repo ini
+└── RTK-client/          # KLIEN — repo baru, BELUM di-commit
+```
+
+### Kenapa terpisah, walau `Wire.java` jadi ada dua
+
+Pertanyaannya sempat dijawab "satu repo saja" dengan alasan `Wire.java`
+adalah kontrak dan dua salinan akan melenceng. **Alasan user lebih kuat, dan
+ini yang berlaku:**
+
+1. **Riwayat git itu permanen.** Repo klien **tidak di-commit dulu**, dan
+   aset mentah NexusTK (1,9 GB) tinggal di dalamnya selama pengembangan.
+   Commit pertama baru dilakukan **setelah seluruh aset diganti dengan
+   gambar sendiri**, sehingga repo privat yang akhirnya di-push tidak pernah
+   memuat aset pihak lain — bukan "dihapus belakangan", melainkan **tidak
+   pernah ada di sana**. Drift bisa dijaga dengan disiplin; riwayat git tidak
+   bisa dibersihkan.
+2. **Klien memakai libGDX sejak awal**, dengan pola yang sama seperti repo
+   ini: jar manual di `extLib/`, tanpa Maven. User yang mengonfigurasi
+   NetBeans-nya. Dengan repo terpisah, delapan jar libGDX **tidak ikut
+   terbawa** ke `Class-Path` deploy server yang headless.
+3. **Perubahan di tiap sisi jadi keadaan yang sebenarnya**, bukan dua produk
+   yang kebetulan satu build.
+
+### Konsekuensi yang WAJIB dijaga
+
+⚠️ **`Wire.java` ada DUA dan keduanya dipelihara sengaja.** Ia kontrak
+protokol RTK2; dua salinan yang melenceng menghasilkan klien yang **salah
+membaca bingkai tanpa melempar error** — kegagalan paling mahal dicari.
+Tiga penjaga yang harus dipakai:
+
+- **Setiap perubahan pada `Wire.java` menaikkan `Wire.VERSION` di
+  KEDUA sisi.** Handshake sudah menolak versi yang berbeda dengan pesan
+  jelas (`Inbound.hello`), jadi drift muncul sebagai penolakan sambungan,
+  bukan sebagai byte yang salah tafsir.
+- **Salin utuh, jangan sunting sebelah.** Berkasnya identik byte-per-byte
+  kecuali `package`-nya. Menyunting satu sisi lalu "menyesuaikan" sisi lain
+  dengan tangan adalah cara drift bermula.
+- **Gerbang penyelaras** — tugas pertama Trek B: uji yang membandingkan
+  kedua berkas bila repo klien ada di mesin yang sama, dan **melewati diri
+  sendiri dengan pesan jelas** bila tidak (pola yang sama dengan `dbtest`
+  tanpa MySQL). Murah, dan ia menangkap drift pada menit ia terjadi.
+
+Hal yang sama berlaku untuk **`MapFile`** (pembaca `.map`), yang juga
+dibutuhkan kedua sisi — tetapi risikonya lebih rendah: formatnya berkas di
+disk, bukan kontrak antar-proses, dan 3.544 berkas nyata jadi ujinya
+sendiri.
+
+### Yang TIDAK ikut pindah
+
+**Dekoder EPF (`org.rtk.asset`) tinggal di repo klien.** Server tidak pernah
+menyentuh EPF sama sekali — id `tile`/`obj` hanya diteruskan sebagai angka,
+dan dua-satunya penyebutan `SObj.tbl` di seluruh `src/` adalah komentar yang
+menjelaskan kenapa ia sengaja tidak diport.
+
+⚠️ Dekoder itu juga **akan berubah peran**: begitu aset sendiri jadi, ia
+berhenti jadi dependensi runtime klien dan menjadi **alat konversi sekali
+pakai** — baca EPF lama, tulis format sendiri. Jadi ia memang tidak pernah
+pantas tinggal di repo server.
+
 ## Apa project ini
 
 Port Java SE dari **RTK-Server** (`../RTK-Server`), server MMO
@@ -1362,6 +1430,31 @@ byte-identik dengan `rtklua/`.
    dan pemain yang "tidak ada" padahal berdiri di sana, karena setiap
    pencarian menunjuk blok yang salah.
 
+81. **`Wire.java` ADA DUA, dan itu disengaja.** Repo klien terpisah
+   (keputusan 27 Agustus 2026 — lihat bagian "TREK B: REPO TERPISAH" di
+   atas), jadi kontrak protokol RTK2 hidup sebagai dua salinan yang harus
+   tetap identik.
+
+   ⚠️ Drift di sini **tidak melempar error**: klien membaca ladang yang
+   salah dan menafsirkan byte yang salah, lalu gagal di tempat yang jauh
+   dari sebabnya. Ini kegagalan yang paling mahal dicari di seluruh project.
+
+   Tiga penjaga, dan ketiganya wajib:
+   - **naikkan `Wire.VERSION` di kedua sisi** pada setiap perubahan —
+     handshake menolak versi berbeda dengan pesan jelas, sehingga drift
+     muncul sebagai penolakan sambungan, bukan sebagai byte salah tafsir;
+   - **salin utuh**, jangan sunting sebelah lalu menyesuaikan yang lain
+     dengan tangan;
+   - **gerbang penyelaras** yang membandingkan kedua berkas bila repo klien
+     ada di mesin yang sama, dan melewati diri sendiri dengan pesan jelas
+     bila tidak.
+
+   Peringatan #72 (`settingFlags` tersalin di tiga tempat) adalah kasus yang
+   sama dalam skala kecil: **duplikasi tidak pernah salah saat ditulis; ia
+   salah saat salah satunya diperbaiki.** Bedanya kali ini duplikasinya
+   dipilih sadar, dengan alasan yang lebih kuat daripada risikonya — jadi
+   penjaganya yang harus nyata, bukan niatnya.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -1981,8 +2074,16 @@ bukan celah port. `LuaAudit` memisahkan keduanya.
 **1. Trek B — dekoder EPF, editor, klien libGDX.** **Penghambat tunggal
 sekarang, dan kali ini benar-benar tunggal.** Servernya punya protokol
 lengkap dua arah dan binding yang tuntas; yang belum ada adalah sesuatu
-yang bisa berbicara dengannya. **Belum dimulai sama sekali**
-(`src/org/rtk/` hanya berisi charserver, common, login, map).
+yang bisa berbicara dengannya. **Belum dimulai sama sekali.**
+
+⚠️ **Dikerjakan di repo TERPISAH** (`../RTK-client`), belum di-commit sampai
+asetnya diganti sendiri — lihat bagian "TREK B: REPO TERPISAH" di atas dan
+Peringatan #81. Rencana rinci beserta format berkas yang sudah dibongkar ada
+di artifact "Dari EPF ke Klien".
+
+**Tugas pertama, sebelum apa pun:** gerbang penyelaras `Wire.java` antar
+repo. Ia yang membuat keputusan dua repo aman, dan menulisnya setelah
+kliennya jalan berarti menulisnya setelah drift pertama terjadi.
 
 - **B1. Dekoder EPF** — EPF + PAL → gambar RGB, plus pemetaan id
   `tile`/`obj` ke frame. Prasyarat sisanya. `rtk/SObj.tbl` (18.954 entri)

@@ -32,6 +32,33 @@ setelah empat bug server ditutup (lihat "Status & roadmap"). Keempatnya lolos
 dari 294 assertion uji — bukti bahwa uji buatan sendiri tidak bisa
 menggantikan klien nyata.
 
+### Klien dibuat di repo terpisah (27 Agustus 2026)
+
+```
+GitHub/
+├── RTK-Server/          # sumber C asli (rujukan)
+├── RTK-java-version/    # SERVER — repo ini
+└── RTK-client/          # KLIEN — repo baru, belum di-commit
+```
+
+Repo klien **belum di-commit**, dan aset mentah NexusTK (1,9 GB) tinggal di
+dalamnya selama pengembangan. Commit pertama baru dilakukan **setelah
+seluruh aset diganti dengan gambar sendiri**, sehingga repo privat yang
+akhirnya di-push tidak pernah memuat aset pihak lain — bukan "dihapus
+belakangan", melainkan tidak pernah ada di riwayatnya.
+
+Konsekuensi yang dipilih sadar: **`Wire.java` ada dua salinan.** Ia kontrak
+protokol RTK2, dan drift di sana tidak melempar error — klien membaca ladang
+yang salah lalu gagal jauh dari sebabnya. Penjaganya tiga: naikkan
+`Wire.VERSION` di kedua sisi pada setiap perubahan (handshake menolak versi
+berbeda), salin utuh alih-alih menyunting sebelah, dan gerbang penyelaras
+yang membandingkan kedua berkas bila repo klien ada di mesin yang sama.
+
+**Dekoder EPF tinggal di repo klien.** Server tidak pernah menyentuh EPF —
+id petak hanya diteruskan sebagai angka. Dekoder itu juga akan berubah peran:
+begitu aset sendiri jadi, ia menjadi alat konversi sekali pakai.
+
+
 ## Prasyarat
 
 - **JDK 25** (level bahasa project = 25). Untuk mesin pengembangan;
