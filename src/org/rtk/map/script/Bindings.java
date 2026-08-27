@@ -1057,6 +1057,23 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        /**
+         * pcl_getexchangeitem(n): satu barang dari titipan pertukaran
+         * pemain, atau nil bila indeksnya kosong.
+         *
+         * <p>Yang dibaca titipan <b>miliknya sendiri</b> — barang yang ia
+         * tawarkan, bukan yang ditawarkan lawannya.</p>
+         */
+        player.addMethod("getExchangeItem", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            int n = args.optint(2, -1);
+            if (u == null || n < 0 || n >= u.exchange.items.size()) {
+                return LuaValue.NIL;
+            }
+            return engine.newInstance(engine.boundItemClass,
+                    new ScriptItem(u.exchange.items.get(n)));
+        });
+
         // ---- sisa administratif ----
 
         /**

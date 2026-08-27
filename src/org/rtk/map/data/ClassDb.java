@@ -72,6 +72,20 @@ public final class ClassDb {
         return pathByClass.getOrDefault(classId, 0);
     }
 
+    /**
+     * classdb_name(): nama jalur yang ditampilkan di samping nama pemain.
+     *
+     * <p>⚠️ <b>Belum diport isinya.</b> Di C nama ini diambil dari salah
+     * satu dari <b>enam belas</b> kolom {@code PthMark0..15} menurut tanda
+     * (mark) pemain — jadi satu jalur punya banyak sebutan yang berubah
+     * seiring naiknya tanda. Sampai itu diport, yang dikembalikan string
+     * kosong, dan pemanggilnya menghasilkan {@code "Nama()"} — persis
+     * seperti cabang C ketika namanya tidak ketemu.</p>
+     */
+    public String pathName(int classId, int mark) {
+        return "";
+    }
+
     /** Muat pemetaan kelas -&gt; jalur dari tabel {@code Paths}. */
     public int loadPaths(org.rtk.common.Sql sql) {
         pathByClass.clear();

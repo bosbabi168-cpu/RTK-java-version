@@ -578,7 +578,7 @@ leaving them stuck.
 | **map server** (`map.c`, `intif.c`) | `map/MapServer.java`, `map/MapIntif.java` | ✅ connects and authenticates to the char server, loads map geometry, accepts routed players, requests and receives character data |
 | map world (`map.h` block_list/map_data, `map_read`) | `map/data/BlockList.java`, `MapData.java`, `MapRegistry.java` | ✅ geometry + metadata + 8×8 spatial index, x±9/y±8 view area |
 | **gameplay** (`pc.c`, `mob.c`, `npc.c`, `clif.c`, ~22k lines) | `map/User.java`, `map/Pc.java`, `map/Clif.java`, `map/Npc*.java`, `map/Mob*.java` | ✅ **Track A complete** — world entry plus rendering of everything nearby (0x33), movement and warps, NPC dialog/menu/input (0x30/0x2F/0x39/0x3A), shops (buy and sell), NPCs and their timers, mobs: 716 types and 1,175 spawns, AI on a 50 ms tick, combat, death and drops. ⚠️ never yet tested against a real RetroTK client |
-| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **working via LuaJ** — all 906 original scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines with blocking dialogs, registries and inventory wired through to `CharStatus`. ⚠️ of the ~258 methods scripts call, only **4 exist in `sl.c` but are not ported yet**; the most-used ones are now covered (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus the whole floor-item family). For current numbers: `./run.sh luaaudit` |
+| **scripting engine** (`sl.c`, ~11k lines) | `map/script/ScriptEngine.java`, `ScriptClass.java`, `ScriptInstance.java`, `Bindings.java`, `ScriptPlayer.java` | ✅ **working via LuaJ** — all 906 original scripts load without error; typel object model, `root.method` dispatch, `_async` coroutines with blocking dialogs, registries and inventory wired through to `CharStatus`. ⚠️ of the ~258 methods scripts call, only **3 exist in `sl.c` but are not ported yet**; the most-used ones are now covered (`sendAction` 905×, `talk` 698×, `playSound` 632×, `updateState` 434×, `setDuration` 423×, `spawn` 381×, `calcStat` 249×, `moveGhost` 84×, plus the whole floor-item family). For current numbers: `./run.sh luaaudit` |
 | save server (`saveif.c` — already disabled in C) | — | ❌ not ported (its connection timer is commented out in C) |
 
 ## Design notes
@@ -767,10 +767,10 @@ The starting point for the next session.
 
 | | |
 |---|---|
-| Regression gates | 6/6 green (`cliftest` **552**, `dbtest` **187** assertions) |
+| Regression gates | 6/6 green (`cliftest` **572**, `dbtest` **187** assertions) |
 | `logs/map.log` on a live server | **0 ERROR / 0 WARN** |
 | All three servers | running side by side (`./run.sh all`), map↔char link stable |
-| Script bindings | **12 not ported** (**4** in `sl.c` + 8 typos / dead code); globals not ported: **0** |
+| Script bindings | **11 not ported** (**3** in `sl.c` + 8 typos / dead code); globals not ported: **0** |
 | Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
@@ -810,7 +810,7 @@ packets (0x0F / 0x10) with `updateInv`, `hasEquipped`, and the `deduct*`
 family; and (7) the spell book (`getSpells`, `getSpellName`,
 `getUnknownSpells`, `getAllClassSpells`, `addHealth`); and (8) display &
 timers (`changeView`, `guitext`, `setTimer`, `selfAnimation`, `paperpopup`,
-`speak`, `sendURL`, `lock`/`unlock`); and (9) `forceSave`; and (10) the BOD subsystem; and (11) parcels, mail and gifts, and (12) message boards (Track C4); and (13) clan and subpath banks; and (14) the remaining admin bindings.
+`speak`, `sendURL`, `lock`/`unlock`); and (9) `forceSave`; and (10) the BOD subsystem; and (11) parcels, mail and gifts, and (12) message boards (Track C4); and (13) clan and subpath banks; and (14) the remaining admin bindings; and (15) player-to-player item exchange.
 
 ⚠️ **The `luaaudit` number does not measure this work fairly.** A binding
 ported out of a *stub* never counted in the audit to begin with — as far as
@@ -953,8 +953,8 @@ a requirement after touching any binding or script hook.
 - **Boards and mail** (char server) — the least blocked item in this track:
   protocol and tables already exist, and it can be tested offline.
 
-**Script-binding priority.** Of the ~258 methods scripts call, **4 exist
-in `sl.c` but are not ported yet** as of 27 August 2026 (110 → 100 → 4),
+**Script-binding priority.** Of the ~258 methods scripts call, **3 exist
+in `sl.c` but are not ported yet** as of 27 August 2026 (110 → 100 → 3),
 and **no globals** are missing any more — down from 6. For current
 numbers, always run `./run.sh luaaudit`.
 

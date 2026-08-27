@@ -914,6 +914,30 @@ byte-identik dengan `rtklua/`.
    pemanggil setelah method-nya kembali. **Buang saat protokol baru
    dirancang**; server baru tahu sendiri apa yang baru terlihat.
 
+53. **Pertukaran: barang DITITIPKAN, bukan ditandai.** Barang yang
+   ditawarkan <b>benar-benar dikeluarkan dari inventaris</b> dan disimpan di
+   {@code sd->exchange} sampai selesai atau dibatalkan; membatalkan
+   mengembalikannya lewat {@code pc_additemnolog}.
+
+   Kedua arah kesalahannya berbahaya:
+   - Kalau titipannya jadi sekadar penanda tanpa mencabut barangnya, pemain
+     bisa menjual atau menjatuhkan barang yang sama di tengah pertukaran —
+     **penggandaan**.
+   - Kalau dicabut tanpa jalur pengembalian, barang **hilang** setiap kali
+     pertukaran batal.
+
+   Dua hal lagi:
+   - **Persetujuannya DUA TAHAP.** Menekan "tukar" sekali hanya menandai;
+     barang berpindah ketika pihak <b>kedua</b> menekan. Karena itu
+     {@code confirm} punya dua cabang yang terlihat mirip.
+   - **`ItmExchangeable` kebalikan namanya lagi** — nilai bukan-nol berarti
+     barangnya TIDAK bisa ditukar (42 dari 2.545 barang). Sekeluarga dengan
+     `ItmDroppable` (Peringatan #32); dibungkus
+     `ItemDb.cannotBeExchanged()` supaya tidak menyesatkan lagi.
+   - **Emas TIDAK dititipkan** seperti barang — ia tetap di dompet dan
+     diperiksa ulang saat konfirmasi. Menawarkan lebih dari yang dimiliki
+     tidak ditolak sebagai kesalahan; nilainya hanya diabaikan.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -1031,8 +1055,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | | |
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
-| Gerbang regresi | 6/6 hijau (`cliftest` **552**, `dbtest` **187** assertion) |
-| Binding skrip | **12** belum diport (**4** di `sl.c` + 8 salah ketik / kode mati); global belum diport **0** |
+| Gerbang regresi | 6/6 hijau (`cliftest` **572**, `dbtest` **187** assertion) |
+| Binding skrip | **11** belum diport (**3** di `sl.c` + 8 salah ketik / kode mati); global belum diport **0** |
 | **Paket MASUK** | ⚠️ **5 dari 54 opcode** — lihat "AUDIT 27 Agustus 2026" |
 | Trek A | selesai fungsinya; `sendMyStatus` sengaja TAHAP 1 |
 | Trek C | C1 & C4 selesai; **C2 dan C3 belum tersentuh** |
@@ -1509,10 +1533,12 @@ lima helper yang isinya **logika** masih tinggal di `Clif` —
 `blocksMovement`, `updateCamera`, `fireWalkScripts`, `checkWarpTile`,
 `clickNpc`. Daftarnya ada di javadoc `MapCommands`.
 
-**2. Subsistem pertukaran barang antar pemain** (`sd->exchange`). Satu-
-satunya sisa binding yang butuh blok tersendiri (`getExchangeItem`), dan
-satu-satunya subsistem besar yang benar-benar belum ada setelah BL_ITEM.
-Logikanya berharga apa pun protokolnya.
+~~**2. Subsistem pertukaran barang antar pemain.**~~ **SELESAI
+27 Agustus 2026** (`map/Exchange.java`). Menutup `getExchangeItem`, dan
+jadi pemakai pertama `ClientCommands`. Lihat Peringatan #53.
+
+**Sisa butir ini:** pembaca paket `0x4A`/`0x29`/`0x2A` yang memanggilnya —
+menunggu keputusan protokol masuk (butir 1).
 
 **3. Pasang/lepas perlengkapan dan pakai barang.** Menutup `takeOff` dan
 `throwItem`, dua dari empat binding terakhir. Butuh jalur masuk (butir 1)
@@ -1544,7 +1570,7 @@ sudah selesai; dialognya belum. Baca `luascript/GLOSARIUM.md` dulu.
 
 > Angkanya dihitung ulang dari `./run.sh luaaudit -Drtk.audit.penuh=true`
 > pada tanggal itu; **jangan percaya angka di sini kalau `Bindings.java`
-> sudah berubah.** 4 method masih ada di `sl.c` tapi belum diport, plus 8
+> sudah berubah.** 3 method masih ada di `sl.c` tapi belum diport, plus 8
 > yang tidak ada di mana pun (salah ketik / kode mati).
 
 ~~**1. BL_ITEM — barang di lantai.**~~ **SELESAI 26 Agustus 2026 (sore).**
@@ -1602,7 +1628,7 @@ pemain, bukan menurut opcode, karena format kabelnya akan diganti:
 | Aksi pemain | Opcode C | Catatan |
 |---|---|---|
 | **Bicara / berbisik** | `0x0E` say, `0x19` wisp | `speak` sudah ada di sisi skrip, tapi pemain tidak bisa mengetik |
-| **Pertukaran barang antar pemain** | `0x29` hand item, `0x2A` hand gold, `0x4A` exchange | menutup `getExchangeItem`, sisa binding terakhir |
+| **Pertukaran barang antar pemain** | `0x29` hand item, `0x2A` hand gold, `0x4A` exchange | ✅ logikanya selesai 27 Agu (`map/Exchange`); tinggal pembacanya |
 | **Pakai / lepas perlengkapan** | `0x12`/`0x1E` wield, `0x1F` unequip | menutup `takeOff` |
 | **Pakai / makan barang** | `0x1A` eat, `0x1C` use | |
 | **Jatuhkan barang & emas** | `0x08` drop, `0x24` dropgold, `0x17` throw | menutup `throwItem`; BL_ITEM-nya sudah ada |

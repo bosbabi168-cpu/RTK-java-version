@@ -219,6 +219,162 @@ public final class ClifTest {
         saveTest(map, sd);
         bodTest(map, sd);
         adminTest(map, sd);
+        exchangeTest(map, sd);
+    }
+
+    /**
+     * Pertukaran barang antar pemain.
+     *
+     * <p>Dua hal yang paling berbahaya kalau salah, dan keduanya dikunci di
+     * sini: barang yang ditawarkan <b>benar-benar keluar dari inventaris</b>
+     * (kalau tidak, bisa digandakan) dan <b>kembali saat dibatalkan</b>
+     * (kalau tidak, hilang). Plus persetujuan dua tahap: menekan "tukar"
+     * sekali belum memindahkan apa pun.</p>
+     */
+    private static void exchangeTest(MapData map, User sd) {
+        log.info("=== pertukaran barang antar pemain ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+
+        var db = MapServer.itemDb;
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        var kosong = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+        // permata: boleh ditukar
+        db.register(new org.rtk.map.data.ItemDb.Info(7401, "permata", "Permata", "", "",
+                18, 0, 0L, 0, 1, 1, 20, 0, 0, 0, 0, 0, kosong, tanpaStat));
+        // pusaka: ItmExchangeable = 1 -> TIDAK bisa ditukar
+        db.register(new org.rtk.map.data.ItemDb.Info(7402, "pusaka", "Pusaka", "", "",
+                18, 0, 0L, 1, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+
+        // lawan main
+        CharStatus ls = new CharStatus();
+        ls.id = 0x0ABCDE;
+        ls.name = "Lawan";
+        ls.baseHp = 100;
+        ls.lastPos = new Point(0, c[0], c[1]);
+        User lawan = new User(31, ls);
+        lawan.m = 0;
+        lawan.x = c[0];
+        lawan.y = c[1];
+        lawan.status.maxInv = 20;
+        MapServer.net.openTestSession(lawan.fd);
+        MapServer.onlineChars.put(sd.fd, sd);
+        MapServer.onlineChars.put(lawan.fd, lawan);
+
+        sd.status.maxInv = 20;
+        sd.status.inventory.clear();
+        lawan.status.inventory.clear();
+        sd.exchange.items.clear();
+        lawan.exchange.items.clear();
+        sd.exchange.target = 0;
+        lawan.exchange.target = 0;
+
+        // --- mulai ---
+        check("mulai dengan diri sendiri ditolak",
+                !Exchange.start(sd, sd.id));
+        check("mulai dengan lawan sepeta berhasil",
+                Exchange.start(sd, lawan.id));
+        check("kedua sisi saling menunjuk",
+                sd.exchange.target == lawan.id && lawan.exchange.target == sd.id);
+
+        // --- titipan BENAR-BENAR keluar dari inventaris ---
+        sd.addItemById(7401, 5, -1);
+        check("titip 2 dari 5 permata", Exchange.offerItem(sd, 0, 2));
+        check("titipannya tercatat", sd.exchange.items.size() == 1
+                && sd.exchange.items.get(0).amount == 2);
+        check("⚠️ barangnya BERKURANG dari inventaris, bukan sekadar ditandai",
+                sd.status.inventory.size() == 1
+                        && sd.status.inventory.get(0).amount == 3);
+
+        // --- barang yang tidak boleh ditukar ---
+        sd.addItemById(7402, 1, -1);
+        int slotPusaka = sd.status.inventory.size() - 1;
+        check("⚠️ ItmExchangeable = 1 berarti TIDAK bisa ditukar",
+                !Exchange.offerItem(sd, slotPusaka, 1));
+        check("pusaka tetap di inventaris",
+                sd.status.inventory.get(slotPusaka).amount == 1);
+
+        // --- inventaris lawan penuh ---
+        int maxAsli = lawan.status.maxInv;
+        lawan.status.maxInv = 0;
+        check("inventaris lawan penuh -> titipan ditolak",
+                !Exchange.offerItem(sd, 0, 1));
+        lawan.status.maxInv = maxAsli;
+
+        // --- batal MENGEMBALIKAN titipan ---
+        int sebelumBatal = sd.status.inventory.size();
+        Exchange.cancel(sd);
+        check("⚠️ batal MENGEMBALIKAN titipan ke inventaris",
+                sd.status.inventory.stream()
+                        .filter(i -> i.id == 7401)
+                        .mapToInt(i -> i.amount).sum() == 5);
+        check("batal mengosongkan titipan dan tandanya",
+                sd.exchange.items.isEmpty() && sd.exchange.target == 0);
+
+        // --- persetujuan DUA TAHAP ---
+        sd.status.inventory.clear();
+        lawan.status.inventory.clear();
+        sd.addItemById(7401, 3, -1);
+        lawan.addItemById(7401, 1, -1);
+        Exchange.start(sd, lawan.id);
+        Exchange.offerItem(sd, 0, 3);
+        Exchange.offerItem(lawan, 0, 1);
+
+        Exchange.confirm(sd, lawan.id);
+        check("⚠️ satu pihak setuju: barang BELUM berpindah",
+                sd.exchange.done && !lawan.exchange.done
+                        && lawan.status.inventory.isEmpty());
+
+        Exchange.confirm(lawan, sd.id);
+        check("kedua pihak setuju: barang berpindah",
+                lawan.status.inventory.stream()
+                        .filter(i -> i.id == 7401)
+                        .mapToInt(i -> i.amount).sum() == 3);
+        check("dan sebaliknya",
+                sd.status.inventory.stream()
+                        .filter(i -> i.id == 7401)
+                        .mapToInt(i -> i.amount).sum() == 1);
+        check("pertukaran ditutup di kedua sisi",
+                sd.exchange.target == 0 && lawan.exchange.target == 0
+                        && sd.exchange.items.isEmpty()
+                        && lawan.exchange.items.isEmpty());
+
+        // --- lawan yang disebut klien tidak cocok -> kedua sisi batal ---
+        sd.status.inventory.clear();
+        lawan.status.inventory.clear();
+        sd.addItemById(7401, 2, -1);
+        Exchange.start(sd, lawan.id);
+        Exchange.offerItem(sd, 0, 2);
+        Exchange.confirm(sd, 999999L);
+        check("lawan yang disebut klien salah -> kedua sisi dibatalkan",
+                sd.exchange.target == 0 && lawan.exchange.target == 0);
+        check("dan titipannya tetap kembali",
+                sd.status.inventory.stream()
+                        .filter(i -> i.id == 7401)
+                        .mapToInt(i -> i.amount).sum() == 2);
+
+        // --- emas ---
+        sd.status.inventory.clear();
+        lawan.status.inventory.clear();
+        sd.status.money = 500;
+        lawan.status.money = 0;
+        Exchange.start(sd, lawan.id);
+        Exchange.offerGold(sd, 9999);
+        check("menawarkan emas lebih dari yang dimiliki diabaikan",
+                sd.exchange.gold == 0);
+        Exchange.offerGold(sd, 200);
+        check("menawarkan emas yang cukup tercatat", sd.exchange.gold == 200);
+        Exchange.confirm(sd, lawan.id);
+        Exchange.confirm(lawan, sd.id);
+        check("emas berpindah saat kedua pihak setuju",
+                sd.status.money == 300 && lawan.status.money == 200);
+
+        MapServer.onlineChars.remove(sd.fd);
+        MapServer.onlineChars.remove(lawan.fd);
+        sd.status.inventory.clear();
+        sd.status.money = 0;
     }
 
     /**
@@ -257,7 +413,7 @@ public final class ClifTest {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         var kosong = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
         db.register(new org.rtk.map.data.ItemDb.Info(7301, "zirah_uji", "Zirah Uji",
-                "", "", 4, 0, 0L, 1, 1, 1, 0, 0, 250, 2, 0, kosong, tanpaStat));
+                "", "", 4, 0, 0L, 0, 1, 1, 1, 0, 0, 250, 2, 0, kosong, tanpaStat));
 
         sd.status.equip.clear();
         var lama = new org.rtk.common.mmo.Item();
@@ -389,16 +545,16 @@ public final class ClifTest {
 
         // jubah: hancur saat mati (ItmBoD = 1), tanpa perlindungan bawaan
         db.register(new org.rtk.map.data.ItemDb.Info(7201, "jubah", "Jubah", "", "",
-                4, 1, 0L, 1, 1, 1, 0, 0, 100, 0, 0, kosong, tanpaStat));
+                4, 1, 0L, 0, 1, 1, 1, 0, 0, 100, 0, 0, kosong, tanpaStat));
         // jimat: ber-BoD TAPI terlindungi bawaan
         db.register(new org.rtk.map.data.ItemDb.Info(7202, "jimat", "Jimat", "", "",
-                4, 1, 0L, 1, 1, 1, 0, 0, 100, 3, 0, kosong, tanpaStat));
+                4, 1, 0L, 0, 1, 1, 1, 0, 0, 100, 3, 0, kosong, tanpaStat));
         // ramuan: barang inventaris ber-BoD
         db.register(new org.rtk.map.data.ItemDb.Info(7203, "ramuan", "Ramuan", "", "",
-                18, 1, 0L, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+                18, 1, 0L, 0, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
         // kartu: kedaluwarsa pada waktu MUTLAK di masa lalu
         db.register(new org.rtk.map.data.ItemDb.Info(7204, "kartu", "Kartu", "", "",
-                18, 0, 1000L, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+                18, 0, 1000L, 0, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
 
         sd.status.inventory.clear();
         sd.status.equip.clear();
@@ -837,19 +993,19 @@ public final class ClifTest {
 
         // pedang: perlengkapan (type 3) -> ketahanan ikut dikirim
         db.register(new org.rtk.map.data.ItemDb.Info(7101, "klewang", "Klewang", "", "",
-                3, 0, 0, 1, 1, 1, 0, 0, 120, 7, 0,
+                3, 0, 0, 0, 1, 1, 1, 0, 0, 120, 7, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 88, 6), tanpaStat));
         // roti: barang biasa bertumpuk (type 18)
         db.register(new org.rtk.map.data.ItemDb.Info(7102, "roti", "Roti Tawar", "", "",
-                18, 0, 0, 1, 1, 20, 0, 0, 0, 0, 0,
+                18, 0, 0, 0, 1, 1, 20, 0, 0, 0, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 12, 3), tanpaStat));
         // obor: ITM_SMOKE -> teksnya "nama [dura satuan]"
         db.register(new org.rtk.map.data.ItemDb.Info(7103, "obor", "Obor", "", "jam",
-                org.rtk.map.data.ItemDb.ITM_SMOKE, 0, 0, 1, 1, 1, 0, 0, 30, 0, 0,
+                org.rtk.map.data.ItemDb.ITM_SMOKE, 0, 0, 0, 1, 1, 1, 0, 0, 30, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 5, 1), tanpaStat));
         // peta: ITM_MAP -> teksnya "[Tdura] nama"
         db.register(new org.rtk.map.data.ItemDb.Info(7104, "peta_uji", "Peta Uji", "", "",
-                org.rtk.map.data.ItemDb.ITM_MAP, 0, 0, 1, 1, 1, 0, 0, 3, 0, 0,
+                org.rtk.map.data.ItemDb.ITM_MAP, 0, 0, 0, 1, 1, 1, 0, 0, 3, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 9, 2), tanpaStat));
 
         sd.status.inventory.clear();
@@ -1003,17 +1159,17 @@ public final class ClifTest {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         // apel: bertumpuk 10, boleh dipungut
         db.register(new org.rtk.map.data.ItemDb.Info(7001, "apel_uji", "Apel Uji", "", "",
-                18, 0, 0, 1, 1, 10, 0, 0, 50, 0, 0,
+                18, 0, 0, 0, 1, 1, 10, 0, 0, 50, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(11, 2, 33, 4), tanpaStat));
         // pedang: tidak bertumpuk
         db.register(new org.rtk.map.data.ItemDb.Info(7002, "pedang_uji", "Pedang Uji", "", "",
-                3, 0, 0, 1, 1, 1, 0, 0, 100, 0, 0, kosongLook, tanpaStat));
+                3, 0, 0, 0, 1, 1, 1, 0, 0, 100, 0, 0, kosongLook, tanpaStat));
         // batu nisan: ItmDroppable != 0 -> TIDAK bisa dipungut
         db.register(new org.rtk.map.data.ItemDb.Info(7003, "nisan_uji", "Nisan Uji", "", "",
-                18, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, kosongLook, tanpaStat));
+                18, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, kosongLook, tanpaStat));
         // jebakan: ITM_TRAPS
         db.register(new org.rtk.map.data.ItemDb.Info(7004, "jebakan_uji", "Jebakan Uji", "", "",
-                org.rtk.map.data.ItemDb.ITM_TRAPS, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0,
+                org.rtk.map.data.ItemDb.ITM_TRAPS, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0,
                 kosongLook, tanpaStat));
 
         var reg = MapServer.floorItems;

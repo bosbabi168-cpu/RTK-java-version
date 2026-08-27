@@ -1084,6 +1084,123 @@ public final class Clif {
         return i < l.size() ? l.get(i) : 0;
     }
 
+    // ------------------------------------------------------------------
+    // pertukaran barang (0x42)
+    // ------------------------------------------------------------------
+
+    /**
+     * Paket pertukaran memakai <b>satu opcode 0x42</b> untuk seluruh
+     * jendelanya; yang membedakan ragamnya ladang [5]:
+     * 0 buka, 1 tanya jumlah, 2 daftar barang, 3 emas, 4 pesan.
+     */
+    private static void headExchange(Session s, int ragam) {
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x42);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, ragam);
+    }
+
+    /** clif_startexchange(): buka jendela pertukaran di layar {@code sd}. */
+    public static void exchangeOpen(User sd, User target) {
+        Session s = sessionOf(sd);
+        if (s == null || target == null) {
+            return;
+        }
+        String jalur = MapServer.classDb.pathName(target.status.charClass,
+                target.status.mark);
+        String label = target.status.name + "(" + jalur + ")";
+        byte[] raw = label.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        headExchange(s, 0x00);
+        s.wfifoLBE(6, (int) target.id);
+        int len = 4;
+        s.wfifoB(len + 6, raw.length);
+        s.wfifoBytes(len + 7, raw);
+        len += raw.length + 1;
+        s.wfifoWBE(len + 6, target.status.level);
+        len += 2;
+        s.wfifoWBE(1, len + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_exchange_additem(): barang masuk ke daftar titipan.
+     *
+     * <p>⚠️ Dua paket dengan isi <b>berbeda</b> dikirim sekaligus: yang
+     * menitipkan melihat nama <b>beserta jumlahnya</b>, lawannya hanya
+     * melihat namanya — jumlah sengaja disembunyikan darinya di C.</p>
+     */
+    public static void exchangeAddItem(User sd, User target,
+                                       org.rtk.common.mmo.Item item, int slotInList) {
+        String nama = potong(MapServer.itemDb.info(item.id).tampilan(), 15);
+
+        Session s = sessionOf(sd);
+        if (s != null) {
+            String teks = item.amount > 1 ? nama + "(" + item.amount + ")" : nama;
+            byte[] raw = teks.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            headExchange(s, 0x02);
+            s.wfifoB(6, 0x00);
+            s.wfifoB(7, slotInList);
+            s.wfifoWBE(8, MapServer.itemDb.look(item.id).icon());
+            s.wfifoB(10, MapServer.itemDb.look(item.id).iconColor());
+            s.wfifoB(11, raw.length);
+            s.wfifoBytes(12, raw);
+            s.wfifoWBE(1, raw.length + 8 + 3);
+            s.wfifoSet(encrypt(s, sd));
+        }
+
+        Session ts = target == null ? null : sessionOf(target);
+        if (ts != null) {
+            byte[] raw = nama.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            headExchange(ts, 0x02);
+            ts.wfifoB(6, 0x01);
+            ts.wfifoB(7, slotInList);
+            ts.wfifoWBE(8, 0xFFFF);
+            ts.wfifoB(10, 0);
+            ts.wfifoB(11, raw.length);
+            ts.wfifoBytes(12, raw);
+            ts.wfifoWBE(1, raw.length + 8 + 3);
+            ts.wfifoSet(encrypt(ts, target));
+        }
+    }
+
+    /** clif_exchange_money(): jumlah emas yang ditawarkan. */
+    public static void exchangeGold(User sd, User target, long gold) {
+        for (User to : new User[]{sd, target}) {
+            Session s = to == null ? null : sessionOf(to);
+            if (s == null) {
+                continue;
+            }
+            headExchange(s, 0x03);
+            s.wfifoB(6, to == sd ? 0x00 : 0x01);
+            s.wfifoLBE(7, (int) gold);
+            s.wfifoWBE(1, 8 + 3);
+            s.wfifoSet(encrypt(s, to));
+        }
+    }
+
+    /** clif_exchange_message(): baris pesan di jendela pertukaran. */
+    public static void exchangeMessage(User sd, String text, int type, int flag) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] raw = (text == null ? "" : text)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        headExchange(s, 0x04);
+        s.wfifoB(6, type);
+        s.wfifoB(7, flag);
+        s.wfifoB(8, raw.length);
+        s.wfifoBytes(9, raw);
+        s.wfifoWBE(1, raw.length + 6 + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /** stringTruncate(): potong ke panjang maksimum, seperti di C. */
+    private static String potong(String s, int max) {
+        return s.length() <= max ? s : s.substring(0, max);
+    }
+
     /**
      * clif_sendpowerboard() — daftar pemain di peta ini beserta "power
      * rating"-nya. Opcode 0x46.

@@ -109,6 +109,13 @@ public final class User extends BlockList
 
     /** MAX PK: {@code for (x = 0; x < 20; x++)} di C. */
     public static final int MAX_PVP = 20;
+
+    /**
+     * Pertukaran barang yang sedang berjalan ({@code sd->exchange}).
+     * Barang di dalamnya <b>sudah keluar dari inventaris</b> — lihat
+     * {@link Exchange}.
+     */
+    public final Exchange.State exchange = new Exchange.State();
     public int speed;
     public int direction;
 

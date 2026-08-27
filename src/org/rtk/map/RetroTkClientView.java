@@ -96,6 +96,31 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void exchangeOpened(User sd, User target) {
+        Clif.exchangeOpen(sd, target);
+    }
+
+    @Override
+    public void exchangeItemOffered(User sd, User target,
+                                    org.rtk.common.mmo.Item item, int slotInList) {
+        Clif.exchangeAddItem(sd, target, item, slotInList);
+    }
+
+    @Override
+    public void exchangeGoldOffered(User sd, User target, long gold) {
+        Clif.exchangeGold(sd, target, gold);
+    }
+
+    @Override
+    public void exchangeConfirmed(User sd, User target, boolean completed) {
+        String pesan = "Kamu bertukar, dan menyerahkan kepemilikan barangnya.";
+        Clif.exchangeMessage(sd, pesan, 5, completed ? 0 : 1);
+        if (target != null) {
+            Clif.exchangeMessage(target, pesan, 5, completed ? 0 : 1);
+        }
+    }
+
+    @Override
     public void mapSelectionToPlayer(User sd, String title,
                                      java.util.List<Integer> x0, java.util.List<Integer> y0,
                                      java.util.List<String> names, java.util.List<Integer> ids,

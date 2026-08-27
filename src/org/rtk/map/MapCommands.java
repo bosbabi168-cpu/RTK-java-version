@@ -149,6 +149,37 @@ public final class MapCommands implements ClientCommands {
     }
 
     @Override
+    public void playerStartsExchange(User sd, long targetId) {
+        Exchange.start(sd, targetId);
+    }
+
+    @Override
+    public void playerOffersItem(User sd, int slot, int amount) {
+        Exchange.offerItem(sd, slot, amount);
+    }
+
+    @Override
+    public void playerOffersGold(User sd, long amount) {
+        Exchange.offerGold(sd, amount);
+    }
+
+    @Override
+    public void playerCancelsExchange(User sd) {
+        User tsd = MapServer.userById(sd.exchange.target);
+        MapServer.clientView.messageToPlayer(sd, 4, "Pertukaran dibatalkan.");
+        if (tsd != null) {
+            MapServer.clientView.messageToPlayer(tsd, 4, "Pertukaran dibatalkan.");
+        }
+        Exchange.cancel(sd);
+        Exchange.cancel(tsd);
+    }
+
+    @Override
+    public void playerConfirmsExchange(User sd, long claimedTarget) {
+        Exchange.confirm(sd, claimedTarget);
+    }
+
+    @Override
     public void playerAnswersMenu(User sd, Answer answer) {
         lanjutkan(sd, answer, "menu/input");
     }

@@ -119,6 +119,35 @@ public interface ClientView {
     void boardListToPlayer(User sd, int board, int flags1, int flags2,
                            java.util.List<Clif.BoardEntry> isi);
 
+    // ------------------------------------------------------------------
+    // Pertukaran barang antar pemain
+    // ------------------------------------------------------------------
+
+    /** Jendela pertukaran terbuka antara dua pemain. */
+    void exchangeOpened(User sd, User target);
+
+    /**
+     * Satu barang dititipkan ke pertukaran — <b>kedua pihak</b> perlu
+     * melihatnya, tetapi dengan tampilan berbeda: yang menitipkan melihat
+     * jumlahnya, lawannya hanya melihat namanya.
+     *
+     * @param slotInList nomor urut barang itu di daftar titipan (1-basis)
+     */
+    void exchangeItemOffered(User sd, User target, org.rtk.common.mmo.Item item,
+                             int slotInList);
+
+    /** Jumlah emas yang ditawarkan berubah. */
+    void exchangeGoldOffered(User sd, User target, long gold);
+
+    /**
+     * Salah satu pihak menekan "tukar".
+     *
+     * @param completed false = baru satu pihak yang setuju (barang belum
+     *                  berpindah); true = keduanya setuju dan pertukarannya
+     *                  sudah terjadi
+     */
+    void exchangeConfirmed(User sd, User target, boolean completed);
+
     /** Daftar peta yang bisa dipilih pemain (peta rumah, teleporter). */
     void mapSelectionToPlayer(User sd, String title,
                               java.util.List<Integer> x0, java.util.List<Integer> y0,

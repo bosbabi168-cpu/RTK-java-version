@@ -41,7 +41,7 @@ public final class ItemDb {
      */
     public record Info(long id, String name, String display, String buyText,
                        String text,
-                       int type, int breakOnDeath, long expiresAt,
+                       int type, int breakOnDeath, long expiresAt, int exchangeable,
                        int buyPrice, int sellPrice,
                        int stackAmount, int maxAmount, int sound, int durability,
                        int protectedValue, int droppable,
@@ -57,7 +57,7 @@ public final class ItemDb {
     private static final Stats TANPA_STAT =
             new Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     private static final Info TIDAK_DIKENAL =
-            new Info(0, "", "", "", "", 0, 0, 0L, 0, 0, 1, 0, 0, 0, 0, 0, KOSONG, TANPA_STAT);
+            new Info(0, "", "", "", "", 0, 0, 0L, 0, 0, 0, 1, 0, 0, 0, 0, 0, KOSONG, TANPA_STAT);
 
     private final Map<Long, Look> byId = new HashMap<>();
     private final Map<Long, Info> infoById = new HashMap<>();
@@ -132,6 +132,15 @@ public final class ItemDb {
         return info(itemId).expiresAt();
     }
 
+    /**
+     * itemdb_exchangeable(): <b>namanya kebalikan artinya</b>, sama seperti
+     * {@code ItmDroppable}. Nilai bukan-nol berarti barangnya <b>TIDAK
+     * bisa</b> ditukar antar pemain (42 dari 2.545 barang di data asli).
+     */
+    public boolean cannotBeExchanged(long itemId) {
+        return info(itemId).exchangeable() != 0;
+    }
+
     /** itemdb_protected(): nilai perlindungan bawaan barang. */
     public int protectedOf(long itemId) {
         return info(itemId).protectedValue();
@@ -186,7 +195,7 @@ public final class ItemDb {
                 "SELECT `ItmId`,`ItmIdentifier`,`ItmType`,`ItmLook`,`ItmLookColor`,"
                 + "`ItmIcon`,`ItmIconColor`,`ItmBuyPrice`,`ItmSellPrice`,"
                 + "`ItmStackAmount`,`ItmMaximumAmount`,`ItmDescription`,`ItmBuyText`,"
-                + "`ItmText`,`ItmBoD`,`ItmTimer`,"
+                + "`ItmText`,`ItmBoD`,`ItmTimer`,`ItmExchangeable`,"
                 + "`ItmSound`,`ItmDurability`,`ItmProtected`,`ItmDroppable`,"
                 + "`ItmVita`,`ItmMana`,`ItmMight`,`ItmWill`,`ItmGrace`,`ItmArmor`,"
                 + "`ItmHit`,`ItmDam`,`ItmProtection`,`ItmHealing`,"
@@ -206,6 +215,7 @@ public final class ItemDb {
                             teks == null ? "" : teks,
                             rs.getInt("ItmType"),
                             rs.getInt("ItmBoD"), rs.getLong("ItmTimer"),
+                            rs.getInt("ItmExchangeable"),
                             rs.getInt("ItmBuyPrice"), rs.getInt("ItmSellPrice"),
                             rs.getInt("ItmStackAmount"), rs.getInt("ItmMaximumAmount"),
                             rs.getInt("ItmSound"), rs.getInt("ItmDurability"),

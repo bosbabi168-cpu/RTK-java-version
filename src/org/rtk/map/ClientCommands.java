@@ -124,6 +124,38 @@ public interface ClientCommands {
      */
     void playerClicks(User sd, long objectId);
 
+    // ------------------------------------------------------------------
+    // Pertukaran barang antar pemain
+    // ------------------------------------------------------------------
+
+    /** Pemain mengajak pemain lain bertukar barang. */
+    void playerStartsExchange(User sd, long targetId);
+
+    /**
+     * Pemain menitipkan sebagian isi satu slot inventaris ke pertukaran.
+     *
+     * <p>⚠️ Barangnya <b>keluar dari inventaris</b> saat ini juga; lihat
+     * {@link Exchange}. Membatalkan mengembalikannya.</p>
+     */
+    void playerOffersItem(User sd, int slot, int amount);
+
+    /** Pemain mengubah jumlah emas yang ditawarkan. */
+    void playerOffersGold(User sd, long amount);
+
+    /** Pemain membatalkan — kedua sisi ditutup dan titipannya dikembalikan. */
+    void playerCancelsExchange(User sd);
+
+    /**
+     * Pemain menekan "tukar".
+     *
+     * <p>{@code claimedTarget} adalah lawan yang <b>disebut klien</b>.
+     * Logika membandingkannya dengan yang dicatat server; berbeda berarti
+     * kedua sisi dibatalkan. Sama seperti {@code claimedX}/{@code claimedY}
+     * pada {@link #playerWalks}, ini pertahanan terhadap klien yang
+     * berbohong — jangan dilewati.</p>
+     */
+    void playerConfirmsExchange(User sd, long claimedTarget);
+
     /**
      * Pemain menjawab menu, kotak isian, atau daftar toko.
      *
