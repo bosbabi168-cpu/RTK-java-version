@@ -37,6 +37,9 @@ public final class MapRegistry {
     private final Map<Integer, MapData> maps = new LinkedHashMap<>();
     private int missingFiles;
 
+    /** Folder peta yang dipakai saat memuat — dibutuhkan {@link #reloadGeometry}. */
+    private String lastRoot = "maps";
+
     /** Peta berdasarkan MapId; null bila tidak dimuat di server ini. */
     public MapData get(int mapId) {
         return maps.get(mapId);
@@ -52,6 +55,46 @@ public final class MapRegistry {
 
     public int missingFiles() {
         return missingFiles;
+    }
+
+    /**
+     * setMap(): ganti geometri sebuah peta dengan berkas lain saat berjalan.
+     *
+     * <p>Berkasnya dicari di folder peta lebih dulu, baru apa adanya —
+     * skrip menuliskan path relatif terhadap folder kerja server C
+     * (mis. {@code "../rtkmaps/Accepted/test/test1.map"}), yang tidak sama
+     * dengan tempat berkas peta tinggal di project ini.</p>
+     *
+     * <p>⚠️ Salinannya <b>selalu pribadi</b>: peta instance tidak boleh
+     * berbagi geometri dengan peta lain (Peringatan #74).</p>
+     */
+    public boolean reloadGeometry(MapData map, String berkas) {
+        String nama = Paths.get(berkas).getFileName().toString();
+        for (Path calon : new Path[] {
+                Paths.get(lastRoot, nama), Paths.get(berkas)}) {
+            if (java.nio.file.Files.isRegularFile(calon)) {
+                try {
+                    map.replaceGeometry(MapFile.load(calon).mutableCopy());
+                    return true;
+                } catch (java.io.IOException e) {
+                    log.error("[MAP] setMap: '{}' gagal dibaca", calon, e);
+                    return false;
+                }
+            }
+        }
+        log.warn("[MAP] setMap: berkas '{}' tidak ditemukan (dicari juga '{}')",
+                berkas, Paths.get(lastRoot, nama));
+        return false;
+    }
+
+    /** Daftarkan peta yang dibuat langsung — dipakai uji dan peta instance. */
+    public void put(MapData m) {
+        maps.put(m.id, m);
+    }
+
+    /** Cabut sebuah peta dari registry. */
+    public void remove(int mapId) {
+        maps.remove(mapId);
     }
 
     public java.util.Collection<MapData> all() {
@@ -73,6 +116,7 @@ public final class MapRegistry {
         maps.clear();
         missingFiles = 0;
         Path root = Paths.get(mapRoot);
+        lastRoot = mapRoot;
         Map<String, MapFile> cache = new HashMap<>();
         long t0 = System.currentTimeMillis();
 

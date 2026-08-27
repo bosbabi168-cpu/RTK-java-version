@@ -299,4 +299,14 @@ public final class RetroTkClientView implements ClientView {
     public void playerEquipmentCleared(User sd, int slot) {
         Clif.unequipIt(sd, slot);
     }
+
+    @Override
+    public void mapTilesChanged(User sd) {
+        Clif.redrawAround(sd);
+    }
+
+    @Override
+    public void weatherChanged(User sd, int weather) {
+        Clif.sendWeather(sd, weather);
+    }
 }

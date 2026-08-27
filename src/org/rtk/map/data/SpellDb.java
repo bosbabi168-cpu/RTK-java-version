@@ -24,6 +24,7 @@ public final class SpellDb {
     private final Map<Integer, String> displayById = new HashMap<>();
     private final Map<Integer, Integer> tickerById = new HashMap<>();
     private final Map<Integer, Integer> dispelById = new HashMap<>();
+    private final Map<Integer, Integer> levelById = new HashMap<>();
 
     /** magicdb_id(): id mantra dari namanya, atau 0 bila tak dikenal. */
     public int idOf(String name) {
@@ -61,6 +62,17 @@ public final class SpellDb {
      * {@code flushDuration(dis, ...)} melewati mantra yang nilainya lebih
      * besar dari {@code dis} — makin tinggi, makin sulit dihapus.
      */
+    /**
+     * magicdb_level(): level mantra menurut <b>nama skripnya</b>.
+     *
+     * <p>Mengembalikan 0 bila namanya tak dikenal — di C juga begitu, dan
+     * skrip memakainya sebagai "mantra ini tidak ada".</p>
+     */
+    public int levelOf(String yname) {
+        Integer id = idByName.get(yname == null ? "" : yname.toLowerCase());
+        return id == null ? 0 : levelById.getOrDefault(id, 0);
+    }
+
     public int dispelOf(int id) {
         return dispelById.getOrDefault(id, 0);
     }
@@ -152,12 +164,16 @@ public final class SpellDb {
         displayById.clear();
         tickerById.clear();
         dispelById.clear();
+        levelById.clear();
         int rows = sql.forEachRow(
-                "SELECT `SplId`,`SplIdentifier`,`SplDescription`,`SplTicker`,`SplDispel`"
-                + " FROM `Spells`",
-                rs -> register(rs.getInt("SplId"), rs.getString("SplIdentifier"),
-                        rs.getString("SplDescription"), rs.getInt("SplTicker"),
-                        rs.getInt("SplDispel")));
+                "SELECT `SplId`,`SplIdentifier`,`SplDescription`,`SplTicker`,"
+                + "`SplDispel`,`SplLevel` FROM `Spells`",
+                rs -> {
+                    register(rs.getInt("SplId"), rs.getString("SplIdentifier"),
+                            rs.getString("SplDescription"), rs.getInt("SplTicker"),
+                            rs.getInt("SplDispel"));
+                    levelById.put(rs.getInt("SplId"), rs.getInt("SplLevel"));
+                });
         if (rows < 0) {
             log.error("[SPELL] gagal membaca tabel Spells");
             return 0;

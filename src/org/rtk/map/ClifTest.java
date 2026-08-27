@@ -225,6 +225,7 @@ public final class ClifTest {
         aksiTest(map, sd);
         perlengkapanTest(map, sd);
         rtk2Test(map, sd);
+        duniaTest(map, sd);
     }
 
     /**
@@ -4981,6 +4982,296 @@ public final class ClifTest {
         MapServer.onlineChars.remove(a.fd);
         MapServer.onlineChars.remove(b.fd);
         MapServer.scriptEngine = engineLama;
+    }
+
+
+    // ==================================================================
+    // Binding dunia (WorldBindings) — peta, cuaca, teks
+    // ==================================================================
+
+    /**
+     * Panggil satu global Lua dengan argumen sebanyak apa pun.
+     *
+     * <p>{@code LuaValue.call} hanya menerima tiga argumen; global peta
+     * memakai empat sampai sembilan belas. Memakai {@code invoke} sekali di
+     * satu helper lebih baik daripada mencampur keduanya per pemanggilan.</p>
+     */
+    private static org.luaj.vm2.LuaValue panggilGlobal(
+            org.rtk.map.script.ScriptEngine engine, String nama, Object... args) {
+        org.luaj.vm2.LuaValue[] v = new org.luaj.vm2.LuaValue[args.length];
+        for (int i = 0; i < args.length; i++) {
+            v[i] = args[i] instanceof String t
+                    ? org.luaj.vm2.LuaValue.valueOf(t)
+                    : org.luaj.vm2.LuaValue.valueOf(((Number) args[i]).doubleValue());
+        }
+        return engine.globals().get(nama)
+                .invoke(org.luaj.vm2.LuaValue.varargsOf(v)).arg1();
+    }
+
+    private static void duniaTest(MapData map, User sd) {
+        log.info("=== binding dunia: peta, cuaca, siaran ===");
+        var engineLama = MapServer.scriptEngine;
+        var engine = new org.rtk.map.script.ScriptEngine();
+        MapServer.scriptEngine = engine;
+
+        // ---- ⚠️ salin-saat-ditulis: dua peta, SATU berkas ----
+        //
+        // Inilah perangkap yang ditemukan audit 27 Agustus: MapRegistry
+        // men-cache satu MapFile per NAMA BERKAS, dan 9.850 peta hanya
+        // menunjuk 2.919 berkas. setTile yang menulis langsung akan mengubah
+        // petak itu di SETIAP peta sejenis — dan tiap peta akan tetap
+        // terlihat "benar" bila diperiksa sendiri-sendiri.
+        var berkas = map.geometry();
+        MapData kembarA = new MapData(60001, berkas);
+        MapData kembarB = new MapData(60002, berkas);
+        MapServer.world.put(kembarA);
+        MapServer.world.put(kembarB);
+
+        int asli = kembarA.tile(3, 3);
+        check("dunia: dua peta berangkat dari petak yang sama",
+                kembarB.tile(3, 3) == asli);
+        check("dunia: keduanya belum punya geometri sendiri",
+                !kembarA.hasPrivateGeometry() && !kembarB.hasPrivateGeometry());
+
+        panggilGlobal(engine, "setTile", 60001, 3, 3, asli + 7);
+        check("dunia: setTile mengubah peta yang dituju",
+                kembarA.tile(3, 3) == asli + 7);
+        check("dunia: peta KEMBARANNYA TIDAK ikut berubah",
+                kembarB.tile(3, 3) == asli);
+        check("dunia: yang diubah kini punya geometri sendiri",
+                kembarA.hasPrivateGeometry() && !kembarB.hasPrivateGeometry());
+        check("dunia: berkas aslinya juga tidak tersentuh",
+                berkas.tile(3, 3) == asli);
+
+        panggilGlobal(engine, "setObject", 60002, 4, 4, 99);
+        check("dunia: setObject menulis lapisan objek",
+                kembarB.obj(4, 4) == 99);
+        panggilGlobal(engine, "setPass", 60002, 5, 5, 1);
+        check("dunia: setPass membuat petak jadi terhalang",
+                kembarB.pass(5, 5) == 1 && !kembarB.walkable(5, 5));
+        check("dunia: kembarannya tetap bisa dilewati",
+                kembarA.walkable(5, 5));
+
+        // Petak di luar peta tidak boleh meledak, hanya diabaikan.
+        panggilGlobal(engine, "setTile", 60001, 99999, 99999, 1);
+        check("dunia: petak di luar peta diabaikan, bukan melempar", true);
+
+        // ---- atribut peta ----
+        check("dunia: getMapIsLoaded untuk peta yang ada",
+                panggilGlobal(engine, "getMapIsLoaded", 60001).toboolean());
+        check("dunia: getMapIsLoaded untuk peta yang tidak ada",
+                !panggilGlobal(engine, "getMapIsLoaded", 58888).toboolean());
+
+        kembarA.pvp = 0;
+        panggilGlobal(engine, "setMapPvP", 60001, 1);
+        check("dunia: setMapPvP menyalakan PvP", kembarA.pvp == 1);
+        check("dunia: getMapPvP membacanya kembali",
+                panggilGlobal(engine, "getMapPvP", 60001).toint() == 1);
+
+        panggilGlobal(engine, "setMapAttribute", 60001, "canEat", 1);
+        check("dunia: setMapAttribute menulis ladang bernama",
+                kembarA.canEat == 1);
+        check("dunia: getMapAttribute membacanya kembali",
+                panggilGlobal(engine, "getMapAttribute", 60001, "canEat").toint() == 1);
+        check("dunia: xmax adalah INDEKS terbesar, bukan lebar",
+                panggilGlobal(engine, "getMapAttribute", 60001, "xmax").toint()
+                        == kembarA.xs - 1);
+        check("dunia: atribut yang tidak dikenal dijawab nil, bukan meledak",
+                panggilGlobal(engine, "getMapAttribute", 60001, "takAda").isnil());
+
+        // ---- setLight: hanya peta yang cahayanya MASIH 0 ----
+        kembarA.region = 77;
+        kembarA.indoor = 0;
+        kembarA.light = 0;
+        kembarB.region = 77;
+        kembarB.indoor = 0;
+        kembarB.light = 5;
+        panggilGlobal(engine, "setLight", 77, 0, 9);
+        check("dunia: setLight mengisi peta yang cahayanya 0", kembarA.light == 9);
+        check("dunia: setLight TIDAK menimpa peta yang sudah bercahaya",
+                kembarB.light == 5);
+
+        // ---- cuaca, dan penjaga cuaca buatan ----
+        kembarA.weather = 0;
+        panggilGlobal(engine, "setWeatherM", 60001, 3);
+        check("dunia: setWeatherM memasang cuaca", kembarA.weather == 3);
+        check("dunia: getWeatherM membacanya kembali",
+                panggilGlobal(engine, "getWeatherM", 60001).toint() == 3);
+
+        // Cap di MASA DEPAN berarti cuaca buatan sedang berjalan: cuaca
+        // musiman tidak boleh menimpanya.
+        long nanti = System.currentTimeMillis() / 1000 + 3600;
+        engine.mapReg(60001).put("artificial_weather_timer", (int) nanti);
+        panggilGlobal(engine, "setWeatherM", 60001, 7);
+        check("dunia: cuaca buatan yang masih berlaku TIDAK tertimpa",
+                kembarA.weather == 3);
+
+        // Cap yang sudah LEWAT dibersihkan di sini, bukan oleh timer lain.
+        engine.mapReg(60001).put("artificial_weather_timer", 1);
+        panggilGlobal(engine, "setWeatherM", 60001, 7);
+        check("dunia: cap yang kedaluwarsa dibersihkan lalu cuacanya berubah",
+                kembarA.weather == 7
+                && engine.mapReg(60001).get("artificial_weather_timer") == 0);
+
+        // ---- portal ----
+        panggilGlobal(engine, "setWarps", 60001, 6, 6, 60002, 1, 2);
+        var w = kembarA.warpAt(6, 6);
+        check("dunia: setWarps menanam portal", w != null && w.tm() == 60002
+                && w.tx() == 1 && w.ty() == 2);
+        check("dunia: setWarps ke peta yang tidak dimuat ditolak",
+                !panggilGlobal(engine, "setWarps", 60001, 7, 7, 58888, 1, 1)
+                        .toboolean());
+
+        // ---- saveMap lalu setMap: bolak-balik lewat berkas ----
+        java.nio.file.Path tmp = java.nio.file.Paths.get(
+                System.getProperty("java.io.tmpdir"), "rtk-uji-peta.map");
+        check("dunia: saveMap menulis berkas",
+                panggilGlobal(engine, "saveMap", 60001, tmp.toString()).toboolean());
+        int ukuranA = kembarA.xs;
+        MapData muat = new MapData(60003, berkas);
+        MapServer.world.put(muat);
+        check("dunia: setMap memuat berkas itu ke peta lain",
+                panggilGlobal(engine, "setMap", 60003, tmp.toString()).toboolean());
+        check("dunia: petak yang diubah ikut terbawa lewat berkas",
+                muat.tile(3, 3) == asli + 7 && muat.xs == ukuranA);
+        check("dunia: peta hasil setMap selalu punya geometri sendiri",
+                muat.hasPrivateGeometry());
+        check("dunia: setMap dengan berkas yang tidak ada dijawab false",
+                !panggilGlobal(engine, "setMap", 60003, "tidak-ada-sama-sekali.map")
+                        .toboolean());
+        try {
+            java.nio.file.Files.deleteIfExists(tmp);
+        } catch (java.io.IOException ignored) {
+            // berkas sementara; kegagalan menghapusnya tidak mengubah hasil uji
+        }
+
+        // ---- getObjectsMap: tiruan setia yang tidak mengembalikan apa pun ----
+        check("dunia: getObjectsMap tidak mengembalikan apa pun (badannya "
+                + "dikomentari di C)",
+                panggilGlobal(engine, "getObjectsMap", 60001).isnil());
+
+        // ---- guitext GLOBAL: siaran, bukan per pemain ----
+        //
+        // ⚠️ Berbeda dari method player:guitext(). Yang ini menyiarkan ke
+        // seluruh peta, dan (-1, 0) ke seluruh server (Peringatan #75).
+        final java.util.List<String> tertangkap = new java.util.ArrayList<>();
+        var cvLama = MapServer.clientView;
+        MapServer.clientView = new RekamGuiText(tertangkap);
+        MapServer.onlineChars.put(sd.fd, sd);
+        panggilGlobal(engine, "guitext", -1, 0, "pengumuman");
+        // ⚠️ Jangan menguji JUMLAHNYA: bagian uji lain meninggalkan pemain
+        // di onlineChars, jadi angkanya bergantung pada urutan uji — bukan
+        // pada kode yang sedang diperiksa.
+        check("dunia: guitext(-1, 0) menyiarkan ke seluruh server",
+                tertangkap.contains("pengumuman"));
+        tertangkap.clear();
+        panggilGlobal(engine, "guitext", 0, 58888, "peta lain");
+        check("dunia: guitext ke peta lain tidak menyentuh pemain di sini",
+                tertangkap.isEmpty());
+        MapServer.clientView = cvLama;
+
+        // ---- getXPforLevel: tabelnya memang sudah ada ----
+        var xp = panggilGlobal(engine, "getXPforLevel", 1, 10);
+        check("dunia: getXPforLevel menjawab dari tabel level, bukan 0",
+                xp.todouble() > 0);
+        // ⚠️ Argumen pertama boleh JALUR atau KELAS: nilai di atas 5
+        // diterjemahkan dulu jadi jalur dasarnya, jadi sebuah subpath
+        // menjawab sama dengan jalur induknya. Tanpa terjemahan itu tiap
+        // subpath akan menjawab 0.
+        int subpath = -1;
+        for (int k = 6; k < 40 && subpath < 0; k++) {
+            if (MapServer.classDb.pathOf(k) == 1) {
+                subpath = k;
+            }
+        }
+        if (subpath > 0) {
+            check("dunia: kelas subpath dipetakan ke jalur induknya",
+                    panggilGlobal(engine, "getXPforLevel", subpath, 10).todouble()
+                            == xp.todouble());
+        } else {
+            log.info("SKIP: tidak ada kelas subpath berjalur 1 di database");
+        }
+
+        MapServer.onlineChars.remove(sd.fd);
+        MapServer.world.remove(60001);
+        MapServer.world.remove(60002);
+        MapServer.world.remove(60003);
+        MapServer.scriptEngine = engineLama;
+    }
+
+    /**
+     * ClientView yang hanya mencatat guitext.
+     *
+     * <p>Membungkus penyalur kosong ({@code new ProtocolRouter()} tanpa
+     * tujuan) supaya setiap peristiwa lain jadi tidak berbuat apa-apa —
+     * yang diuji di sini siapa yang MENERIMA siaran, bukan bytenya.</p>
+     */
+    private static final class RekamGuiText implements ClientView {
+        private final java.util.List<String> keluar;
+        private final ClientView sunyi = new ProtocolRouter();
+
+        RekamGuiText(java.util.List<String> keluar) {
+            this.keluar = keluar;
+        }
+
+        @Override
+        public void guiTextToPlayer(User sd, String text) {
+            keluar.add(text);
+        }
+
+        // Sisanya diteruskan ke penyalur kosong.
+        @Override public void playerEnteredWorld(User a) { sunyi.playerEnteredWorld(a); }
+        @Override public void playerViewRefreshed(User a) { sunyi.playerViewRefreshed(a); }
+        @Override public void playerStatusChanged(User a, int b) { sunyi.playerStatusChanged(a, b); }
+        @Override public void playerIdentityChanged(User a) { sunyi.playerIdentityChanged(a); }
+        @Override public void playerDurationChanged(User a, int b, int c, String d) { sunyi.playerDurationChanged(a, b, c, d); }
+        @Override public void playerAetherChanged(User a, int b, int c) { sunyi.playerAetherChanged(a, b, c); }
+        @Override public void playerInventorySlotChanged(User a, int b) { sunyi.playerInventorySlotChanged(a, b); }
+        @Override public void playerInventorySlotCleared(User a, int b, int c) { sunyi.playerInventorySlotCleared(a, b, c); }
+        @Override public void playerSpellRemoved(User a, int b) { sunyi.playerSpellRemoved(a, b); }
+        @Override public void chatLineToPlayer(User a, int b, long c, String d) { sunyi.chatLineToPlayer(a, b, c, d); }
+        @Override public void popupToPlayer(User a, String b) { sunyi.popupToPlayer(a, b); }
+        @Override public void playerCameraChanged(User a, int b, int c) { sunyi.playerCameraChanged(a, b, c); }
+        @Override public void boardListToPlayer(User a, int b, int c, int d, java.util.List<Clif.BoardEntry> e) { sunyi.boardListToPlayer(a, b, c, d, e); }
+        @Override public void exchangeOpened(User a, User b) { sunyi.exchangeOpened(a, b); }
+        @Override public void exchangeItemOffered(User a, User b, org.rtk.common.mmo.Item c, int d) { sunyi.exchangeItemOffered(a, b, c, d); }
+        @Override public void exchangeGoldOffered(User a, User b, long c) { sunyi.exchangeGoldOffered(a, b, c); }
+        @Override public void exchangeConfirmed(User a, User b, boolean c) { sunyi.exchangeConfirmed(a, b, c); }
+        @Override public void mapSelectionToPlayer(User a, String b, java.util.List<Integer> c, java.util.List<Integer> d, java.util.List<String> e, java.util.List<Integer> f, java.util.List<Integer> g, java.util.List<Integer> h) { sunyi.mapSelectionToPlayer(a, b, c, d, e, f, g, h); }
+        @Override public void powerBoardToPlayer(User a) { sunyi.powerBoardToPlayer(a); }
+        @Override public void boardQuestionsToPlayer(User a, java.util.List<String> b, java.util.List<String> c, java.util.List<Integer> d) { sunyi.boardQuestionsToPlayer(a, b, c, d); }
+        @Override public void paperToPlayer(User a, String b, int c, int d) { sunyi.paperToPlayer(a, b, c, d); }
+        @Override public void urlToPlayer(User a, int b, String c) { sunyi.urlToPlayer(a, b, c); }
+        @Override public void playerTimerSet(User a, int b, long c) { sunyi.playerTimerSet(a, b, c); }
+        @Override public void playerSpoke(User a, String b, int c) { sunyi.playerSpoke(a, b, c); }
+        @Override public void playerMovementLocked(User a, boolean b) { sunyi.playerMovementLocked(a, b); }
+        @Override public void objectAnimationSeenBy(User a, org.rtk.map.data.BlockList b, int c, int d) { sunyi.objectAnimationSeenBy(a, b, c, d); }
+        @Override public void playerHealthChanged(User a, int b, int c, int d) { sunyi.playerHealthChanged(a, b, c, d); }
+        @Override public void objectSideChanged(org.rtk.map.data.BlockList a) { sunyi.objectSideChanged(a); }
+        @Override public void objectAnimation(org.rtk.map.data.BlockList a, int b, int c) { sunyi.objectAnimation(a, b, c); }
+        @Override public void objectAnimationAt(org.rtk.map.data.BlockList a, int b, int c, int d, int e) { sunyi.objectAnimationAt(a, b, c, d, e); }
+        @Override public void soundPlayed(org.rtk.map.data.BlockList a, int b) { sunyi.soundPlayed(a, b); }
+        @Override public void objectSpoke(org.rtk.map.data.BlockList a, int b, String c) { sunyi.objectSpoke(a, b, c); }
+        @Override public void objectActed(org.rtk.map.data.BlockList a, int b, int c, int d) { sunyi.objectActed(a, b, c, d); }
+        @Override public void objectAppearanceChanged(org.rtk.map.data.BlockList a) { sunyi.objectAppearanceChanged(a); }
+        @Override public void objectRemoved(org.rtk.map.data.BlockList a) { sunyi.objectRemoved(a); }
+        @Override public void messageToPlayer(User a, int b, String c) { sunyi.messageToPlayer(a, b, c); }
+        @Override public void npcMoved(Npc a, MapData b, int c, int d, int e, int f, int g, int h) { sunyi.npcMoved(a, b, c, d, e, f, g, h); }
+        @Override public void npcAppearedTo(User a, Npc b) { sunyi.npcAppearedTo(a, b); }
+        @Override public void mobMoved(Mob a, MapData b, int c, int d, int e, int f, int g, int h) { sunyi.mobMoved(a, b, c, d, e, f, g, h); }
+        @Override public void mobSpawned(Mob a) { sunyi.mobSpawned(a); }
+        @Override public void floorItemAppeared(FloorItem a) { sunyi.floorItemAppeared(a); }
+        @Override public void objectThrown(org.rtk.map.data.BlockList a, int b, int c, int d, int e, int f) { sunyi.objectThrown(a, b, c, d, e, f); }
+        @Override public void scriptDialogReady(User a, org.rtk.map.script.ScriptPlayer b) { sunyi.scriptDialogReady(a, b); }
+        @Override public void npcSaidTo(User a, long b, String c) { sunyi.npcSaidTo(a, b, c); }
+        @Override public void playerStepRejected(User a) { sunyi.playerStepRejected(a); }
+        @Override public void playerStepped(User a, int b, int c, int d) { sunyi.playerStepped(a, b, c, d); }
+        @Override public void playerStepSeen(User a, int b, int c, int d) { sunyi.playerStepSeen(a, b, c, d); }
+        @Override public void areaRedrawRequested(User a, MapData b, int c, int d, int e, int f, int g) { sunyi.areaRedrawRequested(a, b, c, d, e, f, g); }
+        @Override public void playerEquipmentChanged(User a, int b) { sunyi.playerEquipmentChanged(a, b); }
+        @Override public void playerEquipmentCleared(User a, int b) { sunyi.playerEquipmentCleared(a, b); }
+        @Override public void mapTilesChanged(User a) { sunyi.mapTilesChanged(a); }
+        @Override public void weatherChanged(User a, int b) { sunyi.weatherChanged(a, b); }
     }
 
 }

@@ -512,26 +512,22 @@ public final class ScriptEngine {
         // Lihat butir 1d roadmap.
         set("getXPforLevel", args -> LuaValue.valueOf(0));
 
-        // every remaining engine function becomes a warn-once stub so the
-        // scripts load and missing bindings surface in the log
+        // Global yang menyentuh dunia: peta, cuaca, klan, papan, lelang.
+        // Dulu 59 di antaranya stub — lihat WorldBindings dan Peringatan #73.
+        WorldBindings.register(this);
+
+        /*
+         * Yang tersisa jadi stub warn-once supaya skrip tetap termuat dan
+         * binding yang hilang muncul di log.
+         *
+         * ⚠️ Keempat nama Kan di bawah TIDAK terdaftar di `sl.c` sama sekali
+         * — server aslinya pun tidak punya. Itu kode mati di konten, jadi
+         * stub memang jawaban yang benar untuknya, bukan celah port.
+         * `LuaAudit` memisahkan keduanya.
+         */
         String[] stubs = {
-            "addClanMember", "addClanTribute", "addKanDonationPoints", "addMapModifier",
-            "addMob", "addPathMember", "addToBoard", "clearPoems", "copyPoemToPoetry",
-            "getAuctions", "getClanBankSlots", "getClanName", "getClanRoster",
-            "getClanTribute", "getFreeMapModifierId", "getKanDonationPoints",
-            "getMapAttribute", "getMapIsLoaded", "getMapModifiers", "getMapPvP",
-            "getMapTitle", "getMapUsers",
-            "getMobAttributes", "getObjectsMap", "getOfflineID",
-            "getPoems", "getSetItems", "getSpellLevel", "getWarps",
-            "getWeather", "getWeatherM", "getWisdomStarMultiplier", "guitext",
-            "listAuction", "processKanDonations", "removeAuction", "removeClanMember",
-            "removeMapModifier", "removeMapModifierId", "removePathMember", "saveMap",
-            "selectBulletinBoard", "sendMeta", "setClanBankSlots", "setClanName",
-            "setClanTribute", "setKanDonationPoints", "setLight", "setMap",
-            "setMapAttribute", "setMapPvP", "setMapTitle", "setObject",
-            "setOfflinePlayerRegistry", "setPass", "setPostColor", "setTile", "setWarps",
-            "setWeather", "setWeatherM", "setWisdomStarMultiplier",
-            "updateClanMemberRank", "updateClanMemberTitle"
+            "addKanDonationPoints", "getKanDonationPoints",
+            "processKanDonations", "setKanDonationPoints"
         };
         // Loop ini berjalan SETELAH binding sungguhan didaftarkan, jadi
         // tanpa penjaga di bawah sebuah nama yang baru diport akan
@@ -563,11 +559,15 @@ public final class ScriptEngine {
 
     private final java.util.Set<String> stubNames = new java.util.TreeSet<>();
 
-    private interface JavaFunc {
+    interface JavaFunc {
         Varargs invoke(Varargs args);
     }
 
-    private void set(String name, JavaFunc f) {
+    /**
+     * Daftarkan satu global. Package-private supaya {@link WorldBindings}
+     * bisa memakainya tanpa membuat {@code ScriptEngine} membengkak.
+     */
+    void set(String name, JavaFunc f) {
         globals.set(name, new VarArgFunction() {
             @Override
             public Varargs invoke(Varargs args) {

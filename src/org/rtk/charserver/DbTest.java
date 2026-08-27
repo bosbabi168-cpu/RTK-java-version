@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,6 +77,12 @@ public final class DbTest {
         "src/org/rtk/map/MapServer.java",
         "src/org/rtk/login/LoginClif.java",
         "src/org/rtk/login/LoginIntif.java",
+        // Ditambahkan 27 Agustus 2026 bersama 59 binding global: seluruhnya
+        // menyentuh tabel game (Clans, Character, Boards, Auctions,
+        // MapModifiers, WisdomStar, ItemSets, BoardLocations, Registry,
+        // Spawns<serverid>). Tanpa baris ini, nama kolom yang salah baru
+        // ketahuan saat skrip memanggilnya di server hidup.
+        "src/org/rtk/map/script/WorldBindings.java",
     };
 
     private static int failures;
@@ -139,6 +146,7 @@ public final class DbTest {
         spellQueries(sql);
         pathQueries(sql);
         itemReqQueries(sql);
+        worldBindingTest(sql, conf);
         parcelTest(sql);
         boardTest(sql);
         clanBankTest(sql);
@@ -156,8 +164,40 @@ public final class DbTest {
      * inilah cara memeriksa 300-an nama kolom tanpa menyalinnya ke dalam uji
      * (salinan seperti itu akan basi diam-diam saat kode berubah).
      */
+    /**
+     * Bungkus sebuah pernyataan jadi {@code EXPLAIN} supaya <b>server</b>
+     * yang memeriksa nama tabel dan kolomnya.
+     *
+     * <p>⚠️ <b>Ini perbaikan atas jaminan palsu.</b> Sampai 27 Agustus 2026
+     * audit ini memakai {@code prepareStatement()} + 
+     * {@code getParameterMetaData()}, dan keduanya dikerjakan
+     * <b>di sisi klien</b> oleh connector MySQL — bahkan
+     * {@code SELECT * FROM `TabelNgawur`} lolos. Jadi kalimat "nama
+     * tabel/kolom divalidasi MySQL sendiri" tidak pernah benar; yang
+     * diperiksa hanya sintaksnya.</p>
+     *
+     * <p>Ketahuan karena sebuah kueri dengan kolom {@code RegKey} (nama
+     * aslinya {@code RegIdentifier}) lolos audit dan baru gagal saat
+     * benar-benar dijalankan di tahap 2.</p>
+     *
+     * <p>{@code EXPLAIN} memaksa server mem-parse dan me-resolve nama —
+     * untuk SELECT, INSERT, UPDATE, maupun DELETE — tanpa menyentuh satu
+     * baris data pun. Parameternya diganti {@code NULL} karena EXPLAIN
+     * tidak menerima placeholder.</p>
+     */
+    private static String explainOf(String sql) {
+        String q = sql.replace("?", "NULL");
+        // ⚠️ `LIMIT NULL` bukan SQL yang sah, jadi placeholder di LIMIT dan
+        // OFFSET harus jadi ANGKA — kalau tidak, EXPLAIN menolak pernyataan
+        // yang sebenarnya benar dan auditnya berbohong ke arah sebaliknya.
+        q = q.replaceAll("(?i)LIMIT\\s+NULL\\s*,\\s*NULL", "LIMIT 0, 1");
+        q = q.replaceAll("(?i)LIMIT\\s+NULL", "LIMIT 1");
+        q = q.replaceAll("(?i)OFFSET\\s+NULL", "OFFSET 0");
+        return "EXPLAIN " + q;
+    }
+
     private static void auditSql(Conf conf) throws IOException {
-        log.info("=== tahap 1: audit SQL terhadap skema hidup ===");
+        log.info("=== tahap 1: audit SQL terhadap skema hidup (EXPLAIN) ===");
 
         String url = "jdbc:mysql://" + conf.ip + ":" + conf.port + "/" + conf.db
                 + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
@@ -186,8 +226,8 @@ public final class DbTest {
                         continue;
                     }
                     total++;
-                    try (PreparedStatement ps = c.prepareStatement(st.sql())) {
-                        ps.getParameterMetaData();
+                    try (Statement chk = c.createStatement()) {
+                        chk.execute(explainOf(st.sql()));
                     } catch (SQLException e) {
                         bad++;
                         badHere++;
@@ -1321,4 +1361,204 @@ public final class DbTest {
             return new Conf(id, pw, ip, port, db);
         }
     }
+
+    /**
+     * Binding dunia yang seluruhnya SQL — klan, lelang, puisi, pengubah
+     * peta, karakter offline.
+     *
+     * <p>Tahap 1 sudah membuktikan kuerinya bisa di-prepare; yang diuji di
+     * sini apakah hasilnya benar-benar sampai ke tabel Lua. Beda itu nyata:
+     * salah nomor kolom di sisi Java tetap lolos audit.</p>
+     *
+     * <p>Memakai id di luar rentang data asli lalu membersihkan sendiri
+     * barisnya — tidak menyentuh data yang sudah ada.</p>
+     */
+    private static void worldBindingTest(Sql sql, Conf conf) {
+        log.info("=== tahap 2f: binding dunia (WorldBindings) ===");
+
+        final long chaId = 999000777L;
+        final int clanId = 999001;
+
+        org.rtk.map.script.ScriptEngine engine = new org.rtk.map.script.ScriptEngine();
+        // ⚠️ MapServer.sql adalah instance TERSENDIRI dan final — binding
+        // dunia memakainya, bukan `sql` milik uji ini. Jadi ia harus
+        // disambungkan sendiri ke database yang sama, kalau tidak seluruh
+        // kuerinya gagal dengan pesan yang menyesatkan.
+        org.rtk.map.MapServer.sql.connect(conf.id(), conf.pw(), conf.ip(),
+                conf.port(), conf.db());
+        org.rtk.map.MapServer.scriptEngine = engine;
+        org.rtk.map.MapServer.classDb.loadPaths(sql);
+        // ⚠️ Tabel pengalaman datang dari BERKAS (db/level_db.txt), bukan
+        // dari SQL — tanpa memuatnya getXPforLevel menjawab 0 dan ujinya
+        // akan menyalahkan bindingnya.
+        org.rtk.map.MapServer.classDb.load(org.rtk.map.MapServer.dbPath);
+        org.rtk.map.MapServer.spellDb.load(sql);
+
+        // bersihkan sisa uji sebelumnya
+        sql.update("DELETE FROM `Clans` WHERE `ClnId` = ?", clanId);
+        sql.update("DELETE FROM `Character` WHERE `ChaId` = ?", chaId);
+        sql.update("DELETE FROM `MapModifiers` WHERE `ModMapId` = ?", 999002);
+
+        // ---- klan ----
+        sql.update("INSERT INTO `Clans` (`ClnId`,`ClnName`) VALUES (?,?)",
+                clanId, "Klan Uji");
+        eq("getClanName membaca nama klan", "Klan Uji",
+                panggil(engine, "getClanName", clanId).tojstring());
+        check("setClanName menulisnya kembali",
+                panggil(engine, "setClanName", clanId, "Klan Baru").toboolean());
+        eq("nama barunya terbaca", "Klan Baru",
+                panggil(engine, "getClanName", clanId).tojstring());
+        check("getClanName untuk klan yang tidak ada dijawab 0",
+                panggil(engine, "getClanName", 999999).toint() == 0);
+
+        check("setClanTribute menulis tribut",
+                panggil(engine, "setClanTribute", clanId, 100).toboolean());
+        eq("getClanTribute membacanya", 100,
+                panggil(engine, "getClanTribute", clanId).toint());
+        check("addClanTribute MENAMBAH, bukan menimpa",
+                panggil(engine, "addClanTribute", clanId, 50).toboolean());
+        eq("tributnya jadi 150", 150,
+                panggil(engine, "getClanTribute", clanId).toint());
+
+        check("setClanBankSlots menulis jumlah slot",
+                panggil(engine, "setClanBankSlots", clanId, 42).toboolean());
+        eq("getClanBankSlots membacanya", 42,
+                panggil(engine, "getClanBankSlots", clanId).toint());
+
+        // ---- keanggotaan klan & jalur ----
+        sql.update("INSERT INTO `Character` (`ChaId`,`ChaName`,`ChaPthId`) "
+                + "VALUES (?,?,?)", chaId, "UjiDunia", 1);
+        check("addClanMember memasukkan karakter",
+                panggil(engine, "addClanMember", chaId, clanId).toboolean());
+        Object[] baris = sql.queryRow("SELECT `ChaClnId`,`ChaClnRank`,`ChaClanTitle` "
+                + "FROM `Character` WHERE `ChaId` = ?", 3, chaId);
+        check("bergabung menyetel klan, rank 1, DAN mengosongkan gelar",
+                baris != null && ((Number) baris[0]).intValue() == clanId
+                && ((Number) baris[1]).intValue() == 1
+                && "".equals(String.valueOf(baris[2])));
+
+        check("updateClanMemberTitle menulis gelar",
+                panggil(engine, "updateClanMemberTitle", chaId, "Tetua").toboolean());
+        eq("gelarnya tersimpan", "Tetua",
+                sql.queryString("SELECT `ChaClanTitle` FROM `Character` WHERE `ChaId` = ?",
+                        chaId));
+        check("updateClanMemberRank menulis pangkat",
+                panggil(engine, "updateClanMemberRank", chaId, 3).toboolean());
+
+        // ⚠️ Ketiga ladang bergerak BERSAMA saat keluar; menyisakan gelarnya
+        // membuat gelar klan lama menempel pada pemain yang sudah keluar.
+        check("removeClanMember mencabutnya", 
+                panggil(engine, "removeClanMember", chaId).toboolean());
+        baris = sql.queryRow("SELECT `ChaClnId`,`ChaClnRank`,`ChaClanTitle` "
+                + "FROM `Character` WHERE `ChaId` = ?", 3, chaId);
+        check("keluar mengosongkan klan, pangkat, DAN gelar sekaligus",
+                baris != null && ((Number) baris[0]).intValue() == 0
+                && ((Number) baris[1]).intValue() == 0
+                && "".equals(String.valueOf(baris[2])));
+
+        // ---- karakter offline: dua arah, satu nama ----
+        eq("getOfflineID(angka) mengembalikan NAMA", "UjiDunia",
+                panggil(engine, "getOfflineID", chaId).tojstring());
+        eq("getOfflineID(teks) mengembalikan ID", (int) chaId,
+                panggil(engine, "getOfflineID", "UjiDunia").toint());
+        check("getOfflineID untuk nama yang tidak ada dijawab false",
+                !panggil(engine, "getOfflineID", "TidakAdaSamaSekali").toboolean());
+
+        check("setOfflinePlayerRegistry menulis registry karakter offline",
+                panggil(engine, "setOfflinePlayerRegistry", chaId, "ujiDunia", 77)
+                        .toboolean());
+        Integer regVal = sql.queryInt("SELECT `RegValue` FROM `Registry` "
+                + "WHERE `RegChaId` = ? AND `RegIdentifier` = ?", chaId, "ujiDunia");
+        check("nilainya sampai ke tabel Registry", regVal != null && regVal == 77);
+        sql.update("DELETE FROM `Registry` WHERE `RegChaId` = ?", chaId);
+
+        // ---- pengubah peta ----
+        check("addMapModifier menambah baris",
+                panggil(engine, "addMapModifier", 999002, "ujiMod", 5).toboolean());
+        var mods = panggil(engine, "getMapModifiers", 999002);
+        check("getMapModifiers mengembalikan pasangan nama+nilai",
+                mods.istable() && "ujiMod".equals(mods.get(1).tojstring())
+                && mods.get(2).toint() == 5);
+        check("removeMapModifier menghapusnya",
+                panggil(engine, "removeMapModifier", 999002, "ujiMod").toboolean());
+        check("daftarnya kosong lagi",
+                panggil(engine, "getMapModifiers", 999002).get(1).isnil());
+
+        // ---- lelang ----
+        int lelangSebelum = jumlahBaris(sql, "SELECT COUNT(*) FROM `Auctions`");
+        check("listAuction memasukkan lelang", panggilBanyak(engine, "listAuction",
+                chaId, 7101, 1, 100, 5000, "ukiran", 0, 0, 0, 0, 0, 0, 0).toboolean());
+        check("jumlah lelang bertambah satu",
+                jumlahBaris(sql, "SELECT COUNT(*) FROM `Auctions`") == lelangSebelum + 1);
+        var lelang = panggil(engine, "getAuctions");
+        check("getAuctions mengembalikan 14 ladang per lelang", lelang.istable()
+                && lelang.get(14).toint() >= 0 && !lelang.get(1).isnil());
+        Integer idLelang = sql.queryInt(
+                "SELECT MAX(`AuctionId`) FROM `Auctions` WHERE `AuctionChaId` = ?", chaId);
+        check("removeAuction menghapusnya",
+                idLelang != null
+                && panggil(engine, "removeAuction", idLelang).toboolean());
+        check("jumlahnya kembali seperti semula",
+                jumlahBaris(sql, "SELECT COUNT(*) FROM `Auctions`") == lelangSebelum);
+
+        // ---- bintang kebijaksanaan ----
+        Double wsLama = sql.queryDouble("SELECT `WSMultiplier` FROM `WisdomStar`");
+        panggil(engine, "setWisdomStarMultiplier", 2.5);
+        check("setWisdomStarMultiplier lalu getWisdomStarMultiplier bolak-balik",
+                Math.abs(panggil(engine, "getWisdomStarMultiplier").todouble() - 2.5) < 0.001);
+        if (wsLama != null) {
+            panggil(engine, "setWisdomStarMultiplier", wsLama);
+        }
+
+        // ---- getXPforLevel: tabel level yang memang sudah ada ----
+        double xp1 = panggil(engine, "getXPforLevel", 1, 10).todouble();
+        check("getXPforLevel menjawab dari tabel level, bukan 0", xp1 > 0);
+        int subpath = -1;
+        for (int k = 6; k < 40 && subpath < 0; k++) {
+            if (org.rtk.map.MapServer.classDb.pathOf(k) == 1) {
+                subpath = k;
+            }
+        }
+        check("kelas subpath dipetakan ke jalur induknya", subpath < 0
+                || panggil(engine, "getXPforLevel", subpath, 10).todouble() == xp1);
+
+        // ---- getSpellLevel ----
+        check("getSpellLevel untuk mantra yang tidak ada dijawab 0",
+                panggil(engine, "getSpellLevel", "mantra_tidak_ada").toint() == 0);
+
+        // ---- getSetItems: SELALU lima pasang ----
+        var set = panggil(engine, "getSetItems", 999999);
+        check("getSetItems selalu 10 entri walau set-nya tidak ada",
+                set.istable() && !set.get(10).isnil() && set.get(1).toint() == 0);
+
+        // ---- bersih-bersih ----
+        sql.update("DELETE FROM `Clans` WHERE `ClnId` = ?", clanId);
+        sql.update("DELETE FROM `Character` WHERE `ChaId` = ?", chaId);
+        sql.update("DELETE FROM `MapModifiers` WHERE `ModMapId` = ?", 999002);
+        org.rtk.map.MapServer.scriptEngine = null;
+    }
+
+    private static int jumlahBaris(Sql sql, String q) {
+        Integer n = sql.queryInt(q);
+        return n == null ? 0 : n;
+    }
+
+    private static org.luaj.vm2.LuaValue panggil(
+            org.rtk.map.script.ScriptEngine engine, String nama, Object... args) {
+        return panggilBanyak(engine, nama, args);
+    }
+
+    /** Panggil global Lua dengan argumen sebanyak apa pun. */
+    private static org.luaj.vm2.LuaValue panggilBanyak(
+            org.rtk.map.script.ScriptEngine engine, String nama, Object... args) {
+        org.luaj.vm2.LuaValue[] v = new org.luaj.vm2.LuaValue[args.length];
+        for (int i = 0; i < args.length; i++) {
+            v[i] = args[i] instanceof String t
+                    ? org.luaj.vm2.LuaValue.valueOf(t)
+                    : org.luaj.vm2.LuaValue.valueOf(((Number) args[i]).doubleValue());
+        }
+        return engine.globals().get(nama)
+                .invoke(org.luaj.vm2.LuaValue.varargsOf(v)).arg1();
+    }
+
 }

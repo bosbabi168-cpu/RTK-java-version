@@ -1848,6 +1848,55 @@ public final class Clif {
         s.wfifoSet(encrypt(s, sd));
     }
 
+    /**
+     * sl_updatepeople(): kirim ulang petak peta di sekitar pemain.
+     *
+     * <p>Dipakai saat skrip mengubah lantai, objek, atau penghalang. Jendela
+     * 19x17 dijepit ke tepi peta persis seperti C — <b>digeser</b>, bukan
+     * dipotong, supaya lebarnya tetap penuh.</p>
+     */
+    public static void redrawAround(User sd) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        int x;
+        int y;
+        if (sd.x - 9 < 0) {
+            x = 9;
+        } else if (sd.x - 9 + 19 >= map.xs) {
+            x = map.xs - 10;
+        } else {
+            x = sd.x;
+        }
+        if (sd.y - 8 < 0) {
+            y = 8;
+        } else if (sd.y - 8 + 17 >= map.ys) {
+            y = map.ys - 9;
+        } else {
+            y = sd.y;
+        }
+        sendMapData(sd, x - 9, y - 8, 19, 17, 0);
+    }
+
+    /**
+     * clif_sendweather(): cuaca peta — opcode 0x1F.
+     *
+     * <p>⚠️ Pemain yang mematikan setelan cuaca tetap menerima paketnya,
+     * hanya isinya <b>0</b>. Di C begitu; mengirim paketnya tetap penting
+     * karena itu yang menghentikan cuaca sebelumnya.</p>
+     */
+    public static void sendWeather(User sd, int weather) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        headSeq(s, 0x1F, 3);
+        s.wfifoB(5, SettingFlags.on(sd.status.settingFlags, SettingFlags.WEATHER)
+                ? weather : 0);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
     // ------------------------------------------------------------------
     // perlengkapan (clif_equipit / clif_unequipit)
     // ------------------------------------------------------------------

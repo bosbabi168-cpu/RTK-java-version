@@ -143,9 +143,9 @@ proses build di server.
   ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
   durasi mantra, gerak mob, barang lantai, inventaris, buku mantra,
   tampilan & timer, simpan paksa, BOD, pertukaran, **protokol RTK2**,
-  **aksi pemain**, **perlengkapan & pakai barang**, **arah keluar RTK2** —
-  **724 assertion**),
-  `./run.sh dbtest` (lapisan database ke MySQL hidup — 196 assertion;
+  **aksi pemain**, **perlengkapan & pakai barang**, **arah keluar RTK2**,
+  **binding dunia** — **759 assertion**),
+  `./run.sh dbtest` (lapisan database ke MySQL hidup — 232 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
   statis 907 skrip Lua. Lihat "Audit skrip Lua" di bawah.
@@ -1291,6 +1291,77 @@ byte-identik dengan `rtklua/`.
    Pola yang sama layak dicurigai pada nama lain yang muncul sebagai global
    <b>dan</b> method.
 
+76. **⚠️ Audit SQL `dbtest` DULU TIDAK MEMVALIDASI NAMA TABEL MAUPUN KOLOM
+   SAMA SEKALI.** Selama tiga hari berkas ini menulis bahwa 64 pernyataan
+   "di-prepare ke server, sehingga nama tabel/kolom divalidasi MySQL
+   sendiri". **Itu tidak pernah benar.** `prepareStatement()` +
+   `getParameterMetaData()` dikerjakan **di sisi klien** oleh connector
+   MySQL; bahkan ini lolos:
+
+   ```
+   SELECT * FROM `TabelNgawur` WHERE `x` = ?     -> LOLOS
+   SELECT `KolomNgawur` FROM `Registry` ...      -> LOLOS
+   ```
+
+   Ketahuan 27 Agustus 2026 karena sebuah kueri baru memakai kolom
+   `RegKey` (nama aslinya `RegIdentifier`), lolos audit, lalu gagal di
+   tahap 2 saat benar-benar dijalankan.
+
+   **Sekarang auditnya memakai `EXPLAIN`** dengan placeholder diganti
+   `NULL` — itu memaksa server mem-parse dan me-resolve nama untuk SELECT,
+   INSERT, UPDATE, <b>dan</b> DELETE tanpa menyentuh satu baris data pun.
+   Percobaan pertama memakai `getMetaData()` dan hanya menangkap SELECT;
+   INSERT/UPDATE dengan kolom ngawur tetap lolos.
+
+   ⚠️ Dua penyesuaian yang wajib ada: `LIMIT NULL` bukan SQL yang sah, jadi
+   placeholder di `LIMIT`/`OFFSET` diganti angka. Tanpa itu audit menolak
+   pernyataan yang justru benar — berbohong ke arah sebaliknya.
+
+   Perbaikan ini langsung menemukan **dua kolom salah** di binding yang baru
+   ditulis pada hari yang sama. Ini keluarga yang sama dengan Peringatan
+   #30, #50, dan #73: **alat verifikasi hanya sejujur apa yang benar-benar
+   ia jalankan** — dan "di-prepare tanpa error" ternyata tidak menjalankan
+   apa pun.
+
+77. **`setPostColor` salah nama di DUA tempat sekaligus.** Kolomnya
+   `BrdHighlighted` (bukan warna, melainkan penanda sorot), dan argumen
+   keduanya `BrdPosition` — nomor urut kiriman **di papan itu** — bukan
+   `BrdId`. Keluarga yang sama dengan Peringatan #45: nomor urut per
+   penerima, bukan kunci baris.
+
+78. **`getMapTitle` membaca DATABASE, bukan peta yang sedang dimuat.**
+   Jadi ia mengembalikan judul aslinya walau `setMapTitle` sudah
+   mengubahnya di memori. Terlihat seperti kelalaian, tetapi skrip memakai
+   justru itu: mengembalikan judul asli setelah sebuah event selesai.
+   Mengubahnya jadi membaca `map.title` akan membuat peta event tersangkut
+   dengan judul eventnya selamanya.
+
+   Dua saudaranya di keluarga yang sama:
+   - **`setLight` hanya mengisi peta yang cahayanya MASIH 0.** Menyalakan
+     lampu dua kali tidak melakukan apa pun pada putaran kedua, dan peta
+     yang punya cahaya sendiri tidak pernah tertimpa.
+   - **`copyPoemToPoetry` MEMINDAHKAN, bukan menyalin.** Barisnya di-UPDATE
+     ke papan puisi terbit. Meniru namanya sebagai salinan sungguhan akan
+     membuat papan draf menumpuk puisi yang sudah terbit.
+
+79. **Cuaca musiman tidak boleh menimpa cuaca buatan.** Penjaganya registry
+   per-peta `artificial_weather_timer`: selama capnya masih di masa depan,
+   peta itu dilewati `setWeather`/`setWeatherM`. ⚠️ Cap yang **sudah lewat
+   dibersihkan di dalam penjaga itu sendiri**, bukan oleh timer tersendiri —
+   jadi yang memulihkan peta setelah cuaca buatannya kedaluwarsa adalah
+   panggilan `setWeather` berikutnya. Menghapus pembersihan itu membuat peta
+   terkunci pada cuaca buatannya selamanya.
+
+80. **`setMap` mengganti UKURAN peta, jadi indeks spasialnya harus dibangun
+   ulang.** Peta instance memuat berkas `.map` sembarang ke slot yang sama,
+   dan ukurannya berbeda-beda. Karena itu `xs`/`ys`/`bxs`/`bys` di
+   `MapData` **tidak final**, dan `replaceGeometry()` mendaftarkan ulang
+   setiap benda yang masih ada menurut koordinatnya.
+
+   ⚠️ Melewati pendaftaran ulang itu tidak melempar error: gejalanya mob
+   dan pemain yang "tidak ada" padahal berdiri di sana, karena setiap
+   pencarian menunjuk blok yang salah.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -1334,6 +1405,7 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
 | `map/map.h` `flooritem_data` + `map_additem`/`map_delitem` | `map/FloorItem`, `map/FloorItemRegistry` | barang di lantai (BL_ITEM); tiga aturan gabung, penyaring jebakan |
 | `map/pc.c` `pc_useitem`/`pc_equipitem`/`pc_unequipscript` + `clif_throwitem_script` | `map/Items` | pakai, kenakan, lepas, lempar — **dua langkah** lewat kait skrip |
 | `map/map.c` `lang_read()` + `map_msg[]` | `map/data/MapMsg` | pesan penolakan dari `conf/lang.conf`, berbawaan |
+| `map/sl.c` global dunia (`settile`, `setmap`, klan, cuaca, lelang) | `map/script/WorldBindings` | 59 binding; peta yang bisa diubah saat berjalan (Peringatan #74) |
 
 ## Scripting engine (org.rtk.map.script)
 
@@ -1416,7 +1488,7 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
 | Gerbang regresi | 6/6 hijau (`cliftest` **572**, `dbtest` **187** assertion) |
-| Binding skrip | method **1** (`testPacket`, sengaja); ⚠️ global **59 masih stub** — Peringatan #73 |
+| Binding skrip | method **1** (`testPacket`, sengaja); global **0** celah |
 | **Protokol RTK2** | **dua arah** — 24 opcode masuk, 51 peristiwa keluar (RetroTK berdampingan) |
 | Trek A | selesai fungsinya; `sendMyStatus` sengaja TAHAP 1 |
 | Trek C | C1 & C4 selesai; **C2 dan C3 belum tersentuh** |
@@ -1727,10 +1799,12 @@ kait skrip, lalu **petak portal**. Ikut diport: tabel `Warps`
 + pesan penolakan, `clif_pushback`, `clif_sendmsg`/`sendMiniText` (0x0A).
 
 **A3. Uji end-to-end dengan MySQL sungguhan — SELESAI (21 Agustus 2026).**
-`charserver/DbTest` (`./run.sh dbtest`, 82 assertion), tiga tahap:
-(1) **audit SQL** — 64 pernyataan SQL dari 6 berkas sumber diambil dari
-kodenya lalu di-`prepare` ke server, sehingga nama tabel/kolom divalidasi
-MySQL sendiri (menggantikan pencocokan 300 nama kolom di atas kertas);
+`charserver/DbTest` (`./run.sh dbtest`), tiga tahap:
+(1) **audit SQL** — pernyataan SQL diambil dari berkas sumber lalu
+di-`EXPLAIN` ke server, sehingga nama tabel/kolom divalidasi MySQL sendiri.
+⚠️ Sampai 27 Agustus 2026 tahap ini memakai `prepare` + 
+`getParameterMetaData()`, yang **dikerjakan di sisi klien dan tidak
+memvalidasi apa pun** — lihat Peringatan #76;
 2 pernyataan yang disusun runtime (`CharPersistence.reg()`) dilewati dan
 diuji lewat round-trip di tahap 3; (2) **data dunia** — 9.850 peta + 4.476
 portal dari tabel asli; (3) **round-trip karakter** — karakter uji dengan
@@ -1879,118 +1953,82 @@ NPC **dan** mob.
 
 ---
 
-#### ROADMAP — 27 Agustus 2026 (setelah audit mendalam)
+#### ROADMAP — 27 Agustus 2026 (binding tuntas)
 
-> ⚠️ Roadmap sebelumnya menyebut Trek B sebagai **penghambat tunggal**.
-> **Itu salah**, dan audit 27 Agustus sore menemukan sebabnya: angka
-> `luaaudit` dipercaya mentah. Lihat Peringatan #73 — ada **61 binding
-> global yang masih stub** dan audit melaporkannya sebagai "0 celah".
+> Angka di bawah dari `./run.sh luaaudit` dan `./run.sh dbtest`.
+> Hitung ulang; jangan percaya prosa.
 
 **Yang SUDAH selesai** (jangan diulang):
 
 | | Bukti |
 |---|---|
-| Binding **method** (prototipe Player/NPC/Mob/FloorItem) | **1** tersisa — `testPacket`, sengaja |
-| Binding **global** | ⚠️ **59 masih stub** dan terdaftar di `sl.c` — lihat butir 1 |
+| Binding **method** | **1** tersisa — `testPacket`, **sengaja** tidak diport |
+| Binding **global** | **0** celah — 59 stub terakhir diport 27 Agu (`map/script/WorldBindings`) |
 | Trek A (A1–A5) | selesai fungsinya |
 | Trek C1, C4 | registry skrip; kiriman, surat, hadiah, papan pesan |
-| Subsistem besar | BL_ITEM, durasi & aether, BOD, pertukaran, perlengkapan & pakai barang |
-| Lapisan protokol | `ClientView` **51 peristiwa**, `ClientCommands` **22 perintah** |
-| **Protokol RTK2** | **dua arah** — 24 opcode masuk, 51 peristiwa keluar |
+| Subsistem besar | BL_ITEM, durasi & aether, BOD, pertukaran, perlengkapan & pakai barang, **peta yang bisa diubah saat berjalan** |
+| Lapisan protokol | `ClientView` **53 peristiwa**, `ClientCommands` **22 perintah** |
+| **Protokol RTK2** | **dua arah** — 24 opcode masuk, 53 peristiwa keluar |
 | Dua protokol berdampingan | `ProtocolRouter`; lihat Peringatan #69 |
-| Gerbang regresi | 6/6 hijau — `cliftest` **724**, `dbtest` **196** assertion |
+| Gerbang regresi | 6/6 hijau — `cliftest` **759**, `dbtest` **232** assertion |
+
+**Sisa stub yang tersisa: 4 nama Kan** (`getKanDonationPoints` dkk.), dan
+keempatnya **tidak terdaftar di `sl.c` sama sekali** — kode mati di konten,
+bukan celah port. `LuaAudit` memisahkan keduanya.
 
 ---
 
-**1. Global yang masih stub — 59 nama, 980+ titik panggilan.**
-*Direkomendasikan dikerjakan sebelum Trek B:* tiap bindingnya kecil,
-seluruhnya bisa diuji dengan gerbang yang sudah ada, dan ia blok konten
-mati terakhir yang besar. Trek B jauh lebih panjang dan terbuka; memulainya
-dengan server yang benar-benar utuh lebih murah daripada bolak-balik.
-
-Dikelompokkan menurut subsistem, bukan menurut jumlah:
-
-- **1a. Peta yang bisa diubah saat berjalan — 980 pemakaian.**
-  `setTile` (530x), `setObject` (364x), `setPass` (88x) isinya **tiga baris
-  masing-masing** di C: tulis satu petak, lalu gambar ulang untuk yang ada
-  di area. Getternya (`getTile`/`getObject`/`getPass`) sudah lama ada.
-  Menyusul di keluarga yang sama: `setMap` (23x, muat ulang berkas `.map`),
-  `saveMap`, `getMapIsLoaded`, `setLight`, `setMapAttribute`,
-  `setMapTitle`/`getMapTitle`, `setMapPvP`/`getMapPvP`, `getMapUsers`,
-  `getWarps`/`setWarps`, dan keluarga `*MapModifier*`.
-
-  ⚠️ **Jangan tulis langsung ke `MapData.geometry`** — geometrinya
-  **dibagi** antar peta yang memakai berkas sama (Peringatan #74). Butuh
-  salin-saat-ditulis lebih dulu; tanpa itu satu instance merusak semua peta
-  sejenis, dan tidak ada uji yang akan menangkapnya.
-
-  Ini juga yang membuat butir ini pantas mendahului Trek B: editor peta
-  (B2) dan klien (B3) sama-sama berdiri di atas kemampuan ini — dan
-  kontennya **sudah membawa editor peta dalam permainan**
-  (`Accepted/Tools/map_editor.lua`), yang selama ini tidak melakukan
-  apa-apa.
-
-- **1b. Klan** — `getClanName` (4x), `addClanMember`, `removeClanMember`,
-  `updateClanMemberRank` (2x), `getClanRoster`, plus tribut dan slot bank.
-  `ClanDb` sudah ada, jadi ini kebanyakan penyambungan.
-
-- **1c. Cuaca** — `setWeather` (14x), `getWeather`, dan varian `*M`.
-
-- **1d. Sisanya, kecil-kecil** — `getOfflineID` (24x, satu kueri),
-  `getMobAttributes` (15x), **`guitext` global** (14x — siaran sepeta /
-  se-server, berbeda dari method `player:guitext`, Peringatan #75),
-  `getXPforLevel` (12x — **tabel `ClassDb` sudah ada**, tinggal disambung),
-  `getWisdomStarMultiplier`, `addMob` (6x), puisi, lelang, papan buletin.
-
-  Empat nama Kan (`getKanDonationPoints` dkk., 8x) **tidak terdaftar di
-  `sl.c`** — kode mati di konten, jangan diport.
-
-**2. Trek B — dekoder EPF, editor, klien libGDX.** **Belum dimulai sama
-sekali.** Jalur menuju arah final project, dan satu-satunya jalur menuju
-pengujian sungguhan: tidak ada apa pun yang bisa berbicara dengan server.
+**1. Trek B — dekoder EPF, editor, klien libGDX.** **Penghambat tunggal
+sekarang, dan kali ini benar-benar tunggal.** Servernya punya protokol
+lengkap dua arah dan binding yang tuntas; yang belum ada adalah sesuatu
+yang bisa berbicara dengannya. **Belum dimulai sama sekali**
+(`src/org/rtk/` hanya berisi charserver, common, login, map).
 
 - **B1. Dekoder EPF** — EPF + PAL → gambar RGB, plus pemetaan id
   `tile`/`obj` ke frame. Prasyarat sisanya. `rtk/SObj.tbl` (18.954 entri)
   masih di RTK-Server, belum disalin.
-- **B2. Editor peta & skrip** berbasis browser. Bisa dimulai **sebelum** B1
-  dengan grid berwarna dari id/`pass`.
+- **B2. Editor peta & skrip** berbasis browser. Bisa dimulai **sebelum**
+  B1 dengan grid berwarna dari id/`pass`. ⚠️ Kontennya **sudah membawa
+  editor peta dalam permainan** (`Accepted/Tools/map_editor.lua`), dan
+  sejak 27 Agustus ia benar-benar berfungsi — pakai itu sebagai acuan
+  perilaku.
 - **B3. Klien libGDX** — di sinilah RTK2 akhirnya dibaca sesuatu.
 
-**3. Merapal mantra.** Aksi pemain besar terakhir yang belum punya jalur
+**2. Merapal mantra.** Aksi pemain besar terakhir yang belum punya jalur
 masuk. Logikanya sebagian ada lewat `Durations`; yang kurang pemicu dari
 klien dan penjaga `map.spell`.
 
-**4. Klik mob.** `MapCommands.playerClicks` hanya menangani NPC; mengklik
-mob tidak melakukan apa pun. Di C ia memanggil `onLook` dan kait `click`
-milik mobnya. Kecil, tapi terlihat langsung oleh pemain.
+**3. Klik mob.** `MapCommands.playerClicks` hanya menangani NPC. Di C ia
+memanggil `onLook` dan kait `click` milik mobnya. Kecil, tapi terlihat
+langsung oleh pemain.
 
-**5. Sosial & antarmuka** — grup, teman, profil, emosi, daftar abaikan
+**4. Sosial & antarmuka** — grup, teman, profil, emosi, daftar abaikan
 (menutup penyaring `clif_isignore`), papan & pos, minimap, ranking,
 berputar di tempat.
 
-**6. C3 — warp antar map server.** Masih ditolak di `MapCommands`.
+**5. C3 — warp antar map server.** Masih ditolak di `MapCommands`.
 
-**7. C2 — empat berkas meta hilang.** ⚠️ Nilainya menurun bersama arah
-project: format RetroTK, dan klien sendiri tidak akan membacanya.
+**6. C2 — empat berkas meta hilang.** ⚠️ Nilainya menurun bersama arah
+project: format RetroTK, dan klien sendiri tidak akan membacanya. Binding
+`sendMeta` sudah diport sebagai tiruan yang mencatat alasannya.
 
-**8. Terjemahan Indonesia** — ~3.800 titik dialog, 903 di antaranya di 56
+**7. Terjemahan Indonesia** — ~3.800 titik dialog, 903 di antaranya di 56
 berkas. `conf/lang.conf` juga bisa diterjemahkan tanpa menyentuh kode.
 
-**9. `testPacket`** — satu-satunya binding method yang **sengaja tidak
-diport**.
+**8. `testPacket`** — satu-satunya binding yang **sengaja tidak diport**.
 
-**10. Uji dengan pemain sungguhan online** — *sengaja terakhir.* Tidak satu
+**9. Uji dengan pemain sungguhan online** — *sengaja terakhir.* Tidak satu
 byte pun RTK2 pernah dibaca klien sungguhan, dan seluruh aksi pemain belum
 pernah berjalan di server hidup. Peringatan #26 lahir persis dari kait yang
 hanya menyala saat server hidup — **ini tetap pemeriksaan yang paling
-tajam**, hanya butuh butir 2 lebih dulu.
+tajam**, hanya butuh butir 1 lebih dulu.
 
 ---
 
-**Empat TODO yang tersisa di kode** (semuanya kecil dan sengaja):
-`MapCommands:243` mob mati tidak menghalangi langkah, `MapCommands:395`
-klik mob (butir 4 di atas), `ScriptEngine:393` musim dari kalender dunia,
-`ScriptEngine:502` `getXPforLevel` (butir 1d).
+**Empat TODO yang tersisa di kode:** `MapCommands:243` mob mati tidak
+menghalangi langkah, `MapCommands:395` klik mob (butir 3), `ScriptEngine`
+musim dari kalender dunia, dan `curServer`/`checkOnline` yang mengembalikan
+nilai tetap (ditandai di sumbernya — lihat Peringatan #73).
 
 **Dua sisa Trek A yang disengaja:** `Clif.sendMyStatus()` TAHAP 1 dan
 penyaring `clif_isignore`. Keduanya khusus RetroTK.

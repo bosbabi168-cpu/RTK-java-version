@@ -770,7 +770,7 @@ The starting point for the next session.
 | Regression gates | 6/6 green (`cliftest` **572**, `dbtest` **187** assertions) |
 | `logs/map.log` on a live server | **0 ERROR / 0 WARN** |
 | All three servers | running side by side (`./run.sh all`), map↔char link stable |
-| Script bindings | methods: **1** (`testPacket`, deliberate); ⚠️ globals: **59 still stubs** |
+| Script bindings | methods: **1** (`testPacket`, deliberate); globals: **0** gaps |
 | Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
@@ -893,6 +893,36 @@ Another finding: **map geometry is shared** between maps using the same file
 (9,850 maps → 2,919 files), so a `setTile` that writes straight through
 would change that tile on **every** map alike. It needs copy-on-write, and
 no test would catch it if missed.
+
+### The last 59 global bindings — and a test tool that was lying
+
+**Every binding gap is now closed** (27 August 2026). What remains: one
+method (`testPacket`, deliberate) and four Kan names that do not exist in
+the original server at all.
+
+The largest piece is **maps that can be changed at runtime** — `setTile`
+(530x), `setObject` (362x), `setPass` (88x), `setMap`, `saveMap`. Three
+lines each in C, with 980 call sites depending on them. As of now
+`Accepted/Tools/map_editor.lua` — an in-game map editor that has shipped
+with the content all along — actually works.
+
+⚠️ **A trap the audit found first:** map geometry is **shared** between maps
+using the same file (9,850 maps → 2,919 files). Writing straight through
+would change that tile on every map alike, and no test would catch it
+because each map still looks "correct" on its own. There is copy-on-write
+now, with a test proving the twin map does not change.
+
+⚠️ **And a finding bigger than the bindings themselves:** the `dbtest` SQL
+audit **never validated table or column names**. For three days the READMEs
+and CLAUDE.md claimed its statements were "prepared against the server so
+MySQL validates the names itself" — but `prepareStatement()` +
+`getParameterMetaData()` run **client-side**, and even
+`SELECT * FROM TabelNgawur` passed.
+
+It surfaced because a new query used the column `RegKey` (really
+`RegIdentifier`), passed the audit, then failed when actually run. The
+audit now uses `EXPLAIN`, and that repair **immediately found two wrong
+columns** in bindings written the same day.
 
 The 26 August session closed two blocks: (1) bindings that were still
 **stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

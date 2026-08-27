@@ -404,4 +404,27 @@ public interface ClientView {
 
     /** Satu slot perlengkapan pemain kini kosong ({@code clif_unequipit}). */
     void playerEquipmentCleared(User sd, int slot);
+
+    // ------------------------------------------------------------------
+    // Perubahan peta saat berjalan
+    // ------------------------------------------------------------------
+
+    /**
+     * Petak di sekitar pemain berubah — lantai, objek, atau penghalangnya.
+     *
+     * <p>Dipicu {@code setTile}/{@code setObject}/{@code setPass} dari
+     * skrip. Berbeda dari {@link #playerViewRefreshed}: yang itu menggambar
+     * ulang <b>segalanya</b> termasuk benda dan pemain; yang ini hanya
+     * tanahnya.</p>
+     */
+    void mapTilesChanged(User sd);
+
+    /**
+     * Cuaca di peta pemain berubah.
+     *
+     * <p>⚠️ Pemain yang mematikan setelan cuaca tetap menerima
+     * peristiwanya — yang menyaring lapisan protokol, sama seperti efek
+     * mantra pada {@link #objectAnimationSeenBy}.</p>
+     */
+    void weatherChanged(User sd, int weather);
 }

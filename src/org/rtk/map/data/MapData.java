@@ -66,15 +66,27 @@ public final class MapData {
     public int canEquip;
 
     // ---- geometri (berkas .map) ----
-    private final MapFile geometry;
-    public final int xs;
-    public final int ys;
-    private final int bxs;
-    private final int bys;
+    private MapFile geometry;
+
+    /** Geometri peta ini sudah dipisahkan dari cache berkasnya. */
+    private boolean geometriPribadi;
+    /**
+     * Ukuran peta.
+     *
+     * <p>⚠️ <b>Tidak final</b> karena {@code setMap} boleh mengganti
+     * geometrinya saat berjalan, dan peta instance memang berganti ukuran.
+     * Yang mengubahnya hanya {@link #replaceGeometry}, yang juga membangun
+     * ulang indeks spasialnya — mengubah ukuran tanpa itu membuat setiap
+     * pencarian benda menunjuk blok yang salah.</p>
+     */
+    public int xs;
+    public int ys;
+    private int bxs;
+    private int bys;
 
     // ---- indeks spasial ----
-    private final List<BlockList>[] blocks;    // pemain, npc, barang
-    private final List<BlockList>[] blocksMob; // mob
+    private List<BlockList>[] blocks;    // pemain, npc, barang
+    private List<BlockList>[] blocksMob; // mob
 
     /** Jumlah pemain yang sedang berada di peta ini (map[m].user di C). */
     public int users;
@@ -124,6 +136,49 @@ public final class MapData {
      */
     public boolean walkable(int x, int y) {
         return inBounds(x, y) && geometry.walkable(x, y);
+    }
+
+    /**
+     * Pisahkan geometri peta ini dari cache berkasnya sebelum diubah.
+     *
+     * <p>⚠️ {@code MapRegistry} sengaja berbagi satu {@code MapFile} untuk
+     * setiap peta yang memakai berkas yang sama — 9.850 peta, 2.919 berkas
+     * (Peringatan #11). Tanpa pemisahan ini, satu {@code setTile} di sebuah
+     * instance akan mengubah petak yang sama di <b>semua</b> peta sejenis,
+     * dan tidak ada uji yang akan menangkapnya karena tiap peta memang
+     * "benar" bila diperiksa sendiri-sendiri (Peringatan #74).</p>
+     *
+     * <p>Dipanggil otomatis oleh ketiga setter di bawah. Salinannya dibuat
+     * <b>sekali</b>, jadi peta yang tidak pernah diubah tetap berbagi.</p>
+     */
+    private void pisahkanGeometri() {
+        if (!geometriPribadi) {
+            geometry = geometry.mutableCopy();
+            geometriPribadi = true;
+        }
+    }
+
+    /** True bila peta ini sudah punya salinan geometri sendiri. */
+    public boolean hasPrivateGeometry() {
+        return geometriPribadi;
+    }
+
+    /** settile(): ubah satu petak lantai. */
+    public void setTile(int x, int y, int value) {
+        pisahkanGeometri();
+        geometry.setTile(x, y, value);
+    }
+
+    /** setpass(): ubah penghalang statis satu petak. */
+    public void setPass(int x, int y, int value) {
+        pisahkanGeometri();
+        geometry.setPass(x, y, value);
+    }
+
+    /** setobject(): ubah lapisan objek satu petak. */
+    public void setObj(int x, int y, int value) {
+        pisahkanGeometri();
+        geometry.setObj(x, y, value);
     }
 
     public int tile(int x, int y) {
@@ -276,6 +331,59 @@ public final class MapData {
     }
 
     /** Jumlah portal terdaftar di peta ini. */
+    /** Seluruh portal di peta ini — dipakai binding {@code getWarps}. */
+    public List<Warp> allWarps() {
+        List<Warp> out = new ArrayList<>();
+        if (warps == null) {
+            return out;
+        }
+        for (List<Warp> l : warps) {
+            if (l != null) {
+                out.addAll(l);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * setMap(): ganti geometri peta ini dengan berkas lain.
+     *
+     * <p>Salinannya langsung dianggap pribadi — peta yang isinya diganti
+     * skrip tidak boleh berbagi lagi dengan peta lain yang memakai berkas
+     * asalnya (Peringatan #74).</p>
+     */
+    @SuppressWarnings("unchecked")
+    public void replaceGeometry(MapFile baru) {
+        this.geometry = baru;
+        this.geometriPribadi = true;
+        this.xs = baru.width();
+        this.ys = baru.height();
+        this.bxs = (xs + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        this.bys = (ys + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        // ⚠️ Indeks spasial DIBANGUN ULANG, dan benda yang masih terdaftar
+        // di indeks lama didaftarkan kembali menurut koordinatnya. Melewati
+        // langkah ini membuat setiap pencarian benda menunjuk blok yang
+        // salah — dan gejalanya bukan error, melainkan mob dan pemain yang
+        // "tidak ada" padahal berdiri di sana.
+        List<BlockList> lama = new ArrayList<>();
+        for (List<BlockList>[] idx : List.of(blocks, blocksMob)) {
+            for (List<BlockList> l : idx) {
+                if (l != null) {
+                    lama.addAll(l);
+                }
+            }
+        }
+        this.blocks = new List[bxs * bys];
+        this.blocksMob = new List[bxs * bys];
+        this.warps = null;
+        for (BlockList bl : lama) {
+            bl.onMap = false;
+            if (inBounds(bl.x, bl.y)) {
+                addBlock(bl);
+            }
+        }
+    }
+
     public int warpCount() {
         if (warps == null) {
             return 0;

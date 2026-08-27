@@ -412,6 +412,8 @@ public final class Wire {
     public static final int EV_SELF_DURATION = EV | 0x010B;
     /** {@code u16 idMantra, u32 detik} */
     public static final int EV_SELF_AETHER = EV | 0x010C;
+    /** {@code u8 cuaca} — pemain yang mematikan setelannya tidak menerimanya. */
+    public static final int EV_WEATHER = EV | 0x010D;
 
     // 0x82xx — barang & perlengkapan
     /** {@code u8 slot} + blok barang */

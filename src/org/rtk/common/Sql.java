@@ -120,6 +120,23 @@ public final class Sql {
     }
 
     /** Single string column of the first row; null when absent or on error. */
+    /**
+     * Satu nilai pecahan dari kolom pertama baris pertama; null bila tidak
+     * ada baris <b>atau</b> nilainya SQL NULL.
+     *
+     * <p>Pembedaan itu penting untuk alasan yang sama dengan
+     * {@link #queryInt}: agregat pada himpunan kosong menghasilkan satu
+     * baris berisi NULL, bukan nol baris (Peringatan #44).</p>
+     */
+    public Double queryDouble(String sql, Object... params) {
+        Object[] row = queryRow(sql, 1, params);
+        if (row == null || row[0] == null) {
+            return null;
+        }
+        return row[0] instanceof Number n ? n.doubleValue()
+                : Double.parseDouble(row[0].toString());
+    }
+
     public String queryString(String sql, Object... params) {
         try (Connection c = getConnection();
              PreparedStatement st = prepare(c, sql, params);

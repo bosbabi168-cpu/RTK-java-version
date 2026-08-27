@@ -866,4 +866,24 @@ public final class Rtk2ClientView implements ClientView {
         }
         kirim(sd, w);
     }
+
+    @Override
+    public void mapTilesChanged(User sd) {
+        // RTK2 tidak mengirim petak peta lewat kabel sama sekali: kliennya
+        // memegang berkas `.map` yang sama dengan server. Yang perlu ia tahu
+        // hanyalah PETAK MANA yang berubah — dan itu sudah disampaikan
+        // EV_SELF_MAP saat petanya diganti, atau tidak berubah sama sekali
+        // untuk peta biasa. Sampai editor peta (Trek B2) menentukan
+        // bentuknya, cukup segarkan pandangannya.
+        playerViewRefreshed(sd);
+    }
+
+    @Override
+    public void weatherChanged(User sd, int weather) {
+        if (!org.rtk.common.mmo.SettingFlags.on(sd.status.settingFlags,
+                org.rtk.common.mmo.SettingFlags.WEATHER)) {
+            return;
+        }
+        kirim(sd, new Wire.Writer(Wire.EV_WEATHER).u8(weather));
+    }
 }

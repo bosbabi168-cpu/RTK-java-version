@@ -117,6 +117,77 @@ public final class MapFile {
         return xs * ys;
     }
 
+    /**
+     * Salinan yang boleh diubah.
+     *
+     * <p>⚠️ <b>Wajib dipakai sebelum peta diubah saat berjalan.</b>
+     * {@code MapRegistry} men-cache satu {@code MapFile} per <b>nama
+     * berkas</b>, dan 9.850 peta hanya menunjuk 2.919 berkas — jadi menulis
+     * langsung ke geometri akan mengubah petak itu di <b>setiap</b> peta
+     * yang memakai berkas yang sama. Di C tidak begitu: tiap peta
+     * {@code CALLOC} lariknya sendiri (Peringatan #74).</p>
+     *
+     * <p>Salinannya dibuat hanya saat peta pertama kali diubah, jadi 2.919
+     * berkas tetap dibaca sekali dan hampir semuanya tetap dibagi.</p>
+     */
+    public MapFile mutableCopy() {
+        return new MapFile(name, xs, ys,
+                tile.clone(), pass.clone(), obj.clone());
+    }
+
+    /** setTile(): tulis satu petak lantai. Diam saja bila di luar peta. */
+    public void setTile(int x, int y, int value) {
+        if (inBounds(x, y)) {
+            tile[x + y * xs] = (short) value;
+        }
+    }
+
+    /** setPass(): tulis penghalang statis satu petak. */
+    public void setPass(int x, int y, int value) {
+        if (inBounds(x, y)) {
+            pass[x + y * xs] = (short) value;
+        }
+    }
+
+    /** setObject(): tulis lapisan objek satu petak. */
+    public void setObj(int x, int y, int value) {
+        if (inBounds(x, y)) {
+            obj[x + y * xs] = (short) value;
+        }
+    }
+
+    private boolean inBounds(int x, int y) {
+        return x >= 0 && y >= 0 && x < xs && y < ys;
+    }
+
+    /**
+     * saveMap(): tulis kembali ke format `.map`.
+     *
+     * <p>Tata letaknya persis pembacanya: {@code u16 xs}, {@code u16 ys},
+     * lalu {@code tile}/{@code pass}/{@code obj} per petak — semuanya
+     * <b>big-endian</b>, seperti berkas aslinya.</p>
+     */
+    public byte[] toBytes() {
+        byte[] out = new byte[HEADER_BYTES + xs * ys * 6];
+        out[0] = (byte) (xs >> 8);
+        out[1] = (byte) xs;
+        out[2] = (byte) (ys >> 8);
+        out[3] = (byte) ys;
+        int pos = HEADER_BYTES;
+        for (int i = 0; i < xs * ys; i++) {
+            pos = tulis(out, pos, tile[i]);
+            pos = tulis(out, pos, pass[i]);
+            pos = tulis(out, pos, obj[i]);
+        }
+        return out;
+    }
+
+    private static int tulis(byte[] out, int pos, short v) {
+        out[pos] = (byte) (v >> 8);
+        out[pos + 1] = (byte) v;
+        return pos + 2;
+    }
+
     private int index(int x, int y) {
         if (x < 0 || y < 0 || x >= xs || y >= ys) {
             throw new IndexOutOfBoundsException("(" + x + "," + y + ") di luar peta " + xs + "x" + ys);

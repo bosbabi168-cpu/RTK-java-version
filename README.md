@@ -764,7 +764,7 @@ Titik berangkat untuk sesi berikutnya.
 | Gerbang regresi | 6/6 hijau (`cliftest` **572**, `dbtest` **187** assertion) |
 | `logs/map.log` server hidup | **0 ERROR / 0 WARN** |
 | Ketiga server | jalan berdampingan (`./run.sh all`), tautan map↔char stabil |
-| Binding skrip | method **1** (`testPacket`, sengaja); ⚠️ global **59 masih stub** |
+| Binding skrip | method **1** (`testPacket`, sengaja); global **0** celah |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
 | **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
@@ -889,6 +889,37 @@ Temuan lain: **geometri peta dibagi antar peta** yang memakai berkas sama
 (9.850 peta → 2.919 berkas), jadi `setTile` yang menulis langsung akan
 mengubah petak itu di **setiap** peta sejenis. Butuh salin-saat-ditulis, dan
 tidak ada uji yang akan menangkapnya kalau terlewat.
+
+### 59 binding global terakhir — dan sebuah alat uji yang berbohong
+
+**Semua celah binding tertutup** (27 Agustus 2026). Yang tersisa: satu
+method (`testPacket`, sengaja) dan empat nama Kan yang tidak ada di server
+aslinya sama sekali.
+
+Yang terbesar adalah **peta yang bisa diubah saat berjalan** —
+`setTile` (530x), `setObject` (362x), `setPass` (88x), `setMap`, `saveMap`.
+Isinya tiga baris masing-masing di C, dan 980 titik panggilan tergantung
+padanya. Sejak sekarang `Accepted/Tools/map_editor.lua` — editor peta dalam
+permainan yang sudah lama ada di konten — benar-benar berfungsi.
+
+⚠️ **Perangkap yang ditemukan lebih dulu oleh audit:** geometri peta
+**dibagi** antar peta yang memakai berkas sama (9.850 peta → 2.919 berkas).
+Menulis langsung akan mengubah petak itu di setiap peta sejenis, dan tidak
+ada uji yang akan menangkapnya karena tiap peta tetap "benar" bila
+diperiksa sendiri-sendiri. Sekarang ada salin-saat-ditulis, dengan uji yang
+membuktikan peta kembarannya tidak ikut berubah.
+
+⚠️ **Dan sebuah temuan yang lebih besar dari bindingnya sendiri:** audit SQL
+`dbtest` **tidak pernah memvalidasi nama tabel maupun kolom**. Selama tiga
+hari README dan CLAUDE.md menulis bahwa pernyataannya "di-prepare ke server
+sehingga divalidasi MySQL sendiri" — padahal `prepareStatement()` +
+`getParameterMetaData()` dikerjakan **di sisi klien**, dan bahkan
+`SELECT * FROM TabelNgawur` lolos.
+
+Ketahuan karena sebuah kueri baru memakai kolom `RegKey` (nama aslinya
+`RegIdentifier`), lolos audit, lalu gagal saat benar-benar dijalankan.
+Auditnya kini memakai `EXPLAIN`, dan perbaikan itu **langsung menemukan dua
+kolom salah** di binding yang ditulis pada hari yang sama.
 
 Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
 **stub** — `talk` (698x), `sendAction` (905x), `playSound` (632x),
