@@ -1,6 +1,5 @@
 package org.rtk.map.proto;
 
-import org.rtk.common.Session;
 
 /**
  * Format kabel <b>RTK2</b> arah masuk — rancangan sendiri, bukan RetroTK.
@@ -223,6 +222,28 @@ public final class Wire {
     // ------------------------------------------------------------------
 
     /**
+     * Buffer masuk, dilihat sebagai byte saja.
+     *
+     * <p>⚠️ Kelas ini <b>tidak boleh</b> bergantung pada kelas jaringan sisi
+     * mana pun. Ia format kabel, dan formatnya dibaca dua program yang
+     * berbeda: server memakai {@code common.Session}, klien memakai buffer
+     * soketnya sendiri. Kopling ke salah satunya membuat berkas ini mustahil
+     * disalin utuh — dan salinan utuh itulah yang dijaga gerbang
+     * penyelaras.</p>
+     *
+     * <p>Sengaja tanpa penyalinan: pemanggil menunjuk ke buffernya sendiri,
+     * sehingga membaca satu bingkai tidak mengalokasikan apa pun.</p>
+     */
+    public interface Bytes {
+
+        /** Byte tak bertanda pada posisi {@code pos} dari awal bingkai. */
+        int u8(int pos);
+
+        /** Banyak byte yang tersedia mulai dari awal bingkai. */
+        int rest();
+    }
+
+    /**
      * Bingkai yang menunggu di buffer ini milik RetroTK, bukan RTK2.
      *
      * <p>Pembedanya <b>tanpa keadaan</b> dan itu disengaja: paket RetroTK
@@ -232,8 +253,8 @@ public final class Wire {
      * perlu tabel "sesi ini protokol apa" yang harus dibersihkan saat
      * pemain terputus, dan tidak ada keadaan yang bisa jadi basi.</p>
      */
-    public static boolean isRetroTk(Session s) {
-        return s.rfifoRest() > 0 && s.rfifoB(0) == 0xAA;
+    public static boolean isRetroTk(Bytes b) {
+        return b.rest() > 0 && b.u8(0) == 0xAA;
     }
 
     /**
@@ -241,11 +262,11 @@ public final class Wire {
      *
      * @throws Malformed bila ladang panjangnya tidak masuk akal
      */
-    public static int frameLength(Session s) {
-        if (s.rfifoRest() < HEADER) {
+    public static int frameLength(Bytes b) {
+        if (b.rest() < HEADER) {
             return 0;
         }
-        int len = s.rfifoWBE(0);
+        int len = (b.u8(0) << 8) | b.u8(1);
         if (len < 2) {
             throw new Malformed("panjang bingkai " + len + " lebih kecil dari opcode");
         }
@@ -253,12 +274,12 @@ public final class Wire {
         if (total > MAX_FRAME) {
             throw new Malformed("bingkai " + total + " byte melewati batas " + MAX_FRAME);
         }
-        return s.rfifoRest() < total ? 0 : total;
+        return b.rest() < total ? 0 : total;
     }
 
     /** Opcode bingkai yang sudah dipastikan lengkap oleh {@link #frameLength}. */
-    public static int opcode(Session s) {
-        return s.rfifoWBE(2);
+    public static int opcode(Bytes b) {
+        return (b.u8(2) << 8) | b.u8(3);
     }
 
     /**
@@ -286,13 +307,13 @@ public final class Wire {
      */
     public static final class Reader {
 
-        private final Session s;
+        private final Bytes b;
         private int pos;
         private final int end;
 
         /** Mulai membaca tepat setelah opcode. */
-        public Reader(Session s, int frameLength) {
-            this.s = s;
+        public Reader(Bytes b, int frameLength) {
+            this.b = b;
             this.pos = HEADER;
             this.end = frameLength;
         }
@@ -306,19 +327,22 @@ public final class Wire {
 
         public int u8() {
             butuh(1);
-            return s.rfifoB(pos++);
+            return b.u8(pos++);
         }
 
         public int u16() {
             butuh(2);
-            int v = s.rfifoWBE(pos);
+            int v = (b.u8(pos) << 8) | b.u8(pos + 1);
             pos += 2;
             return v;
         }
 
         public long u32() {
             butuh(4);
-            long v = s.rfifoLBE(pos) & 0xFFFFFFFFL;
+            long v = 0;
+            for (int i = 0; i < 4; i++) {
+                v = (v << 8) | b.u8(pos + i);
+            }
             pos += 4;
             return v;
         }
@@ -335,10 +359,12 @@ public final class Wire {
          */
         public long u64() {
             butuh(8);
-            long hi = s.rfifoLBE(pos) & 0xFFFFFFFFL;
-            long lo = s.rfifoLBE(pos + 4) & 0xFFFFFFFFL;
+            long v = 0;
+            for (int i = 0; i < 8; i++) {
+                v = (v << 8) | b.u8(pos + i);
+            }
             pos += 8;
-            return (hi << 32) | lo;
+            return v;
         }
 
         /** {@code u16 panjang} + byte UTF-8. */
@@ -348,9 +374,12 @@ public final class Wire {
                 throw new Malformed("string " + len + " byte melewati batas " + MAX_STRING);
             }
             butuh(len);
-            byte[] b = s.rfifoBytes(pos, len);
+            byte[] isi = new byte[len];
+            for (int i = 0; i < len; i++) {
+                isi[i] = (byte) b.u8(pos + i);
+            }
             pos += len;
-            return new String(b, java.nio.charset.StandardCharsets.UTF_8);
+            return new String(isi, java.nio.charset.StandardCharsets.UTF_8);
         }
 
         /** Byte yang belum terbaca di bingkai ini. */

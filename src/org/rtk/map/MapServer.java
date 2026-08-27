@@ -411,14 +411,15 @@ public final class MapServer {
         if (s.rfifoRest() < 1) {
             return 0;
         }
-        return org.rtk.map.proto.Wire.isRetroTk(s) ? retroTkParse(fd, s) : rtk2Parse(fd, s);
+        return org.rtk.map.proto.Wire.isRetroTk(org.rtk.map.proto.Inbound.bytesOf(s))
+                ? retroTkParse(fd, s) : rtk2Parse(fd, s);
     }
 
     /** Satu bingkai RTK2. */
     private static int rtk2Parse(int fd, Session s) {
         int len;
         try {
-            len = org.rtk.map.proto.Wire.frameLength(s);
+            len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
             if (len == 0) {
                 return 0;   // bingkainya belum lengkap
             }

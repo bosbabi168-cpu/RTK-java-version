@@ -61,6 +61,23 @@ EPF — tile ids are passed through as plain numbers. That decoder also changes
 role: once the original artwork exists, it becomes a one-shot conversion tool.
 
 
+**Track B has started** (27 August 2026, evening). A seventh gate,
+`./run.sh wiresync`, keeps the two copies of `Wire.java` identical: green
+when in sync, red with a line number on drift, and skipping itself when the
+client repository is not on the same machine.
+
+⚠️ The client repository immediately exposed a coupling that had been
+invisible: `Wire.java` imported the server's `common.Session`. A file that
+must be copied whole cannot drag one side's networking layer along, so it now
+reads through a `Wire.Bytes` interface (two methods, no copying) with each
+side supplying its own adapter.
+
+In the client repository: `DatArchive` (the `.dat` container) and
+`SObjTable` — 19,551 static objects, whose sweep **ends exactly on the last
+byte**, with a highest frame id of 53,697 against 53,698 frames across all
+`tilec*` archives. Two numbers that lock together, rather than one entry that
+happens to look right.
+
 ## Requirements
 
 - **JDK 25** (the project's language level). That is for the development

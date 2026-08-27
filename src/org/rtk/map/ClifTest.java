@@ -3852,16 +3852,16 @@ public final class ClifTest {
         org.rtk.common.Session retro = MapServer.net.openTestSession(900);
         retro.feedTest(new byte[] {(byte) 0xAA, 0x00, 0x04, 0x06});
         check("proto: paket 0xAA dikenali sebagai RetroTK",
-                org.rtk.map.proto.Wire.isRetroTk(retro));
+                org.rtk.map.proto.Wire.isRetroTk(org.rtk.map.proto.Inbound.bytesOf(retro)));
 
         org.rtk.common.Session s = MapServer.net.openTestSession(901);
         s.feedTest(new Bingkai(org.rtk.map.proto.Wire.OP_PING).bytes());
         check("proto: bingkai RTK2 tidak tertukar dengan RetroTK",
-                !org.rtk.map.proto.Wire.isRetroTk(s));
+                !org.rtk.map.proto.Wire.isRetroTk(org.rtk.map.proto.Inbound.bytesOf(s)));
         check("proto: bingkai kosong panjangnya 4 byte",
-                org.rtk.map.proto.Wire.frameLength(s) == 4);
+                org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s)) == 4);
         check("proto: opcode terbaca dari ladangnya",
-                org.rtk.map.proto.Wire.opcode(s) == org.rtk.map.proto.Wire.OP_PING);
+                org.rtk.map.proto.Wire.opcode(org.rtk.map.proto.Inbound.bytesOf(s)) == org.rtk.map.proto.Wire.OP_PING);
 
         // Batas MAX_FRAME ikut menjaga pemilihan protokol: selama ia di bawah
         // 43.520, byte tinggi ladang panjang tidak akan pernah 0xAA.
@@ -3873,10 +3873,10 @@ public final class ClifTest {
         byte[] utuh = new Bingkai(org.rtk.map.proto.Wire.OP_CLICK).u64(42).bytes();
         pecah.feedTest(java.util.Arrays.copyOf(utuh, 5));
         check("proto: bingkai separuh dijawab 0, bukan dibaca",
-                org.rtk.map.proto.Wire.frameLength(pecah) == 0);
+                org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(pecah)) == 0);
         pecah.feedTest(java.util.Arrays.copyOfRange(utuh, 5, utuh.length));
         check("proto: setelah sisanya tiba, panjangnya utuh",
-                org.rtk.map.proto.Wire.frameLength(pecah) == utuh.length);
+                org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(pecah)) == utuh.length);
 
         // ---- bingkai rusak ----
         check("proto: ladang panjang < 2 ditolak",
@@ -4056,7 +4056,7 @@ public final class ClifTest {
     private static boolean kirim(Bingkai b, User sd, Rekam rekam) {
         org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
         s.feedTest(b.bytes());
-        int len = org.rtk.map.proto.Wire.frameLength(s);
+        int len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
         if (len == 0) {
             return false;
         }
@@ -4068,7 +4068,7 @@ public final class ClifTest {
                                          org.rtk.map.proto.Inbound.Handshake h) {
         org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
         s.feedTest(bingkai);
-        int len = org.rtk.map.proto.Wire.frameLength(s);
+        int len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
         org.rtk.map.proto.Inbound.dispatch(s.fd, s, null, len, rekam,
                 h != null ? h : (a, c, n) -> true);
     }
@@ -4077,7 +4077,7 @@ public final class ClifTest {
         org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
         s.feedTest(bingkai);
         try {
-            org.rtk.map.proto.Wire.frameLength(s);
+            org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
             return false;
         } catch (org.rtk.map.proto.Wire.Malformed e) {
             return true;
@@ -4088,7 +4088,7 @@ public final class ClifTest {
         org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
         s.feedTest(bingkai);
         try {
-            int len = org.rtk.map.proto.Wire.frameLength(s);
+            int len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
             org.rtk.map.proto.Inbound.dispatch(s.fd, s, sd, len, new Rekam(),
                     (a, c, n) -> true);
             return false;
@@ -4105,7 +4105,7 @@ public final class ClifTest {
         org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
         s.feedTest(bingkai);
         try {
-            int len = org.rtk.map.proto.Wire.frameLength(s);
+            int len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
             org.rtk.map.proto.Inbound.dispatch(s.fd, s, null, len, new Rekam(),
                     (a, c, n) -> true);
             return false;
@@ -4751,7 +4751,7 @@ public final class ClifTest {
     }
 
     private static Wire.Reader baca(Keluar k) {
-        return new Wire.Reader(k.sesi(), k.panjang());
+        return new Wire.Reader(org.rtk.map.proto.Inbound.bytesOf(k.sesi()), k.panjang());
     }
 
     /**

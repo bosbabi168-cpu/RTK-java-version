@@ -214,7 +214,10 @@ proses build di server.
   **aksi pemain**, **perlengkapan & pakai barang**, **arah keluar RTK2**,
   **binding dunia** — **759 assertion**),
   `./run.sh dbtest` (lapisan database ke MySQL hidup — 232 assertion;
-  butuh MySQL, lihat "Menyiapkan MySQL lokal").
+  butuh MySQL, lihat "Menyiapkan MySQL lokal"),
+  `./run.sh wiresync` (**gerbang ketujuh**, 27 Agustus 2026 — membandingkan
+  `Wire.java` dengan salinannya di repo klien; melewati diri sendiri bila
+  repo itu tidak ada, lihat Peringatan #82 dan #83).
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
   statis 907 skrip Lua. Lihat "Audit skrip Lua" di bawah.
 
@@ -226,6 +229,7 @@ proses build di server.
 ./run.sh worldtest    # GERBANG REGRESI — dunia peta + pemain
 ./run.sh cliftest     # GERBANG REGRESI — paket klien + gerakan + portal
 ./run.sh dbtest       # GERBANG REGRESI — database (butuh MySQL hidup)
+./run.sh wiresync     # GERBANG REGRESI — Wire.java sinkron dengan repo klien
 ./run.sh luaaudit     # alat bantu — pemeriksa statis skrip Lua
 ```
 
@@ -1455,6 +1459,51 @@ byte-identik dengan `rtklua/`.
    dipilih sadar, dengan alasan yang lebih kuat daripada risikonya — jadi
    penjaganya yang harus nyata, bukan niatnya.
 
+82. **`Wire.java` tidak boleh mengimpor apa pun yang khusus satu sisi.**
+   Ia sempat menerima {@code common.Session} langsung, dan itu terlihat wajar
+   selama hanya server yang memakainya. Begitu repo klien berdiri, berkas
+   yang <b>harus disalin utuh</b> ternyata membawa serta seluruh lapisan
+   jaringan server — dan salinan utuh itulah yang dijaga `wiresync`.
+
+   Sekarang ia membaca lewat antarmuka `Wire.Bytes` (dua method: `u8(pos)`
+   dan `rest()`), dan tiap sisi menyediakan adaptornya sendiri —
+   `Inbound.bytesOf(Session)` di server, buffer soket di klien. Tanpa
+   penyalinan, jadi tidak ada biaya runtime.
+
+   **Aturan umumnya:** berkas yang hidup sebagai dua salinan harus bergantung
+   pada bahasa saja. Kopling apa pun ke satu sisi akan memaksa salinannya
+   berbeda, dan salinan yang berbeda adalah drift yang sudah dimulai.
+
+83. **DUA penjaga berbeda untuk `Wire.java`, dan keduanya perlu.** Mudah
+   tertukar:
+
+   | Yang berubah | Penjaganya |
+   |---|---|
+   | struktur Java (nama method, refactor) | `./run.sh wiresync` |
+   | byte di kabel (opcode, ladang, urutan) | naikkan `Wire.VERSION` di **kedua** sisi |
+
+   ⚠️ **Menaikkan `VERSION` untuk refactor Java adalah kesalahan** — bytenya
+   tidak berubah, jadi handshake akan menolak klien yang sebenarnya cocok.
+   Sebaliknya, mengandalkan `wiresync` saja tidak cukup: ia hanya berjalan
+   bila kedua repo ada di mesin yang sama, sementara `VERSION` ikut terkirim
+   ke klien mana pun.
+
+84. **Header `SObj.tbl` punya dua byte yang bukan bagian entri.** Setelah
+   `u32 jumlahEntri` ada `u16` bernilai 1 (mungkin versi tabel), lalu entri
+   pertama. Melewatkannya menggeser seluruh sapuan dua byte, dan gejalanya
+   entri pertama "menyebut 75 frame".
+
+   Yang menangkapnya bukan mata, melainkan **penjaga kewarasan**: batas 12
+   frame per objek (angka tertinggi di data asli) membuat tata letak yang
+   melenceng gagal di entri kedua, bukan setelah gambarnya terlihat aneh.
+   Pasang penjaga seperti itu di tiap pembaca format biner.
+
+   ⚠️ Yang **tidak** terverifikasi: arah tumpukan framenya. Dari 2.217 objek
+   yang lebih tinggi dari satu petak di 25 peta sungguhan, 1.061 punya kolom
+   kosong di atasnya tetapi 1.156 tidak — jadi dugaan "satu id menutupi satu
+   kolom ke atas" **tidak terkonfirmasi**. Itu pertanyaan penggambaran, dan
+   hanya bisa dijawab saat gambarnya muncul di layar.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -2063,7 +2112,7 @@ NPC **dan** mob.
 | Lapisan protokol | `ClientView` **53 peristiwa**, `ClientCommands` **22 perintah** |
 | **Protokol RTK2** | **dua arah** — 24 opcode masuk, 53 peristiwa keluar |
 | Dua protokol berdampingan | `ProtocolRouter`; lihat Peringatan #69 |
-| Gerbang regresi | 6/6 hijau — `cliftest` **759**, `dbtest` **232** assertion |
+| Gerbang regresi | **7/7** hijau — `cliftest` **759**, `dbtest` **232**, plus `wiresync` |
 
 **Sisa stub yang tersisa: 4 nama Kan** (`getKanDonationPoints` dkk.), dan
 keempatnya **tidak terdaftar di `sl.c` sama sekali** — kode mati di konten,
@@ -2081,9 +2130,15 @@ asetnya diganti sendiri — lihat bagian "TREK B: REPO TERPISAH" di atas dan
 Peringatan #81. Rencana rinci beserta format berkas yang sudah dibongkar ada
 di artifact "Dari EPF ke Klien".
 
-**Tugas pertama, sebelum apa pun:** gerbang penyelaras `Wire.java` antar
-repo. Ia yang membuat keputusan dua repo aman, dan menulisnya setelah
-kliennya jalan berarti menulisnya setelah drift pertama terjadi.
+~~**Tugas pertama:** gerbang penyelaras `Wire.java`.~~ **SELESAI 27 Agustus
+2026 malam** — `./run.sh wiresync`, gerbang ketujuh. Terbukti hijau saat
+sinkron, merah dengan nomor baris saat drift disuntikkan, dan melewati diri
+sendiri tanpa repo klien.
+
+**Sudah berjalan di repo klien** (`../RTK-client`, belum di-`git init`):
+`DatArchive` (arsip `.dat`) dan `SObjTable` (19.551 objek statis, sapuan
+habis persis sampai byte terakhir), dengan gerbang `./run.sh assettest`.
+Berikutnya: EPF, PAL, dan TBL.
 
 - **B1. Dekoder EPF** — EPF + PAL → gambar RGB, plus pemetaan id
   `tile`/`obj` ke frame. Prasyarat sisanya. `rtk/SObj.tbl` (18.954 entri)

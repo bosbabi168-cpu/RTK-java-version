@@ -59,6 +59,23 @@ id petak hanya diteruskan sebagai angka. Dekoder itu juga akan berubah peran:
 begitu aset sendiri jadi, ia menjadi alat konversi sekali pakai.
 
 
+**Trek B dimulai** (27 Agustus 2026 malam). Gerbang ketujuh
+`./run.sh wiresync` menjaga kedua salinan `Wire.java` tetap identik: hijau
+saat sinkron, merah dengan nomor baris saat drift, dan melewati diri sendiri
+bila repo klien tidak ada di mesin yang sama.
+
+⚠️ Repo klien langsung menemukan kopling yang selama ini tak terlihat:
+`Wire.java` mengimpor `common.Session` milik server. Sebuah berkas yang harus
+disalin utuh tidak boleh membawa serta lapisan jaringan satu sisi, jadi ia
+kini membaca lewat antarmuka `Wire.Bytes` (dua method, tanpa penyalinan) dan
+tiap sisi menyediakan adaptornya sendiri.
+
+Di repo klien: `DatArchive` (arsip `.dat`) dan `SObjTable` — 19.551 objek
+statis, sapuannya **habis persis sampai byte terakhir**, dan id frame
+tertingginya 53.697 sementara seluruh arsip `tilec*` punya 53.698 frame.
+Dua angka yang saling mengunci, bukan satu entri yang kebetulan terlihat
+benar.
+
 ## Prasyarat
 
 - **JDK 25** (level bahasa project = 25). Untuk mesin pengembangan;

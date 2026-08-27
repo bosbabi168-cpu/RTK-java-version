@@ -49,8 +49,9 @@ public final class Inbound {
      */
     public static void dispatch(int fd, Session s, User sd, int frameLength,
                                 ClientCommands cmd, Handshake handshake) {
-        int op = Wire.opcode(s);
-        Wire.Reader r = new Wire.Reader(s, frameLength);
+        Wire.Bytes b = bytesOf(s);
+        int op = Wire.opcode(b);
+        Wire.Reader r = new Wire.Reader(b, frameLength);
 
         if (sd == null) {
             // Sebelum terautentikasi hanya perkenalan yang dilayani. Berbeda
@@ -130,6 +131,27 @@ public final class Inbound {
             default -> log.debug("[RTK2] opcode 0x{} tidak dikenal (dari {})",
                     String.format("%04X", op), sd.name());
         }
+    }
+
+    /**
+     * Lihat buffer baca sebuah sesi sebagai byte polos.
+     *
+     * <p>Adaptor ini yang menjaga {@code Wire} tetap bebas dari kelas
+     * jaringan mana pun — lihat {@code Wire.Bytes}. Tanpa penyalinan:
+     * pembacaan menembus langsung ke buffer sesinya.</p>
+     */
+    public static Wire.Bytes bytesOf(Session s) {
+        return new Wire.Bytes() {
+            @Override
+            public int u8(int pos) {
+                return s.rfifoB(pos);
+            }
+
+            @Override
+            public int rest() {
+                return s.rfifoRest();
+            }
+        };
     }
 
     private static void hello(int fd, Session s, Wire.Reader r, Handshake handshake) {

@@ -96,7 +96,7 @@ case "${1:-}" in
         sleep 3
         start_one map
         ;;
-    scripttest|maptest|chartest|worldtest|cliftest|dbtest|luaaudit)
+    scripttest|maptest|chartest|worldtest|cliftest|dbtest|luaaudit|wiresync)
         need_jar
         mode="$1"; shift
         exec $JAVA ${JAVA_OPTS:-} -jar "$JAR" "$mode" "$@"
