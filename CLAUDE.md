@@ -1519,50 +1519,79 @@ NPC **dan** mob.
 
 ---
 
-#### ROADMAP — 27 Agustus 2026
+#### ROADMAP — 27 Agustus 2026 (diperiksa ulang)
 
-> Disusun ulang setelah audit di atas. Urutannya mengikuti **apa yang
-> menghambat**, bukan jumlah pemakaian, karena binding sudah hampir habis.
+> Diverifikasi ke kode, bukan ke catatan. Angka di bawah dari
+> `./run.sh luaaudit` dan pembacaan sumber pada tanggal itu.
 
-~~**1. Rancang protokol baru — arah MASUK.**~~ **LAPISANNYA BERDIRI
-27 Agustus 2026.** `ClientCommands` + `MapCommands` sudah ada, dan keempat
-`Clif.parse*` kini pembaca byte murni. Lihat Peringatan #52.
+**Yang SUDAH selesai** (jangan diulang):
 
-**Sisa butir ini** (kerjakan satu helper per langkah, jangan sekaligus):
-lima helper yang isinya **logika** masih tinggal di `Clif` —
+| | Bukti |
+|---|---|
+| Binding skrip | **3** dari ±258 method tersisa; global **0** |
+| Trek A (A1–A5) | selesai fungsinya; dua sisa disengaja (lihat bawah) |
+| Trek C1, C4 | registry skrip; kiriman, surat, hadiah, papan pesan |
+| Subsistem besar | BL_ITEM, durasi & aether, BOD, pertukaran barang |
+| Lapisan protokol **keluar** | `ClientView`, **43 peristiwa** |
+| Lapisan protokol **masuk** | `ClientCommands` + `MapCommands`, **9 perintah** |
+| Gerbang regresi | 6/6 hijau — `cliftest` 572, `dbtest` 187 assertion |
+
+---
+
+**1. Selesaikan pemisahan lapisan masuk.** Antarmukanya sudah berdiri, tapi
+**lima helper yang isinya logika masih tinggal di `Clif`**:
 `blocksMovement`, `updateCamera`, `fireWalkScripts`, `checkWarpTile`,
-`clickNpc`. Daftarnya ada di javadoc `MapCommands`.
+`clickNpc`. Pindahkan ke `MapCommands` **satu per langkah** — daftarnya di
+javadoc kelas itu. Kecil, dan membereskan batas yang sudah ditarik.
 
-~~**2. Subsistem pertukaran barang antar pemain.**~~ **SELESAI
-27 Agustus 2026** (`map/Exchange.java`). Menutup `getExchangeItem`, dan
-jadi pemakai pertama `ClientCommands`. Lihat Peringatan #53.
+**2. Pembaca paket masuk untuk aksi yang logikanya SUDAH ada.** Ini yang
+paling banyak hasilnya per usaha, karena logikanya tinggal disambungkan:
 
-**Sisa butir ini:** pembaca paket `0x4A`/`0x29`/`0x2A` yang memanggilnya —
-menunggu keputusan protokol masuk (butir 1).
+| Aksi | Logika | Yang kurang |
+|---|---|---|
+| Pertukaran barang | ✅ `map/Exchange` | pembaca `0x4A`/`0x29`/`0x2A` |
+| Pungut & jatuhkan barang | ✅ `map/FloorItemRegistry` | pembaca `0x07`/`0x08`/`0x24` |
+| Menyerang | ✅ `map/Combat.swingAt` | pembaca `0x13` |
+| Bicara & berbisik | ✅ `Clif.scriptSay` | pembaca `0x0E`/`0x19` |
 
-**3. Pasang/lepas perlengkapan dan pakai barang.** Menutup `takeOff` dan
-`throwItem`, dua dari empat binding terakhir. Butuh jalur masuk (butir 1)
-atau setidaknya method yang bisa dipanggil skrip langsung.
+⚠️ Tapi putuskan dulu: **menulis pembaca RetroTK, atau langsung merancang
+protokol sendiri?** Format kabelnya akan diganti (lihat bagian teratas),
+jadi pembaca RetroTK adalah kerja yang umurnya pendek — kecuali memang
+dipakai untuk menguji dengan klien asli (butir 4).
 
-**4. Uji dengan pemain sungguhan online.** Tik durasi mantra dan seluruh
-gerak mob **belum pernah berjalan** — keduanya hanya menyala untuk pemain
-yang online, dan tik AI mob melewati peta ber-`map.users == 0`. Peringatan
-#26 lahir persis dari kait timer yang hanya menyala saat server hidup.
+**3. Pasang/lepas perlengkapan dan pakai barang.** Menutup dua dari tiga
+binding terakhir (`takeOff`, `throwItem`). Logikanya belum ada, jadi ini
+pekerjaan baru, bukan penyambungan.
 
-**5. Trek B — dekoder EPF, editor, klien libGDX.** Belum dimulai, dan ini
-jalur menuju arah final project (klien sendiri). B1 dekoder EPF prasyarat
-sisanya; `rtk/SObj.tbl` (18.954 entri) masih di RTK-Server, belum disalin.
+**4. Uji dengan pemain sungguhan online.** Tik durasi mantra, seluruh gerak
+mob, dan sekarang pertukaran barang **belum pernah berjalan** — semuanya
+hanya menyala untuk pemain yang online. Peringatan #26 lahir persis dari
+kait timer yang hanya menyala saat server hidup.
 
-**6. C2 — empat berkas meta hilang.** Kecil tapi kasat mata: tooltip barang
-tidak muncul tanpa itu.
+**5. Trek B — dekoder EPF, editor, klien libGDX.** **Belum dimulai sama
+sekali** (`src/org/rtk/` hanya berisi charserver, common, login, map). Ini
+jalur menuju arah final project. B1 dekoder EPF prasyarat sisanya;
+`rtk/SObj.tbl` (18.954 entri) masih di RTK-Server, belum disalin.
 
-**7. C3 — warp antar map server.** Butuh dua map server berjalan; nilainya
-baru terasa kalau memang mau menjalankan lebih dari satu.
+**6. C2 — empat berkas meta hilang.** `meta/` masih hanya berisi
+`RidableAnimals`; `login.conf` meminta lima. Sebab tooltip barang hilang.
 
-**8. Terjemahan Indonesia — ~3.800 titik dialog.** Kata kunci `speech`
-sudah selesai; dialognya belum. Baca `luascript/GLOSARIUM.md` dulu.
+**7. C3 — warp antar map server.** Masih ditolak di `Clif.java`.
 
-**9. Empat method terakhir di `sl.c`** — lihat rinciannya di bawah.
+**8. Terjemahan Indonesia** — ~3.800 titik dialog, 903 di antaranya di 56
+berkas. Kata kunci `speech` sudah selesai.
+
+**9. `testPacket`** — satu-satunya binding yang **sengaja tidak diport**.
+
+---
+
+**Dua sisa Trek A yang disengaja** (bukan pekerjaan tertunda):
+`Clif.sendMyStatus()` TAHAP 1 (klan, gelar, pasangan, TNL kosong) dan
+penyaring `clif_isignore`. Keduanya menunggu protokol baru.
+
+**Satu hal yang ditandai belum lengkap:** `ClassDb.pathName()` mengembalikan
+string kosong — di C namanya diambil dari salah satu dari enam belas kolom
+`PthMark0..15` menurut tanda pemain.
 
 ---
 
