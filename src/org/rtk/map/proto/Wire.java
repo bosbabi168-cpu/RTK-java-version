@@ -358,4 +358,231 @@ public final class Wire {
             return end - pos;
         }
     }
+
+    // ==================================================================
+    // Arah KELUAR — peristiwa server -> klien
+    // ==================================================================
+
+    /**
+     * <h2>Penomorannya terpisah, dan itu disengaja</h2>
+     *
+     * <p>Peristiwa keluar memakai rentang {@code 0x8xxx}, perintah masuk
+     * {@code 0x0xxx}. Keduanya jalur yang berbeda sehingga sebenarnya boleh
+     * bertabrakan — tetapi satu baris log yang menyebut {@code 0x8501}
+     * langsung terbaca arahnya tanpa perlu tahu dari mana ia dicatat. Itu
+     * saja alasannya, dan itu cukup.</p>
+     *
+     * <h2>Grafik dikirim MENTAH</h2>
+     *
+     * <p>⚠️ RetroTK menambahkan <b>32768</b> pada grafik mob dan NPC,
+     * <b>49152</b> pada ikon kustom, dan mengirim ikon barang biasa tanpa
+     * penambah sama sekali (Peringatan #34) — tiga aturan untuk satu ladang,
+     * dan menyeragamkannya adalah kesalahan yang wajar tapi tetap salah.</p>
+     *
+     * <p>RTK2 mengirim nilainya <b>apa adanya</b> beserta {@code kind}
+     * bendanya. Kliennya yang memutuskan dari kumpulan grafik mana ia
+     * mengambil gambar — di sanalah pengetahuan itu memang tinggal.</p>
+     */
+    private static final int EV = 0x8000;
+
+    // 0x81xx — pemain itu sendiri
+    /** {@code u64 id, str nama, u8 sex, u8 side} */
+    public static final int EV_SELF_IDENTITY = EV | 0x0100;
+    /** {@code u16 m, str nama, u16 xs, u16 ys, u8 cahaya, u16 bendera} */
+    public static final int EV_SELF_MAP = EV | 0x0101;
+    /** {@code u16 x, u16 y, u8 side} */
+    public static final int EV_SELF_POSITION = EV | 0x0102;
+    /** {@code u16 x, u16 y} — geser kamera saja, tanpa berpindah. */
+    public static final int EV_SELF_CAMERA = EV | 0x0103;
+    /** {@code u32 bendera} + blok nilai; lihat {@code Rtk2ClientView}. */
+    public static final int EV_SELF_STATUS = EV | 0x0104;
+    /** {@code u8 kritis, u8 persen, u32 kerusakan} */
+    public static final int EV_SELF_HEALTH = EV | 0x0105;
+    /** Tanpa muatan — gambar ulang seluruh pandangan. */
+    public static final int EV_SELF_REFRESH = EV | 0x0106;
+    /** {@code u8 terkunci} */
+    public static final int EV_SELF_MOVE_LOCK = EV | 0x0107;
+    /** {@code u16 x, u16 y, u8 side} — langkah ditolak, kembali ke sini. */
+    public static final int EV_SELF_STEP_REJECTED = EV | 0x0108;
+    /** {@code u8 arah, u16 dariX, u16 dariY} */
+    public static final int EV_SELF_STEPPED = EV | 0x0109;
+    /** {@code u8 ragam, u64 detik} */
+    public static final int EV_SELF_TIMER = EV | 0x010A;
+    /** {@code u16 idMantra, u32 detik, str namaPerapal} */
+    public static final int EV_SELF_DURATION = EV | 0x010B;
+    /** {@code u16 idMantra, u32 detik} */
+    public static final int EV_SELF_AETHER = EV | 0x010C;
+
+    // 0x82xx — barang & perlengkapan
+    /** {@code u8 slot} + blok barang */
+    public static final int EV_INV_SLOT = EV | 0x0200;
+    /** {@code u8 slot, u8 alasan} */
+    public static final int EV_INV_SLOT_CLEARED = EV | 0x0201;
+    /** {@code u8 slot} + blok barang */
+    public static final int EV_EQUIP_SLOT = EV | 0x0202;
+    /** {@code u8 slot} */
+    public static final int EV_EQUIP_SLOT_CLEARED = EV | 0x0203;
+    /** {@code u8 slot} */
+    public static final int EV_SPELL_REMOVED = EV | 0x0204;
+
+    // 0x83xx — teks
+    /** {@code u8 ragam, u64 idPembicara, str teks} */
+    public static final int EV_CHAT = EV | 0x0300;
+    /** {@code u8 ragam, str teks} */
+    public static final int EV_MESSAGE = EV | 0x0301;
+    /** {@code str teks} */
+    public static final int EV_POPUP = EV | 0x0302;
+    /** {@code str teks} — tulisan besar di tengah layar. */
+    public static final int EV_GUI_TEXT = EV | 0x0303;
+    /** {@code str teks, u16 lebar, u16 tinggi} */
+    public static final int EV_PAPER = EV | 0x0304;
+    /** {@code u8 ragam, str url} */
+    public static final int EV_URL = EV | 0x0305;
+    /** {@code u64 id, u8 ragam, str teks} — benda apa pun berbicara. */
+    public static final int EV_OBJECT_SPOKE = EV | 0x0306;
+
+    // 0x84xx — pertukaran
+    /** {@code u64 idLawan, str namaLawan} */
+    public static final int EV_EXCHANGE_OPENED = EV | 0x0400;
+    /** {@code u64 idPemberi, u8 urutan} + blok barang */
+    public static final int EV_EXCHANGE_ITEM = EV | 0x0401;
+    /** {@code u64 idPemberi, u64 emas} */
+    public static final int EV_EXCHANGE_GOLD = EV | 0x0402;
+    /** {@code u64 idPenekan, u8 selesai} */
+    public static final int EV_EXCHANGE_STATE = EV | 0x0403;
+
+    // 0x85xx — benda di dunia
+    /** Blok benda — sesuatu mulai terlihat. */
+    public static final int EV_OBJECT_APPEARED = EV | 0x0500;
+    /** {@code u64 id, u16 dariX, u16 dariY, u16 keX, u16 keY, u8 side} */
+    public static final int EV_OBJECT_MOVED = EV | 0x0501;
+    /** {@code u64 id} */
+    public static final int EV_OBJECT_REMOVED = EV | 0x0502;
+    /** Blok benda — wujudnya berubah di tempat. */
+    public static final int EV_OBJECT_APPEARANCE = EV | 0x0503;
+    /** {@code u64 id, u8 side} */
+    public static final int EV_OBJECT_SIDE = EV | 0x0504;
+    /** {@code u64 id, u16 animasi, u16 ulang} */
+    public static final int EV_OBJECT_ANIMATION = EV | 0x0505;
+    /** {@code u16 animasi, u16 ulang, u16 x, u16 y} — animasi di petak. */
+    public static final int EV_OBJECT_ANIMATION_AT = EV | 0x0506;
+    /** {@code u64 id, u8 gerakan, u16 waktu, u16 bunyi} */
+    public static final int EV_OBJECT_ACTED = EV | 0x0507;
+    /** {@code u64 idPelempar, u16 keX, u16 keY, u16 ikon, u8 warna, u8 gerakan} */
+    public static final int EV_OBJECT_THROWN = EV | 0x0508;
+    /** {@code u16 bunyi, u16 x, u16 y} */
+    public static final int EV_SOUND = EV | 0x0509;
+
+    // 0x86xx — dialog & antarmuka
+    /**
+     * {@code u8 ragam, u64 idNpc, u16 grafik, u8 warnaGrafik, str pesan,}
+     * {@code u16 n, str[] pilihan, u16 p, u32[] harga}
+     *
+     * <p>Ragam: 0 kotak dialog, 1 menu, 2 isian, 3 daftar beli,
+     * 4 daftar jual, 5 dialog bertingkat.</p>
+     */
+    public static final int EV_DIALOG = EV | 0x0600;
+    /** {@code str judul, u16 n, entri} */
+    public static final int EV_MAP_SELECTION = EV | 0x0601;
+    /** Daftar kiriman papan; lihat {@code Rtk2ClientView}. */
+    public static final int EV_BOARD_LIST = EV | 0x0602;
+    /** {@code u16 n, str[] pertanyaan, u16 m, str[] jawaban} */
+    public static final int EV_BOARD_QUESTIONS = EV | 0x0603;
+    /** {@code u16 n, (str nama, u32 kekuatan)[]} */
+    public static final int EV_POWER_BOARD = EV | 0x0604;
+
+    /**
+     * Penyusun bingkai keluar — pasangan {@link Reader}.
+     *
+     * <p>Menulis ke larik yang tumbuh sendiri, lalu {@link #frame()} mengisi
+     * ladang panjang dan opcodenya. Tidak ada enkripsi, tidak ada indeks
+     * kunci, tidak ada nomor urut: byte yang ditulis persis byte yang
+     * dikirim. Itu yang membuat ekspektasi uji panjang paket bisa dihitung
+     * di kepala lagi — sesuatu yang tidak berlaku di RetroTK
+     * (Peringatan #17).</p>
+     */
+    public static final class Writer {
+
+        private byte[] buf = new byte[64];
+        private int pos = HEADER;
+        private final int op;
+
+        public Writer(int op) {
+            this.op = op;
+        }
+
+        private void muat(int n) {
+            if (pos + n <= buf.length) {
+                return;
+            }
+            int cap = buf.length;
+            while (cap < pos + n) {
+                cap *= 2;
+            }
+            buf = java.util.Arrays.copyOf(buf, cap);
+        }
+
+        public Writer u8(int v) {
+            muat(1);
+            buf[pos++] = (byte) v;
+            return this;
+        }
+
+        public Writer bool(boolean v) {
+            return u8(v ? 1 : 0);
+        }
+
+        public Writer u16(int v) {
+            muat(2);
+            buf[pos++] = (byte) (v >> 8);
+            buf[pos++] = (byte) v;
+            return this;
+        }
+
+        public Writer u32(long v) {
+            muat(4);
+            for (int i = 3; i >= 0; i--) {
+                buf[pos++] = (byte) (v >> (i * 8));
+            }
+            return this;
+        }
+
+        public Writer u64(long v) {
+            muat(8);
+            for (int i = 7; i >= 0; i--) {
+                buf[pos++] = (byte) (v >> (i * 8));
+            }
+            return this;
+        }
+
+        /** {@code u16 panjang} + byte UTF-8; null diperlakukan sebagai kosong. */
+        public Writer str(String v) {
+            byte[] b = (v == null ? "" : v)
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            if (b.length > MAX_STRING) {
+                b = java.util.Arrays.copyOf(b, MAX_STRING);
+            }
+            u16(b.length);
+            muat(b.length);
+            System.arraycopy(b, 0, buf, pos, b.length);
+            pos += b.length;
+            return this;
+        }
+
+        /** Bingkai lengkap, siap dikirim. */
+        public byte[] frame() {
+            int len = pos - 2;
+            byte[] out = java.util.Arrays.copyOf(buf, pos);
+            out[0] = (byte) (len >> 8);
+            out[1] = (byte) len;
+            out[2] = (byte) (op >> 8);
+            out[3] = (byte) op;
+            return out;
+        }
+
+        /** Panjang total bingkai yang akan dihasilkan. */
+        public int length() {
+            return pos;
+        }
+    }
 }

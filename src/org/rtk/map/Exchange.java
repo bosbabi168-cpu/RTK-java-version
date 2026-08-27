@@ -141,6 +141,7 @@ public final class Exchange {
         // pc_delitem(sd, id, amount, 9): barangnya BENAR-BENAR keluar
         it.amount -= amount;
         if (it.amount <= 0) {
+            sd.clearInventorySlot(slot);
             MapServer.clientView.playerInventorySlotCleared(sd, slot, 9);
         } else {
             MapServer.clientView.playerInventorySlotChanged(sd, slot);

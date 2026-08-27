@@ -12,6 +12,7 @@ import org.rtk.common.Crypt;
 import org.rtk.common.mmo.CharStatus;
 import org.rtk.common.mmo.Point;
 import org.rtk.map.data.MapData;
+import org.rtk.map.proto.Wire;
 import org.rtk.map.data.MapFile;
 import org.rtk.map.data.MapRegistry;
 
@@ -223,6 +224,7 @@ public final class ClifTest {
         protoTest(map, sd);
         aksiTest(map, sd);
         perlengkapanTest(map, sd);
+        rtk2Test(map, sd);
     }
 
     /**
@@ -1111,7 +1113,13 @@ public final class ClifTest {
         check("addItem: barang tak dikenal DIBUANG juga",
                 sd.status.inventory.isEmpty() && drain(s).length == 0);
 
-        // --- 0x10 mengosongkan slot di SERVER, bukan cuma di klien ---
+        // --- 0x10: paketnya, dan siapa yang mengosongkan slotnya ---
+        //
+        // ⚠️ Di C paket ini SEKALIGUS mengosongkan slot di server. Sejak
+        // protokol kedua berdiri itu tidak bisa dipertahankan: efek samping
+        // di dalam fungsi paket akan berjalan sekali per protokol, dan yang
+        // kedua membuang slot pemain BERIKUTNYA (Peringatan #61 dan #70).
+        // Pengosongannya sekarang milik sisi logika.
         sd.status.inventory.clear();
         sd.addItemById(7102, 3, -1);
         drain(s);
@@ -1120,7 +1128,10 @@ public final class ClifTest {
         check("delItem: opcode 0x10", (p[3] & 0xFF) == 0x10);
         check("delItem: slot 1-basis di [5]", (p[5] & 0xFF) == 1);
         check("delItem: alasan di [6]", (p[6] & 0xFF) == 6);
-        check("delItem: slotnya ikut kosong di server",
+        check("delItem: paketnya TIDAK lagi menyentuh keadaan server",
+                sd.status.inventory.size() == 1);
+        sd.clearInventorySlot(0);
+        check("delItem: yang mengosongkannya sisi logika",
                 sd.status.inventory.isEmpty());
 
         // --- updateInv menyapu seluruh isi tas ---
@@ -4692,6 +4703,284 @@ public final class ClifTest {
         it.amount = amount;
         it.dura = dura;
         return it;
+    }
+
+
+    // ==================================================================
+    // Arah keluar RTK2 (Rtk2ClientView + ProtocolRouter)
+    // ==================================================================
+
+    /** Satu bingkai RTK2 yang sudah dibongkar, untuk dibaca uji. */
+    private record Keluar(int opcode, org.rtk.common.Session sesi, int panjang) {
+    }
+
+    /**
+     * Pecah isi outbox jadi bingkai RTK2, lalu masukkan ke buffer BACA
+     * sesi bayangan supaya bisa dibaca {@code Wire.Reader} yang sungguhan.
+     *
+     * <p>Memakai pembaca yang sama dengan runtime, bukan pembaca uji
+     * tersendiri — pelajaran Peringatan #10: helper uji yang konsisten
+     * dengan dirinya sendiri bisa lolos tanpa menguji kodenya.</p>
+     */
+    private static java.util.List<Keluar> bingkaiRtk2(org.rtk.common.Session s) {
+        byte[] semua = s.takeOutbound();
+        java.util.List<Keluar> hasil = new java.util.ArrayList<>();
+        int off = 0;
+        while (off + 4 <= semua.length) {
+            int len = ((semua[off] & 0xFF) << 8 | (semua[off + 1] & 0xFF)) + 2;
+            if (off + len > semua.length) {
+                break;
+            }
+            org.rtk.common.Session bayangan = MapServer.net.openTestSession(fdUji++);
+            bayangan.feedTest(java.util.Arrays.copyOfRange(semua, off, off + len));
+            hasil.add(new Keluar(((semua[off + 2] & 0xFF) << 8) | (semua[off + 3] & 0xFF),
+                    bayangan, len));
+            off += len;
+        }
+        return hasil;
+    }
+
+    private static Keluar cariOpcode(java.util.List<Keluar> daftar, int opcode) {
+        for (Keluar k : daftar) {
+            if (k.opcode() == opcode) {
+                return k;
+            }
+        }
+        return null;
+    }
+
+    private static Wire.Reader baca(Keluar k) {
+        return new Wire.Reader(k.sesi(), k.panjang());
+    }
+
+    /**
+     * Lewati blok dasar benda; kembalikan namanya.
+     *
+     * <p>Ada sebagai helper supaya kedua uji blok benda memakai hitungan
+     * ladang yang <b>sama</b>. Menghitungnya ulang di tiap tempat adalah
+     * cara paling mudah membuat uji gagal karena hitungannya sendiri, bukan
+     * karena kodenya — dan itu sudah kejadian saat menulis uji ini.</p>
+     */
+    private static String lewatiDasar(Wire.Reader r) {
+        r.u64();          // id
+        r.u8();           // kind
+        r.u16();          // x
+        r.u16();          // y
+        r.u8();           // side
+        r.u16();          // grafik
+        r.u8();           // warna grafik
+        r.u8();           // bendera
+        return r.str();   // nama
+    }
+
+    /** Lewati bagian wujud karakter sampai tepat sebelum jumlah slot. */
+    private static void lewatiWujud(Wire.Reader r) {
+        r.u8();    // sex
+        r.u8();    // state
+        r.u16();   // penyamaran
+        r.u8();    // warna penyamaran
+        r.u8();    // kecepatan
+        r.u8();    // wajah
+        r.u8();    // rambut
+        r.u8();    // warna rambut
+        r.u8();    // warna wajah
+        r.u8();    // warna kulit
+    }
+
+    private static void rtk2Test(MapData map, User sd) {
+        log.info("=== arah keluar RTK2 ===");
+        var engineLama = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;
+
+        // Dua pemain bersebelahan, protokol berbeda.
+        int px = -1;
+        int py = -1;
+        for (int y = 1; y < map.ys - 1 && px < 0; y++) {
+            for (int x = 1; x < map.xs - 3; x++) {
+                if (map.walkable(x, y) && map.walkable(x + 1, y)
+                        && map.warpAt(x, y) == null && map.warpAt(x + 1, y) == null
+                        && map.objectsAt(x, y).isEmpty()
+                        && map.objectsAt(x + 1, y).isEmpty()) {
+                    px = x;
+                    py = y;
+                    break;
+                }
+            }
+        }
+        check("rtk2: petak uji ditemukan", px > 0);
+
+        CharStatus sa = new CharStatus();
+        sa.id = 0x0A0A0A;
+        sa.name = "Baru";
+        sa.baseHp = 100;
+        sa.lastPos = new Point(map.id, px, py);
+        User a = new User(70, sa);
+        a.rtk2 = true;
+        a.m = map.id;
+        a.x = px;
+        a.y = py;
+
+        CharStatus sb = new CharStatus();
+        sb.id = 0x0B0B0B;
+        sb.name = "Lama";
+        sb.baseHp = 100;
+        sb.lastPos = new Point(map.id, px + 1, py);
+        User b = new User(71, sb);
+        b.rtk2 = false;
+        b.m = map.id;
+        b.x = px + 1;
+        b.y = py;
+
+        org.rtk.common.Session ka = MapServer.net.openTestSession(a.fd);
+        org.rtk.common.Session kb = MapServer.net.openTestSession(b.fd);
+        MapServer.onlineChars.put(a.fd, a);
+        MapServer.onlineChars.put(b.fd, b);
+        map.addBlock(a);
+        map.addBlock(b);
+        ka.takeOutbound();
+        kb.takeOutbound();
+
+        var cv = MapServer.clientView;
+        check("rtk2: penyalur memegang dua implementasi",
+                cv instanceof ProtocolRouter r && r.views().size() == 2);
+
+        // ---- pesan ke satu pemain ----
+        cv.messageToPlayer(a, 3, "halo dunia");
+        var fa = bingkaiRtk2(ka);
+        byte[] mentahB = kb.takeOutbound();
+        check("rtk2: pemain RTK2 menerima satu bingkai", fa.size() == 1);
+        check("rtk2: pemain RetroTK TIDAK ikut menerimanya", mentahB.length == 0);
+        Keluar pesan = fa.get(0);
+        check("rtk2: opcodenya EV_MESSAGE", pesan.opcode() == Wire.EV_MESSAGE);
+        var r1 = baca(pesan);
+        check("rtk2: ragam pesan terbaca", r1.u8() == 3);
+        check("rtk2: teksnya utuh", "halo dunia".equals(r1.str()));
+        check("rtk2: tidak ada byte sisa di bingkainya", r1.rest() == 0);
+
+        // ---- pesan ke pemain RetroTK ----
+        cv.messageToPlayer(b, 3, "halo lama");
+        byte[] mentah = kb.takeOutbound();
+        check("rtk2: pemain RetroTK tetap menerima paket 0xAA",
+                mentah.length > 0 && (mentah[0] & 0xFF) == 0xAA);
+        check("rtk2: pemain RTK2 tidak ikut kena", bingkaiRtk2(ka).isEmpty());
+
+        // ---- siaran ke area: KEDUANYA kena, masing-masing formatnya ----
+        cv.objectSpoke(a, 0, "hai semua");
+        var siarA = bingkaiRtk2(ka);
+        byte[] siarB = kb.takeOutbound();
+        check("rtk2: siaran sampai ke pemain RTK2",
+                cariOpcode(siarA, Wire.EV_OBJECT_SPOKE) != null);
+        check("rtk2: siaran yang SAMA sampai ke pemain RetroTK",
+                siarB.length > 0 && (siarB[0] & 0xFF) == 0xAA);
+        var r2 = baca(cariOpcode(siarA, Wire.EV_OBJECT_SPOKE));
+        check("rtk2: id pembicara ikut di bingkainya", r2.u64() == a.id);
+        r2.u8();
+        check("rtk2: teks siaran utuh", "hai semua".equals(r2.str()));
+
+        // ---- panjang bingkai adalah panjang sebenarnya ----
+        // ⚠️ Ini yang TIDAK berlaku di RetroTK: setPacketIndexes menimpa
+        // ladang panjang dengan nilai+3 lalu menempel 3 byte kunci, dan itu
+        // sudah dua kali membuat ekspektasi uji salah (Peringatan #17).
+        cv.messageToPlayer(a, 5, "abc");
+        Keluar k = bingkaiRtk2(ka).get(0);
+        check("rtk2: panjang bingkai = 4 header + 1 ragam + 2 + 3 teks",
+                k.panjang() == 4 + 1 + 2 + 3);
+
+        // ---- blok benda disusun ULANG per penonton ----
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        var kosongLookR = new org.rtk.map.data.ItemDb.Look(0, 0, 77, 3);
+        var tanpaStatR = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        MapServer.itemDb.register(new org.rtk.map.data.ItemDb.Info(7701, "jebakan_r2",
+                "Jebakan R2", "", "", org.rtk.map.data.ItemDb.ITM_TRAPS, 0, 0, 0,
+                1, 1, 1, 0, 0, 1, 0, 0, kosongLookR, tanpaStatR));
+        FloorItem jebakan = MapServer.floorItems.drop(null, 7701, 1, 1, 0, 0,
+                map.id, px, py);
+        check("rtk2: jebakan uji tergeletak", jebakan != null);
+        ka.takeOutbound();
+        kb.takeOutbound();
+
+        cv.floorItemAppeared(jebakan);
+        check("rtk2: jebakan yang BELUM ditemukan tidak dikirim",
+                cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARED) == null);
+        kb.takeOutbound();
+
+        jebakan.addTrapSpotter(a.id);
+        cv.floorItemAppeared(jebakan);
+        Keluar tampak = cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARED);
+        check("rtk2: setelah ditemukan, jebakan yang sama DIKIRIM", tampak != null);
+        var r3 = baca(tampak);
+        check("rtk2: blok benda membawa id barang lantai", r3.u64() == jebakan.id);
+        check("rtk2: jenisnya 4 (barang)", r3.u8() == 4);
+        check("rtk2: petaknya benar", r3.u16() == px && r3.u16() == py);
+        r3.u8();
+        // ⚠️ Ikon dikirim MENTAH — tanpa penambah 32768/49152 yang di RetroTK
+        // berbeda-beda per jenis benda (Peringatan #34).
+        check("rtk2: ikon dikirim mentah, tanpa penambah", r3.u16() == 77);
+        check("rtk2: warna ikon terbaca", r3.u8() == 3);
+        check("rtk2: barang lantai TIDAK bertanda 'digambar sebagai karakter'",
+                (r3.u8() & 1) == 0);
+        check("rtk2: nama barangnya ikut", "Jebakan R2".equals(r3.str()));
+        check("rtk2: jumlahnya ikut", r3.u32() == 1);
+
+        // ---- blok pemain: daftar slot, bukan offset tetap ----
+        ka.takeOutbound();
+        a.status.equip.clear();
+        cv.objectAppearanceChanged(b);
+        Keluar wujud = cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARANCE);
+        check("rtk2: perubahan wujud pemain lain sampai", wujud != null);
+        var r4 = baca(wujud);
+        check("rtk2: id pemainnya", r4.u64() == b.id);
+        check("rtk2: jenisnya 1 (pemain)", r4.u8() == 1);
+        check("rtk2: petak pemainnya", r4.u16() == b.x && r4.u16() == b.y);
+        r4.u8();
+        r4.u16();
+        r4.u8();
+        check("rtk2: benderanya menandai 'digambar sebagai karakter'",
+                (r4.u8() & 1) != 0);
+        check("rtk2: namanya ikut di bloknya", "Lama".equals(r4.str()));
+        lewatiWujud(r4);
+        check("rtk2: pemain tanpa perlengkapan mengirim NOL slot, bukan sentinel",
+                r4.u8() == 0);
+
+        var kosongLook2 = new org.rtk.map.data.ItemDb.Look(4321, 9, 0, 0);
+        MapServer.itemDb.register(new org.rtk.map.data.ItemDb.Info(7702, "pedang_r2",
+                "Pedang R2", "", "", org.rtk.map.data.ItemDb.ITM_WEAP, 0, 0, 0,
+                1, 1, 1, 0, 0, 100, 0, 0, kosongLook2, tanpaStatR));
+        org.rtk.common.mmo.Item sen = new org.rtk.common.mmo.Item();
+        sen.id = 7702;
+        sen.amount = 1;
+        sen.dura = 100;
+        sen.pos = org.rtk.map.data.Equip.WEAP;
+        b.status.equip.add(sen);
+        ka.takeOutbound();
+        cv.objectAppearanceChanged(b);
+        var r5 = baca(cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARANCE));
+        lewatiDasar(r5);
+        lewatiWujud(r5);
+        check("rtk2: satu perlengkapan berarti satu entri slot", r5.u8() == 1);
+        check("rtk2: nomor slotnya EQ_WEAP", r5.u8() == org.rtk.map.data.Equip.WEAP);
+        check("rtk2: grafiknya dari ItmLook", r5.u16() == 4321);
+        check("rtk2: warnanya dari ItmLookColor", r5.u8() == 9);
+        b.status.equip.clear();
+
+        // ---- kebocoran yang sengaja tidak diteruskan ----
+        ka.takeOutbound();
+        cv.areaRedrawRequested(a, map, 0, 0, 4, 4, 0);
+        check("rtk2: permintaan gambar ulang TIDAK diteruskan (kebocoran RetroTK)",
+                bingkaiRtk2(ka).isEmpty());
+
+        // ---- bersih-bersih ----
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        map.delBlock(a);
+        map.delBlock(b);
+        MapServer.onlineChars.remove(a.fd);
+        MapServer.onlineChars.remove(b.fd);
+        MapServer.scriptEngine = engineLama;
     }
 
 }

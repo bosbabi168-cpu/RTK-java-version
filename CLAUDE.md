@@ -143,7 +143,8 @@ proses build di server.
   ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
   durasi mantra, gerak mob, barang lantai, inventaris, buku mantra,
   tampilan & timer, simpan paksa, BOD, pertukaran, **protokol RTK2**,
-  **aksi pemain**, **perlengkapan & pakai barang** — **685 assertion**),
+  **aksi pemain**, **perlengkapan & pakai barang**, **arah keluar RTK2** —
+  **724 assertion**),
   `./run.sh dbtest` (lapisan database ke MySQL hidup — 196 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
@@ -1159,6 +1160,67 @@ byte-identik dengan `rtklua/`.
    seperti itu tidak melempar error di mana pun; ia hanya membuat seluruh
    skrip pertarungan berperilaku terbalik.
 
+69. **Dua protokol keluar tidak bisa "pilih salah satu" — keduanya harus
+   dipanggil.** Pilihan yang tampak wajar (lihat protokol pemainnya, panggil
+   implementasi yang cocok) tidak bisa dipakai, dan alasannya ada di
+   antarmukanya sendiri: **separuh peristiwa `ClientView` tidak punya satu
+   penerima.** `objectActed`, `mobSpawned`, `floorItemAppeared`, dan
+   sembilan lainnya menyiarkan ke sekitar sebuah benda — dan sekitar itu
+   bisa berisi pemain dari kedua protokol sekaligus.
+
+   Karena itu arahnya dibalik: `ProtocolRouter` memanggil **kedua**
+   implementasi untuk setiap peristiwa, dan masing-masing **menyaring
+   penerimanya sendiri**. Penyaringnya satu tempat per protokol —
+   `Clif.sessionOf()` dan `Rtk2ClientView.sesi()` — sehingga tidak ada jalur
+   yang bisa terlewat.
+
+   ⚠️ **Jangan memanggil `MapServer.net.session()` langsung dari `Clif`.**
+   Seluruh paket di sana, per-pemain maupun siaran, wajib mengambil sesinya
+   lewat `sessionOf()`; itu satu-satunya yang membuat penjaganya bisa
+   dipercaya. Delapan pemanggilan langsung sempat ada dan semuanya sudah
+   dialihkan.
+
+70. **Efek samping di dalam fungsi paket meledak begitu protokolnya lebih
+   dari satu.** `clif_senddelitem` di C mengosongkan slot inventaris
+   sekaligus mengirim paketnya. Dengan dua implementasi hidup, efek samping
+   itu berjalan **dua kali**, dan yang kedua membuang slot pemain
+   **berikutnya** — Peringatan #61 yang muncul lagi di tempat yang berbeda.
+
+   Pengosongannya sekarang milik sisi logika
+   (`User.clearInventorySlot()`), dipanggil kelima titik yang memang
+   bermaksud mengosongkannya. Fungsi paketnya tidak menyentuh keadaan sama
+   sekali.
+
+   **Aturan umumnya:** setiap kali sebuah fungsi paket mengubah keadaan
+   permainan, cari tahu berapa kali ia akan dipanggil. Selama hanya ada satu
+   protokol, jawabannya selalu "sekali" — dan itu yang menyembunyikan
+   masalahnya selama ini.
+
+71. **Blok benda RTK2 disusun ULANG untuk tiap penonton.** Siaran biasa
+   menyusun bingkainya sekali lalu menyalinnya ke tiap penerima — lebih
+   murah, dan tanpa enkripsi per-sesi memang tidak ada alasan menyusunnya
+   berulang. Tetapi blok benda **tidak boleh** diperlakukan begitu: isinya
+   bergantung pada siapa yang melihat.
+
+   - jebakan yang belum ditemukan **tidak digambar sama sekali**
+     (Peringatan #33);
+   - pemain ber-stealth tampak berbeda bagi GM;
+   - penanda seklan hanya muncul untuk sesama anggota.
+
+   Itu sebabnya `perPenonton()` terpisah dari `siarkan()` di
+   `Rtk2ClientView`. Menyatukan keduanya akan membocorkan jebakan ke semua
+   orang di area.
+
+72. **Setelan pemain (`settingFlags`) sekarang satu sumber.** Nilainya
+   sempat tersalin di tiga tempat — `Clif`, `MapCommands`, dan sekali lagi
+   saat implementasi protokol kedua ditulis. Duplikasi seperti itu tidak
+   pernah salah saat ditulis; ia salah saat salah satunya diperbaiki.
+   Semuanya kini merujuk `org.rtk.common.mmo.SettingFlags`.
+
+   Tempatnya di model karakter, **bukan** di kelas paket: bit-bit itu
+   keputusan pemain tentang apa yang ingin ia terima dan izinkan, walau
+   sebagian menentukan apa yang dikirim.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -1189,6 +1251,9 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
 | `map/pc.c` (penempatan) | `map/User`, `map/Pc` | USER runtime, pc_setpos/warp/enterWorld |
 | `map/clif.c` (paket klien) | `map/Clif` | paket keluar RetroTK; big-endian, dua jalur kunci |
 | `map/clif.c` `clif_parse()` | `map/proto/Wire`, `map/proto/Inbound` | **protokol RTK2 sendiri** arah masuk — bukan port, rancangan baru (`docs/PROTOKOL-RTK2.md`) |
+| — (tidak ada di C) | `map/Rtk2ClientView` | arah **keluar** RTK2, 51 peristiwa |
+| — (tidak ada di C) | `map/ProtocolRouter` | dua protokol keluar berdampingan; lihat Peringatan #69 |
+| `common/mmo.h` `enum settingFLAGS` | `common/mmo/SettingFlags` | setelan pemain, satu sumber (Peringatan #72) |
 | `map/clif.c` penangan aksi pemain | `map/ClientCommands`, `map/MapCommands` | logika di balik tiap aksi, terpisah dari format kabelnya |
 | `map/npc.c` (pemuat `Warps`) | `map/data/MapRegistry.loadWarps` | portal, diindeks per blok 8x8 |
 | `map/npc.c` `npc_init()` | `map/Npc`, `map/NpcRegistry` | 385 NPC + indeks id (`map_id2bl`) + perlengkapan |
@@ -1282,7 +1347,7 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
 | Gerbang regresi | 6/6 hijau (`cliftest` **572**, `dbtest` **187** assertion) |
 | Binding skrip | **1** belum diport (`testPacket`, sengaja); global **0** |
-| **Paket MASUK** | protokol **RTK2 sendiri**, 24 opcode (RetroTK tetap 5, berdampingan) |
+| **Protokol RTK2** | **dua arah** — 24 opcode masuk, 51 peristiwa keluar (RetroTK berdampingan) |
 | Trek A | selesai fungsinya; `sendMyStatus` sengaja TAHAP 1 |
 | Trek C | C1 & C4 selesai; **C2 dan C3 belum tersentuh** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
@@ -1744,83 +1809,70 @@ NPC **dan** mob.
 
 ---
 
-#### ROADMAP — 27 Agustus 2026 (setelah perlengkapan & pakai barang)
+#### ROADMAP — 27 Agustus 2026 (setelah RTK2 dua arah)
 
-> Diverifikasi ke kode, bukan ke catatan. Angka di bawah dari
-> `./run.sh luaaudit` dan pembacaan sumber pada tanggal itu.
+> Diverifikasi ke kode, bukan ke catatan. Hitung ulang angkanya dengan
+> `grep`; jangan percaya yang tertulis di prosa.
 
 **Yang SUDAH selesai** (jangan diulang):
 
 | | Bukti |
 |---|---|
-| Binding skrip | **1** tersisa — `testPacket`, dan itu **sengaja** tidak diport; global **0** |
-| Trek A (A1–A5) | selesai fungsinya; dua sisa disengaja (lihat bawah) |
+| Binding skrip | **1** tersisa — `testPacket`, **sengaja** tidak diport; global **0** |
+| Trek A (A1–A5) | selesai fungsinya |
 | Trek C1, C4 | registry skrip; kiriman, surat, hadiah, papan pesan |
-| Subsistem besar | BL_ITEM, durasi & aether, BOD, pertukaran, **perlengkapan & pakai barang** |
-| Lapisan protokol **keluar** | `ClientView`, **51 peristiwa** |
-| Lapisan protokol **masuk** | `ClientCommands` **22 perintah**; pemisahannya tuntas |
-| **Protokol RTK2 arah masuk** | `map/proto/{Wire,Inbound}`, **24 opcode** (`grep -c "OP_" Wire.java`), spek di `docs/PROTOKOL-RTK2.md` |
-| Gerbang regresi | 6/6 hijau — `cliftest` **685**, `dbtest` **196** assertion |
-
-**Keputusan 27 Agustus 2026:** protokol sendiri langsung dipakai, tanpa
-menulis pembaca RetroTK yang umurnya pendek. Akibatnya uji dengan pemain
-sungguhan **pindah ke akhir** — ia menunggu klien buatan sendiri.
+| Subsistem besar | BL_ITEM, durasi & aether, BOD, pertukaran, perlengkapan & pakai barang |
+| Lapisan protokol | `ClientView` **51 peristiwa**, `ClientCommands` **22 perintah** |
+| **Protokol RTK2** | **dua arah** — `map/proto/{Wire,Inbound}` + `map/Rtk2ClientView`, spek di `docs/PROTOKOL-RTK2.md` |
+| Dua protokol berdampingan | `ProtocolRouter`; masuk dibedakan byte `0xAA`, keluar disaring tiap implementasi |
+| Gerbang regresi | 6/6 hijau — `cliftest` **724**, `dbtest` **196** assertion |
 
 ---
 
-**1. Arah KELUAR untuk RTK2 — `Rtk2ClientView`.** Penghambat terbesar
-sekarang, dan satu-satunya yang menghalangi klien sendiri berjalan: arah
-masuk sudah punya protokol sendiri, arah keluar belum. `ClientView` punya
-**51 peristiwa** dan baru satu implementasi (`RetroTkClientView`). Daftar
-peristiwanya **sudah** jadi spesifikasinya — tinggal memilih bentuk
-kabelnya, dan `Wire` sudah menyediakan aturan bingkai yang sama.
+**1. Trek B — dekoder EPF, editor, klien libGDX.** **Penghambat tunggal
+sekarang.** Servernya sudah punya protokol lengkap dua arah; yang belum ada
+adalah sesuatu yang bisa berbicara dengannya. **Belum dimulai sama sekali**
+(`src/org/rtk/` hanya berisi charserver, common, login, map).
+
+- **B1. Dekoder EPF** — EPF + PAL → gambar RGB, plus pemetaan id
+  `tile`/`obj` ke frame. Prasyarat sisanya. `rtk/SObj.tbl` (18.954 entri)
+  masih di RTK-Server, belum disalin.
+- **B2. Editor peta & skrip** berbasis browser. Bisa dimulai **sebelum**
+  B1 dengan grid berwarna dari id/`pass`.
+- **B3. Klien libGDX** — di sinilah RTK2 akhirnya dibaca sesuatu.
 
 **2. Merapal mantra.** Aksi pemain besar terakhir yang belum punya jalur
 masuk. Logikanya sebagian sudah ada lewat `Durations`; yang kurang pemicu
-dari klien (`0x0F` magic, `0x30` change spell di RetroTK) dan penjaga
-`map.spell`.
+dari klien dan penjaga `map.spell`.
 
-**3. Trek B — dekoder EPF, editor, klien libGDX.** **Belum dimulai sama
-sekali** (`src/org/rtk/` hanya berisi charserver, common, login, map). Ini
-jalur menuju arah final project, dan sekarang juga jalur satu-satunya
-menuju pengujian sungguhan. B1 dekoder EPF prasyarat sisanya;
-`rtk/SObj.tbl` (18.954 entri) masih di RTK-Server, belum disalin.
-
-**4. Sosial & antarmuka** — grup, teman, profil, emosi, daftar abaikan
+**3. Sosial & antarmuka** — grup, teman, profil, emosi, daftar abaikan
 (yang terakhir menutup penyaring `clif_isignore`), papan & pos, minimap,
 ranking, berputar di tempat.
 
-**5. C2 — empat berkas meta hilang.** `meta/` masih hanya berisi
-`RidableAnimals`; `login.conf` meminta lima. ⚠️ Nilainya menurun bersama
-arah project: berkas meta adalah format RetroTK, dan klien sendiri tidak
-akan membacanya.
+**4. C3 — warp antar map server.** Masih ditolak di `MapCommands`.
 
-**6. C3 — warp antar map server.** Masih ditolak di `MapCommands`.
+**5. C2 — empat berkas meta hilang.** ⚠️ Nilainya menurun bersama arah
+project: berkas meta adalah format RetroTK, dan klien sendiri tidak akan
+membacanya. Kerjakan hanya bila klien RetroTK dipakai lagi.
 
-**7. Terjemahan Indonesia** — ~3.800 titik dialog, 903 di antaranya di 56
-berkas. Kata kunci `speech` sudah selesai. Sekarang juga ada
-`conf/lang.conf` (pesan penolakan map server) yang bisa diterjemahkan
-tanpa menyentuh kode sama sekali.
+**6. Terjemahan Indonesia** — ~3.800 titik dialog, 903 di antaranya di 56
+berkas. `conf/lang.conf` juga bisa diterjemahkan tanpa menyentuh kode.
 
-**8. `testPacket`** — satu-satunya binding yang **sengaja tidak diport**:
-alat debug GM yang menulis byte sembarang ke kabel dari tabel Lua.
-Nilainya nol bila protokolnya memang diganti, dan risikonya nyata.
+**7. `testPacket`** — satu-satunya binding yang **sengaja tidak diport**.
 
-**9. Uji dengan pemain sungguhan online** — *sengaja diletakkan terakhir.*
-Tik durasi mantra, gerak mob, pertukaran, dan seluruh aksi baru (bicara,
-memungut, menjatuhkan, menyerahkan, menyerang, mengenakan, melepas,
-memakai, melempar) **belum pernah berjalan**; kait skripnya (`onSay`,
-`onPickUp`, `onSwing`, `onEquip`, `onUnequip`, `onThrow`) baru terbukti
-sampai jembatan atributnya, bukan sampai skripnya sendiri. Peringatan #26
-lahir persis dari kait yang hanya menyala saat server hidup, jadi **ini
-tetap pemeriksaan yang paling tajam** — hanya urutannya yang berubah:
-butuh butir 1 dan 3 lebih dulu.
+**8. Uji dengan pemain sungguhan online** — *sengaja terakhir.* Tidak satu
+byte pun RTK2 pernah dibaca klien sungguhan, dan seluruh aksi pemain
+(bicara, memungut, menjatuhkan, menyerahkan, menyerang, mengenakan,
+melepas, memakai, melempar) belum pernah berjalan di server hidup. Kait
+skripnya baru terbukti sampai jembatan atributnya. Peringatan #26 lahir
+persis dari kait yang hanya menyala saat server hidup — **ini tetap
+pemeriksaan yang paling tajam**, hanya butuh butir 1 lebih dulu.
 
 ---
 
 **Dua sisa Trek A yang disengaja** (bukan pekerjaan tertunda):
-`Clif.sendMyStatus()` TAHAP 1 (klan, gelar, pasangan, TNL kosong) dan
-penyaring `clif_isignore`. Keduanya menunggu protokol baru.
+`Clif.sendMyStatus()` TAHAP 1 dan penyaring `clif_isignore`. Keduanya
+khusus RetroTK; RTK2 tidak membawa ladang kosong itu sama sekali.
 
 ---
 

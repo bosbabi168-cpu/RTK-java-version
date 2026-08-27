@@ -186,6 +186,22 @@ public final class User extends BlockList
      * satu kali sepanjang {@code attackSpeed} — lihat
      * {@code MapCommands.playerAttacks}.</p>
      */
+    /**
+     * Sesi ini memakai protokol <b>RTK2</b>, bukan RetroTK.
+     *
+     * <p>Disetel saat perkenalan dan tidak pernah berubah sesudahnya: yang
+     * memilihnya bingkai pertama yang dikirim klien
+     * ({@code Wire.isRetroTk}).</p>
+     *
+     * <p>⚠️ Inilah satu-satunya penentu ke mana byte keluar dikirim. Kedua
+     * implementasi {@code ClientView} dipanggil untuk <b>setiap</b>
+     * peristiwa; masing-masing yang menyaring penerimanya sendiri lewat
+     * bendera ini. Menyaringnya di pemanggil akan berarti setiap satu dari
+     * 51 peristiwa perlu tahu soal protokol — persis yang dihindari lapisan
+     * ini.</p>
+     */
+    public boolean rtk2;
+
     public boolean attacked;
 
     /**
@@ -886,6 +902,22 @@ public final class User extends BlockList
      * @param dura ketahanan yang dibawa dari barang aslinya; negatif berarti
      *             pakai bawaan jenisnya
      */
+    /**
+     * Kosongkan satu slot inventaris.
+     *
+     * <p>⚠️ Ini <b>keadaan permainan</b>, dan tempatnya di sisi logika —
+     * bukan di dalam fungsi paket seperti dulu. Sampai 27 Agustus 2026
+     * {@code Clif.sendDelItem} yang mencabutnya, sehingga begitu protokol
+     * kedua berdiri slotnya tercabut <b>dua kali</b> dan yang kedua membuang
+     * slot pemain berikutnya. Itu Peringatan #61 yang muncul lagi di tempat
+     * baru; sekarang pemberitahuan dan keadaannya dipisah.</p>
+     */
+    public void clearInventorySlot(int slot) {
+        if (slot >= 0 && slot < status.inventory.size()) {
+            status.inventory.remove(slot);
+        }
+    }
+
     public boolean addItemById(long itemId, int amount, int dura) {
         var info = MapServer.itemDb.info(itemId);
         if (info.id() == 0 || amount <= 0) {

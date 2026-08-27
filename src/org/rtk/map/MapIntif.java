@@ -130,6 +130,9 @@ public final class MapIntif {
 
         // bangun pemain runtime lalu tempatkan di dunia (pc_setpos + clif_spawn)
         org.rtk.map.User sd = new org.rtk.map.User(clientFd, c);
+        // Protokolnya sudah dipilih saat perkenalan, jauh sebelum datanya
+        // tiba dari char server; di sinilah keduanya bertemu.
+        sd.rtk2 = MapServer.rtk2Fds.remove(clientFd);
         MapServer.onlineChars.put(clientFd, sd);
 
         log.info("[MAP] karakter dimuat: {} (level {}, {} barang) untuk fd {}",

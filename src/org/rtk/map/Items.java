@@ -807,6 +807,7 @@ public final class Items {
         }
         it.amount -= amount;
         if (it.amount <= 0) {
+            sd.clearInventorySlot(slot);
             MapServer.clientView.playerInventorySlotCleared(sd, slot, alasan);
         } else {
             pesan(sd, MapServer.itemDb.info(it.id).tampilan() + " (" + amount + ")");

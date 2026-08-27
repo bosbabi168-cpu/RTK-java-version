@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import org.rtk.common.Crypt;
 import org.rtk.common.Session;
+import org.rtk.common.mmo.SettingFlags;
 import org.rtk.map.data.Equip;
 import org.rtk.map.data.MapData;
 
@@ -63,11 +64,11 @@ public final class Clif {
     // setting flags (common/mmo.h)
     private static final int FLAG_WEATHER = 32;
     private static final int FLAG_REALM = 64;
-    /** mmo.h: FLAG_GROUP = 2, FLAG_EXCHANGE = 128. */
-    private static final int FLAG_GROUP = 2;
-    private static final int FLAG_EXCHANGE = 128;
-    private static final int FLAG_HELM = 8192;
-    private static final int FLAG_NECKLACE = 16384;
+    // Setelan pemain: satu sumber di org.rtk.common.mmo.SettingFlags.
+    private static final int FLAG_GROUP = SettingFlags.GROUP;
+    private static final int FLAG_EXCHANGE = SettingFlags.EXCHANGE;
+    private static final int FLAG_HELM = SettingFlags.HELM;
+    private static final int FLAG_NECKLACE = SettingFlags.NECKLACE;
 
     /** Waktu & tahun dalam permainan; nanti diisi kalender dunia (map.c). */
     public static int curTime = 0;
@@ -191,8 +192,18 @@ public final class Clif {
         s.wfifoB(4, s.nextIncrement());
     }
 
+    /**
+     * Sesi milik pemain, atau <b>null bila ia memakai RTK2</b>.
+     *
+     * <p>⚠️ Penjaga protokol ada di sini, <b>satu tempat</b>, dan itu yang
+     * membuatnya bisa dipercaya: setiap paket di kelas ini — per-pemain
+     * maupun siaran ke area — mengambil sesinya lewat method ini, sehingga
+     * {@code RetroTkClientView} tidak perlu satu pun penjaga tambahan dan
+     * tidak ada jalur yang bisa terlewat. Jangan memanggil
+     * {@code MapServer.net.session()} langsung dari kelas ini.</p>
+     */
     private static Session sessionOf(User sd) {
-        return MapServer.net.session(sd.fd);
+        return sd.rtk2 ? null : MapServer.net.session(sd.fd);
     }
 
     // ------------------------------------------------------------------
@@ -347,7 +358,7 @@ public final class Clif {
             return;
         }
         java.util.function.Consumer<User> tulis = to -> {
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -424,7 +435,7 @@ public final class Clif {
             if (!(bl instanceof User to)) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -682,8 +693,12 @@ public final class Clif {
      * clif_senddelitem() — kosongkan satu slot inventaris di layar pemain.
      * Opcode 0x10, panjang tetap.
      *
-     * <p>⚠️ <b>Paket ini juga mengosongkan slotnya di server</b>, bukan
-     * sekadar memberi tahu klien — begitu di C, dan skrip mengandalkannya.</p>
+     * <p>⚠️ Di C paket ini <b>juga</b> mengosongkan slotnya di server.
+     * Di sini tidak lagi: pengosongannya pindah ke
+     * {@code User.clearInventorySlot} di sisi logika, karena dengan dua
+     * protokol hidup berdampingan efek samping di dalam fungsi paket akan
+     * berjalan <b>dua kali</b>. Perilaku yang dilihat skrip tidak berubah —
+     * pemanggilnya yang sekarang mengosongkannya.</p>
      *
      * @param type alasan hilangnya, yang menentukan kalimat di layar klien:
      *             0 dibuang, 1 dijatuhkan, 2 dimakan, 3 dihisap, 4 dilempar,
@@ -691,9 +706,6 @@ public final class Clif {
      *             10 dijual, 11 dicabut, 12 nama barangnya, 13 patah
      */
     public static void sendDelItem(User sd, int slot, int type) {
-        if (slot >= 0 && slot < sd.status.inventory.size()) {
-            sd.status.inventory.remove(slot);
-        }
         Session s = sessionOf(sd);
         if (s == null) {
             return;
@@ -941,7 +953,7 @@ public final class Clif {
             if (to.m != from.m) {
                 continue;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 continue;
             }
@@ -1326,7 +1338,7 @@ public final class Clif {
             if (!(bl instanceof User to)) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -1473,7 +1485,7 @@ public final class Clif {
             if (!includeSelf && bl == from) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -3228,7 +3240,7 @@ public final class Clif {
             if (!(bl instanceof User to)) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -3489,10 +3501,10 @@ public final class Clif {
     }
 
     /**
-     * FLAG_MAGIC (mmo.h): bendera setelan pemain "tampilkan efek sihir".
-     * Pemain yang mematikannya tidak menerima paket animasi sama sekali.
+     * Pemain yang mematikan {@code SettingFlags.MAGIC} tidak menerima paket
+     * animasi mantra sama sekali.
      */
-    private static final int FLAG_MAGIC = 16;
+    private static final int FLAG_MAGIC = SettingFlags.MAGIC;
 
     /**
      * clif_sendanimation(): mainkan animasi <b>pada sebuah benda</b>
@@ -3531,7 +3543,7 @@ public final class Clif {
         if ((viewer.status.settingFlags & FLAG_MAGIC) == 0) {
             return;
         }
-        Session ts = MapServer.net.session(viewer.fd);
+        Session ts = sessionOf(viewer);
         if (ts == null) {
             return;
         }
@@ -3562,7 +3574,7 @@ public final class Clif {
             if (!(bl instanceof User to)) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }

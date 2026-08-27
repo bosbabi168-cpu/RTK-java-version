@@ -110,7 +110,27 @@ public final class MapServer {
      * <p>⚠️ Kode logika <b>jangan</b> memanggil {@code Clif.*} langsung —
      * lewat sini. Lihat {@link ClientView} untuk alasannya.</p>
      */
-    public static ClientView clientView = new RetroTkClientView();
+    /**
+     * Lapisan protokol arah keluar — <b>kedua</b> implementasi sekaligus.
+     *
+     * <p>Bukan "pilih salah satu": tiap implementasi menyaring penerimanya
+     * sendiri, karena separuh peristiwa menyiarkan ke sekitar sebuah benda
+     * yang bisa berisi pemain dari kedua protokol. Lihat
+     * {@link ProtocolRouter}.</p>
+     */
+    public static ClientView clientView =
+            new ProtocolRouter(new RetroTkClientView(), new Rtk2ClientView());
+
+    /**
+     * fd yang sudah memperkenalkan diri lewat RTK2, menunggu datanya tiba
+     * dari char server.
+     *
+     * <p>Perlu ada karena perkenalan dan lahirnya {@code User} terpisah oleh
+     * perjalanan bolak-balik ke char server — protokolnya sudah diketahui
+     * saat bingkai pertama datang, pemainnya belum.</p>
+     */
+    static final java.util.Set<Integer> rtk2Fds =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /**
      * Jembatan klien -&gt; logika permainan: apa yang <b>diminta</b> pemain.
@@ -419,6 +439,7 @@ public final class MapServer {
 
     /** Perkenalan RTK2: sama jalurnya dengan 0x10 RetroTK, tanpa byte-nya. */
     private static boolean rtk2Introduce(int fd, Session s, String name) {
+        rtk2Fds.add(fd);
         return authByName(fd, s, name);
     }
 
@@ -506,6 +527,7 @@ public final class MapServer {
 
     /** Pemain terputus: simpan lalu lepaskan dari dunia. */
     static void handleDisconnect(int fd) {
+        rtk2Fds.remove(fd);
         User sd = onlineChars.remove(fd);
         if (sd == null) {
             return;

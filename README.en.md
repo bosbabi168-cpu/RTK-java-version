@@ -774,7 +774,7 @@ The starting point for the next session.
 | Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
-| **Inbound packets** | our own **RTK2** protocol, 24 opcodes (RetroTK 5, side by side) |
+| **RTK2 protocol** | **both directions** — 24 inbound opcodes, 51 outbound events |
 | Track A | functionally done; `sendMyStatus` deliberately left at stage 1 |
 | Track C | C1 and C4 done; **C2 and C3 not started** |
 
@@ -830,6 +830,29 @@ scripts read but had never existed: `speech`, `flank`, `backstab`,
 0 is *true*, so sending them as numbers makes `if player.flank then` always
 fire — and 134 uses across the combat scripts behave backwards with no
 error anywhere.
+
+**The outbound direction followed the same day** — **RTK2 is now complete
+in both directions** (`map/Rtk2ClientView`, 51 events).
+
+⚠️ **Two outbound protocols cannot "pick one".** Half of the `ClientView`
+events have no single recipient: `objectActed`, `mobSpawned`,
+`floorItemAppeared` and nine others broadcast to everything around an
+object, and that neighbourhood can hold players on both protocols at once.
+So the direction is inverted: `ProtocolRouter` calls **both**
+implementations for every event, and each one filters its own audience. That
+filter lives in exactly one place per protocol, so no path can slip past it.
+
+Three things changed from RetroTK: **graphics are sent raw** (RetroTK has
+three different offset rules for one field), **equipment became a
+length-prefixed list** instead of fifteen fixed offsets with `0xFFFF`
+sentinels, and **one event per intent** instead of three different packets
+for "redraw this object".
+
+⚠️ One bug was found by the second protocol itself: `clif_senddelitem`
+clears the inventory slot **inside the packet function**. With two
+implementations live, that side effect runs twice and the second one throws
+away the *next* slot. While there was only ever one protocol, the answer was
+always "once" — and that is what hid it.
 
 The 26 August session closed two blocks: (1) bindings that were still
 **stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

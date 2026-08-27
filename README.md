@@ -768,7 +768,7 @@ Titik berangkat untuk sesi berikutnya.
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
 | **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
-| **Paket MASUK** | protokol **RTK2 sendiri**, 24 opcode (RetroTK 5, berdampingan) |
+| **Protokol RTK2** | **dua arah** — 24 opcode masuk, 51 peristiwa keluar |
 | Trek A | selesai fungsinya; `sendMyStatus` sengaja dibiarkan TAHAP 1 |
 | Trek C | C1 dan C4 selesai; **C2 dan C3 belum tersentuh** |
 
@@ -824,6 +824,29 @@ selama ini hanya dipakai login server), delapan kolom syarat di tabel
 *benar*, jadi mengirimnya sebagai angka membuat `if player.flank then`
 selalu masuk — dan 134 pemakaian di skrip pertarungan berperilaku terbalik
 tanpa satu pun error.
+
+**Arah keluarnya menyusul di hari yang sama** — **RTK2 kini lengkap dua
+arah** (`map/Rtk2ClientView`, 51 peristiwa).
+
+⚠️ **Dua protokol keluar tidak bisa "pilih salah satu".** Separuh peristiwa
+`ClientView` tidak punya satu penerima: `objectActed`, `mobSpawned`,
+`floorItemAppeared` dan sembilan lainnya menyiarkan ke sekitar sebuah benda,
+dan sekitar itu bisa berisi pemain dari kedua protokol sekaligus. Karena itu
+arahnya dibalik: `ProtocolRouter` memanggil **kedua** implementasi untuk
+setiap peristiwa, dan masing-masing menyaring penerimanya sendiri. Penyaring
+itu satu tempat per protokol, sehingga tidak ada jalur yang bisa terlewat.
+
+Tiga hal yang berubah dari RetroTK: **grafik dikirim mentah** (RetroTK punya
+tiga aturan penambah untuk satu ladang), **perlengkapan jadi daftar
+berpanjang** alih-alih lima belas offset tetap dengan sentinel `0xFFFF`, dan
+**satu peristiwa per maksud** alih-alih tiga paket berbeda untuk "gambar
+ulang benda ini".
+
+⚠️ Satu bug ditemukan justru oleh protokol kedua: `clif_senddelitem`
+mengosongkan slot inventaris **di dalam fungsi paketnya**. Dengan dua
+implementasi hidup, efek samping itu berjalan dua kali dan yang kedua
+membuang slot pemain berikutnya. Selama hanya ada satu protokol, jawabannya
+selalu "sekali" — dan itu yang menyembunyikannya.
 
 Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
 **stub** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

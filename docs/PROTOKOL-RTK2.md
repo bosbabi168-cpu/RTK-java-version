@@ -12,9 +12,9 @@ Hitung ulang jumlah opcodenya dengan
 `grep -c "public static final int OP_" src/org/rtk/map/proto/Wire.java` —
 jangan percaya angka yang tertulis di prosa mana pun, termasuk di sini.
 
-**Status: hanya arah MASUK.** Arah keluar masih memakai `RetroTkClientView`.
-Klien RTK2 yang lengkap butuh `Rtk2ClientView` (49 peristiwa) lebih dulu —
-lihat "Yang belum" di bawah.
+**Status: kedua arah berdiri.** Masuk lewat `map/proto/Inbound`, keluar
+lewat `map/Rtk2ClientView` (51 peristiwa). Keduanya hidup berdampingan
+dengan RetroTK; lihat "Hidup berdampingan" di bawah.
 
 ## Bingkai
 
@@ -201,11 +201,101 @@ keadaan: paket RetroTK selalu diawali `0xAA`, sedangkan byte pertama
 bingkai RTK2 adalah byte tinggi ladang panjang — yang tidak akan pernah
 `0xAA` selama batas bingkai di bawah 43.520.
 
+Untuk arah **keluar** tidak ada pembeda yang bisa dipakai per paket, karena
+separuh peristiwa menyiarkan ke sekitar sebuah benda yang bisa berisi
+pemain dari kedua protokol sekaligus. Karena itu arahnya dibalik:
+`ProtocolRouter` memanggil **kedua** implementasi untuk setiap peristiwa,
+dan masing-masing menyaring penerimanya sendiri lewat `User.rtk2`.
+Penyaringnya satu tempat per protokol — `Clif.sessionOf` dan
+`Rtk2ClientView.sesi` — sehingga tidak ada jalur yang bisa terlewat.
+
 ⚠️ **Menaikkan `Wire.MAX_FRAME` melewati 43.520 akan mematahkan
 pembedaan itu.** Ada assertion khusus untuk ini di `cliftest`.
 
 RetroTK dibiarkan hidup karena kliennya sendiri belum ada; menghapusnya
 sekarang berarti tidak ada apa pun yang bisa terhubung.
+
+## Arah keluar — peristiwa
+
+Bingkainya sama persis; yang berbeda hanya rentang opcodenya: **`0x8xxx`**
+untuk peristiwa keluar, `0x0xxx` untuk perintah masuk. Keduanya jalur
+terpisah sehingga sebenarnya boleh bertabrakan — penomoran terpisah hanya
+supaya satu baris log langsung terbaca arahnya.
+
+### Tiga hal yang berubah dari RetroTK
+
+**1. Grafik dikirim mentah.** RetroTK punya tiga aturan penambah untuk satu
+ladang: **+32768** untuk mob dan NPC, **+49152** untuk ikon kustom, dan
+**tanpa penambah** untuk ikon barang biasa. RTK2 mengirim nilainya apa
+adanya, ditemani `kind` bendanya; klien yang memutuskan dari kumpulan
+grafik mana ia mengambil gambar.
+
+**2. Perlengkapan adalah daftar, bukan offset tetap.** RetroTK menaruh tiap
+slot di offset tertentu dan memakai `0xFFFF` sebagai "kosong"; mantel
+bahkan **menimpa** zirah di offset yang sama. Di sini server sudah
+memutuskan apa yang tergambar, lalu mengirim `u8 jumlah` diikuti
+`(u8 slot, u16 grafik, u8 warna)` sebanyak itu. Pemain tanpa perlengkapan
+mengirim `0`, bukan lima belas sentinel.
+
+**3. Satu peristiwa per maksud.** RetroTK memakai `0x1D`, `0x33`, dan
+`0x07` untuk "gambar ulang benda ini" tergantung jenisnya. Di sini satu
+`EV_OBJECT_APPEARANCE` untuk semuanya, karena blok bendanya sudah menyebut
+jenisnya sendiri.
+
+### Blok benda
+
+Dipakai `EV_OBJECT_APPEARED` dan `EV_OBJECT_APPEARANCE`:
+
+```
+u64 id
+u8  kind        1 pemain, 2 mob, 3 NPC, 4 barang
+u16 x, u16 y
+u8  side
+u16 grafik      MENTAH
+u8  warnaGrafik
+u8  bendera     bit 0 = digambar sebagai karakter
+str nama
+```
+
+Bila `kind == 4` (barang), menyusul `u32 jumlah`.
+Bila bit 0 menyala, menyusul **blok wujud karakter**:
+
+```
+u8  sex, u8 state, u16 penyamaran, u8 warnaPenyamaran, u8 kecepatan
+u8  wajah, u8 rambut, u8 warnaRambut, u8 warnaWajah, u8 warnaKulit
+u8  jumlahSlot
+{ u8 slot, u16 grafik, u8 warna } * jumlahSlot
+u8  penandaNama    0 biasa, 1 PK, 3 seklan
+```
+
+⚠️ **Blok benda disusun ulang untuk tiap penonton**, tidak sekali lalu
+disiarkan. Isinya memang bergantung pada siapa yang melihat: jebakan yang
+belum ditemukan tidak digambar sama sekali, pemain ber-stealth tampak
+berbeda bagi GM, dan penanda seklan hanya muncul untuk sesama anggota.
+
+### Daftar peristiwa
+
+Ambil nilainya dari `Wire.java`, bukan dari sini.
+
+| Golongan | Isi |
+|---|---|
+| `0x81xx` | pemain itu sendiri — identitas, peta, posisi, kamera, status, darah, segarkan, kunci gerak, langkah ditolak/diterima, timer, durasi & aether |
+| `0x82xx` | barang & perlengkapan — slot inventaris, slot dikosongkan, slot perlengkapan, mantra dihapus |
+| `0x83xx` | teks — obrolan, pesan, popup, teks layar, kertas, URL, benda berbicara |
+| `0x84xx` | pertukaran — terbuka, barang, emas, persetujuan |
+| `0x85xx` | benda — muncul, pindah, hilang, wujud berubah, arah hadap, animasi, gerakan, lemparan, bunyi |
+| `0x86xx` | dialog & antarmuka — dialog/menu/isian/toko, pilihan peta, daftar papan, formulir papan, daftar kekuatan |
+
+### Yang sengaja TIDAK ada di arah keluar
+
+- **Permintaan gambar ulang** (`areaRedrawRequested`) tidak diteruskan sama
+  sekali. Ia kebocoran RetroTK: klien menitipkan "gambar ulang petak ini"
+  pada paket langkah. Server tahu sendiri apa yang baru terlihat.
+- **Ladang tampilan yang tidak pernah dipakai** — warna nama, warna garis
+  tepi, `passflag` pada paket benda.
+- **`sendMyStatus` TAHAP 1** (klan, gelar, pasangan, TNL): datanya memang
+  belum ada, dan mengirim ladang kosong hanya memindahkan pekerjaannya ke
+  klien.
 
 ## Penanganan kesalahan
 
@@ -226,7 +316,6 @@ Tambahkan opcodenya **saat logikanya dikerjakan**, bukan sebelumnya.
 Nomornya tinggal disisipkan di golongan yang sesuai — itulah sebabnya
 opcodenya dua byte dan berjarak.
 
-Dan yang terbesar: **arah keluar belum dirancang.** `ClientView` (49
-peristiwa) baru punya satu implementasi, `RetroTkClientView`. Klien RTK2
-yang benar-benar bisa dimainkan butuh `Rtk2ClientView` — daftar
-peristiwanya sudah jadi spesifikasinya.
+Arah keluar sudah berdiri (51 peristiwa). Yang **belum pernah diuji**:
+tidak satu byte pun RTK2 pernah dibaca klien sungguhan, karena kliennya
+belum ada. Itu butir terakhir roadmap, dan sengaja diletakkan di sana.

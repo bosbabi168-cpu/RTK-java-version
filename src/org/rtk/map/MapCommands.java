@@ -511,9 +511,9 @@ public final class MapCommands implements ClientCommands {
     private static final int MSG_SUBPATH = 11;
     private static final int MSG_CLAN = 12;
 
-    /** {@code settingFlags}: enum settingFLAGS di common/mmo.h. */
-    private static final long FLAG_WHISPER = 1;
-    private static final long FLAG_EXCHANGE = 128;
+    // Setelan pemain: satu sumber di org.rtk.common.mmo.SettingFlags.
+    private static final long FLAG_WHISPER = org.rtk.common.mmo.SettingFlags.WHISPER;
+    private static final long FLAG_EXCHANGE = org.rtk.common.mmo.SettingFlags.EXCHANGE;
 
     @Override
     public void playerSays(User sd, int channel, String text) {
@@ -956,6 +956,7 @@ public final class MapCommands implements ClientCommands {
                 // memberi tahu klien (Peringatan #37). Mencabutnya sekali
                 // lagi membuang slot pemain BERIKUTNYA. Sempat kejadian,
                 // dan yang menangkapnya adalah uji ini.
+                sd.clearInventorySlot(slot);
                 MapServer.clientView.playerInventorySlotCleared(sd, slot, 9);
             } else {
                 MapServer.clientView.playerInventorySlotChanged(sd, slot);
