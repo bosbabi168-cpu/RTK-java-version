@@ -43,16 +43,28 @@ Nama method menyebut **apa yang terjadi**, bukan paket apa yang dikirim.
 Daftar method di antarmuka itu pada akhirnya **adalah** spesifikasi protokol
 baru — diturunkan dari kebutuhan nyata skrip, bukan dikarang dari nol.
 
-Cakupan saat ini: seluruh panggilan keluar sudah lewat lapisan ini —
-**25 peristiwa** per 26 Agustus 2026 sore, naik dari 9 saat lapisan ini
-dibuat pagi harinya. Yang bertambah: `playerIdentityChanged`,
-`playerDurationChanged`, `playerAetherChanged`, `objectSpoke`,
-`objectActed`, `objectAppearanceChanged`, `objectRemoved`, `objectThrown`,
-`mobMoved`, `mobSpawned`, `floorItemAppeared`. Hitung ulang dengan
-`grep -c "^    void " src/org/rtk/map/ClientView.java`. Yang **belum**: arah **masuk** (`Clif.parseWalk`,
-`parseClick`, `parseMenuInput`, `parseNpcDialog`, `decrypt` di
-`MapServer.clientParse`) — itu loop dispatcher paket, urusan terpisah yang
-juga perlu dipindah saat protokol baru dirancang.
+Cakupan saat ini: **49 peristiwa** per 27 Agustus 2026, naik dari 9 saat
+lapisan ini dibuat 26 Agustus pagi. Hitung ulang dengan
+`grep -c "^    void " src/org/rtk/map/ClientView.java` — jangan percaya
+angka di sini.
+
+**Arah masuknya juga sudah berdiri**, lewat sepasang antarmuka yang
+arahnya terbalik: **`ClientCommands`** (9 perintah) diimplementasikan
+`MapCommands` di sisi **logika** dan dipanggil dari sisi **protokol**.
+Lihat Peringatan #52 untuk tabel perbandingannya — ini yang paling mudah
+tertukar.
+
+**Pemisahannya selesai 27 Agustus 2026.** `MapCommands` tidak lagi
+menyentuh `Clif` sama sekali, dan keempat `Clif.parse*` tidak lagi
+memutuskan apa pun. Verifikasinya satu perintah:
+
+```
+grep -n "Clif\.\|rfifo\|Session" src/org/rtk/map/MapCommands.java
+```
+
+harus tidak menghasilkan satu pun baris kode. Yang **belum** dipindah:
+`decrypt` dan loop dispatcher di `MapServer.clientParse` — itu urusan
+transport, bukan aksi pemain.
 
 ⚠️ **Kebocoran yang diketahui:** `npcMoved()` masih membawa empat parameter
 petak-yang-baru-terlihat — konsep viewport RetroTK, bukan peristiwa
@@ -938,6 +950,41 @@ byte-identik dengan `rtklua/`.
      diperiksa ulang saat konfirmasi. Menawarkan lebih dari yang dimiliki
      tidak ditolak sebagai kesalahan; nilainya hanya diabaikan.
 
+54. **Nama fungsi C bukan penentu sisi mana kode itu berada.**
+   `clif_pushback` namanya berawalan `clif_` dan tinggal di `clif.c`, tapi
+   badannya **tidak menyentuh satu byte pun**: isinya `Pc.warp` dua petak ke
+   belakang. Ia logika, dan sekarang tinggal di `MapCommands`. Kebalikannya
+   juga ada: `flushDialog` terdengar seperti utilitas internal, padahal
+   isinya murni penerjemahan keadaan skrip jadi paket — itu protokol, dan ia
+   tetap di `Clif` di balik peristiwa `scriptDialogReady`.
+
+   Patokan yang dipakai saat memisahkan lapisan masuk: **lihat badannya,
+   bukan namanya.** Kalau sebuah baris menyentuh `Session`, `rfifo*`, atau
+   opcode, ia protokol; kalau ia memutuskan apa yang **terjadi** di dunia,
+   ia logika. Awalan `clif_` di C tidak memberi tahu yang mana.
+
+   Verifikasi batasnya satu perintah, dan layak diulang tiap kali
+   `MapCommands` disentuh:
+
+   ```
+   grep -n "Clif\.\|rfifo\|Session" src/org/rtk/map/MapCommands.java
+   ```
+
+   harus tidak menghasilkan satu pun baris kode.
+
+55. **Memindahkan kode tidak mengubah satu pun angka gerbang regresi — dan
+   itu justru masalahnya.** Kelima helper dipindah dengan `cliftest` tetap
+   572 assertion di tiap langkah. Angka yang tidak bergerak **bukan bukti
+   apa-apa** bila langkahnya besar: uji yang sama akan tetap hijau kalau
+   sebuah helper terlewat dipindahkan, atau kalau badannya berubah halus di
+   tengah perpindahan.
+
+   Karena itu pemindahannya dikerjakan **satu helper per langkah**, dengan
+   build + `cliftest` di antara tiap langkah. Bukan kehati-hatian
+   berlebihan: itu satu-satunya cara membuat "angkanya tidak berubah"
+   berarti sesuatu. Aturan yang sama berlaku untuk refactor apa pun di
+   project ini yang tidak menambah uji baru.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -1532,17 +1579,19 @@ NPC **dan** mob.
 | Trek A (A1–A5) | selesai fungsinya; dua sisa disengaja (lihat bawah) |
 | Trek C1, C4 | registry skrip; kiriman, surat, hadiah, papan pesan |
 | Subsistem besar | BL_ITEM, durasi & aether, BOD, pertukaran barang |
-| Lapisan protokol **keluar** | `ClientView`, **43 peristiwa** |
-| Lapisan protokol **masuk** | `ClientCommands` + `MapCommands`, **9 perintah** |
+| Lapisan protokol **keluar** | `ClientView`, **49 peristiwa** |
+| Lapisan protokol **masuk** | `ClientCommands` + `MapCommands`, **9 perintah**; pemisahannya **tuntas** 27 Agu |
 | Gerbang regresi | 6/6 hijau — `cliftest` 572, `dbtest` 187 assertion |
 
 ---
 
-**1. Selesaikan pemisahan lapisan masuk.** Antarmukanya sudah berdiri, tapi
-**lima helper yang isinya logika masih tinggal di `Clif`**:
-`blocksMovement`, `updateCamera`, `fireWalkScripts`, `checkWarpTile`,
-`clickNpc`. Pindahkan ke `MapCommands` **satu per langkah** — daftarnya di
-javadoc kelas itu. Kecil, dan membereskan batas yang sudah ditarik.
+~~**1. Selesaikan pemisahan lapisan masuk.**~~ **SELESAI 27 Agustus 2026.**
+Kelima helper (`blocksMovement`, `updateCamera`, `fireWalkScripts`,
+`checkWarpTile` + `entryRejection` + `pushBack`, `clickNpc`) sudah pindah ke
+`MapCommands`, dan enam panggilan keluar yang tersisa di jalur langkah &
+dialog kini lewat `ClientView`: `playerStepRejected`, `playerStepped`,
+`playerStepSeen`, `areaRedrawRequested`, `scriptDialogReady`, `npcSaidTo`.
+Lihat Peringatan #54.
 
 **2. Pembaca paket masuk untuk aksi yang logikanya SUDAH ada.** Ini yang
 paling banyak hasilnya per usaha, karena logikanya tinggal disambungkan:

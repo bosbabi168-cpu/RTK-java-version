@@ -1564,96 +1564,8 @@ public final class Clif {
         });
     }
 
-    /**
-     * Petak yang baru diinjak mungkin portal. Port dari ekor
-     * {@code clif_parsewalk}: syarat masuk peta tujuan diperiksa dulu, dan
-     * bila gagal pemain didorong mundur disertai pesan penolakan.
-     */
-    static void checkWarpTile(User sd, MapData map) {
-        // C menjepit koordinat dulu sebelum menelusuri daftar portal
-        int fx = Math.min(sd.x, map.xs - 1);
-        int fy = Math.min(sd.y, map.ys - 1);
-        MapData.Warp w = map.warpAt(fx, fy);
-        if (w == null) {
-            return;
-        }
 
-        MapData dest = MapServer.world.get(w.tm());
-        if (dest == null) {
-            // portal ke peta milik map server lain — roadmap C3
-            log.warn("[CLIF] {} menginjak portal ke peta {} yang tidak dimuat di server ini",
-                    sd.name(), w.tm());
-            return;
-        }
 
-        if (!sd.isGm()) {
-            String reject = entryRejection(sd, dest);
-            if (reject != null) {
-                pushBack(sd);
-                sendMiniText(sd, dest.rejectMsg.isEmpty() ? reject : dest.rejectMsg);
-                return;
-            }
-        }
-        Pc.warp(MapServer.world, sd, w.tm(), w.tx(), w.ty());
-    }
-
-    /**
-     * Alasan pemain ditolak masuk sebuah peta, atau null bila boleh masuk.
-     * Urutan pemeriksaan dan bunyi pesannya ditiru persis dari C — teks ini
-     * dilihat pemain, jadi jangan diparafrasekan.
-     */
-    private static String entryRejection(User sd, MapData dest) {
-        var st = sd.status;
-        boolean tooWeak = st.level < dest.reqLvl
-                || (st.baseHp < dest.reqVita && st.baseMp < dest.reqMana)
-                || st.mark < dest.reqMark
-                || (dest.reqPath > 0 && st.charClass != dest.reqPath);
-        if (tooWeak) {
-            long gap = Math.abs(dest.reqLvl - st.level);
-            if (gap >= 10) {
-                return "Nightmarish visions of your own death repel you.";
-            }
-            if (gap >= 5) {
-                return "You're not quite ready to enter yet.";
-            }
-            if (gap < 5) {
-                return "You almost understand the secrets to this entrance.";
-            }
-            // Tiga cabang di bawah TIDAK PERNAH tercapai — sama seperti di C,
-            // karena tiga syarat di atas sudah mencakup semua nilai gap.
-            // Sengaja dipertahankan: pemain melihat pesan level walau yang
-            // kurang sebenarnya mark atau path. Jangan "diperbaiki" tanpa
-            // memutuskan bahwa perubahan perilaku itu memang diinginkan.
-            if (st.mark < dest.reqMark) {
-                return "You do not understand the secrets to enter.";
-            }
-            if (dest.reqPath > 0 && st.charClass != dest.reqPath) {
-                return "Your path forbids it.";
-            }
-            return "A powerful force repels you.";
-        }
-        if (st.level > dest.lvlMax
-                || (st.baseHp > dest.vitaMax && st.baseMp > dest.manaMax)) {
-            // C memakai pesan tetap di sini, mengabaikan MapRejectMsg
-            return "A magical barrier prevents you from entering.";
-        }
-        return null;
-    }
-
-    /**
-     * clif_pushback(): dorong pemain dua petak ke belakang, berdasarkan
-     * arah hadapnya ({@code status.side}).
-     */
-    public static void pushBack(User sd) {
-        switch (sd.status.side) {
-            case 0 -> Pc.warp(MapServer.world, sd, sd.m, sd.x, sd.y + 2);
-            case 1 -> Pc.warp(MapServer.world, sd, sd.m, sd.x - 2, sd.y);
-            case 2 -> Pc.warp(MapServer.world, sd, sd.m, sd.x, sd.y - 2);
-            case 3 -> Pc.warp(MapServer.world, sd, sd.m, sd.x + 2, sd.y);
-            default -> {
-            }
-        }
-    }
 
     // ------------------------------------------------------------------
     // dialog NPC (clif_scriptmes / clif_scriptmenuseq)
@@ -2135,45 +2047,6 @@ public final class Clif {
         MapServer.commands.playerClicks(sd, s.rfifoLBE(6) & 0xFFFFFFFFL);
     }
 
-    /**
-     * Jalankan skrip {@code click} milik NPC.
-     *
-     * <p>Penjaga karma ditiru dari C: pemain berkarma sangat buruk ditolak
-     * bicara oleh hampir semua NPC — kecuali NPC F1 dan NPC totem, karena
-     * keduanya jalur keluar yang tidak boleh ikut tertutup.</p>
-     */
-    static void clickNpc(User sd, Npc nd) {
-        if (MapServer.scriptEngine == null) {
-            return;
-        }
-        if (sd.status.karma <= -3.0f
-                && !"F1Npc".equals(nd.name) && !"TotemNpc".equals(nd.name)) {
-            sendScriptMes(sd, nd.id, "Go away scum!", false, false);
-            return;
-        }
-
-        sd.npcGraphic = (int) nd.graphicId;
-        sd.npcGraphicColor = (int) nd.graphicColor;
-        sd.dialogType = 0;
-
-        var p = sd.scriptPlayer();
-        // Setiap klik memulai interaksi dari nol (sl_async_freeco di C):
-        // tanpa ini, dialog lama yang menggantung membuat klik berikutnya
-        // ditolak dengan alasan "sedang sibuk".
-        MapServer.scriptEngine.cancel(p);
-        try {
-            // C memanggil dengan DUA argumen: pemain dan NPC-nya
-            // (`sl_doscript_blargs(nd->name, "click", 2, &sd->bl, &nd->bl)`).
-            // Banyak skrip memakai parameter kedua untuk membaca
-            // npc.yname / npc.bankNPC — tanpa ini mereka menerima nil.
-            MapServer.scriptEngine.doScript(nd.name, "click",
-                    MapServer.scriptEngine.playerRef(p),
-                    MapServer.scriptEngine.objectRef(nd));
-            flushDialog(sd, p);
-        } catch (RuntimeException e) {
-            log.error("[CLIF] skrip click '{}' gagal untuk {}", nd.name, sd.name(), e);
-        }
-    }
 
     /**
      * Kirim paket untuk dialog yang sedang ditunggu skrip, bila ada.
@@ -3470,77 +3343,7 @@ public final class Clif {
         s.wfifoSet(encrypt(s, sd));
     }
 
-    /**
-     * clif_canmove_sub(): apakah benda ini menghalangi langkah {@code sd}?
-     *
-     * Cermin dari versi C, termasuk pengecualiannya:
-     * <ul>
-     *   <li><b>diri sendiri tidak pernah menghalangi</b> — penting di tepi
-     *       peta, karena koordinat tujuan dijepit sehingga bisa sama dengan
-     *       posisi sekarang;</li>
-     *   <li>hantu hanya menghalangi pemain yang bisa melihatnya;</li>
-     *   <li>pemain tersembunyi dan GM ber-stealth tidak menghalangi;</li>
-     *   <li>NPC bertipe 2 (dekorasi) tidak menghalangi.</li>
-     * </ul>
-     */
-    static boolean blocksMovement(User sd, org.rtk.map.data.BlockList bl, MapData map) {
-        if (bl.id == sd.id) {
-            return false;
-        }
-        if (bl.type == org.rtk.map.data.BlockList.Type.NPC && bl.subtype == 2) {
-            return false;
-        }
-        if (bl instanceof User tsd) {
-            boolean hantuTakTerlihat = map.showGhosts != 0
-                    && tsd.status.state == User.STATE_GHOST
-                    && sd.status.state != User.STATE_GHOST
-                    && (sd.optFlags & User.OPT_GHOSTS) == 0;
-            boolean disembunyikan = tsd.status.state == User.STATE_HIDDEN
-                    || (tsd.isGm() && (tsd.optFlags & User.OPT_STEALTH) != 0);
-            if (hantuTakTerlihat || disembunyikan) {
-                return false;
-            }
-        }
-        // TODO(A5): mob yang sudah mati tidak menghalangi (MOB_DEAD di C).
-        return true;
-    }
 
-    /**
-     * Geser kamera klien mengikuti langkah, dengan aturan tepi yang sama
-     * seperti versi C: kamera hanya ikut bergerak bila pemain belum berada
-     * di zona tepi peta.
-     */
-    static void updateCamera(User sd, MapData map, int direction, int nx, int ny) {
-        switch (direction) {
-            case 0 -> {
-                if (ny <= sd.viewY || ((map.ys - 1 - ny) < 7 && sd.viewY > 7)) {
-                    sd.viewY--;
-                }
-            }
-            case 1 -> {
-                if ((nx < 8 && sd.viewX < 8) || 16 - (map.xs - 1 - nx) <= sd.viewX) {
-                    sd.viewX++;
-                }
-            }
-            case 2 -> {
-                if ((ny < 7 && sd.viewY < 7) || 14 - (map.ys - 1 - ny) <= sd.viewY) {
-                    sd.viewY++;
-                }
-            }
-            case 3 -> {
-                if (nx <= sd.viewX || ((map.xs - 1 - nx) < 8 && sd.viewX > 8)) {
-                    sd.viewX--;
-                }
-            }
-            // C memakai empat `if (direction == n)` terpisah, jadi arah di
-            // luar 0..3 tidak menyentuh kamera sama sekali. Jangan jadikan
-            // cabang arah 3 sebagai `default`.
-            default -> {
-            }
-        }
-        sd.viewX = Math.max(0, Math.min(sd.viewX, 16));
-        sd.viewY = Math.max(0, Math.min(sd.viewY, 14));
-    }
 
     /** Konfirmasi langkah ke pemain yang bergerak. Opcode 0x26. */
     static void sendWalkConfirm(User sd, int direction, int oldX, int oldY) {
@@ -3716,22 +3519,6 @@ public final class Clif {
         b[o + 3] = (byte) (v & 0xFF);
     }
 
-    /**
-     * Kaitan skrip saat melangkah. Versi C juga memanggil {@code on_walk}
-     * per perlengkapan dan {@code on_walk_passive} per mantra — menyusul
-     * setelah subsistem barang & mantra diport.
-     */
-    static void fireWalkScripts(User sd) {
-        if (MapServer.scriptEngine == null) {
-            return;
-        }
-        try {
-            MapServer.scriptEngine.doScript("onScriptedTile", "onScriptedTile",
-                    MapServer.scriptEngine.playerRef(Pc.scriptPlayerOf(sd)));
-        } catch (RuntimeException e) {
-            log.error("[CLIF] kaitan skrip onScriptedTile gagal untuk {}", sd.name(), e);
-        }
-    }
 
     /**
      * clif_mystaytus() — panel profil milik pemain sendiri. Opcode 0x39.

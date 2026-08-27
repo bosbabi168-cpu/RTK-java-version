@@ -789,11 +789,20 @@ That is not 49 packets waiting to be copied, though — the wire format is
 being replaced. What matters is the **logic behind each action**, not the
 byte decoding.
 
-**The inbound layer now exists** (27 August 2026): `ClientCommands` is the
-mirror of `ClientView` — same idea, opposite direction, and the *logic*
-implements it while the *protocol* calls it. The four `Clif.parse*` methods
-are now pure byte readers. A new protocol only needs a new reader; the
-logic in `MapCommands` stays untouched. See `CLAUDE.md` for the roadmap.
+**The inbound layer now exists, and the split is complete** (27 August
+2026): `ClientCommands` is the mirror of `ClientView` — same idea, opposite
+direction, and the *logic* implements it while the *protocol* calls it. The
+four `Clif.parse*` methods are now pure byte readers that decide nothing,
+and `MapCommands` **no longer touches `Clif` at all** — five logic helpers
+were moved across, and the last six outbound calls now go through
+`ClientView` (49 events). One command verifies the boundary:
+
+```bash
+grep -n "Clif\.\|rfifo\|Session" src/org/rtk/map/MapCommands.java
+```
+
+must come back empty. A new protocol only needs a new reader; the logic in
+`MapCommands` stays untouched. See `CLAUDE.md` for the roadmap.
 
 The 26 August session closed two blocks: (1) bindings that were still
 **stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

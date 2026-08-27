@@ -258,4 +258,35 @@ public final class RetroTkClientView implements ClientView {
                              int icon, int color, int action) {
         Clif.throwAnimation(from, toX, toY, icon, color, action);
     }
+
+    @Override
+    public void scriptDialogReady(User sd, org.rtk.map.script.ScriptPlayer p) {
+        Clif.flushDialog(sd, p);
+    }
+
+    @Override
+    public void npcSaidTo(User sd, long npcId, String text) {
+        Clif.sendScriptMes(sd, npcId, text, false, false);
+    }
+
+    @Override
+    public void playerStepRejected(User sd) {
+        Clif.snapBack(sd);
+    }
+
+    @Override
+    public void playerStepped(User sd, int direction, int fromX, int fromY) {
+        Clif.sendWalkConfirm(sd, direction, fromX, fromY);
+    }
+
+    @Override
+    public void playerStepSeen(User sd, int direction, int fromX, int fromY) {
+        Clif.broadcastWalk(sd, direction, fromX, fromY);
+    }
+
+    @Override
+    public void areaRedrawRequested(User sd, MapData map, int x, int y,
+                                    int width, int height, int checksum) {
+        Clif.redrawArea(sd, map, x, y, width, height, checksum);
+    }
 }

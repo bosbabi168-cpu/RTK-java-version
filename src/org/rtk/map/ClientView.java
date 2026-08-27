@@ -323,4 +323,67 @@ public interface ClientView {
      * {@link #floorItemAppeared}.
      */
     void objectThrown(BlockList from, int toX, int toY, int icon, int color, int action);
+
+    // ------------------------------------------------------------------
+    // Dialog NPC
+    // ------------------------------------------------------------------
+
+    /**
+     * Skrip berhenti di tengah dan menitipkan sesuatu untuk ditampilkan —
+     * menu, kotak dialog, isian teks, atau daftar toko.
+     *
+     * <p>Yang mana persisnya ada di {@code p.pendingDialog}; menerjemahkannya
+     * jadi paket adalah urusan lapisan protokol. Logika hanya melaporkan
+     * bahwa skripnya <b>sudah punya sesuatu untuk ditunjukkan</b>.</p>
+     *
+     * <p>Dipanggil setiap kali skrip mungkin telah berhenti: sesudah klik
+     * NPC dan sesudah tiap jawaban pemain. Aman bila tidak ada apa-apa yang
+     * tertunda — implementasinya tidak melakukan apa pun.</p>
+     */
+    void scriptDialogReady(User sd, org.rtk.map.script.ScriptPlayer p);
+
+    /**
+     * Satu NPC berbicara langsung kepada seorang pemain, tanpa tombol
+     * lanjut/kembali — kotak dialog sekali baca.
+     *
+     * <p>Terpisah dari {@link #scriptDialogReady} karena tidak berasal dari
+     * skrip yang tertunda: ini penolakan yang diputuskan server sendiri.</p>
+     */
+    void npcSaidTo(User sd, long npcId, String text);
+
+    // ------------------------------------------------------------------
+    // Langkah pemain
+    // ------------------------------------------------------------------
+
+    /**
+     * Langkah pemain <b>ditolak</b> — klien harus dikembalikan ke posisi
+     * yang dipegang server.
+     *
+     * <p>Dua sebab, dan keduanya berakhir di sini: klien menyebut koordinat
+     * yang tidak cocok dengan catatan server, atau petak tujuannya
+     * terhalang. Logika tidak membedakan keduanya ke arah klien.</p>
+     */
+    void playerStepRejected(User sd);
+
+    /** Langkah pemain diterima — dilaporkan kepada pemain itu sendiri. */
+    void playerStepped(User sd, int direction, int fromX, int fromY);
+
+    /**
+     * Langkah pemain terlihat oleh sekitarnya.
+     *
+     * <p>Terpisah dari {@link #playerStepped} karena tidak selalu terjadi:
+     * pemain yang terjepit di tepi peta tetap menghadap arah baru tanpa
+     * benar-benar berpindah petak.</p>
+     */
+    void playerStepSeen(User sd, int direction, int fromX, int fromY);
+
+    /**
+     * ⚠️ <b>Kebocoran protokol yang disengaja.</b> Klien RetroTK menitipkan
+     * permintaan menggambar ulang sepetak wilayah pada paket langkah yang
+     * sama, dan urutannya mengikat — lihat catatan di
+     * {@code ClientCommands.playerWalks}. Protokol baru tidak akan
+     * membutuhkan ini; server tahu sendiri apa yang baru terlihat.
+     */
+    void areaRedrawRequested(User sd, MapData map, int x, int y,
+                             int width, int height, int checksum);
 }
