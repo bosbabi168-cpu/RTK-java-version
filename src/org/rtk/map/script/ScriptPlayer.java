@@ -71,6 +71,21 @@ public class ScriptPlayer {
      * itu disegarkan dari karakter.</p>
      */
     public interface Owner {
+
+        /**
+         * {@code sd->speech}: kalimat yang baru diketik pemain.
+         *
+         * <p>Terpisah dari {@code scriptGetAttr} karena nilainya string,
+         * sementara jembatan atribut umum mengembalikan {@code Long}.</p>
+         */
+        default String scriptGetSpeech() {
+            return "";
+        }
+
+        /** Pasangan tulis {@link #scriptGetSpeech()}. */
+        default void scriptSetSpeech(String s) {
+        }
+
         void scriptSetLevel(int level);
 
         /**

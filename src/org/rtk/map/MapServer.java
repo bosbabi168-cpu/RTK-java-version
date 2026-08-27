@@ -364,6 +364,20 @@ public final class MapServer {
      * pemain terautentikasi ({@code session_data} masih kosong), hanya
      * opcode 0x10 yang dilayani — persis seperti versi C.
      */
+    /**
+     * Loop paket klien — <b>dua protokol berdampingan</b>.
+     *
+     * <p>RetroTK ({@code Clif.parse*}) dan RTK2
+     * ({@code org.rtk.map.proto.Inbound}) dilayani di port yang sama, dan
+     * pembedanya <b>tanpa keadaan</b>: paket RetroTK selalu diawali
+     * {@code 0xAA}. Lihat {@code Wire.isRetroTk} untuk kenapa bingkai RTK2
+     * tidak akan pernah bisa disalahtebak.</p>
+     *
+     * <p>Keduanya hidup bersama karena arah project sudah final — protokol
+     * dan kliennya diganti — tetapi klien penggantinya belum ada. Menghapus
+     * jalur RetroTK sekarang berarti tidak ada apa pun yang bisa terhubung
+     * sampai Trek B selesai; membiarkannya tidak menghalangi apa pun.</p>
+     */
     static int clientParse(int fd) {
         Session s = net.session(fd);
         if (s == null) {
@@ -374,13 +388,42 @@ public final class MapServer {
             net.sessionEof(fd);
             return 0;
         }
+        if (s.rfifoRest() < 1) {
+            return 0;
+        }
+        return org.rtk.map.proto.Wire.isRetroTk(s) ? retroTkParse(fd, s) : rtk2Parse(fd, s);
+    }
 
-        // buang byte sampah sampai penanda paket ditemukan
-        if (s.rfifoRest() > 0 && s.rfifoB(0) != 0xAA) {
-            log.warn("[MAP] byte tak dikenal dari {} — koneksi ditutup", s.clientIpString());
+    /** Satu bingkai RTK2. */
+    private static int rtk2Parse(int fd, Session s) {
+        int len;
+        try {
+            len = org.rtk.map.proto.Wire.frameLength(s);
+            if (len == 0) {
+                return 0;   // bingkainya belum lengkap
+            }
+            org.rtk.map.proto.Inbound.dispatch(fd, s, onlineChars.get(fd), len,
+                    commands, MapServer::rtk2Introduce);
+        } catch (org.rtk.map.proto.Wire.Malformed e) {
+            // Setelah satu bingkai rusak, batas bingkai berikutnya sudah
+            // tidak diketahui — melanjutkan berarti menafsirkan sampah.
+            log.warn("[RTK2] bingkai rusak dari {}: {}", s.clientIpString(), e.getMessage());
             s.eof = true;
             return 0;
         }
+        if (net.session(fd) != null && s.rfifoRest() >= len) {
+            s.rfifoSkip(len);
+        }
+        return 0;
+    }
+
+    /** Perkenalan RTK2: sama jalurnya dengan 0x10 RetroTK, tanpa byte-nya. */
+    private static boolean rtk2Introduce(int fd, Session s, String name) {
+        return authByName(fd, s, name);
+    }
+
+    /** Satu paket RetroTK. */
+    private static int retroTkParse(int fd, Session s) {
         if (s.rfifoRest() < 3) {
             return 0;
         }
@@ -436,18 +479,29 @@ public final class MapServer {
             s.eof = true;
             return;
         }
-        String name = s.rfifoString(16, nameLen);
+        if (!authByName(fd, s, s.rfifoString(16, nameLen))) {
+            s.eof = true;
+        }
+    }
 
+    /**
+     * Bagian {@code clif_accept2} yang <b>bukan</b> pembacaan byte: cari
+     * nama karakternya, lalu minta datanya ke char server lewat 0x3003.
+     *
+     * <p>Dipakai kedua protokol. Dipisah karena isinya sama persis —
+     * yang berbeda hanya dari mana namanya datang.</p>
+     */
+    static boolean authByName(int fd, Session s, String name) {
         Integer charId = sql.queryInt("SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", name);
         if (charId == null || charId == 0) {
             log.warn("[MAP] karakter '{}' dari {} tidak ada di database", name, s.clientIpString());
-            s.eof = true;
-            return;
+            return false;
         }
         s.name = name;
         log.info("[MAP] klien {} memperkenalkan diri sebagai '{}' (id {})",
                 s.clientIpString(), name, charId);
         MapIntif.requestChar(fd, charId, name);
+        return true;
     }
 
     /** Pemain terputus: simpan lalu lepaskan dari dunia. */

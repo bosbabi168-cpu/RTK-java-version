@@ -142,8 +142,9 @@ proses build di server.
   `./run.sh cliftest` (paket klien, gerakan, portal, penggambaran, gambar
   ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
   durasi mantra, gerak mob, barang lantai, inventaris, buku mantra,
-  tampilan & timer, simpan paksa, BOD — **535 assertion**),
-  `./run.sh dbtest` (lapisan database ke MySQL hidup — 132 assertion;
+  tampilan & timer, simpan paksa, BOD, pertukaran, **protokol RTK2**,
+  **aksi pemain** — **640 assertion**),
+  `./run.sh dbtest` (lapisan database ke MySQL hidup — 192 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
   statis 907 skrip Lua. Lihat "Audit skrip Lua" di bawah.
@@ -985,6 +986,100 @@ byte-identik dengan `rtklua/`.
    berarti sesuatu. Aturan yang sama berlaku untuk refactor apa pun di
    project ini yang tidak menambah uji baru.
 
+56. **RTK2: satu port, dua protokol, pembeda TANPA KEADAAN.** Paket
+   RetroTK selalu diawali `0xAA`; byte pertama bingkai RTK2 adalah byte
+   tinggi ladang panjang, yang tidak akan pernah `0xAA` **selama
+   `Wire.MAX_FRAME` di bawah 43.520**. Karena itu tidak ada tabel "sesi ini
+   protokol apa" yang harus dibersihkan saat pemain terputus, dan tidak ada
+   keadaan yang bisa jadi basi.
+
+   ⚠️ **Menaikkan `MAX_FRAME` melewati 43.520 mematahkan pembedaan itu**
+   dan gejalanya akan terlihat sebagai paket RetroTK yang tiba-tiba rusak,
+   bukan sebagai batas bingkai yang salah. Ada assertion khusus di
+   `cliftest` yang menjaga hubungan ini; jangan dihapus saat menyetel batas.
+
+57. **Lima jebakan RetroTK yang dibuang di RTK2 — dan kenapa.** Rinciannya
+   di javadoc `Wire`; ringkasnya, tiap satu pernah menghasilkan bug nyata di
+   port ini:
+   - **dua endianness** (Peringatan #3, #10 — satu uji lolos tanpa menguji
+     kodenya) → RTK2 big-endian tanpa pengecualian;
+   - **ladang panjang yang bukan panjang** (Peringatan #17, dua kali membuat
+     ekspektasi uji salah) → panjang adalah panjang;
+   - **enkripsi XOR beserta urutan dekripsinya** (paket perkenalan justru
+     tidak boleh didekripsi; melanggarnya membuat klien menggantung) →
+     polos, kerahasiaan nanti dari TLS;
+   - **nomor urut di ladang [4] yang hanya ada di sebagian paket**
+     (Peringatan #29) → tidak ada;
+   - **slot 1-basis di kabel, 0-basis di server** → 0-basis di keduanya.
+
+   Dua hal lain juga sengaja tidak ada: **permintaan gambar ulang** yang
+   menumpang paket langkah (kebocoran di Peringatan #52), dan **perjalanan
+   bolak-balik "berapa banyak?"** saat menyerahkan setumpuk barang — klien
+   sudah tahu isi tumpukannya, jadi `clif_parse_exchange` ragam 1 dan 2 jadi
+   satu opcode.
+
+58. **`clif_parsesay` TIDAK menyiarkan apa pun — badannya dikomentari.**
+   Yang benar-benar terjadi saat pemain mengetik: kalimatnya disimpan di
+   `sd->speech`, kait `on_say` tiap mantra yang dikuasai dipanggil, lalu
+   skrip **`onSay`** (`Accepted/speech.lua`) yang memutuskan segalanya —
+   termasuk memanggil `player:talk()` bila memang perlu terdengar.
+
+   Menambahkan siaran di sisi server membuat **setiap kalimat terkirim dua
+   kali**. Pola yang sama berlaku untuk memungut (`onPickUp` yang menyapu
+   petak dan memanggil `addGold`/`addItem`, bukan server) dan menyerang
+   (`swing` yang mencari sasarannya sendiri — itulah sebabnya paket serang
+   tidak membawa sasaran sama sekali).
+
+   ⚠️ Konsekuensinya: **`player.speech` adalah satu-satunya atribut pemain
+   yang bernilai string**, sehingga ia tidak bisa lewat jembatan
+   `scriptGetAttr` yang mengembalikan `Long`. Ia punya cabang sendiri di
+   `Bindings.definePlayer` lewat `ScriptPlayer.Owner.scriptGetSpeech()`.
+   Tanpa itu `speech.lua` meledak di baris pertamanya, di
+   `string.lower(nil)`.
+
+59. **Emas yang dijatuhkan punya aturan gabung KETIGA.** Setelah jatuhan mob
+   (id sama) dan jatuhan inventaris (sepuluh atribut sama; Peringatan #31),
+   emas melebur dengan **tumpukan koin mana pun** — penyaringnya
+   `id >= 0 && id <= 3`, karena keempat id itu tingkat gambar, bukan jenis
+   barang (0 sekeping, 1 untuk 2–99, 2 untuk 100–999, 3 untuk 1.000 ke
+   atas).
+
+   Dua hal yang terlihat seperti kelalaian tapi ada di C:
+   - **Tingkatnya tidak dihitung ulang setelah melebur** — sekeping koin
+     yang menyerap 5.000 emas tetap tergambar sebagai sekeping.
+   - **Emas dipotong dari dompet SEBELUM kait skrip berjalan**, dan tidak
+     dikembalikan bila kaitnya membatalkan lewat `fakeDrop`. Skrip yang
+     memakai `fakeDrop` pada emas mengandalkan pemotongan itu sudah terjadi.
+
+60. **`mob->inventory` bukan lubang tempat barang hilang.** Barang yang
+   diserahkan pemain ke mob masuk ke sana, dan **dijatuhkan kembali saat
+   mob mati** (`mobdb_drops`, mob.c:730) — lewat jalur jatuhan mob, jadi
+   aturan gabungnya id saja. Membuang bagian itu membuat setiap barang yang
+   diserahkan ke mob lenyap selamanya.
+
+   Terkait, di keluarga yang sama: **`NpcCanReceiveItem` bernilai 0 bukan
+   berarti NPC diam saja** — ia menjawab dengan ejekan ("Keep your junky
+   ... with you!"). Itu satu-satunya umpan balik pemain.
+
+61. **`playerInventorySlotCleared` MENGOSONGKAN slotnya, bukan sekadar
+   memberi tahu klien.** Ini pengulangan Peringatan #37 dari sisi
+   pemanggil, dan sempat kejadian lagi 27 Agustus 2026 di
+   `playerHandsItem`: menambahkan `inventory.remove(slot)` sesudahnya
+   membuang slot pemain **berikutnya**, dan gejalanya
+   `IndexOutOfBoundsException` di tempat yang berbeda. Yang menangkapnya
+   uji yang ditulis di sesi yang sama.
+
+62. **Kueri yang DISUSUN RUNTIME tidak terlihat audit SQL `dbtest`.**
+   Audit tahap 1 menyapu literal string dari berkas sumber, jadi
+   `ClassDb.loadPaths` — yang merangkai enam belas kolom `PthMark0..15`
+   dalam perulangan — lolos tanpa pernah divalidasi skema hidup. Sama
+   dengan `CharPersistence.reg()` yang sudah lebih dulu dikecualikan.
+   Jalur seperti ini **wajib diuji lewat pemanggilan sungguhan** di tahap 2,
+   bukan diandalkan pada auditnya.
+
+   Ini keluarga yang sama dengan Peringatan #30 dan #50: **angka audit hanya
+   sejujur cara ia mengumpulkan namanya.**
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -1013,7 +1108,9 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
 | `char_db.c` mmo_char_fromdb/todb | `charserver/CharPersistence` | muat/simpan 11 tabel MySQL |
 | `map/map.h` block_list, map_data | `map/data/BlockList`, `MapData`, `MapRegistry` | geometri + metadata + indeks spasial blok 8x8 |
 | `map/pc.c` (penempatan) | `map/User`, `map/Pc` | USER runtime, pc_setpos/warp/enterWorld |
-| `map/clif.c` (paket klien) | `map/Clif` | paket keluar + `parseWalk`; big-endian, dua jalur kunci |
+| `map/clif.c` (paket klien) | `map/Clif` | paket keluar RetroTK; big-endian, dua jalur kunci |
+| `map/clif.c` `clif_parse()` | `map/proto/Wire`, `map/proto/Inbound` | **protokol RTK2 sendiri** arah masuk — bukan port, rancangan baru (`docs/PROTOKOL-RTK2.md`) |
+| `map/clif.c` penangan aksi pemain | `map/ClientCommands`, `map/MapCommands` | logika di balik tiap aksi, terpisah dari format kabelnya |
 | `map/npc.c` (pemuat `Warps`) | `map/data/MapRegistry.loadWarps` | portal, diindeks per blok 8x8 |
 | `map/npc.c` `npc_init()` | `map/Npc`, `map/NpcRegistry` | 385 NPC + indeks id (`map_id2bl`) + perlengkapan |
 | `map/class_db.c` `leveldb_read` | `map/data/ClassDb` | tabel pengalaman per path, dari `db/level_db.txt` |
@@ -1104,7 +1201,7 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
 | Gerbang regresi | 6/6 hijau (`cliftest` **572**, `dbtest` **187** assertion) |
 | Binding skrip | **11** belum diport (**3** di `sl.c` + 8 salah ketik / kode mati); global belum diport **0** |
-| **Paket MASUK** | ⚠️ **5 dari 54 opcode** — lihat "AUDIT 27 Agustus 2026" |
+| **Paket MASUK** | protokol **RTK2 sendiri**, 16 opcode (RetroTK tetap 5, berdampingan) |
 | Trek A | selesai fungsinya; `sendMyStatus` sengaja TAHAP 1 |
 | Trek C | C1 & C4 selesai; **C2 dan C3 belum tersentuh** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
@@ -1566,7 +1663,7 @@ NPC **dan** mob.
 
 ---
 
-#### ROADMAP — 27 Agustus 2026 (diperiksa ulang)
+#### ROADMAP — 27 Agustus 2026 (setelah protokol RTK2)
 
 > Diverifikasi ke kode, bukan ke catatan. Angka di bawah dari
 > `./run.sh luaaudit` dan pembacaan sumber pada tanggal itu.
@@ -1580,57 +1677,63 @@ NPC **dan** mob.
 | Trek C1, C4 | registry skrip; kiriman, surat, hadiah, papan pesan |
 | Subsistem besar | BL_ITEM, durasi & aether, BOD, pertukaran barang |
 | Lapisan protokol **keluar** | `ClientView`, **49 peristiwa** |
-| Lapisan protokol **masuk** | `ClientCommands` + `MapCommands`, **9 perintah**; pemisahannya **tuntas** 27 Agu |
-| Gerbang regresi | 6/6 hijau — `cliftest` 572, `dbtest` 187 assertion |
+| Lapisan protokol **masuk** | `ClientCommands` **17 perintah**; pemisahannya **tuntas** |
+| **Protokol RTK2 arah masuk** | `map/proto/{Wire,Inbound}`, **16 opcode**, spek di `docs/PROTOKOL-RTK2.md` |
+| Gerbang regresi | 6/6 hijau — `cliftest` **640**, `dbtest` **192** assertion |
+
+**Keputusan 27 Agustus 2026:** protokol sendiri **langsung dipakai**,
+tanpa menulis pembaca RetroTK yang umurnya pendek. Akibatnya uji dengan
+pemain sungguhan (dulu butir 4) **pindah ke belakang** — ia menunggu klien
+buatan sendiri, bukan klien RetroTK.
 
 ---
 
-~~**1. Selesaikan pemisahan lapisan masuk.**~~ **SELESAI 27 Agustus 2026.**
-Kelima helper (`blocksMovement`, `updateCamera`, `fireWalkScripts`,
-`checkWarpTile` + `entryRejection` + `pushBack`, `clickNpc`) sudah pindah ke
-`MapCommands`, dan enam panggilan keluar yang tersisa di jalur langkah &
-dialog kini lewat `ClientView`: `playerStepRejected`, `playerStepped`,
-`playerStepSeen`, `areaRedrawRequested`, `scriptDialogReady`, `npcSaidTo`.
-Lihat Peringatan #54.
+**1. Arah KELUAR untuk RTK2 — `Rtk2ClientView`.** Ini penghambat terbesar
+sekarang, dan satu-satunya yang menghalangi klien sendiri berjalan: arah
+masuk sudah punya protokol sendiri, arah keluar belum. `ClientView` punya
+**49 peristiwa** dan baru satu implementasi (`RetroTkClientView`). Daftar
+peristiwanya **sudah** jadi spesifikasinya — tinggal memilih bentuk
+kabelnya, dan `Wire` sudah menyediakan aturan bingkai yang sama.
 
-**2. Pembaca paket masuk untuk aksi yang logikanya SUDAH ada.** Ini yang
-paling banyak hasilnya per usaha, karena logikanya tinggal disambungkan:
+**2. Pasang/lepas perlengkapan, pakai & makan barang, melempar.** Menutup
+dua dari tiga binding terakhir (`takeOff`, `throwItem`). Logikanya **belum
+ada**, jadi ini pekerjaan baru, bukan penyambungan. Opcodenya tinggal
+disisipkan di golongan `0x02xx`.
 
-| Aksi | Logika | Yang kurang |
-|---|---|---|
-| Pertukaran barang | ✅ `map/Exchange` | pembaca `0x4A`/`0x29`/`0x2A` |
-| Pungut & jatuhkan barang | ✅ `map/FloorItemRegistry` | pembaca `0x07`/`0x08`/`0x24` |
-| Menyerang | ✅ `map/Combat.swingAt` | pembaca `0x13` |
-| Bicara & berbisik | ✅ `Clif.scriptSay` | pembaca `0x0E`/`0x19` |
+**3. Merapal mantra.** Golongan opcode `0x02xx`/`0x05xx` juga; logikanya
+sebagian sudah ada lewat `Durations`.
 
-⚠️ Tapi putuskan dulu: **menulis pembaca RetroTK, atau langsung merancang
-protokol sendiri?** Format kabelnya akan diganti (lihat bagian teratas),
-jadi pembaca RetroTK adalah kerja yang umurnya pendek — kecuali memang
-dipakai untuk menguji dengan klien asli (butir 4).
-
-**3. Pasang/lepas perlengkapan dan pakai barang.** Menutup dua dari tiga
-binding terakhir (`takeOff`, `throwItem`). Logikanya belum ada, jadi ini
-pekerjaan baru, bukan penyambungan.
-
-**4. Uji dengan pemain sungguhan online.** Tik durasi mantra, seluruh gerak
-mob, dan sekarang pertukaran barang **belum pernah berjalan** — semuanya
-hanya menyala untuk pemain yang online. Peringatan #26 lahir persis dari
-kait timer yang hanya menyala saat server hidup.
-
-**5. Trek B — dekoder EPF, editor, klien libGDX.** **Belum dimulai sama
+**4. Trek B — dekoder EPF, editor, klien libGDX.** **Belum dimulai sama
 sekali** (`src/org/rtk/` hanya berisi charserver, common, login, map). Ini
-jalur menuju arah final project. B1 dekoder EPF prasyarat sisanya;
+jalur menuju arah final project, dan sekarang juga jalur satu-satunya
+menuju pengujian sungguhan. B1 dekoder EPF prasyarat sisanya;
 `rtk/SObj.tbl` (18.954 entri) masih di RTK-Server, belum disalin.
 
-**6. C2 — empat berkas meta hilang.** `meta/` masih hanya berisi
+**5. C2 — empat berkas meta hilang.** `meta/` masih hanya berisi
 `RidableAnimals`; `login.conf` meminta lima. Sebab tooltip barang hilang.
+⚠️ Nilainya menurun bersama arah project: berkas meta adalah format
+RetroTK, dan klien sendiri tidak akan membacanya.
 
-**7. C3 — warp antar map server.** Masih ditolak di `Clif.java`.
+**6. C3 — warp antar map server.** Masih ditolak di `MapCommands`.
+
+**7. Sosial & antarmuka** — grup, teman, profil, emosi, daftar abaikan
+(yang terakhir menutup penyaring `clif_isignore`), papan & pos, minimap,
+ranking.
 
 **8. Terjemahan Indonesia** — ~3.800 titik dialog, 903 di antaranya di 56
 berkas. Kata kunci `speech` sudah selesai.
 
 **9. `testPacket`** — satu-satunya binding yang **sengaja tidak diport**.
+
+**10. Uji dengan pemain sungguhan online** — *dulu butir 4, sengaja
+dipindahkan ke sini.* Tik durasi mantra, seluruh gerak mob, pertukaran
+barang, dan sekarang seluruh aksi baru (bicara, memungut, menjatuhkan,
+menyerahkan, menyerang) **belum pernah berjalan** — semuanya hanya menyala
+untuk pemain yang online, dan kait skripnya (`onSay`, `onPickUp`,
+`onSwing`) baru terbukti lewat jembatan atributnya, bukan lewat
+skripnya sendiri. Peringatan #26 lahir persis dari kait timer yang hanya
+menyala saat server hidup, jadi **ini tetap pemeriksaan yang paling
+tajam** — hanya urutannya yang berubah: butuh butir 1 dan 4 lebih dulu.
 
 ---
 
@@ -1638,9 +1741,9 @@ berkas. Kata kunci `speech` sudah selesai.
 `Clif.sendMyStatus()` TAHAP 1 (klan, gelar, pasangan, TNL kosong) dan
 penyaring `clif_isignore`. Keduanya menunggu protokol baru.
 
-**Satu hal yang ditandai belum lengkap:** `ClassDb.pathName()` mengembalikan
-string kosong — di C namanya diambil dari salah satu dari enam belas kolom
-`PthMark0..15` menurut tanda pemain.
+~~`ClassDb.pathName()` mengembalikan string kosong~~ — **dilengkapi
+27 Agustus 2026** bersama `PthChat`; dipakai baris obrolan klan/subpath,
+dan diuji ke database hidup di `dbtest` (lihat Peringatan #62).
 
 ---
 

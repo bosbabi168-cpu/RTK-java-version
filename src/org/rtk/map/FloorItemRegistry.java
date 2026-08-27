@@ -156,6 +156,63 @@ public final class FloorItemRegistry {
         return tempatkan(fl, map, m, x, y);
     }
 
+    // ------------------------------------------------------------------
+    // emas yang dijatuhkan (clif_dropgold)
+    // ------------------------------------------------------------------
+
+    /**
+     * Tumpukan koin untuk sejumlah emas — <b>belum</b> ditaruh di peta.
+     *
+     * <p>⚠️ Idnya adalah <b>tingkat gambar</b>, bukan jenis barang: 0 untuk
+     * sekeping, 1 untuk 2–99, 2 untuk 100–999, 3 untuk 1.000 ke atas.
+     * Jumlah sebenarnya tetap di {@code amount}; idnya hanya menentukan
+     * seberapa besar tumpukan koin terlihat.</p>
+     *
+     * <p>Terpisah dari penempatannya karena di C pun begitu: kait
+     * {@code on_drop_gold} menerima benda ini <b>sebelum</b> ia mendarat,
+     * dan bisa membatalkan pendaratannya lewat {@code fakeDrop}.</p>
+     */
+    public static FloorItem newGoldPile(long amount) {
+        FloorItem fl = new FloorItem();
+        fl.data.id = amount == 1 ? 0 : amount < 100 ? 1 : amount < 1000 ? 2 : 3;
+        fl.data.amount = (int) Math.min(amount, Integer.MAX_VALUE);
+        return fl;
+    }
+
+    /**
+     * clif_addtocurrent(): taruh tumpukan koin, atau lebur ke tumpukan yang
+     * sudah ada di petak itu.
+     *
+     * <p>⚠️ <b>Emas melebur dengan tumpukan koin mana pun</b> — penyaringnya
+     * {@code id >= 0 && id <= 3}, bukan id yang sama persis. Ini aturan
+     * ketiga penggabungan barang lantai, berbeda dari jatuhan mob (id sama)
+     * maupun jatuhan inventaris (sepuluh atribut sama; Peringatan #31).</p>
+     *
+     * <p>⚠️ Dan <b>tingkat gambarnya tidak dihitung ulang</b> sesudah
+     * melebur: sekeping koin yang menyerap 5.000 emas tetap tergambar
+     * sebagai sekeping. Ada di C, ditiru apa adanya — memperbaikinya
+     * mengubah tampilan setiap tumpukan di dunia.</p>
+     *
+     * @return true bila melebur ke tumpukan yang sudah ada, sehingga
+     *         pemanggil tahu kait {@code after_drop_gold} <b>tidak</b>
+     *         dijalankan — sama seperti C, yang membebaskan bendanya di situ
+     */
+    public boolean placeGold(FloorItem fl, int m, int x, int y) {
+        MapData map = MapServer.world.get(m);
+        if (map == null) {
+            return false;
+        }
+        for (BlockList bl : map.objectsAt(x, y)) {
+            if (bl instanceof FloorItem ada && ada.data.id >= 0 && ada.data.id <= 3) {
+                ada.lastAmount = ada.data.amount;
+                ada.data.amount += fl.data.amount;
+                return true;
+            }
+        }
+        tempatkan(fl, map, m, x, y);
+        return false;
+    }
+
     /** Bagian bersama: taruh barang di petaknya lalu tampakkan ke sekitar. */
     private FloorItem tempatkan(FloorItem fl, MapData map, int m, int x, int y) {
         fl.m = m;

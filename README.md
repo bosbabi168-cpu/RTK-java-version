@@ -768,7 +768,7 @@ Titik berangkat untuk sesi berikutnya.
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
 | **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
-| **Paket MASUK** | ⚠️ **5 dari 54 opcode** — lihat catatan audit di bawah |
+| **Paket MASUK** | protokol **RTK2 sendiri**, 16 opcode (RetroTK 5, berdampingan) |
 | Trek A | selesai fungsinya; `sendMyStatus` sengaja dibiarkan TAHAP 1 |
 | Trek C | C1 dan C4 selesai; **C2 dan C3 belum tersentuh** |
 
@@ -784,21 +784,27 @@ Itu bukan berarti 49 paket menunggu disalin — format kabelnya memang akan
 diganti. Yang berharga adalah **logika di balik tiap aksinya**, bukan
 pembacaan bytenya.
 
-**Lapisan masuknya kini sudah berdiri, dan pemisahannya tuntas**
-(27 Agustus 2026): `ClientCommands` adalah cermin dari `ClientView` —
-gagasan yang sama, arah berlawanan, dan yang mengimplementasikannya adalah
-*logika* sementara yang memanggilnya *protokol*. Keempat `Clif.parse*` kini
-pembaca byte murni yang tidak memutuskan apa pun, dan `MapCommands`
-**tidak menyentuh `Clif` sama sekali** — lima helper yang isinya logika
-sudah dipindahkan, enam panggilan keluar terakhir lewat `ClientView`
-(kini 49 peristiwa). Verifikasinya satu perintah:
+**Lapisan masuknya kini punya PROTOKOL SENDIRI** (27 Agustus 2026).
+Setelah pemisahannya tuntas, langkah berikutnya diputuskan: **tidak menulis
+pembaca RetroTK yang umurnya pendek**, melainkan langsung merancang format
+kabel sendiri — **RTK2** (`src/org/rtk/map/proto/`, spek di
+[`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md)).
 
-```bash
-grep -n "Clif\.\|rfifo\|Session" src/org/rtk/map/MapCommands.java
-```
+Enam belas opcode melayani sebelas aksi pemain: berjalan, mengklik,
+menjawab menu & dialog, bicara, berbisik, memungut, menjatuhkan barang &
+emas, menyerahkan barang & emas, menyerang, dan lima perintah pertukaran.
+Bingkainya `u16 panjang + u16 opcode + muatan`, **big-endian tanpa
+pengecualian**, tanpa enkripsi, tanpa nomor urut, slot 0-basis — lima
+jebakan RetroTK yang tiap satunya pernah menghasilkan bug nyata di port ini
+(Peringatan #57).
 
-harus kosong. Protokol baru cukup menulis pembaca baru; logika di
-`MapCommands` tidak disentuh. Roadmap berurutnya ada di `CLAUDE.md`.
+Kedua protokol jalan **berdampingan di port yang sama**, dibedakan tanpa
+keadaan: paket RetroTK selalu diawali `0xAA`. RetroTK dibiarkan hidup
+karena klien penggantinya belum ada.
+
+⚠️ **Arah keluarnya belum**: `ClientView` (49 peristiwa) baru punya
+`RetroTkClientView`. Klien RTK2 yang benar-benar bisa dimainkan butuh
+`Rtk2ClientView` lebih dulu — itu butir 1 roadmap sekarang.
 
 Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
 **stub** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

@@ -158,6 +158,16 @@ final class Bindings {
                         p.questUdata = engine.newInstance(engine.questClass, p);
                     }
                     return p.questUdata;
+                case "speech":
+                    // ⚠️ Satu-satunya atribut pemain yang bernilai STRING,
+                    // jadi ia tidak bisa lewat jembatan scriptGetAttr yang
+                    // mengembalikan Long. speech.lua membacanya di baris
+                    // pertama `onSay` — tanpa cabang ini seluruh jalur
+                    // obrolan meledak di string.lower(nil).
+                    if (p.owner instanceof ScriptPlayer.Owner o2) {
+                        return LuaValue.valueOf(o2.scriptGetSpeech());
+                    }
+                    return LuaValue.valueOf("");
                 case "gameRegistry":
                     return engine.gameRegistryUdata;
                 case "mapRegistry":
@@ -185,6 +195,14 @@ final class Bindings {
         player.setter = (self, attr, value) -> {
             ScriptPlayer p = (ScriptPlayer) self;
             switch (attr) {
+                case "speech":
+                    // speech.lua menulis balik ke sini saat pemain memakai
+                    // pintasan /s, dan nilai barunya yang dibaca sisa skripnya.
+                    if (p.owner instanceof ScriptPlayer.Owner o2) {
+                        o2.scriptSetSpeech(value.tojstring());
+                        return true;
+                    }
+                    return false;
                 case "level":
                     p.level = value.toint();
                     if (p.owner instanceof ScriptPlayer.Owner o) {

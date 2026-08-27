@@ -68,6 +68,20 @@ public final class ClassDb {
      */
     private final java.util.Map<Integer, Integer> pathByClass = new java.util.HashMap<>();
 
+    /** {@code PthChat}: subpath ini boleh memakai saluran obrolannya sendiri. */
+    private final java.util.Map<Integer, Integer> chatByClass = new java.util.HashMap<>();
+
+    /** {@code PthMark0..15}: gelar menurut tanda pemain. */
+    private final java.util.Map<Integer, String[]> marksByClass = new java.util.HashMap<>();
+
+    /** Banyak kolom gelar di tabel {@code Paths}. */
+    public static final int MAX_MARKS = 16;
+
+    /** classdb_chat(): subpath ini punya saluran obrolan sendiri. */
+    public boolean hasSubpathChat(int classId) {
+        return chatByClass.getOrDefault(classId, 0) != 0;
+    }
+
     public int pathOf(int classId) {
         return pathByClass.getOrDefault(classId, 0);
     }
@@ -82,15 +96,48 @@ public final class ClassDb {
      * kosong, dan pemanggilnya menghasilkan {@code "Nama()"} — persis
      * seperti cabang C ketika namanya tidak ketemu.</p>
      */
+    /**
+     * classdb_name(): gelar pemain menurut kelas dan <b>tandanya</b>.
+     *
+     * <p>⚠️ {@code mark} adalah indeks langsung ke {@code PthMark0..15},
+     * bukan nomor tingkat yang perlu dihitung. Di C ia sebuah
+     * {@code switch} dengan enam belas cabang yang masing-masing
+     * mengembalikan satu ladang.</p>
+     *
+     * <p>Mengembalikan "" bila kelas atau tandanya di luar tabel — dipakai
+     * di baris obrolan sebagai {@code "()"} kosong, persis seperti C yang
+     * punya cabang cadangan untuk itu.</p>
+     */
     public String pathName(int classId, int mark) {
-        return "";
+        String[] gelar = marksByClass.get(classId);
+        if (gelar == null || mark < 0 || mark >= gelar.length) {
+            return "";
+        }
+        return gelar[mark];
     }
 
     /** Muat pemetaan kelas -&gt; jalur dari tabel {@code Paths}. */
     public int loadPaths(org.rtk.common.Sql sql) {
         pathByClass.clear();
-        int rows = sql.forEachRow("SELECT `PthId`,`PthType` FROM `Paths`",
-                rs -> pathByClass.put(rs.getInt("PthId"), rs.getInt("PthType")));
+        chatByClass.clear();
+        marksByClass.clear();
+        StringBuilder kolom = new StringBuilder("SELECT `PthId`,`PthType`,`PthChat`");
+        for (int i = 0; i < MAX_MARKS; i++) {
+            kolom.append(",`PthMark").append(i).append('`');
+        }
+        kolom.append(" FROM `Paths`");
+        int rows = sql.forEachRow(kolom.toString(),
+                rs -> {
+                    int id = rs.getInt("PthId");
+                    pathByClass.put(id, rs.getInt("PthType"));
+                    chatByClass.put(id, rs.getInt("PthChat"));
+                    String[] gelar = new String[MAX_MARKS];
+                    for (int i = 0; i < MAX_MARKS; i++) {
+                        String v = rs.getString("PthMark" + i);
+                        gelar[i] = v == null ? "" : v;
+                    }
+                    marksByClass.put(id, gelar);
+                });
         if (rows < 0) {
             log.error("[CLASS] gagal membaca tabel Paths");
             return 0;

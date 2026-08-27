@@ -51,34 +51,35 @@ package org.rtk.map;
  *
  * <h2>Cakupan saat ini, dan apa yang menyusul</h2>
  *
- * <p>Empat aksi yang sudah punya jalur: berjalan, mengklik benda, menjawab
- * menu/input, dan menjawab dialog NPC. Yang <b>belum ada jalurnya sama
- * sekali</b> — daftar ini adalah sisa spesifikasinya, diambil dari
- * {@code clif_parse()} dan dikelompokkan menurut aksi:</p>
+ * <p>Sebelas aksi punya jalur penuh: berjalan, mengklik, menjawab
+ * menu/input, menjawab dialog, bicara, berbisik, memungut, menjatuhkan
+ * barang, menjatuhkan emas, menyerahkan barang/emas, dan menyerang —
+ * ditambah lima perintah pertukaran. Pembacanya
+ * {@code org.rtk.map.proto.Inbound} (protokol <b>RTK2</b>, rancangan
+ * sendiri); {@code Clif.parse*} melayani empat aksi pertama untuk klien
+ * RetroTK lama.</p>
+ *
+ * <p>Yang <b>belum ada jalurnya</b> — sisa spesifikasinya, dikelompokkan
+ * menurut aksi dan bukan menurut opcode:</p>
  *
  * <ul>
- *   <li><b>Bicara</b> — mengobrol di area, berbisik ke satu orang, daftar
- *       abaikan. (Sisi keluarnya sudah ada: {@code objectSpoke},
- *       {@code playerSpoke}.)</li>
- *   <li><b>Barang</b> — memungut, menjatuhkan, menjatuhkan emas, melempar,
- *       memakai, memakan. (BL_ITEM sudah ada; tinggal pemicunya.)</li>
  *   <li><b>Perlengkapan</b> — memakai dan melepas. Ini yang menutup
- *       binding {@code takeOff}.</li>
- *   <li><b>Pertukaran antar pemain</b> — menyerahkan barang, menyerahkan
- *       emas, membuka dan menyetujui pertukaran. Menutup
- *       {@code getExchangeItem}; subsistemnya belum ada sama sekali.</li>
- *   <li><b>Mantra & pertarungan</b> — merapal, mengganti mantra, menyerang.
- *       (Sisi logikanya sudah ada: {@code Combat.swingAt}, durasi mantra.)</li>
- *   <li><b>Sosial</b> — grup, teman, profil, emosi.</li>
- *   <li><b>Antarmuka</b> — papan & pos, kiriman, pilihan peta, minimap,
- *       ranking, daftar kota. (Sisi tampilannya sebagian besar sudah ada.)</li>
+ *       binding {@code takeOff}, dan logikanya <b>belum ada</b>.</li>
+ *   <li><b>Barang</b> — memakai, memakan, melempar. Menutup
+ *       {@code throwItem}.</li>
+ *   <li><b>Mantra</b> — merapal, mengganti mantra.</li>
+ *   <li><b>Sosial</b> — grup, teman, profil, emosi, daftar abaikan
+ *       (yang terakhir juga menutup penyaring {@code clif_isignore}).</li>
+ *   <li><b>Antarmuka</b> — papan &amp; pos, kiriman, pilihan peta, minimap,
+ *       ranking, daftar kota. Sisi tampilannya sebagian besar sudah ada.</li>
+ *   <li><b>Berputar di tempat</b> — sengaja dilewati untuk sekarang;
+ *       arah hadap sudah ikut berubah saat berjalan.</li>
  * </ul>
  *
- * <p>⚠️ <b>Itu bukan daftar 49 paket yang harus disalin.</b> Format kabelnya
- * memang akan diganti; yang berharga adalah logika di balik tiap aksinya.
- * Tambahkan method di sini ketika logikanya dikerjakan, bukan sebelumnya —
- * antarmuka yang diisi method kosong berhenti jadi spesifikasi dan berubah
- * jadi tebakan.</p>
+ * <p>⚠️ <b>Itu bukan daftar paket yang harus disalin.</b> Yang berharga
+ * adalah logika di balik tiap aksinya. Tambahkan method di sini ketika
+ * logikanya dikerjakan, bukan sebelumnya — antarmuka yang diisi method
+ * kosong berhenti jadi spesifikasi dan berubah jadi tebakan.</p>
  */
 public interface ClientCommands {
 
@@ -155,6 +156,100 @@ public interface ClientCommands {
      * berbohong — jangan dilewati.</p>
      */
     void playerConfirmsExchange(User sd, long claimedTarget);
+
+    // ------------------------------------------------------------------
+    // Bicara
+    // ------------------------------------------------------------------
+
+    /**
+     * Pemain mengetik sesuatu untuk didengar sekitarnya.
+     *
+     * <p>⚠️ <b>Server tidak menyiarkan apa pun di sini</b>, dan itu bukan
+     * kelalaian. Di C badan yang menyiarkan {@code clif_parsesay}
+     * <b>dikomentari seluruhnya</b>; yang benar-benar terjadi adalah
+     * kalimatnya disimpan di {@code sd->speech}, lalu skrip
+     * {@code onSay} yang memutuskan — termasuk memanggil
+     * {@code player:talk()} bila memang perlu terdengar. Itulah kenapa
+     * kata kunci {@code speech} adalah <b>yang diketik pemain</b>
+     * (lihat CLAUDE.md, bagian terjemahan).</p>
+     *
+     * @param channel 0 sekitar, 1 berteriak
+     */
+    void playerSays(User sd, int channel, String text);
+
+    /**
+     * Pemain berbisik.
+     *
+     * <p>⚠️ {@code target} tidak selalu nama orang — empat nama pendek
+     * adalah <b>saluran</b>: {@code "!"} klan, {@code "!!"} grup,
+     * {@code "@"} subpath, {@code "?"} pemula. Memperlakukan semuanya
+     * sebagai nama pemain akan membuat keempat saluran itu menjawab
+     * "tidak ditemukan".</p>
+     */
+    void playerWhispers(User sd, String target, String text);
+
+    // ------------------------------------------------------------------
+    // Barang
+    // ------------------------------------------------------------------
+
+    /**
+     * Pemain memungut dari petak tempatnya berdiri.
+     *
+     * <p>⚠️ Yang benar-benar memungut adalah <b>skrip</b> {@code onPickUp},
+     * bukan method ini. Server hanya menyiapkan keadaannya (mode pungut,
+     * kait mantra yang sedang berjalan) lalu memanggil skripnya — sama
+     * seperti {@code clif_parsegetitem} di C.</p>
+     *
+     * @param mode 0 = sekeping, bukan-nol = seluruh tumpukan
+     *             ({@code sd->pickuptype})
+     */
+    void playerPicksUp(User sd, int mode);
+
+    /**
+     * Pemain menjatuhkan isi satu slot inventaris ke petaknya.
+     *
+     * <p>⚠️ Kait {@code on_drop} dipanggil <b>sebelum</b> barangnya benar-
+     * benar jatuh, dan skrip bisa membatalkannya lewat {@code fakeDrop}.
+     * Urutan itu ada di C dengan alasan yang ditulis di sumbernya:
+     * mensimulasikan jatuh tanpa benar-benar menjatuhkan.</p>
+     *
+     * @param slot nomor slot <b>0-basis</b>
+     * @param all  false = sekeping, true = seluruh isi slot
+     */
+    void playerDropsItem(User sd, int slot, boolean all);
+
+    /** Pemain menjatuhkan emas; ia mendarat sebagai tumpukan koin di lantai. */
+    void playerDropsGold(User sd, long amount);
+
+    /**
+     * Pemain menyerahkan barang ke <b>apa pun yang dihadapinya</b>.
+     *
+     * <p>⚠️ Ini gerakan pembuka, bukan lanjutan pertukaran yang sudah
+     * terbuka — dan sasarannya menentukan tiga perilaku yang sama sekali
+     * berbeda: <b>pemain</b> membuka jendela pertukaran, <b>mob</b>
+     * menerima barangnya ke inventarisnya sendiri, dan <b>NPC</b> memanggil
+     * kait skrip {@code handItem} bila memang menerima barang.</p>
+     */
+    void playerHandsItem(User sd, int slot, int amount);
+
+    /** Pemain menyerahkan emas ke pemain yang dihadapinya. */
+    void playerHandsGold(User sd, long amount);
+
+    // ------------------------------------------------------------------
+    // Pertarungan
+    // ------------------------------------------------------------------
+
+    /**
+     * Pemain mengayunkan senjata yang sedang dipegang.
+     *
+     * <p>⚠️ <b>Tidak ada sasaran di parameternya</b>, dan itu bukan
+     * penyederhanaan: di C {@code clif_parseattack} pun tidak menerima
+     * sasaran. Yang menentukan apa yang kena adalah skrip {@code swing},
+     * yang mencari sendiri isi petak di depan pemain. Menambahkan sasaran
+     * dari klien di sini justru membuka pintu memukul sesuatu yang tidak
+     * bersebelahan.</p>
+     */
+    void playerAttacks(User sd);
 
     /**
      * Pemain menjawab menu, kotak isian, atau daftar toko.

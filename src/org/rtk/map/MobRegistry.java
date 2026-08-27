@@ -409,6 +409,32 @@ public final class MobRegistry {
      *
      * @return jumlah mob yang baru saja mati pada tik ini
      */
+    /**
+     * Bagian kedua {@code mobdb_drops()}: tumpahkan isi inventaris mob ke
+     * petak kematiannya, lalu kosongkan daftarnya.
+     *
+     * <p>Dijatuhkan lewat jalur <b>jatuhan mob</b> ({@code mobdb_dropitem}),
+     * bukan jalur inventaris pemain — jadi aturan gabungnya id saja
+     * (Peringatan #31).</p>
+     */
+    static void jatuhkanInventaris(Mob mob) {
+        if (mob.inventory.isEmpty()) {
+            return;
+        }
+        for (org.rtk.common.mmo.Item it : mob.inventory) {
+            if (it.id != 0 && it.amount >= 1) {
+                MapServer.floorItems.drop(mob, it.id, it.amount, it.dura,
+                        it.protectedFlag, it.owner, mob.m, mob.x, mob.y);
+            }
+        }
+        mob.inventory.clear();
+    }
+
+    /** Pintu masuk {@link #jatuhkanInventaris} untuk uji regresi. */
+    public void jatuhkanInventarisUji(Mob mob) {
+        jatuhkanInventaris(mob);
+    }
+
     private int reapDead(org.rtk.map.script.ScriptEngine engine, MapRegistry world) {
         int mati = 0;
         for (Mob mob : mobs) {
@@ -441,6 +467,11 @@ public final class MobRegistry {
                     engine.doScript(mob.scriptName(), "on_death", mobRef, plRef);
                     // mobdb_drops(): jatuhan barang seluruhnya sisi skrip
                     engine.doScript("HandleMobDrops", null, plRef, mobRef);
+                    // ...kecuali isi inventaris mob, yang di C dijatuhkan
+                    // oleh mobdb_drops sendiri tepat setelah kait itu.
+                    // Inilah yang mengembalikan barang yang pernah
+                    // diserahkan pemain kepada mob ini.
+                    jatuhkanInventaris(mob);
                 } else {
                     // mati tanpa pembunuh yang bisa dilacak (mis. skrip
                     // membunuhnya langsung): kait tetap dipanggil

@@ -75,6 +75,16 @@ public final class Npc extends BlockList
     public boolean bankNpc;
     public boolean canReceiveItem;
     public int returnDistance;
+
+    /**
+     * {@code NpcCanReceiveItem}: NPC ini menerima barang yang diserahkan
+     * pemain, lewat kait skrip {@code handItem}.
+     *
+     * <p>⚠️ Nilai 0 <b>bukan</b> berarti diam saja — NPC menjawab dengan
+     * ejekan ("Keep your junky ... with you!"). Itu satu-satunya umpan balik
+     * pemain, jadi cabang itu tidak boleh dihilangkan.</p>
+     */
+    public int receiveItem;
     public long moveTime;
     public long actionTime;
 

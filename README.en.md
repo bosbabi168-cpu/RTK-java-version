@@ -774,7 +774,7 @@ The starting point for the next session.
 | Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
-| **Inbound packets** | ⚠️ **5 of 54 opcodes** — see the audit note below |
+| **Inbound packets** | our own **RTK2** protocol, 16 opcodes (RetroTK 5, side by side) |
 | Track A | functionally done; `sendMyStatus` deliberately left at stage 1 |
 | Track C | C1 and C4 done; **C2 and C3 not started** |
 
@@ -789,20 +789,26 @@ That is not 49 packets waiting to be copied, though — the wire format is
 being replaced. What matters is the **logic behind each action**, not the
 byte decoding.
 
-**The inbound layer now exists, and the split is complete** (27 August
-2026): `ClientCommands` is the mirror of `ClientView` — same idea, opposite
-direction, and the *logic* implements it while the *protocol* calls it. The
-four `Clif.parse*` methods are now pure byte readers that decide nothing,
-and `MapCommands` **no longer touches `Clif` at all** — five logic helpers
-were moved across, and the last six outbound calls now go through
-`ClientView` (49 events). One command verifies the boundary:
+**The inbound layer now has its OWN PROTOCOL** (27 August 2026). With the
+split finished, the next step was decided: **not writing short-lived
+RetroTK readers**, but designing our own wire format directly — **RTK2**
+(`src/org/rtk/map/proto/`, spec in
+[`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md)).
 
-```bash
-grep -n "Clif\.\|rfifo\|Session" src/org/rtk/map/MapCommands.java
-```
+Sixteen opcodes serve eleven player actions: walking, clicking, answering
+menus and dialogs, talking, whispering, picking up, dropping items and
+gold, handing over items and gold, attacking, and five exchange commands.
+The frame is `u16 length + u16 opcode + payload`, **big-endian with no
+exceptions**, no encryption, no sequence numbers, 0-based slots — five
+RetroTK traps that each produced a real bug in this port (Warning #57).
 
-must come back empty. A new protocol only needs a new reader; the logic in
-`MapCommands` stays untouched. See `CLAUDE.md` for the roadmap.
+Both protocols run **side by side on the same port**, told apart with no
+state at all: a RetroTK packet always starts with `0xAA`. RetroTK stays
+alive because its replacement client does not exist yet.
+
+⚠️ **The outbound direction does not yet**: `ClientView` (49 events) still
+only has `RetroTkClientView`. A genuinely playable RTK2 client needs
+`Rtk2ClientView` first — that is roadmap item 1 now.
 
 The 26 August session closed two blocks: (1) bindings that were still
 **stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

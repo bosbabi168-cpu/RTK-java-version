@@ -112,6 +112,17 @@ public class Session {
     }
 
     /**
+     * Isi buffer baca langsung — <b>hanya untuk uji</b>.
+     *
+     * <p>Pasangan {@code NetServer.openTestSession}: sesi tanpa socket perlu
+     * cara memasukkan byte "dari klien" supaya pembaca protokol bisa diuji
+     * tanpa jaringan sungguhan.</p>
+     */
+    public void feedTest(byte[] b) {
+        appendRead(ByteBuffer.wrap(b), b.length);
+    }
+
+    /**
      * Kirim paket-paket di outbox ke socket. Mengembalikan true bila sudah
      * habis. Dipanggil hanya oleh IO thread.
      */

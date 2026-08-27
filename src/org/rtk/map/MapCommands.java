@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.luaj.vm2.LuaValue;
 
 import org.rtk.map.data.BlockList;
+import org.rtk.common.mmo.SkillInfo;
 import org.rtk.map.data.MapData;
 import org.rtk.map.script.ScriptPlayer;
 
@@ -492,4 +493,618 @@ public final class MapCommands implements ClientCommands {
         }
         return null;
     }
+
+    // ==================================================================
+    // Bicara — port clif_parsesay / clif_parsewisp
+    // ==================================================================
+
+    /** Batas panjang satu kalimat; di C {@code RFIFOB(fd,6) > 100} ditolak. */
+    private static final int MAX_SAY = 100;
+
+    /** Batas nama tujuan dan isi bisikan ({@code msglen > 80 || dstlen > 80}). */
+    private static final int MAX_WHISPER = 80;
+
+    /** Tipe paket 0x0A: 0 bisikan/pesan biru, 3 mini text, 11 subpath, 12 klan. */
+    private static final int MSG_WHISPER = 0;
+    private static final int MSG_MINI = 3;
+    private static final int MSG_SUBPATH = 11;
+    private static final int MSG_CLAN = 12;
+
+    /** {@code settingFlags}: enum settingFLAGS di common/mmo.h. */
+    private static final long FLAG_WHISPER = 1;
+    private static final long FLAG_EXCHANGE = 128;
+
+    @Override
+    public void playerSays(User sd, int channel, String text) {
+        if (text == null) {
+            return;
+        }
+        // Di C kedua penjaga ini menghasilkan pesan yang sama dan sebuah
+        // baris di konsol server: klien resmi tidak bisa menghasilkannya.
+        if (channel > 1 || text.length() > MAX_SAY) {
+            log.warn("[CMD] {} mengirim kalimat tak masuk akal (saluran {}, {} huruf)",
+                    sd.name(), channel, text.length());
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                    "I just told the GM on you!");
+            return;
+        }
+        if (!sd.isGm() && sd.status.mute != 0) {
+            return;
+        }
+
+        sd.talkType = channel;
+        sd.speech = text;
+
+        // ⚠️ Tidak ada siaran di sini, dan itu bukan kelalaian: badan yang
+        // menyiarkan di clif_parsesay DIKOMENTARI SELURUHNYA. Yang berbicara
+        // adalah skrip `onSay` (speech.lua), yang membaca player.speech lalu
+        // memutuskan sendiri — termasuk memanggil player:talk() bila memang
+        // perlu terdengar. Menambahkan siaran di sini akan membuat setiap
+        // kalimat terkirim dua kali.
+        var engine = MapServer.scriptEngine;
+        if (engine == null) {
+            return;
+        }
+        LuaValue ref = engine.playerRef(sd.scriptPlayer());
+        for (int id : sd.status.spells) {
+            if (id > 0) {
+                kaitMantra(engine, id, "on_say", ref);
+            }
+        }
+        kait(engine, "onSay", null, ref);
+        MapServer.clientView.scriptDialogReady(sd, sd.scriptPlayer());
+    }
+
+    @Override
+    public void playerWhispers(User sd, String target, String text) {
+        if (target == null || text == null) {
+            return;
+        }
+        if (!sd.isGm() && (sd.status.settingFlags & FLAG_WHISPER) == 0) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER,
+                    "You have whispering turned off.");
+            return;
+        }
+        if (bungkam(sd)) {
+            return;
+        }
+        if (target.length() > MAX_WHISPER || text.length() > MAX_WHISPER) {
+            log.warn("[CMD] {} mengirim bisikan tak masuk akal ({}/{} huruf)",
+                    sd.name(), target.length(), text.length());
+            return;
+        }
+
+        // ⚠️ Empat nama pendek ini SALURAN, bukan nama pemain. Memperlakukan
+        // semuanya sebagai nama akan membuat keempatnya menjawab
+        // "tidak ditemukan" dan memutus seluruh obrolan klan/grup/subpath.
+        switch (target) {
+            case "!" -> clanChat(sd, text);
+            case "!!" -> MapServer.clientView.messageToPlayer(sd, MSG_WHISPER,
+                    // Sistem grup belum ada, jadi jawabannya selalu cabang
+                    // "belum bergrup" — sama dengan yang dilihat pemain di C
+                    // ketika memang belum bergrup. Bukan pesan darurat.
+                    "You are not in a group");
+            case "@" -> subpathChat(sd, text);
+            case "?" -> noviceChat(sd, text);
+            default -> directWhisper(sd, target, text);
+        }
+    }
+
+    /** {@code map[..].cantalk}: peta yang membungkam siapa pun kecuali GM. */
+    private static boolean bungkam(User sd) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map != null && map.canTalk == 1 && !sd.isGm()) {
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                    "Your voice is swept away by a strange wind.");
+            return true;
+        }
+        return false;
+    }
+
+    /** Gelar penulis untuk baris obrolan; "()" bila kelasnya tak bergelar. */
+    private static String gelar(User sd) {
+        String n = MapServer.classDb.pathName(sd.status.charClass, sd.status.mark);
+        return "(" + (n == null ? "" : n) + ")";
+    }
+
+    /** clif_sendclanmessage(): ke seluruh anggota klan yang menyalakan saluran. */
+    private static void clanChat(User sd, String text) {
+        if (sd.status.clan == 0) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER, "You are not in a clan");
+            return;
+        }
+        if (sd.status.clanChat == 0) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER, "Clan chat is off.");
+            return;
+        }
+        catatObrolan("clanChatLog", sd, text);
+        String baris = "<!" + sd.name() + "> " + gelar(sd) + " " + text;
+        for (User tsd : MapServer.onlineChars.values()) {
+            if (tsd.status.clan == sd.status.clan && tsd.status.clanChat != 0) {
+                MapServer.clientView.messageToPlayer(tsd, MSG_CLAN, baris);
+            }
+        }
+    }
+
+    /** clif_sendsubpathmessage(): ke sesama kelas, bila kelasnya punya saluran. */
+    private static void subpathChat(User sd, String text) {
+        if (!MapServer.classDb.hasSubpathChat(sd.status.charClass)) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER, "You cannot do that.");
+            return;
+        }
+        catatObrolan("subPathChatLog", sd, text);
+        String baris = "<@" + sd.name() + "> " + gelar(sd) + " " + text;
+        for (User tsd : MapServer.onlineChars.values()) {
+            if (tsd.status.charClass == sd.status.charClass && tsd.status.subpathChat != 0) {
+                MapServer.clientView.messageToPlayer(tsd, MSG_SUBPATH, baris);
+            }
+        }
+    }
+
+    /**
+     * clif_sendnovicemessage(): saluran tanya-jawab pemula.
+     *
+     * <p>Dua hal yang mudah terlewat: pemain yang <b>bukan</b> tutor
+     * mendapat gemanya sendiri lewat tipe pesan yang berbeda (kalau tidak,
+     * ia tidak akan pernah melihat kalimatnya sendiri terkirim), dan yang
+     * <b>menerima</b> hanyalah tutor dan GM — bukan sesama pemula.</p>
+     */
+    private static void noviceChat(User sd, String text) {
+        if (sd.status.tutor == 0 && !sd.isGm() && sd.status.level >= 99) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER, "You cannot do that.");
+            return;
+        }
+        catatObrolan("noviceChatLog", sd, text);
+        String baris = "[Novice]" + gelar(sd) + " " + sd.name() + "> " + text;
+        if (sd.status.tutor == 0) {
+            MapServer.clientView.messageToPlayer(sd, MSG_SUBPATH, baris);
+        }
+        for (User tsd : MapServer.onlineChars.values()) {
+            if ((tsd.status.tutor != 0 || tsd.isGm()) && tsd.status.noviceChat != 0) {
+                MapServer.clientView.messageToPlayer(tsd, MSG_CLAN, baris);
+            }
+        }
+    }
+
+    /**
+     * Bisikan ke satu orang.
+     *
+     * <p>⚠️ Pemain ber-stealth <b>tidak</b> dijawab "tidak ditemukan" begitu
+     * saja: bisikannya tetap sampai, hanya pengirimnya yang diberi tahu
+     * bahwa orangnya tak ditemukan. Itu di C, dan disengaja — GM yang
+     * ber-stealth tetap bisa dihubungi tanpa membocorkan kehadirannya.</p>
+     */
+    private static void directWhisper(User sd, String target, String text) {
+        User tsd = MapServer.userByName(target);
+        if (tsd == null) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER,
+                    target + " is nowhere to be found.");
+            return;
+        }
+        if (!sd.isGm() && (tsd.status.settingFlags & FLAG_WHISPER) == 0) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER,
+                    "They cannot hear you right now.");
+            return;
+        }
+        catatObrolan("whisperLog", sd, text);
+        MapServer.clientView.messageToPlayer(tsd, MSG_WHISPER,
+                sd.name() + "\" " + gelar(sd) + " " + text);
+        if (!sd.isGm() && (tsd.optFlags & User.OPT_STEALTH) != 0) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER,
+                    target + " is nowhere to be found.");
+        } else {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER,
+                    tsd.name() + "> " + text);
+        }
+    }
+
+    /** Kait {@code characterLog.*ChatLog}, yang menerima nama dan kalimatnya. */
+    private static void catatObrolan(String method, User sd, String text) {
+        var engine = MapServer.scriptEngine;
+        if (engine == null) {
+            return;
+        }
+        try {
+            engine.doScript("characterLog", method,
+                    LuaValue.valueOf(sd.name()), LuaValue.valueOf(text));
+        } catch (RuntimeException e) {
+            log.error("[CMD] kait characterLog.{} gagal", method, e);
+        }
+    }
+
+    // ==================================================================
+    // Barang — port clif_parsegetitem / clif_parsedropitem / clif_dropgold
+    // ==================================================================
+
+    /** {@code status.state}: 1 arwah, 2 rogue tak terlihat, 3 menunggang, 4 berubah wujud. */
+    private static final int ST_SPIRIT = 1;
+    private static final int ST_INVIS = 2;
+    private static final int ST_MOUNT = 3;
+    private static final int ST_MORPH = 4;
+
+    @Override
+    public void playerPicksUp(User sd, int mode) {
+        if (sd.status.state == ST_SPIRIT || sd.status.state == ST_MOUNT) {
+            return;   // arwah dan penunggang tidak bisa memungut
+        }
+
+        var engine = MapServer.scriptEngine;
+        if (sd.status.state == ST_INVIS) {
+            // Memungut membatalkan penyamaran rogue, dan pembatalannya lewat
+            // skrip mantranya sendiri — bukan dengan menyetel state di sini.
+            sd.status.state = 0;
+            if (engine != null) {
+                kait(engine, "invis_rogue", "uncast",
+                        engine.playerRef(sd.scriptPlayer()));
+            }
+            MapServer.clientView.objectAppearanceChanged(sd);
+        }
+
+        MapServer.clientView.objectActed(sd, 4, 40, 0);
+        sd.pickUpType = mode;
+
+        if (engine == null) {
+            return;
+        }
+        LuaValue ref = engine.playerRef(sd.scriptPlayer());
+        for (SkillInfo s : sd.status.duraAether) {
+            if (s.id > 0 && s.duration > 0) {
+                kaitMantra(engine, s.id, "on_pickup_while_cast", ref);
+            }
+        }
+        // ⚠️ Inilah yang benar-benar memungut. Server hanya menyiapkan
+        // keadaannya; onPickup.lua yang menyapu petak, memeriksa hak
+        // memungut, dan memanggil addGold / addItem.
+        kait(engine, "onPickUp", null, ref);
+        MapServer.clientView.scriptDialogReady(sd, sd.scriptPlayer());
+    }
+
+    @Override
+    public void playerDropsItem(User sd, int slot, boolean all) {
+        if (!sd.isGm()) {
+            if (sd.status.state == ST_MOUNT) {
+                MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                        "You cannot do that while riding a mount.");
+                return;
+            }
+            if (sd.status.state == ST_SPIRIT) {
+                MapServer.clientView.messageToPlayer(sd, MSG_MINI, "Spirits can't do that.");
+                return;
+            }
+        }
+        if (slot < 0 || slot >= sd.status.maxInv || slot >= sd.status.inventory.size()) {
+            return;
+        }
+        org.rtk.common.mmo.Item it = sd.status.inventory.get(slot);
+        if (it.id > 0 && MapServer.itemDb.cannotBePickedUp(it.id)) {
+            // ⚠️ Kolomnya `ItmDroppable` dan artinya kebalikan namanya —
+            // lihat Peringatan #32. Dibungkus supaya tidak menyesatkan lagi.
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI, "You can't drop this item.");
+            return;
+        }
+
+        sd.fakeDrop = 0;
+        MapServer.clientView.objectActed(sd, 5, 20, 0);
+        sd.invSlot = slot;   // dibaca kait on_drop dan on_drop_while_cast
+
+        var engine = MapServer.scriptEngine;
+        if (engine != null) {
+            LuaValue ref = engine.playerRef(sd.scriptPlayer());
+            // Kait barangnya berjalan SEBELUM barangnya jatuh — itulah yang
+            // membuat "jatuh pura-pura" mungkin. Urutan ini ada di C dengan
+            // alasan yang ditulis di sumbernya.
+            String yname = it.id > 0 ? MapServer.itemDb.info(it.id).name() : "";
+            if (!yname.isEmpty()) {
+                kait(engine, yname, "on_drop", ref);
+            }
+            for (SkillInfo s : sd.status.duraAether) {
+                if (s.id > 0 && s.duration > 0) {
+                    kaitMantra(engine, s.id, "on_drop_while_cast", ref);
+                }
+            }
+            for (SkillInfo s : sd.status.duraAether) {
+                if (s.id > 0 && s.aether > 0) {
+                    kaitMantra(engine, s.id, "on_drop_while_aether", ref);
+                }
+            }
+        }
+        if (sd.fakeDrop != 0) {
+            return;   // skrip membatalkannya
+        }
+
+        MapServer.floorItems.dropFromInventory(sd, slot, all ? 1 : 0);
+    }
+
+    @Override
+    public void playerDropsGold(User sd, long amount) {
+        if (!sd.isGm()) {
+            if (sd.status.state == ST_SPIRIT) {
+                MapServer.clientView.messageToPlayer(sd, MSG_MINI, "Spirits can't do that.");
+                return;
+            }
+            if (sd.status.state == ST_MOUNT) {
+                MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                        "You cannot do that while riding a mount.");
+                return;
+            }
+            if (sd.status.state == ST_MORPH) {
+                MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                        "You cannot do that while transformed.");
+                return;
+            }
+        }
+        long punya = sd.status.money;
+        if (punya <= 0 || amount <= 0) {
+            return;
+        }
+
+        MapServer.clientView.objectActed(sd, 5, 20, 0);
+        long jatuh = Math.min(amount, punya);
+        // ⚠️ Emasnya dipotong DI SINI, sebelum kait skrip berjalan — dan C
+        // tidak mengembalikannya bila kaitnya membatalkan (`fakeDrop`).
+        // Ditiru apa adanya; mengubahnya berarti mengubah berapa emas yang
+        // hilang pada tiap pembatalan, dan skrip yang memakai fakeDrop pada
+        // emas memang mengandalkan pemotongan itu sudah terjadi.
+        sd.status.money = punya - jatuh;
+
+        FloorItem fl = FloorItemRegistry.newGoldPile(jatuh);
+        sd.fakeDrop = 0;
+
+        var engine = MapServer.scriptEngine;
+        if (engine != null) {
+            LuaValue ref = engine.playerRef(sd.scriptPlayer());
+            LuaValue benda = engine.objectRef(fl);
+            kait2(engine, "on_drop_gold", null, ref, benda);
+            for (SkillInfo s : sd.status.duraAether) {
+                if (s.id > 0 && s.duration > 0) {
+                    kaitMantra2(engine, s.id, "on_drop_gold_while_cast", ref, benda);
+                }
+            }
+            for (SkillInfo s : sd.status.duraAether) {
+                if (s.id > 0 && s.aether > 0) {
+                    kaitMantra2(engine, s.id, "on_drop_gold_while_aether", ref, benda);
+                }
+            }
+            if (sd.fakeDrop != 0) {
+                return;
+            }
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                    "You dropped " + fl.data.amount + " coins");
+            if (!MapServer.floorItems.placeGold(fl, sd.m, sd.x, sd.y)) {
+                LuaValue benda2 = engine.objectRef(fl);
+                kait2(engine, "after_drop_gold", null, ref, benda2);
+                for (SkillInfo s : sd.status.duraAether) {
+                    if (s.id > 0 && s.duration > 0) {
+                        kaitMantra2(engine, s.id, "after_drop_gold_while_cast", ref, benda2);
+                    }
+                }
+                for (SkillInfo s : sd.status.duraAether) {
+                    if (s.id > 0 && s.aether > 0) {
+                        kaitMantra2(engine, s.id, "after_drop_gold_while_aether", ref, benda2);
+                    }
+                }
+                kait2(engine, "characterLog", "dropWrite", ref, benda2);
+            }
+        } else {
+            MapServer.floorItems.placeGold(fl, sd.m, sd.x, sd.y);
+        }
+
+        MapServer.clientView.playerStatusChanged(sd, Clif.SFLAG_XPMONEY);
+    }
+
+    /** Petak yang sedang dihadapi pemain; arah 0 atas, 1 kanan, 2 bawah, 3 kiri. */
+    private static int[] petakDepan(User sd) {
+        int side = sd.status.side;
+        return new int[] {
+            sd.x + (side == 1 ? 1 : side == 3 ? -1 : 0),
+            sd.y + (side == 0 ? -1 : side == 2 ? 1 : 0)
+        };
+    }
+
+    /** Benda pertama di petak itu ({@code map_firstincell}). */
+    private static org.rtk.map.data.BlockList bendaDiDepan(User sd) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return null;
+        }
+        int[] p = petakDepan(sd);
+        for (org.rtk.map.data.BlockList bl : map.objectsAt(p[0], p[1])) {
+            if (bl.id != sd.id) {
+                return bl;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void playerHandsItem(User sd, int slot, int amount) {
+        if (slot < 0 || slot >= sd.status.inventory.size() || amount <= 0) {
+            return;
+        }
+        org.rtk.common.mmo.Item it = sd.status.inventory.get(slot);
+        if (it.id <= 0 || amount > it.amount) {
+            return;
+        }
+        sd.invSlot = slot;
+
+        org.rtk.map.data.BlockList bl = bendaDiDepan(sd);
+        if (bl == null) {
+            return;
+        }
+
+        // Tiga sasaran, tiga perilaku yang sama sekali berbeda.
+        if (bl instanceof User tsd) {
+            if ((tsd.status.settingFlags & FLAG_EXCHANGE) == 0) {
+                MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                        "They have refused to exchange with you");
+                return;
+            }
+            if (Exchange.start(sd, tsd.id)) {
+                Exchange.offerItem(sd, slot, amount);
+            }
+        } else if (bl instanceof Mob mob) {
+            // Barang yang tak bisa ditukar tidak bisa diberikan ke mob.
+            if (MapServer.itemDb.cannotBeExchanged(it.id)) {
+                return;
+            }
+            mob.receiveItem(it, amount);
+            it.amount -= amount;
+            if (it.amount <= 0) {
+                // ⚠️ Jangan tambahkan remove(slot) di sini: peristiwa ini
+                // sendiri yang mengosongkan slotnya di server, bukan sekadar
+                // memberi tahu klien (Peringatan #37). Mencabutnya sekali
+                // lagi membuang slot pemain BERIKUTNYA. Sempat kejadian,
+                // dan yang menangkapnya adalah uji ini.
+                MapServer.clientView.playerInventorySlotCleared(sd, slot, 9);
+            } else {
+                MapServer.clientView.playerInventorySlotChanged(sd, slot);
+            }
+        } else if (bl instanceof Npc nd) {
+            if (MapServer.itemDb.cannotBeExchanged(it.id)
+                    || MapServer.itemDb.cannotBePickedUp(it.id)) {
+                return;
+            }
+            var engine = MapServer.scriptEngine;
+            if (nd.receiveItem != 0 && engine != null) {
+                kait2(engine, nd.name, "handItem",
+                        engine.playerRef(sd.scriptPlayer()), engine.objectRef(nd));
+                MapServer.clientView.scriptDialogReady(sd, sd.scriptPlayer());
+            } else {
+                MapServer.clientView.npcSaidTo(sd, nd.id,
+                        "What are you trying to do? Keep your junky "
+                        + MapServer.itemDb.info(it.id).tampilan() + " with you!");
+            }
+        }
+    }
+
+    @Override
+    public void playerHandsGold(User sd, long amount) {
+        if (amount <= 0) {
+            return;
+        }
+        long punya = sd.status.money;
+        long tawar = Math.min(amount, punya);
+        if (tawar <= 0) {
+            return;
+        }
+        org.rtk.map.data.BlockList bl = bendaDiDepan(sd);
+        if (!(bl instanceof User tsd)) {
+            return;   // hanya pemain yang bisa menerima emas langsung
+        }
+        if ((tsd.status.settingFlags & FLAG_EXCHANGE) == 0) {
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                    "They have refused to exchange with you");
+            return;
+        }
+        if (Exchange.start(sd, tsd.id)) {
+            Exchange.offerGold(sd, tawar);
+        }
+    }
+
+    // ==================================================================
+    // Pertarungan — port clif_parseattack beserta pembatas kecepatannya
+    // ==================================================================
+
+    @Override
+    public void playerAttacks(User sd) {
+        // ⚠️ Pembatas kecepatan serang ada di DISPATCHER paket versi C,
+        // bukan di clif_parseattack — dan ia satu-satunya yang menghentikan
+        // klien yang menyerang secepat ia bisa mengirim paket. Tempatnya di
+        // sini, bukan di pembaca: yang membatasi adalah kecepatan senjata,
+        // dan itu nilai permainan.
+        if (sd.attacked || sd.attackSpeed <= 0) {
+            return;
+        }
+        if (sd.paralyzed || sd.status.state == ST_SPIRIT
+                || sd.status.state == ST_MOUNT) {
+            return;
+        }
+        sd.attacked = true;
+        long jeda = (sd.attackSpeed * 1000L) / 60L;
+        MapServer.timers.insert(jeda, 0, (a, b) -> {
+            sd.attacked = false;
+            return 0;
+        }, 0, 0);
+
+        var engine = MapServer.scriptEngine;
+        if (engine == null) {
+            return;
+        }
+        org.rtk.common.mmo.Item senjata = sd.status.equipAt(org.rtk.map.data.Equip.WEAP);
+        long senjataId = senjata == null ? 0 : senjata.id;
+        int bunyi = senjataId > 0 ? MapServer.itemDb.info(senjataId).sound() : 0;
+        MapServer.clientView.objectActed(sd, 1, sd.attackSpeed, bunyi == 0 ? 9 : bunyi);
+
+        LuaValue ref = engine.playerRef(sd.scriptPlayer());
+        // ⚠️ Tiga skrip berbeda, dan urutannya di C persis begini.
+        // `swingDamage` menghitung, `swing` mencari sasarannya sendiri di
+        // petak depan, `onSwing` kait konten. Tidak ada sasaran yang
+        // dikirim klien sama sekali.
+        kait(engine, "swingDamage", null, ref);
+        kait(engine, "swing", null, ref);
+        kait(engine, "onSwing", null, ref);
+
+        if (senjataId > 0) {
+            long look = MapServer.itemDb.info(senjataId).look().look();
+            if (look >= 20000 && look < 30000) {   // busur
+                kait(engine, MapServer.itemDb.info(senjataId).name(), "shootArrow", ref);
+                kait(engine, "shootArrow", null, ref);
+            }
+        }
+        for (org.rtk.common.mmo.Item eq : sd.status.equip) {
+            if (eq != null && eq.id > 0) {
+                kait(engine, MapServer.itemDb.info(eq.id).name(), "on_swing", ref);
+            }
+        }
+        for (int id : sd.status.spells) {
+            if (id > 0) {
+                kaitMantra(engine, id, "passive_on_swing", ref);
+            }
+        }
+        for (SkillInfo s : sd.status.duraAether) {
+            if (s.id > 0 && s.duration > 0) {
+                kaitMantra(engine, s.id, "on_swing_while_cast", ref);
+            }
+        }
+        MapServer.clientView.scriptDialogReady(sd, sd.scriptPlayer());
+    }
+
+    // ------------------------------------------------------------------
+    // pemanggil kait bersama
+    // ------------------------------------------------------------------
+
+    private static void kait(org.rtk.map.script.ScriptEngine engine, String root,
+                             String method, LuaValue a) {
+        if (root == null || root.isEmpty()) {
+            return;
+        }
+        try {
+            engine.doScript(root, method, a);
+        } catch (RuntimeException e) {
+            log.error("[CMD] kait '{}' pada '{}' gagal", method, root, e);
+        }
+    }
+
+    private static void kait2(org.rtk.map.script.ScriptEngine engine, String root,
+                              String method, LuaValue a, LuaValue b) {
+        if (root == null || root.isEmpty()) {
+            return;
+        }
+        try {
+            engine.doScript(root, method, a, b);
+        } catch (RuntimeException e) {
+            log.error("[CMD] kait '{}' pada '{}' gagal", method, root, e);
+        }
+    }
+
+    private static void kaitMantra(org.rtk.map.script.ScriptEngine engine, int spellId,
+                                   String method, LuaValue a) {
+        kait(engine, MapServer.spellDb.nameOf(spellId), method, a);
+    }
+
+    private static void kaitMantra2(org.rtk.map.script.ScriptEngine engine, int spellId,
+                                    String method, LuaValue a, LuaValue b) {
+        kait2(engine, MapServer.spellDb.nameOf(spellId), method, a, b);
+    }
+
 }

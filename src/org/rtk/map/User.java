@@ -146,6 +146,41 @@ public final class User extends BlockList
     public String speech = "";
 
     /**
+     * Saluran kalimat terakhir ({@code sd->talktype}): 0 sekitar, 1 berteriak.
+     * Dibaca {@code speech.lua}, yang juga <b>menulisnya</b> saat pemain
+     * memakai pintasan {@code /s}.
+     */
+    public int talkType;
+
+    /**
+     * Mode pungut yang dipilih pemain ({@code sd->pickuptype}): 0 sekeping,
+     * bukan-nol seluruh tumpukan. Dibaca {@code onPickup.lua} — dan skrip
+     * itulah yang benar-benar memungut, bukan server.
+     */
+    public int pickUpType;
+
+    /**
+     * Skrip membatalkan jatuhnya barang ({@code sd->fakeDrop}).
+     *
+     * <p>⚠️ Dipakai 15x di konten untuk <b>mensimulasikan</b> jatuh: kait
+     * {@code on_drop} berjalan lebih dulu, dan bila ia menyetel ini,
+     * barangnya tidak pernah benar-benar mendarat. Selalu dikembalikan ke 0
+     * sebelum kaitnya dipanggil — kalau tidak, satu pembatalan akan
+     * menempel pada semua jatuhan berikutnya.</p>
+     */
+    public int fakeDrop;
+
+    /**
+     * Pemain sedang dalam jeda antar-ayunan ({@code sd->attacked}).
+     *
+     * <p>Inilah pembatas kecepatan serang yang sebenarnya: tanpa ia, klien
+     * bisa menyerang secepat ia mampu mengirim paket. Dibersihkan timer
+     * satu kali sepanjang {@code attackSpeed} — lihat
+     * {@code MapCommands.playerAttacks}.</p>
+     */
+    public boolean attacked;
+
+    /**
      * Barang yang <b>hancur pada sapuan yang sedang berjalan</b>
      * ({@code sd->boditems} di C — BoD = <i>Break on Death</i>).
      *
@@ -711,8 +746,25 @@ public final class User extends BlockList
             case "protection" -> (long) protection;
             case "healing" -> (long) healing;
             case "attackSpeed" -> (long) attackSpeed;
+            // keadaan aksi yang dibaca kait skrip (speech.lua, onPickup.lua,
+            // dan 15 skrip barang yang memakai fakeDrop)
+            case "talkType" -> (long) talkType;
+            case "pickUpType" -> (long) pickUpType;
+            case "fakeDrop" -> (long) fakeDrop;
+            case "invSlot" -> (long) invSlot;
+            case "equipSlot" -> (long) equipSlot;
             default -> null;
         };
+    }
+
+    @Override
+    public String scriptGetSpeech() {
+        return speech;
+    }
+
+    @Override
+    public void scriptSetSpeech(String s) {
+        speech = s == null ? "" : s;
     }
 
     /** pcl_setattr(): tulis atribut karakter ke data tersimpan. */
@@ -738,6 +790,11 @@ public final class User extends BlockList
             case "side" -> status.side = (int) v;
             case "state" -> status.state = (int) v;
             case "maxSlots" -> status.maxSlots = v;
+            case "talkType" -> talkType = (int) v;
+            case "pickUpType" -> pickUpType = (int) v;
+            case "fakeDrop" -> fakeDrop = (int) v;
+            case "invSlot" -> invSlot = (int) v;
+            case "equipSlot" -> equipSlot = (int) v;
             default -> {
                 return false;
             }

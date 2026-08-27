@@ -137,6 +137,7 @@ public final class DbTest {
         auditSql(conf);
         worldData(sql);
         spellQueries(sql);
+        pathQueries(sql);
         parcelTest(sql);
         boardTest(sql);
         clanBankTest(sql);
@@ -330,6 +331,43 @@ public final class DbTest {
         var takAda = db.classSpells(sql, 9999);
         check("getAllClassSpells: jalur tak dikenal mengembalikan kosong",
                 takAda.isEmpty());
+    }
+
+    /**
+     * Tabel {@code Paths} — gelar per tanda dan bendera saluran subpath.
+     *
+     * <p>⚠️ Kueri ini <b>disusun runtime</b> (enam belas kolom
+     * {@code PthMark0..15} dirangkai dalam perulangan), sehingga audit SQL
+     * di tahap 1 <b>tidak melihatnya</b> — ia hanya menyapu literal string
+     * dari sumbernya. Persis kelemahan yang sama dengan
+     * {@code CharPersistence.reg()}. Karena itu jalurnya diuji di sini,
+     * lewat pemanggilan sungguhan ke server.</p>
+     */
+    private static void pathQueries(Sql sql) {
+        log.info("=== tahap 2b2: tabel Paths (gelar & saluran subpath) ===");
+
+        org.rtk.map.data.ClassDb db = new org.rtk.map.data.ClassDb();
+        int n = db.loadPaths(sql);
+        check("tabel Paths termuat", n > 0);
+
+        // classdb_name(): sedikitnya satu kelas harus punya gelar terisi,
+        // kalau tidak berarti kolom PthMark* tidak benar-benar terbaca.
+        boolean adaGelar = false;
+        for (int kelas = 1; kelas <= 32 && !adaGelar; kelas++) {
+            for (int tanda = 0; tanda < org.rtk.map.data.ClassDb.MAX_MARKS; tanda++) {
+                if (!db.pathName(kelas, tanda).isEmpty()) {
+                    adaGelar = true;
+                    break;
+                }
+            }
+        }
+        check("classdb_name: ada kelas yang punya gelar terisi", adaGelar);
+        check("classdb_name: tanda di luar 0..15 dijawab kosong, bukan meledak",
+                db.pathName(1, 99).isEmpty() && db.pathName(1, -1).isEmpty());
+        check("classdb_name: kelas tak dikenal dijawab kosong",
+                db.pathName(9999, 0).isEmpty());
+        check("classdb_chat: kelas tak dikenal tidak punya saluran",
+                !db.hasSubpathChat(9999));
     }
 
     /**

@@ -112,6 +112,7 @@ public final class NpcRegistry {
                     nd.bankNpc = rs.getInt("NpcIsBankNpc") != 0;
                     nd.returnDistance = rs.getInt("NpcReturnDistance");
                     nd.moveTime = rs.getLong("NpcMoveTime");
+                    nd.receiveItem = rs.getInt("NpcCanReceiveItem");
                     nd.canReceiveItem = rs.getInt("NpcCanReceiveItem") != 0;
 
                     nd.startM = nd.m;
