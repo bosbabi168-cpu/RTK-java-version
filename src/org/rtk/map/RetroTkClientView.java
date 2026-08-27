@@ -289,4 +289,14 @@ public final class RetroTkClientView implements ClientView {
                                     int width, int height, int checksum) {
         Clif.redrawArea(sd, map, x, y, width, height, checksum);
     }
+
+    @Override
+    public void playerEquipmentChanged(User sd, int slot) {
+        Clif.equipIt(sd, slot);
+    }
+
+    @Override
+    public void playerEquipmentCleared(User sd, int slot) {
+        Clif.unequipIt(sd, slot);
+    }
 }

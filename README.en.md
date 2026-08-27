@@ -770,24 +770,22 @@ The starting point for the next session.
 | Regression gates | 6/6 green (`cliftest` **572**, `dbtest` **187** assertions) |
 | `logs/map.log` on a live server | **0 ERROR / 0 WARN** |
 | All three servers | running side by side (`./run.sh all`), map↔char link stable |
-| Script bindings | **11 not ported** (**3** in `sl.c` + 8 typos / dead code); globals not ported: **0** |
+| Script bindings | **1 not ported** (`testPacket`, deliberate); globals **0** |
 | Bindings still **stubbed** | **none left that are real** — only `sendSound` and `updateStatus`, which do not exist in `sl.c` at all |
 | Lua scripts | 906/906 loaded, 0 errors |
 | **Real RetroTK client** | **entered the world successfully** — the protocol hunt was then stopped |
-| **Inbound packets** | our own **RTK2** protocol, 16 opcodes (RetroTK 5, side by side) |
+| **Inbound packets** | our own **RTK2** protocol, 24 opcodes (RetroTK 5, side by side) |
 | Track A | functionally done; `sendMyStatus` deliberately left at stage 1 |
 | Track C | C1 and C4 done; **C2 and C3 not started** |
 
-⚠️ **Audit, 27 August 2026.** Script bindings are nearly finished (4 of ~258
-methods left), but **porting is not**. `clif_parse()` in C serves **54
-client opcodes**; this port serves **five** — walk, menu/input, NPC dialog,
-click. Everything a player *initiates* beyond moving and talking to NPCs
-has no path yet: chatting, equipping, using items, dropping, picking up,
-casting, attacking, and **trading with another player**.
+⚠️ **The packet count is not the valuable part.** The RetroTK wire format
+is being replaced; what survives is the **logic behind each action**. That
+is why the inbound path was redesigned (RTK2, below) rather than copying 54
+short-lived opcodes.
 
-That is not 49 packets waiting to be copied, though — the wire format is
-being replaced. What matters is the **logic behind each action**, not the
-byte decoding.
+Player actions with **no path at all** yet: casting spells, groups,
+friends, profiles, emotes, the ignore list, boards and posts, the minimap,
+rankings, and turning in place.
 
 **The inbound layer now has its OWN PROTOCOL** (27 August 2026). With the
 split finished, the next step was decided: **not writing short-lived
@@ -809,6 +807,29 @@ alive because its replacement client does not exist yet.
 ⚠️ **The outbound direction does not yet**: `ClientView` (49 events) still
 only has `RetroTkClientView`. A genuinely playable RTK2 client needs
 `Rtk2ClientView` first — that is roadmap item 1 now.
+
+**Equipment, using items, and throwing** followed in the same session
+(27 August 2026), and with that **one script binding remains** —
+`testPacket`, which is deliberately not ported.
+
+⚠️ The familiar pattern shows up again, this time with **two** round
+trips: wielding an item does **not** equip it. The server checks the
+requirements, stores `equipId`/`invSlot`, and calls the `onEquip` hook; it
+is that script which calls `player:equip()` and moves the item. Unequipping
+is identical via `onUnequip` → `player:takeOff()`. Merging the two steps
+skips a hook that many special items ride on.
+
+Born alongside it: `map/Items` (a port of `pc_useitem` with its sixteen
+type branches), `map/data/MapMsg` (rejection messages from
+`conf/lang.conf`, until now only used by the login server), eight
+requirement columns on the `Items` table, and four player attributes that
+scripts read but had never existed: `speech`, `flank`, `backstab`,
+`enchant`.
+
+⚠️ **`flank` and `backstab` are booleans, not numbers.** In Lua the number
+0 is *true*, so sending them as numbers makes `if player.flank then` always
+fire — and 134 uses across the combat scripts behave backwards with no
+error anywhere.
 
 The 26 August session closed two blocks: (1) bindings that were still
 **stubs** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

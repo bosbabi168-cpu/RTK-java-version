@@ -222,6 +222,7 @@ public final class ClifTest {
         exchangeTest(map, sd);
         protoTest(map, sd);
         aksiTest(map, sd);
+        perlengkapanTest(map, sd);
     }
 
     /**
@@ -3795,6 +3796,31 @@ public final class ClifTest {
         }
 
         @Override
+        public void playerWields(User sd, int slot) {
+            catat("wield", slot);
+        }
+
+        @Override
+        public void playerUnequips(User sd, int slot) {
+            catat("unequip", slot);
+        }
+
+        @Override
+        public void playerEatsItem(User sd, int slot) {
+            catat("eat", slot);
+        }
+
+        @Override
+        public void playerUsesItem(User sd, int slot) {
+            catat("use", slot);
+        }
+
+        @Override
+        public void playerThrowsItem(User sd, int slot, boolean confirmed) {
+            catat("throw", slot, confirmed);
+        }
+
+        @Override
         public void playerAnswersMenu(User sd, Answer a) {
             catat("menu", a);
         }
@@ -3919,6 +3945,33 @@ public final class ClifTest {
         check("proto: EXCHANGE_CANCEL tanpa muatan",
                 kirim(new Bingkai(org.rtk.map.proto.Wire.OP_EXCHANGE_CANCEL), sd, rekam)
                 && rekam.terakhir.equals("exCancel"));
+
+        check("proto: WIELD -> playerWields",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_WIELD).u8(4), sd, rekam)
+                && rekam.terakhir.equals("wield") && rekam.arg.get(0).equals(4));
+        // ⚠️ Slot lepas-perlengkapan di RTK2 adalah indeks EQ_* apa adanya.
+        // RetroTK memakai penomoran panel kliennya sendiri, yang berlubang
+        // (1,2,3,4,6,7,8,13,14,16,20..23) dan harus diterjemahkan dua arah.
+        check("proto: UNEQUIP memakai indeks EQ_* apa adanya",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_UNEQUIP)
+                        .u8(org.rtk.map.data.Equip.SUBRIGHT), sd, rekam)
+                && rekam.terakhir.equals("unequip")
+                && rekam.arg.get(0).equals(org.rtk.map.data.Equip.SUBRIGHT));
+        check("proto: kode panel RetroTK memang BUKAN indeks EQ_*",
+                Clif.panelCode(org.rtk.map.data.Equip.SUBRIGHT) == 21
+                && Clif.slotFromPanelCode(21) == org.rtk.map.data.Equip.SUBRIGHT
+                && Clif.panelCode(org.rtk.map.data.Equip.FACEACCTWO) == -1);
+        check("proto: EAT -> playerEatsItem",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_EAT).u8(2), sd, rekam)
+                && rekam.terakhir.equals("eat") && rekam.arg.get(0).equals(2));
+        check("proto: USE -> playerUsesItem",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_USE).u8(9), sd, rekam)
+                && rekam.terakhir.equals("use") && rekam.arg.get(0).equals(9));
+        check("proto: THROW membawa slot dan bendera konfirmasi",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_THROW).u8(1).u8(1),
+                        sd, rekam)
+                && rekam.terakhir.equals("throw")
+                && rekam.arg.get(0).equals(1) && rekam.arg.get(1).equals(true));
 
         check("proto: ATTACK tanpa sasaran dari klien",
                 kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ATTACK), sd, rekam)
@@ -4070,7 +4123,7 @@ public final class ClifTest {
                 "halo semua".equals(sd.speech));
         check("aksi: saluran tersimpan di talkType", sd.talkType == 1);
         check("aksi: speech terbaca lewat jembatan atribut skrip",
-                "halo semua".equals(sd.scriptGetSpeech()));
+                "halo semua".equals(sd.scriptGetSpecial("speech").tojstring()));
 
         sd.speech = "";
         cmd.playerSays(sd, 2, "saluran ngawur");
@@ -4253,6 +4306,392 @@ public final class ClifTest {
         sd.fakeDrop = 0;
 
         MapServer.scriptEngine = engineLama;
+    }
+
+
+    // ==================================================================
+    // Perlengkapan & memakai barang
+    // ==================================================================
+
+    private static void perlengkapanTest(MapData map, User sd) {
+        log.info("=== perlengkapan & memakai barang ===");
+        var engineLama = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;   // dua langkahnya diuji manual
+        ClientCommands cmd = MapServer.commands;
+        var db = MapServer.itemDb;
+        var kosongLook = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        var bebas = org.rtk.map.data.ItemDb.Reqs.NONE;
+
+        // ---- pesan bawaan ----
+        check("pesan: bawaan terpasang tanpa conf/lang.conf",
+                !org.rtk.map.data.MapMsg.of("MAP_ERRITM2H").isEmpty());
+        check("pesan: kunci tak dikenal dijawab kosong, bukan null",
+                org.rtk.map.data.MapMsg.of("MAP_TIDAK_ADA").isEmpty());
+
+        // ---- barang uji ----
+        // klewang: senjata biasa
+        db.register(new org.rtk.map.data.ItemDb.Info(7601, "klewang_eq", "Klewang",
+                "", "", org.rtk.map.data.ItemDb.ITM_WEAP, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat, bebas));
+        // tombak: senjata DUA TANGAN (ItmLook 10000..29999)
+        db.register(new org.rtk.map.data.ItemDb.Info(7602, "tombak_eq", "Tombak",
+                "", "", org.rtk.map.data.ItemDb.ITM_WEAP, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, new org.rtk.map.data.ItemDb.Look(15000, 0, 0, 0),
+                tanpaStat, bebas));
+        // perisai
+        db.register(new org.rtk.map.data.ItemDb.Info(7603, "perisai_eq", "Perisai",
+                "", "", org.rtk.map.data.ItemDb.ITM_SHIELD, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat, bebas));
+        // mahkota terkunci: ItmUnequip = 1
+        db.register(new org.rtk.map.data.ItemDb.Info(7604, "mahkota_eq", "Mahkota",
+                "", "", org.rtk.map.data.ItemDb.ITM_CROWN, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat,
+                new org.rtk.map.data.ItemDb.Reqs(0, 0, 2, 0, 0, 1, 0, 0)));
+        // zirah level 50
+        db.register(new org.rtk.map.data.ItemDb.Info(7605, "zirah_eq", "Zirah Berat",
+                "", "", org.rtk.map.data.ItemDb.ITM_ARMOR, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat,
+                new org.rtk.map.data.ItemDb.Reqs(50, 0, 2, 0, 0, 0, 0, 0)));
+        // gaun khusus perempuan (ItmSex 1)
+        db.register(new org.rtk.map.data.ItemDb.Info(7606, "gaun_eq", "Gaun",
+                "", "", org.rtk.map.data.ItemDb.ITM_ARMOR, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat,
+                new org.rtk.map.data.ItemDb.Reqs(0, 0, 1, 0, 0, 0, 0, 0)));
+        // cincin (pasangan kiri/kanan)
+        db.register(new org.rtk.map.data.ItemDb.Info(7607, "cincin_eq", "Cincin",
+                "", "", org.rtk.map.data.ItemDb.ITM_LEFT, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat, bebas));
+        // anting (pasangan sub kiri/kanan — aturannya TERBALIK)
+        db.register(new org.rtk.map.data.ItemDb.Info(7608, "anting_eq", "Anting",
+                "", "", org.rtk.map.data.ItemDb.ITM_SUBLEFT, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat, bebas));
+        // jimat pengurang darah besar
+        db.register(new org.rtk.map.data.ItemDb.Info(7609, "jimat_eq", "Jimat Kutukan",
+                "", "", org.rtk.map.data.ItemDb.ITM_NECKLACE, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook,
+                new org.rtk.map.data.ItemDb.Stats(-200, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0), bebas));
+        // rokok: dura = sisa isap
+        db.register(new org.rtk.map.data.ItemDb.Info(7610, "obor_eq", "Obor",
+                "", "jam", org.rtk.map.data.ItemDb.ITM_SMOKE, 0, 0, 0, 1, 1, 1, 0, 0,
+                3, 0, 0, kosongLook, tanpaStat, bebas));
+        // ransum: makanan berumur 60 detik sejak dipakai
+        db.register(new org.rtk.map.data.ItemDb.Info(7611, "ransum_eq", "Ransum",
+                "", "", org.rtk.map.data.ItemDb.ITM_EAT, 0, 60, 0, 1, 1, 5, 0, 0,
+                1, 0, 0, kosongLook, tanpaStat, bebas));
+        // batu: hanya bisa dilempar setelah konfirmasi
+        db.register(new org.rtk.map.data.ItemDb.Info(7612, "batu_eq", "Batu Kutuk",
+                "", "", org.rtk.map.data.ItemDb.ITM_ETC, 0, 0, 0, 1, 1, 1, 0, 0,
+                1, 0, 0, kosongLook, tanpaStat,
+                new org.rtk.map.data.ItemDb.Reqs(0, 0, 2, 0, 0, 0, 1, 1)));
+
+        map.canUse = 1;
+        map.canEat = 1;
+        map.canSmoke = 1;
+        map.canEquip = 1;
+        sd.status.state = 0;
+        sd.status.level = 99;
+        sd.status.sex = 0;
+        sd.might = 100;
+        sd.maxHp = 500;
+        sd.maxMp = 500;
+        sd.status.maxInv = 20;
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+
+        // ---- dua langkah: menyiapkan lalu memindahkan ----
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: mengenakan MENYIAPKAN, belum memasang",
+                sd.status.equipAt(org.rtk.map.data.Equip.WEAP) == null
+                && sd.equipId == 7601 && sd.invSlot == 0);
+        Items.equipScript(sd);   // yang di dunia nyata dipanggil skrip onEquip
+        check("perlengkapan: equip() barulah memasangnya",
+                sd.status.equipAt(org.rtk.map.data.Equip.WEAP) != null
+                && sd.status.equipAt(org.rtk.map.data.Equip.WEAP).id == 7601);
+        check("perlengkapan: slot inventarisnya ikut kosong",
+                sd.status.inventory.isEmpty());
+        check("perlengkapan: equipId dilepas sesudahnya", sd.equipId == 0);
+
+        // ---- melepas ----
+        cmd.playerUnequips(sd, org.rtk.map.data.Equip.WEAP);
+        check("perlengkapan: melepas MENANDAI, belum mencabut",
+                sd.takeOffId == org.rtk.map.data.Equip.WEAP
+                && sd.status.equipAt(org.rtk.map.data.Equip.WEAP) != null);
+        Items.unequipScript(sd);
+        check("perlengkapan: takeOff() barulah mencabutnya",
+                sd.status.equipAt(org.rtk.map.data.Equip.WEAP) == null);
+        check("perlengkapan: barangnya kembali ke inventaris",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).id == 7601);
+        check("perlengkapan: takeOffId dikembalikan ke -1, bukan 0",
+                sd.takeOffId == -1);
+
+        // ---- senjata dua tangan vs perisai ----
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.inventory.add(barangUji(7602, 1, 100));   // tombak
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        sd.status.inventory.add(barangUji(7603, 1, 100));   // perisai
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: perisai ditolak saat memegang senjata dua tangan",
+                sd.status.equipAt(org.rtk.map.data.Equip.SHIELD) == null
+                && sd.equipId == 0);
+
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.inventory.add(barangUji(7603, 1, 100));   // perisai dulu
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        sd.status.inventory.add(barangUji(7602, 1, 100));   // lalu tombak
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: senjata dua tangan ditolak saat memakai perisai",
+                sd.equipId == 0);
+
+        // ---- syarat level, kelamin, nilai ----
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.level = 10;
+        sd.status.inventory.add(barangUji(7605, 1, 100));
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: level kurang ditolak", sd.equipId == 0);
+        sd.status.level = 99;
+
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7606, 1, 100));
+        sd.status.sex = 0;
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: jenis kelamin tidak cocok ditolak", sd.equipId == 0);
+        sd.status.sex = 1;
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: jenis kelamin cocok diterima", sd.equipId == 7606);
+        sd.equipId = 0;
+
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7609, 1, 100));
+        sd.maxHp = 100;
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: pengurang darah melebihi milik pemain ditolak",
+                sd.equipId == 0);
+        sd.maxHp = 500;
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: dengan darah cukup, barang yang sama diterima",
+                sd.equipId == 7609);
+        sd.equipId = 0;
+
+        // ---- barang yang tidak bisa dilepas ----
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.inventory.add(barangUji(7604, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        check("perlengkapan: mahkota terpasang",
+                sd.status.equipAt(org.rtk.map.data.Equip.CROWN) != null);
+        sd.takeOffId = -1;
+        cmd.playerUnequips(sd, org.rtk.map.data.Equip.CROWN);
+        check("perlengkapan: ItmUnequip=1 berarti TIDAK BISA dilepas",
+                sd.takeOffId == -1
+                && sd.status.equipAt(org.rtk.map.data.Equip.CROWN) != null);
+
+        // ---- inventaris penuh ----
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        sd.status.maxInv = 1;
+        sd.status.inventory.add(barangUji(7603, 1, 100));
+        sd.takeOffId = -1;
+        cmd.playerUnequips(sd, org.rtk.map.data.Equip.WEAP);
+        check("perlengkapan: inventaris penuh menahan pelepasan",
+                sd.takeOffId == -1
+                && sd.status.equipAt(org.rtk.map.data.Equip.WEAP) != null);
+        sd.status.maxInv = 20;
+
+        // ---- pasangan kiri/kanan, dan ketidaksimetrisannya ----
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7607, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        check("pasangan: cincin pertama masuk slot KIRI",
+                sd.status.equipAt(org.rtk.map.data.Equip.LEFT) != null);
+        sd.status.inventory.add(barangUji(7607, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        check("pasangan: cincin kedua PINDAH ke slot kanan",
+                sd.status.equipAt(org.rtk.map.data.Equip.RIGHT) != null);
+
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7608, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        // ⚠️ Anting pertama masuk SUBRIGHT, bukan SUBLEFT — kebalikan dari
+        // cincin. Ada di C (empat blok `if` berurutan, bukan `else if`);
+        // lihat Items.pasanganKiriKanan.
+        check("pasangan: anting pertama justru masuk slot SUB-KANAN",
+                sd.status.equipAt(org.rtk.map.data.Equip.SUBRIGHT) != null
+                && sd.status.equipAt(org.rtk.map.data.Equip.SUBLEFT) == null);
+
+        // ---- pesona senjata lepas saat diganti ----
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        sd.enchanted = 2.5f;
+        sd.flank = true;
+        sd.backstab = true;
+        cmd.playerUnequips(sd, org.rtk.map.data.Equip.WEAP);
+        Items.unequipScript(sd);
+        check("pesona: senjata dilepas mengembalikan enchant ke 1.0",
+                sd.enchanted == 1.0f && !sd.flank && !sd.backstab);
+
+        // ---- makan, umur barang, rokok ----
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7611, 2, 1));
+        cmd.playerEatsItem(sd, 0);
+        check("pakai: memakan mengurangi satu keping",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).amount == 1);
+        long capMakan = sd.status.inventory.get(0).time;
+        check("pakai: umur barang mulai dihitung saat DIPAKAI pertama kali",
+                capMakan > 0);
+        cmd.playerEatsItem(sd, 0);
+        check("pakai: keping terakhir mengosongkan slotnya",
+                sd.status.inventory.isEmpty());
+
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        cmd.playerEatsItem(sd, 0);
+        check("pakai: barang yang bukan makanan ditolak",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).amount == 1);
+
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7610, 1, 2));
+        cmd.playerUsesItem(sd, 0);
+        check("rokok: ketahanan berkurang satu tiap isap, bukan jumlahnya",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).dura == 1
+                && sd.status.inventory.get(0).amount == 1);
+        cmd.playerUsesItem(sd, 0);
+        check("rokok: habis isap terakhir barangnya hilang",
+                sd.status.inventory.isEmpty());
+
+        // ---- penjaga peta ----
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7611, 1, 1));
+        map.canEat = 0;
+        cmd.playerEatsItem(sd, 0);
+        check("peta: MapCanEat=0 menahan makan",
+                sd.status.inventory.size() == 1);
+        map.canEat = 1;
+
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        map.canEquip = 0;
+        cmd.playerWields(sd, 0);
+        check("peta: MapCanEquip=0 menahan mengenakan", sd.equipId == 0);
+        map.canEquip = 1;
+
+        // ---- keadaan pemain ----
+        sd.status.state = 1;
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7611, 1, 1));
+        cmd.playerUsesItem(sd, 0);
+        check("keadaan: arwah tidak bisa memakai apa pun",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).amount == 1);
+        sd.status.state = 0;
+
+        // ---- melempar ----
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7612, 3, 1));
+        sd.status.side = 1;   // menghadap kanan
+
+        // ⚠️ Cari petak yang bersih dulu. Uji-uji sebelumnya menanam PORTAL
+        // di sekitar posisi pemain, dan portal menghentikan lemparan — uji
+        // ini akan gagal karena sebab yang sama sekali berbeda dari yang
+        // sedang diperiksa. Jebakan yang persis sama pernah kejadian pada
+        // uji tabrakan (lihat catatan portal di CLAUDE.md).
+        int lx = sd.x;
+        int ly = sd.y;
+        for (int y = 1; y < map.ys - 1; y++) {
+            boolean ketemu = false;
+            for (int x = 1; x < map.xs - 3; x++) {
+                if (map.walkable(x, y) && map.walkable(x + 1, y)
+                        && map.warpAt(x, y) == null && map.warpAt(x + 1, y) == null
+                        && map.objectsAt(x + 1, y).isEmpty()) {
+                    lx = x;
+                    ly = y;
+                    ketemu = true;
+                    break;
+                }
+            }
+            if (ketemu) {
+                break;
+            }
+        }
+        Pc.warp(MapServer.world, sd, sd.m, lx, ly);
+        sd.status.side = 1;
+
+        cmd.playerThrowsItem(sd, 0, false);
+        check("lempar: barang ber-ItmThrownConfirm menanyakan dulu",
+                sd.status.inventory.get(0).amount == 3);
+
+        int lantaiAwal = MapServer.floorItems.count();
+        cmd.playerThrowsItem(sd, 0, true);
+        check("lempar: setelah dikonfirmasi barangnya berkurang satu",
+                sd.status.inventory.get(0).amount == 2);
+        check("lempar: satu barang mendarat di lantai",
+                MapServer.floorItems.count() == lantaiAwal + 1);
+        FloorItem terlempar = null;
+        for (FloorItem fi : MapServer.floorItems.all()) {
+            if (fi.data.id == 7612) {
+                terlempar = fi;
+            }
+        }
+        check("lempar: mendarat di petak lain, bukan di kaki pelempar",
+                terlempar != null && terlempar.x > sd.x && terlempar.y == sd.y);
+        check("lempar: SELALU sekeping, berapa pun isi slotnya",
+                terlempar != null && terlempar.data.amount == 1);
+
+        // Dinding menghentikan lemparan: hadapkan ke tepi peta.
+        int xLama = sd.x;
+        sd.x = 1;
+        sd.status.side = 3;   // menghadap kiri, tepi peta di x=0
+        int[] tujuan = Items.throwLanding(sd);
+        check("lempar: penelusuran berhenti di batas peta",
+                tujuan[0] >= 0 && tujuan[0] <= 1);
+        sd.x = xLama;
+        sd.status.side = 1;
+
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.equipId = 0;
+        sd.takeOffId = -1;
+        MapServer.scriptEngine = engineLama;
+    }
+
+    /** Satu barang inventaris untuk uji. */
+    private static org.rtk.common.mmo.Item barangUji(long id, int amount, int dura) {
+        org.rtk.common.mmo.Item it = new org.rtk.common.mmo.Item();
+        it.id = id;
+        it.amount = amount;
+        it.dura = dura;
+        return it;
     }
 
 }

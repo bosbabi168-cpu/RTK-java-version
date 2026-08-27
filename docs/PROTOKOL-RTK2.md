@@ -8,6 +8,10 @@ orang yang **menulis kliennya** (Trek B, libGDX).
 > Semua nilai opcode di bawah adalah konstanta di kelas itu — salin dari
 > sana, jangan ketik ulang angkanya.
 
+Hitung ulang jumlah opcodenya dengan
+`grep -c "public static final int OP_" src/org/rtk/map/proto/Wire.java` —
+jangan percaya angka yang tertulis di prosa mana pun, termasuk di sini.
+
 **Status: hanya arah MASUK.** Arah keluar masih memakai `RetroTkClientView`.
 Klien RTK2 yang lengkap butuh `Rtk2ClientView` (49 peristiwa) lebih dulu —
 lihat "Yang belum" di bawah.
@@ -92,6 +96,29 @@ melanjutkan percakapan yang sedang berjalan.
 | `0x0202` | `DROP_GOLD` | `u64 jumlah` |
 | `0x0210` | `HAND_ITEM` | `u8 slot, u16 jumlah` |
 | `0x0211` | `HAND_GOLD` | `u64 jumlah` |
+| `0x0220` | `WIELD` | `u8 slot` — kenakan isi slot inventaris |
+| `0x0221` | `UNEQUIP` | `u8 slot` — **indeks `EQ_*`**, lihat catatan |
+| `0x0222` | `EAT` | `u8 slot` — hanya barang `ITM_EAT` |
+| `0x0223` | `USE` | `u8 slot` — jenis apa pun |
+| `0x0224` | `THROW` | `u8 slot, u8 konfirmasi` |
+
+⚠️ **`UNEQUIP` memakai indeks `EQ_*` apa adanya** (0 senjata, 1 zirah,
+2 perisai, 3 helm, 4 kiri, 5 kanan, 6 sub-kiri, 7 sub-kanan, 8 aksesori
+wajah, 9 mahkota, 10 mantel, 11 kalung, 12 sepatu, 13 jubah, 14 aksesori
+wajah kedua). RetroTK memakai penomoran panel kliennya sendiri —
+1, 2, 3, 4, 6, 7, 8, 13, 14, 16, 20–23, berlubang di 5, 9–12, 15, 17–19 —
+yang harus diterjemahkan dua arah di server. Itu tabel yang dibuang.
+
+⚠️ **`WIELD` tidak langsung memasang.** Server memeriksa syaratnya lalu
+memanggil kait skrip; skrip itulah yang memindahkan barangnya. Klien tidak
+perlu tahu soal itu, tetapi perlu tahu bahwa **panel bisa tidak berubah**
+bila skripnya menolak — tunggu peristiwa perlengkapan, jangan menebak
+sendiri.
+
+⚠️ **`THROW` dijawab dua kali untuk sebagian barang.** Barang
+ber-`ItmThrownConfirm` dijawab pesan "Are you sure...?" pada kiriman
+pertama; kirim ulang dengan `konfirmasi = 1` setelah pemain menjawab.
+Berbeda dari RetroTK, server tidak mengirim paket pertanyaan tersendiri.
 
 `HAND_*` menyerahkan ke **petak yang sedang dihadapi**, dan sasarannya
 menentukan tiga perilaku berbeda: pemain membuka jendela pertukaran, mob
@@ -192,7 +219,6 @@ bingkainya, dan ragam jawaban yang tidak dikenal.
 ## Yang belum ada
 
 Aksi yang **belum punya opcode**, karena logikanya memang belum ada:
-memakai & melepas perlengkapan, memakai & memakan barang, melempar,
 merapal mantra, grup, teman, profil, emosi, daftar abaikan, papan & pos,
 minimap, ranking, berputar di tempat.
 

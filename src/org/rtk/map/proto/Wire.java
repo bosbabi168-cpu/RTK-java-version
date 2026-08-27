@@ -138,6 +138,27 @@ public final class Wire {
     /** {@code u64 jumlah} — serahkan ke pemain di petak yang dihadapi. */
     public static final int OP_HAND_GOLD = 0x0211;
 
+    /** {@code u8 slot} — kenakan isi slot inventaris. */
+    public static final int OP_WIELD = 0x0220;
+
+    /**
+     * {@code u8 slot} — lepas isi slot perlengkapan.
+     *
+     * <p>⚠️ Slotnya indeks {@code EQ_*} apa adanya. RetroTK memakai
+     * penomoran panel kliennya sendiri (1,2,3,4,6,7,8,13,14,16,20..23),
+     * yang berlubang dan harus diterjemahkan dua arah; RTK2 tidak.</p>
+     */
+    public static final int OP_UNEQUIP = 0x0221;
+
+    /** {@code u8 slot} — makan isi slot; hanya barang berjenis ITM_EAT. */
+    public static final int OP_EAT = 0x0222;
+
+    /** {@code u8 slot} — pakai isi slot, jenis apa pun. */
+    public static final int OP_USE = 0x0223;
+
+    /** {@code u8 slot, u8 konfirmasi} — lempar isi slot ke arah hadap. */
+    public static final int OP_THROW = 0x0224;
+
     // ------------------------------------------------------------------
     // 0x03xx — bicara
     // ------------------------------------------------------------------

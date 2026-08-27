@@ -545,6 +545,10 @@ public final class MapServer {
         configRead(confFile);
         configRead(interFile);
         configRead("conf/char.conf"); // sql settings
+        // lang_read(): pesan penolakan map server. Punya bawaan, jadi
+        // berkasnya yang hilang tidak membuat pemain ditolak dengan pesan
+        // kosong — lihat MapMsg.
+        org.rtk.map.data.MapMsg.load("conf/lang.conf");
 
         if (!sql.connect(sqlId, sqlPw, sqlIp, sqlPort, sqlDb)) {
             log.warn("[MAP] WARNING: no database connection; running with map 0 only.");

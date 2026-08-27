@@ -143,8 +143,8 @@ proses build di server.
   ulang peta, dialog NPC, toko, mob, AI & pertarungan, obrolan & gerakan,
   durasi mantra, gerak mob, barang lantai, inventaris, buku mantra,
   tampilan & timer, simpan paksa, BOD, pertukaran, **protokol RTK2**,
-  **aksi pemain** — **640 assertion**),
-  `./run.sh dbtest` (lapisan database ke MySQL hidup — 192 assertion;
+  **aksi pemain**, **perlengkapan & pakai barang** — **685 assertion**),
+  `./run.sh dbtest` (lapisan database ke MySQL hidup — 196 assertion;
   butuh MySQL, lihat "Menyiapkan MySQL lokal").
 - **Alat bantu** (bukan gerbang regresi): `./run.sh luaaudit` — pemeriksa
   statis 907 skrip Lua. Lihat "Audit skrip Lua" di bawah.
@@ -1080,6 +1080,85 @@ byte-identik dengan `rtklua/`.
    Ini keluarga yang sama dengan Peringatan #30 dan #50: **angka audit hanya
    sejujur cara ia mengumpulkan namanya.**
 
+63. **Mengenakan barang itu DUA LANGKAH, dan keduanya tidak boleh
+   digabung.** `pc_equipitem` <b>tidak memasang apa pun</b>: ia memeriksa
+   syarat, menyimpan `equipId` + `invSlot`, lalu memanggil kait `onEquip`.
+   Yang memindahkan barangnya adalah `pc_equipscript`, dipanggil <b>skrip</b>
+   lewat `player:equip()`. Melepas sama persis: `pc_unequip` menandai
+   `takeOffId` dan memanggil `onUnequip`; `pc_unequipscript`
+   (`player:takeOff()`) yang mencabut.
+
+   Menggabungkan keduanya melewati kait yang ditumpangi banyak barang
+   khusus; memindahkan syaratnya ke langkah kedua membuat `forceEquip` ikut
+   tertahan. Keadaan penghubungnya (`equipId`, `invSlot`, `takeOffId`) ada
+   di `User` justru karena itu.
+
+   ⚠️ `takeOffId` bernilai **-1** saat kosong, bukan 0 — 0 adalah slot
+   senjata yang sah.
+
+64. **Pasangan kiri/kanan cincin dan anting TIDAK simetris.** Di C ini empat
+   blok `if` <b>berurutan</b>, bukan `else if`, sehingga hasil blok
+   sebelumnya ikut diuji blok berikutnya. Akibatnya:
+   - cincin (`EQ_LEFT`) yang kiri penuh dan kanan kosong **pindah** ke
+     kanan — seperti dugaan;
+   - anting (`EQ_SUBLEFT`) justru sebaliknya: yang **kosong** dipindah ke
+     `EQ_SUBRIGHT`, dan yang penuh malah **tetap** di kiri.
+
+   Anting pertama karena itu mendarat di **sub-kanan**. Terlihat seperti
+   salah ketik di C, tetapi memperbaikinya akan memindahkan setiap anting
+   yang sudah dikenakan pemain ke slot yang berbeda dari yang tersimpan di
+   database. Ada assertion khusus untuk kedua perilaku itu di `cliftest`.
+
+65. **`ItmUnequip` kebalikan namanya — nilai 1 berarti TIDAK bisa
+   dilepas.** Keluarga keempat setelah `ItmDroppable` (Peringatan #32),
+   `ItmExchangeable` (#53), dan `mob->canmove` (#35). Dibungkus
+   `ItemDb.cannotBeUnequipped()`. Di data asli hanya **1 barang** memakainya,
+   jadi salah arah tidak akan terlihat dari statistik — hanya dari barang
+   itu.
+
+   Dua jebakan lain di keluarga barang yang sama:
+   - **Ketahanan rokok (`ITM_SMOKE`) adalah sisa isap, bukan keausan** —
+     berkurang satu tiap pakai, habis berarti barangnya hilang.
+   - **Umur barang (`ItmTimer`) mulai dihitung saat DIPAKAI pertama kali**,
+     bukan saat didapat. Penjaganya `!it.time`, jadi pemakaian kedua tidak
+     memundurkan kedaluwarsanya.
+
+66. **`clif_parsewield` menerima jenis 3..16, bukan 3..17.** `ITM_HAND`
+   (17) punya slot perlengkapan dan bisa dikenakan lewat "pakai", tetapi
+   <b>tidak</b> lewat pintu "kenakan". Karena itu `ItemDb.ITM_EQUIP_MAX`
+   (17) bukan batas yang benar untuk pintu itu.
+
+   Terkait, dan lebih berbahaya: `pc_useitem` menghitung slot tujuannya
+   dengan `itemdb_type - 3` **tanpa batas atas**, sehingga barang bukan-
+   perlengkapan (`ITM_ETC` = 18 ke atas) **membaca di luar larik
+   `equip[]`** di C. Port ini menjaga rentangnya; efeknya sama untuk barang
+   yang sah, tanpa perilaku tak tentu.
+
+67. **Audit Lua tidak pernah melaporkan `equip`, dan itu blind spot yang
+   sudah tertulis.** Binding `player:equip()` tidak ada sama sekali di port
+   ini sampai 27 Agustus 2026, tetapi `./run.sh luaaudit` **tidak pernah
+   menyebutnya** — karena `equip` kebetulan juga nama kunci tabel di tiga
+   skrip (`Clone.lua`, `basic_sickle.lua`, dan sebuah berkas alat GM),
+   sehingga audit menganggapnya "terdefinisi di korpus".
+
+   Ini persis kelemahan yang sudah dicatat di bagian "Audit skrip Lua", dan
+   sekarang ada contoh nyatanya: **binding yang paling banyak dipakai bisa
+   hilang tanpa satu baris pun laporan.** Silangkan ke `sl.c` saat
+   mengerjakan satu keluarga fungsi, jangan menunggu audit menyebutnya.
+
+68. **Empat atribut pemain yang dibaca skrip tapi belum pernah ada.**
+   `speech` (string), `flank` dan `backstab` (boolean, 134 pemakaian
+   gabungan di skrip pertarungan), dan `enchant` (angka). Ketiadaannya tidak
+   pernah dilaporkan audit mana pun — audit memeriksa nama <b>fungsi</b>,
+   bukan atribut.
+
+   ⚠️ **Boolean wajib lewat jalur khususnya sendiri**
+   (`ScriptPlayer.Owner.scriptGetSpecial`), bukan dipaksakan jadi angka
+   lewat jembatan `scriptGetAttr` yang mengembalikan `Long`: **di Lua angka
+   0 itu BENAR**, sehingga `if player.flank then` akan selalu masuk. Salah
+   seperti itu tidak melempar error di mana pun; ia hanya membuat seluruh
+   skrip pertarungan berperilaku terbalik.
+
 ## Konfigurasi (urutan prioritas)
 
 1. `resources/rtk-server.properties` — default teknis (crypt key, port,
@@ -1117,7 +1196,9 @@ adalah bagian dari protokol klien — jangan ubah nilainya.
 | `map/itemdb.c` `itemdb_look` | `map/data/ItemDb` | tampilan barang dari tabel `Items` |
 | `map/clif.c` `nexCRCC` + `clif_sendmapdata` | `map/Clif.nexCrc`, `Clif.sendMapData` | checksum petak peta; cocok = tidak dikirim ulang |
 | `map/pc.c` `bl_duratimer` + `sl.c` `pcl_setduration` dkk. | `map/Durations` | durasi & aether mantra; tik 1 detik, kait `while_cast`/`uncast` |
-| `map/map.h` `flooritem_data` + `map_additem`/`map_delitem` | `map/FloorItem`, `map/FloorItemRegistry` | barang di lantai (BL_ITEM); dua aturan gabung, penyaring jebakan |
+| `map/map.h` `flooritem_data` + `map_additem`/`map_delitem` | `map/FloorItem`, `map/FloorItemRegistry` | barang di lantai (BL_ITEM); tiga aturan gabung, penyaring jebakan |
+| `map/pc.c` `pc_useitem`/`pc_equipitem`/`pc_unequipscript` + `clif_throwitem_script` | `map/Items` | pakai, kenakan, lepas, lempar — **dua langkah** lewat kait skrip |
+| `map/map.c` `lang_read()` + `map_msg[]` | `map/data/MapMsg` | pesan penolakan dari `conf/lang.conf`, berbawaan |
 
 ## Scripting engine (org.rtk.map.script)
 
@@ -1200,8 +1281,8 @@ Titik berangkat untuk sesi berikutnya. **Baca ini dulu.**
 |---|---|
 | Arah | protokol diganti + klien libGDX sendiri (lihat bagian teratas) |
 | Gerbang regresi | 6/6 hijau (`cliftest` **572**, `dbtest` **187** assertion) |
-| Binding skrip | **11** belum diport (**3** di `sl.c` + 8 salah ketik / kode mati); global belum diport **0** |
-| **Paket MASUK** | protokol **RTK2 sendiri**, 16 opcode (RetroTK tetap 5, berdampingan) |
+| Binding skrip | **1** belum diport (`testPacket`, sengaja); global **0** |
+| **Paket MASUK** | protokol **RTK2 sendiri**, 24 opcode (RetroTK tetap 5, berdampingan) |
 | Trek A | selesai fungsinya; `sendMyStatus` sengaja TAHAP 1 |
 | Trek C | C1 & C4 selesai; **C2 dan C3 belum tersentuh** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
@@ -1663,7 +1744,7 @@ NPC **dan** mob.
 
 ---
 
-#### ROADMAP — 27 Agustus 2026 (setelah protokol RTK2)
+#### ROADMAP — 27 Agustus 2026 (setelah perlengkapan & pakai barang)
 
 > Diverifikasi ke kode, bukan ke catatan. Angka di bawah dari
 > `./run.sh luaaudit` dan pembacaan sumber pada tanggal itu.
@@ -1672,78 +1753,74 @@ NPC **dan** mob.
 
 | | Bukti |
 |---|---|
-| Binding skrip | **3** dari ±258 method tersisa; global **0** |
+| Binding skrip | **1** tersisa — `testPacket`, dan itu **sengaja** tidak diport; global **0** |
 | Trek A (A1–A5) | selesai fungsinya; dua sisa disengaja (lihat bawah) |
 | Trek C1, C4 | registry skrip; kiriman, surat, hadiah, papan pesan |
-| Subsistem besar | BL_ITEM, durasi & aether, BOD, pertukaran barang |
-| Lapisan protokol **keluar** | `ClientView`, **49 peristiwa** |
-| Lapisan protokol **masuk** | `ClientCommands` **17 perintah**; pemisahannya **tuntas** |
-| **Protokol RTK2 arah masuk** | `map/proto/{Wire,Inbound}`, **16 opcode**, spek di `docs/PROTOKOL-RTK2.md` |
-| Gerbang regresi | 6/6 hijau — `cliftest` **640**, `dbtest` **192** assertion |
+| Subsistem besar | BL_ITEM, durasi & aether, BOD, pertukaran, **perlengkapan & pakai barang** |
+| Lapisan protokol **keluar** | `ClientView`, **51 peristiwa** |
+| Lapisan protokol **masuk** | `ClientCommands` **22 perintah**; pemisahannya tuntas |
+| **Protokol RTK2 arah masuk** | `map/proto/{Wire,Inbound}`, **24 opcode** (`grep -c "OP_" Wire.java`), spek di `docs/PROTOKOL-RTK2.md` |
+| Gerbang regresi | 6/6 hijau — `cliftest` **685**, `dbtest` **196** assertion |
 
-**Keputusan 27 Agustus 2026:** protokol sendiri **langsung dipakai**,
-tanpa menulis pembaca RetroTK yang umurnya pendek. Akibatnya uji dengan
-pemain sungguhan (dulu butir 4) **pindah ke belakang** — ia menunggu klien
-buatan sendiri, bukan klien RetroTK.
+**Keputusan 27 Agustus 2026:** protokol sendiri langsung dipakai, tanpa
+menulis pembaca RetroTK yang umurnya pendek. Akibatnya uji dengan pemain
+sungguhan **pindah ke akhir** — ia menunggu klien buatan sendiri.
 
 ---
 
-**1. Arah KELUAR untuk RTK2 — `Rtk2ClientView`.** Ini penghambat terbesar
+**1. Arah KELUAR untuk RTK2 — `Rtk2ClientView`.** Penghambat terbesar
 sekarang, dan satu-satunya yang menghalangi klien sendiri berjalan: arah
 masuk sudah punya protokol sendiri, arah keluar belum. `ClientView` punya
-**49 peristiwa** dan baru satu implementasi (`RetroTkClientView`). Daftar
+**51 peristiwa** dan baru satu implementasi (`RetroTkClientView`). Daftar
 peristiwanya **sudah** jadi spesifikasinya — tinggal memilih bentuk
 kabelnya, dan `Wire` sudah menyediakan aturan bingkai yang sama.
 
-**2. Pasang/lepas perlengkapan, pakai & makan barang, melempar.** Menutup
-dua dari tiga binding terakhir (`takeOff`, `throwItem`). Logikanya **belum
-ada**, jadi ini pekerjaan baru, bukan penyambungan. Opcodenya tinggal
-disisipkan di golongan `0x02xx`.
+**2. Merapal mantra.** Aksi pemain besar terakhir yang belum punya jalur
+masuk. Logikanya sebagian sudah ada lewat `Durations`; yang kurang pemicu
+dari klien (`0x0F` magic, `0x30` change spell di RetroTK) dan penjaga
+`map.spell`.
 
-**3. Merapal mantra.** Golongan opcode `0x02xx`/`0x05xx` juga; logikanya
-sebagian sudah ada lewat `Durations`.
-
-**4. Trek B — dekoder EPF, editor, klien libGDX.** **Belum dimulai sama
+**3. Trek B — dekoder EPF, editor, klien libGDX.** **Belum dimulai sama
 sekali** (`src/org/rtk/` hanya berisi charserver, common, login, map). Ini
 jalur menuju arah final project, dan sekarang juga jalur satu-satunya
 menuju pengujian sungguhan. B1 dekoder EPF prasyarat sisanya;
 `rtk/SObj.tbl` (18.954 entri) masih di RTK-Server, belum disalin.
 
+**4. Sosial & antarmuka** — grup, teman, profil, emosi, daftar abaikan
+(yang terakhir menutup penyaring `clif_isignore`), papan & pos, minimap,
+ranking, berputar di tempat.
+
 **5. C2 — empat berkas meta hilang.** `meta/` masih hanya berisi
-`RidableAnimals`; `login.conf` meminta lima. Sebab tooltip barang hilang.
-⚠️ Nilainya menurun bersama arah project: berkas meta adalah format
-RetroTK, dan klien sendiri tidak akan membacanya.
+`RidableAnimals`; `login.conf` meminta lima. ⚠️ Nilainya menurun bersama
+arah project: berkas meta adalah format RetroTK, dan klien sendiri tidak
+akan membacanya.
 
 **6. C3 — warp antar map server.** Masih ditolak di `MapCommands`.
 
-**7. Sosial & antarmuka** — grup, teman, profil, emosi, daftar abaikan
-(yang terakhir menutup penyaring `clif_isignore`), papan & pos, minimap,
-ranking.
+**7. Terjemahan Indonesia** — ~3.800 titik dialog, 903 di antaranya di 56
+berkas. Kata kunci `speech` sudah selesai. Sekarang juga ada
+`conf/lang.conf` (pesan penolakan map server) yang bisa diterjemahkan
+tanpa menyentuh kode sama sekali.
 
-**8. Terjemahan Indonesia** — ~3.800 titik dialog, 903 di antaranya di 56
-berkas. Kata kunci `speech` sudah selesai.
+**8. `testPacket`** — satu-satunya binding yang **sengaja tidak diport**:
+alat debug GM yang menulis byte sembarang ke kabel dari tabel Lua.
+Nilainya nol bila protokolnya memang diganti, dan risikonya nyata.
 
-**9. `testPacket`** — satu-satunya binding yang **sengaja tidak diport**.
-
-**10. Uji dengan pemain sungguhan online** — *dulu butir 4, sengaja
-dipindahkan ke sini.* Tik durasi mantra, seluruh gerak mob, pertukaran
-barang, dan sekarang seluruh aksi baru (bicara, memungut, menjatuhkan,
-menyerahkan, menyerang) **belum pernah berjalan** — semuanya hanya menyala
-untuk pemain yang online, dan kait skripnya (`onSay`, `onPickUp`,
-`onSwing`) baru terbukti lewat jembatan atributnya, bukan lewat
-skripnya sendiri. Peringatan #26 lahir persis dari kait timer yang hanya
-menyala saat server hidup, jadi **ini tetap pemeriksaan yang paling
-tajam** — hanya urutannya yang berubah: butuh butir 1 dan 4 lebih dulu.
+**9. Uji dengan pemain sungguhan online** — *sengaja diletakkan terakhir.*
+Tik durasi mantra, gerak mob, pertukaran, dan seluruh aksi baru (bicara,
+memungut, menjatuhkan, menyerahkan, menyerang, mengenakan, melepas,
+memakai, melempar) **belum pernah berjalan**; kait skripnya (`onSay`,
+`onPickUp`, `onSwing`, `onEquip`, `onUnequip`, `onThrow`) baru terbukti
+sampai jembatan atributnya, bukan sampai skripnya sendiri. Peringatan #26
+lahir persis dari kait yang hanya menyala saat server hidup, jadi **ini
+tetap pemeriksaan yang paling tajam** — hanya urutannya yang berubah:
+butuh butir 1 dan 3 lebih dulu.
 
 ---
 
 **Dua sisa Trek A yang disengaja** (bukan pekerjaan tertunda):
 `Clif.sendMyStatus()` TAHAP 1 (klan, gelar, pasangan, TNL kosong) dan
 penyaring `clif_isignore`. Keduanya menunggu protokol baru.
-
-~~`ClassDb.pathName()` mengembalikan string kosong~~ — **dilengkapi
-27 Agustus 2026** bersama `PthChat`; dipakai baris obrolan klan/subpath,
-dan diuji ke database hidup di `dbtest` (lihat Peringatan #62).
 
 ---
 

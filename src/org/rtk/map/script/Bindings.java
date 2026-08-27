@@ -158,16 +158,6 @@ final class Bindings {
                         p.questUdata = engine.newInstance(engine.questClass, p);
                     }
                     return p.questUdata;
-                case "speech":
-                    // ⚠️ Satu-satunya atribut pemain yang bernilai STRING,
-                    // jadi ia tidak bisa lewat jembatan scriptGetAttr yang
-                    // mengembalikan Long. speech.lua membacanya di baris
-                    // pertama `onSay` — tanpa cabang ini seluruh jalur
-                    // obrolan meledak di string.lower(nil).
-                    if (p.owner instanceof ScriptPlayer.Owner o2) {
-                        return LuaValue.valueOf(o2.scriptGetSpeech());
-                    }
-                    return LuaValue.valueOf("");
                 case "gameRegistry":
                     return engine.gameRegistryUdata;
                 case "mapRegistry":
@@ -184,6 +174,13 @@ final class Bindings {
                     // dijawab pemiliknya; null berarti belum diport, jadi
                     // pencarian lanjut ke prototype / data table.
                     if (p.owner instanceof ScriptPlayer.Owner o) {
+                        // String & boolean lebih dulu: jembatan angka di
+                        // bawah tidak bisa membawa keduanya, dan boolean
+                        // yang lolos jadi angka akan SELALU benar di Lua.
+                        LuaValue khusus = o.scriptGetSpecial(attr);
+                        if (khusus != null) {
+                            return khusus;
+                        }
                         Long v = o.scriptGetAttr(attr);
                         if (v != null) {
                             return LuaValue.valueOf(v.doubleValue());
@@ -195,14 +192,6 @@ final class Bindings {
         player.setter = (self, attr, value) -> {
             ScriptPlayer p = (ScriptPlayer) self;
             switch (attr) {
-                case "speech":
-                    // speech.lua menulis balik ke sini saat pemain memakai
-                    // pintasan /s, dan nilai barunya yang dibaca sisa skripnya.
-                    if (p.owner instanceof ScriptPlayer.Owner o2) {
-                        o2.scriptSetSpeech(value.tojstring());
-                        return true;
-                    }
-                    return false;
                 case "level":
                     p.level = value.toint();
                     if (p.owner instanceof ScriptPlayer.Owner o) {
@@ -216,9 +205,16 @@ final class Bindings {
                 // sehingga ia hilang dari pandangan pemain lain. Skrip
                 // memindahkan pemain lewat method warp(), bukan atribut.
                 default:
-                    if (p.owner instanceof ScriptPlayer.Owner o
-                            && o.scriptSetAttr(attr, (long) value.todouble())) {
-                        return true;
+                    if (p.owner instanceof ScriptPlayer.Owner o) {
+                        // speech.lua menulis balik `speech` saat pemain
+                        // memakai pintasan /s; flank & backstab ditulis
+                        // skrip pertarungan sebagai boolean.
+                        if (o.scriptSetSpecial(attr, value)) {
+                            return true;
+                        }
+                        if (o.scriptSetAttr(attr, (long) value.todouble())) {
+                            return true;
+                        }
                     }
                     return false; // jatuh ke data table
             }
@@ -1225,6 +1221,53 @@ final class Bindings {
                     "SELECT `ChaCaptchaKey` FROM `Character` WHERE `ChaId` = ?",
                     u.status.id);
             return LuaValue.valueOf(k == null ? "" : k);
+        });
+
+        /**
+         * pcl_equip(): pasang barang yang sudah disiapkan {@code onEquip}.
+         *
+         * <p>⚠️ <b>Tanpa argumen</b>, dan itu bukan penyederhanaan: barang
+         * mana yang dipasang datang dari keadaan pemain
+         * ({@code equipId} + {@code invSlot}) yang diisi
+         * {@code Items.equipItem} tepat sebelum kaitnya dipanggil. Skrip
+         * hanya menentukan <b>kapan</b>, bukan apa.</p>
+         */
+        player.addMethod("equip", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Items.equipScript(u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_takeoff(): lepas slot yang sudah ditandai {@code onUnequip}.
+         *
+         * <p>Pasangan {@code equip} di atas, dan sama-sama tanpa argumen —
+         * slotnya ada di {@code takeOffId}. Kalau {@code equipId} juga
+         * terisi, keduanya <b>ditukar</b> sekaligus.</p>
+         */
+        player.addMethod("takeOff", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Items.unequipScript(u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_throwitem(): lemparkan isi {@code invSlot} ke
+         * {@code throwX}/{@code throwY}.
+         *
+         * <p>Ketiganya diisi penangan lempar sebelum kait {@code onThrow}
+         * dipanggil, sehingga skrip bisa memindahkan tujuannya lebih dulu.</p>
+         */
+        player.addMethod("throwItem", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Items.throwScript(u);
+            }
+            return LuaValue.NONE;
         });
 
         /**

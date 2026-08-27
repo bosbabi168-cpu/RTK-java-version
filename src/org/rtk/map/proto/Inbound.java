@@ -94,6 +94,15 @@ public final class Inbound {
             }
             case Wire.OP_HAND_GOLD -> cmd.playerHandsGold(sd, r.u64());
 
+            case Wire.OP_WIELD -> cmd.playerWields(sd, r.u8());
+            case Wire.OP_UNEQUIP -> cmd.playerUnequips(sd, r.u8());
+            case Wire.OP_EAT -> cmd.playerEatsItem(sd, r.u8());
+            case Wire.OP_USE -> cmd.playerUsesItem(sd, r.u8());
+            case Wire.OP_THROW -> {
+                int slot = r.u8();
+                cmd.playerThrowsItem(sd, slot, r.u8() != 0);
+            }
+
             case Wire.OP_SAY -> {
                 int saluran = r.u8();
                 cmd.playerSays(sd, saluran, r.str());

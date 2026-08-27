@@ -7,6 +7,7 @@ import org.luaj.vm2.LuaValue;
 
 import org.rtk.map.data.BlockList;
 import org.rtk.common.mmo.SkillInfo;
+import org.rtk.map.data.ItemDb;
 import org.rtk.map.data.MapData;
 import org.rtk.map.script.ScriptPlayer;
 
@@ -999,6 +1000,133 @@ public final class MapCommands implements ClientCommands {
         if (Exchange.start(sd, tsd.id)) {
             Exchange.offerGold(sd, tawar);
         }
+    }
+
+    // ==================================================================
+    // Perlengkapan & memakai barang — port clif_parsewield / parseunequip /
+    // parseeatitem / parseuseitem / parsethrow
+    // ==================================================================
+
+    @Override
+    public void playerWields(User sd, int slot) {
+        if (slot < 0 || slot >= sd.status.inventory.size()) {
+            return;
+        }
+        int jenis = MapServer.itemDb.info(sd.status.inventory.get(slot).id).type();
+        // ⚠️ Rentangnya 3..16, BUKAN 3..17 seperti ItemDb.ITM_EQUIP_MAX.
+        // ITM_HAND (17) punya slot perlengkapan tetapi tidak bisa dikenakan
+        // lewat pintu ini — hanya lewat "pakai". Itu di C.
+        if (jenis >= ItemDb.ITM_WEAP && jenis <= ItemDb.ITM_COAT) {
+            Items.useItem(sd, slot);
+        } else {
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI, "You cannot wield that!");
+        }
+    }
+
+    @Override
+    public void playerUnequips(User sd, int equipSlot) {
+        if (equipSlot < 0 || equipSlot >= org.rtk.map.data.Equip.COUNT) {
+            return;
+        }
+        var it = sd.status.equipAt(equipSlot);
+        if (it == null || it.id <= 0) {
+            return;
+        }
+        if (MapServer.itemDb.cannotBeUnequipped(it.id) && !sd.isGm()) {
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                    "You are unable to unequip that.");
+            return;
+        }
+        // ⚠️ Ruang inventaris diperiksa DI SINI, sebelum kait skrip berjalan.
+        // Kalau tidak, `onUnequip` sudah telanjur menjalankan efek sampingnya
+        // sementara barangnya tetap menempel di badan.
+        if (sd.status.inventory.size() >= sd.status.maxInv) {
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI, "Your inventory is full.");
+            return;
+        }
+        if (Items.unequip(sd, equipSlot)) {
+            MapServer.clientView.playerEquipmentCleared(sd, equipSlot);
+            MapServer.clientView.scriptDialogReady(sd, sd.scriptPlayer());
+        }
+    }
+
+    @Override
+    public void playerEatsItem(User sd, int slot) {
+        if (slot < 0 || slot >= sd.status.inventory.size()) {
+            return;
+        }
+        if (MapServer.itemDb.info(sd.status.inventory.get(slot).id).type()
+                == ItemDb.ITM_EAT) {
+            Items.useItem(sd, slot);
+        } else {
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI, "That item is not edible.");
+        }
+    }
+
+    @Override
+    public void playerUsesItem(User sd, int slot) {
+        Items.useItem(sd, slot);
+    }
+
+    @Override
+    public void playerThrowsItem(User sd, int slot, boolean confirmed) {
+        if (slot < 0 || slot >= sd.status.inventory.size()) {
+            return;
+        }
+        var it = sd.status.inventory.get(slot);
+        if (it.id <= 0) {
+            return;
+        }
+        if (MapServer.itemDb.needsThrowConfirm(it.id) && !confirmed) {
+            // Barang yang sekali dilempar tidak bisa diambil lagi menanyakan
+            // dulu. Di RTK2 pertanyaannya dijawab klien lalu dikirim ulang
+            // dengan bendera konfirmasi — tanpa paket tanya-jawab tersendiri.
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                    "Are you sure you want to throw that away?");
+            return;
+        }
+        if (!sd.isGm()) {
+            if (sd.status.state == ST_SPIRIT) {
+                MapServer.clientView.messageToPlayer(sd, MSG_MINI, "Spirits can't do that.");
+                return;
+            }
+            if (sd.status.state == ST_MOUNT) {
+                MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                        "You cannot do that while riding a mount.");
+                return;
+            }
+            if (sd.status.state == ST_MORPH) {
+                MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                        "You cannot do that while transformed.");
+                return;
+            }
+        }
+        if (MapServer.itemDb.cannotBePickedUp(it.id)) {
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI, "You can't throw this item.");
+            return;
+        }
+
+        sd.invSlot = slot;
+        int[] tujuan = Items.throwLanding(sd);
+        sd.throwX = tujuan[0];
+        sd.throwY = tujuan[1];
+
+        // ⚠️ Server TIDAK melempar sendiri: kait `onThrow` yang memanggil
+        // player:throwItem(), dan skrip bisa memindahkan tujuannya lebih
+        // dulu. Sama seperti onSay, onPickUp, dan swing (Peringatan #58).
+        var engine = MapServer.scriptEngine;
+        if (engine == null) {
+            Items.throwScript(sd);   // tanpa mesin skrip, jalur langsung
+            return;
+        }
+        try {
+            engine.doScript("onThrow", null,
+                    engine.playerRef(sd.scriptPlayer()),
+                    LuaValue.valueOf((double) it.id));
+        } catch (RuntimeException e) {
+            log.error("[CMD] kait onThrow gagal untuk {}", sd.name(), e);
+        }
+        MapServer.clientView.scriptDialogReady(sd, sd.scriptPlayer());
     }
 
     // ==================================================================

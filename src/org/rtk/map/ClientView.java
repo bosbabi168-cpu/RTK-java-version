@@ -386,4 +386,22 @@ public interface ClientView {
      */
     void areaRedrawRequested(User sd, MapData map, int x, int y,
                              int width, int height, int checksum);
+
+    // ------------------------------------------------------------------
+    // Perlengkapan
+    // ------------------------------------------------------------------
+
+    /**
+     * Satu slot perlengkapan pemain kini berisi sesuatu yang lain
+     * ({@code clif_equipit}).
+     *
+     * <p>Terpisah dari {@link #objectAppearanceChanged}: yang itu soal
+     * bagaimana pemain <b>terlihat oleh orang lain</b>, yang ini soal panel
+     * perlengkapan miliknya sendiri. Mengganti cincin mengubah panelnya
+     * tanpa mengubah gambarnya sedikit pun.</p>
+     */
+    void playerEquipmentChanged(User sd, int slot);
+
+    /** Satu slot perlengkapan pemain kini kosong ({@code clif_unequipit}). */
+    void playerEquipmentCleared(User sd, int slot);
 }

@@ -213,6 +213,18 @@ public final class FloorItemRegistry {
         return false;
     }
 
+    /**
+     * Taruh sebuah barang lantai yang sudah disusun pemanggil, <b>tanpa</b>
+     * sapuan penggabungan — pemanggilnya yang sudah memutuskannya.
+     *
+     * <p>Dipakai jalur lempar, yang aturan gabungnya sendiri (utuh + id sama)
+     * berbeda dari ketiga jalur lain.</p>
+     */
+    public FloorItem place(FloorItem fl, int m, int x, int y) {
+        MapData map = MapServer.world.get(m);
+        return map == null ? null : tempatkan(fl, map, m, x, y);
+    }
+
     /** Bagian bersama: taruh barang di petaknya lalu tampakkan ke sekitar. */
     private FloorItem tempatkan(FloorItem fl, MapData map, int m, int x, int y) {
         fl.m = m;

@@ -764,25 +764,22 @@ Titik berangkat untuk sesi berikutnya.
 | Gerbang regresi | 6/6 hijau (`cliftest` **572**, `dbtest` **187** assertion) |
 | `logs/map.log` server hidup | **0 ERROR / 0 WARN** |
 | Ketiga server | jalan berdampingan (`./run.sh all`), tautan map↔char stabil |
-| Binding skrip | **11 belum diport** (**3** di `sl.c` + 8 salah ketik / kode mati); global belum diport **0** |
+| Binding skrip | **1 belum diport** (`testPacket`, sengaja); global **0** |
 | Binding yang masih **stub** | **tidak ada lagi yang nyata** — tinggal `sendSound` dan `updateStatus`, yang tidak ada di `sl.c` sama sekali |
 | Skrip Lua | 906/906 termuat, 0 error |
 | **Klien RetroTK asli** | **berhasil masuk dunia** — lalu perburuan protokol dihentikan |
-| **Paket MASUK** | protokol **RTK2 sendiri**, 16 opcode (RetroTK 5, berdampingan) |
+| **Paket MASUK** | protokol **RTK2 sendiri**, 24 opcode (RetroTK 5, berdampingan) |
 | Trek A | selesai fungsinya; `sendMyStatus` sengaja dibiarkan TAHAP 1 |
 | Trek C | C1 dan C4 selesai; **C2 dan C3 belum tersentuh** |
 
-⚠️ **Audit 27 Agustus 2026.** Binding skrip hampir selesai (4 dari ±258
-method tersisa), tetapi **porting belum**. `clif_parse()` di C melayani
-**54 opcode klien**; port ini melayani **lima** — jalan, menu & input,
-dialog NPC, klik. Semua yang *dimulai pemain* selain berjalan dan bicara
-dengan NPC belum punya jalur: mengobrol, memakai perlengkapan, memakai
-barang, menjatuhkan, memungut, merapal, menyerang, dan **bertukar barang
-dengan pemain lain**.
+⚠️ **Yang berharga bukan jumlah paketnya.** Format kabel RetroTK memang
+akan diganti; yang tetap terpakai adalah **logika di balik tiap aksinya**.
+Karena itu jalur masuk dirancang ulang (RTK2, di bawah) alih-alih menyalin
+54 opcode yang umurnya pendek.
 
-Itu bukan berarti 49 paket menunggu disalin — format kabelnya memang akan
-diganti. Yang berharga adalah **logika di balik tiap aksinya**, bukan
-pembacaan bytenya.
+Aksi pemain yang **belum punya jalur sama sekali**: merapal mantra, grup,
+teman, profil, emosi, daftar abaikan, papan & pos, minimap, ranking, dan
+berputar di tempat.
 
 **Lapisan masuknya kini punya PROTOKOL SENDIRI** (27 Agustus 2026).
 Setelah pemisahannya tuntas, langkah berikutnya diputuskan: **tidak menulis
@@ -805,6 +802,28 @@ karena klien penggantinya belum ada.
 ⚠️ **Arah keluarnya belum**: `ClientView` (49 peristiwa) baru punya
 `RetroTkClientView`. Klien RTK2 yang benar-benar bisa dimainkan butuh
 `Rtk2ClientView` lebih dulu — itu butir 1 roadmap sekarang.
+
+**Perlengkapan, memakai barang, dan melempar** menyusul di sesi yang sama
+(27 Agustus 2026), dan dengan itu **binding skrip tinggal satu** —
+`testPacket`, yang memang sengaja tidak diport.
+
+⚠️ Pola yang sudah dikenal muncul lagi, kali ini bolak-balik **dua kali**:
+mengenakan barang **tidak langsung memasangnya**. Server memeriksa
+syaratnya, menyimpan `equipId`/`invSlot`, lalu memanggil kait `onEquip`;
+skrip itulah yang memanggil `player:equip()` dan memindahkan barangnya.
+Melepas persis sama lewat `onUnequip` → `player:takeOff()`. Menggabungkan
+keduanya akan melewati kait yang ditumpangi banyak barang khusus.
+
+Ikut lahir: `map/Items` (port `pc_useitem` beserta enam belas cabang
+jenisnya), `map/data/MapMsg` (pesan penolakan dari `conf/lang.conf`, yang
+selama ini hanya dipakai login server), delapan kolom syarat di tabel
+`Items`, dan empat atribut pemain yang dibaca skrip tapi belum pernah ada:
+`speech`, `flank`, `backstab`, `enchant`.
+
+⚠️ **`flank` dan `backstab` boolean, bukan angka.** Di Lua angka 0 itu
+*benar*, jadi mengirimnya sebagai angka membuat `if player.flank then`
+selalu masuk — dan 134 pemakaian di skrip pertarungan berperilaku terbalik
+tanpa satu pun error.
 
 Sesi 26 Agustus menutup dua blok: (1) binding yang selama ini masih
 **stub** — `talk` (698x), `sendAction` (905x), `playSound` (632x),

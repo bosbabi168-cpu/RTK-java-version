@@ -1837,6 +1837,118 @@ public final class Clif {
     }
 
     // ------------------------------------------------------------------
+    // perlengkapan (clif_equipit / clif_unequipit)
+    // ------------------------------------------------------------------
+
+    /**
+     * Kode panel klien per slot ({@code clif_getequiptype}).
+     *
+     * <p>⚠️ Ini <b>bukan</b> indeks {@code EQ_*} — ia penomoran milik
+     * antarmuka klien RetroTK, dengan lubang di 5, 9..12, 15, 17..19.
+     * Paket lepas-perlengkapan yang masuk ({@code 0x1F}) memakai penomoran
+     * yang sama, jadi tabel ini dipakai dua arah. Protokol RTK2 tidak
+     * memakainya sama sekali: di sana slotnya indeks {@code EQ_*} apa
+     * adanya.</p>
+     *
+     * <p>{@code EQ_FACEACCTWO} tidak punya kode, sama seperti di C yang
+     * jatuh ke {@code default}.</p>
+     */
+    private static final int[] KODE_PANEL = {
+        1, 2, 3, 4, 7, 8, 20, 21, 22, 23, 14, 6, 13, 16, -1
+    };
+
+    /** Kode panel klien untuk slot EQ_*, atau -1 bila tidak ada. */
+    public static int panelCode(int slotEq) {
+        return slotEq >= 0 && slotEq < KODE_PANEL.length ? KODE_PANEL[slotEq] : -1;
+    }
+
+    /** Slot EQ_* untuk kode panel klien, atau -1 bila tidak dikenal. */
+    public static int slotFromPanelCode(int kode) {
+        for (int i = 0; i < KODE_PANEL.length; i++) {
+            if (KODE_PANEL[i] == kode) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * clif_equipit(): isi satu slot panel perlengkapan — opcode 0x37.
+     *
+     * <p>Membawa <b>dua</b> nama seperti paket inventaris 0x0F: yang
+     * pertama nama yang dilihat pemain (ukiran bila ada), yang kedua nama
+     * jenisnya untuk mencocokkan gambar (Peringatan #36).</p>
+     */
+    public static void equipIt(User sd, int slotEq) {
+        Session s = sessionOf(sd);
+        int kode = panelCode(slotEq);
+        if (s == null || kode < 0) {
+            return;
+        }
+        org.rtk.common.mmo.Item it = sd.status.equipAt(slotEq);
+        if (it == null || it.id <= 0) {
+            return;
+        }
+        var info = MapServer.itemDb.info(it.id);
+        byte[] tampil = (it.realName != null && !it.realName.isEmpty()
+                ? it.realName : info.tampilan())
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] jenis = info.name().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        s.wfifoB(5, kode);
+        if (it.customIcon != 0) {
+            s.wfifoWBE(6, (int) it.customIcon + 49152);
+            s.wfifoB(8, (int) it.customIconColor);
+        } else {
+            s.wfifoWBE(6, info.look().icon());
+            s.wfifoB(8, info.look().iconColor());
+        }
+
+        // ⚠️ Penghitung `len` di C bergerak "panjang + 1" per nama padahal
+        // yang ditulis hanya panjang + isinya, dan offsetnya selalu
+        // `len + 9`. Ditiru apa adanya; merapikannya menggeser dua ladang
+        // terakhir.
+        int len = 0;
+        s.wfifoB(9, tampil.length);
+        int pos = 10;
+        for (byte b : tampil) {
+            s.wfifoB(pos++, b);
+        }
+        len += tampil.length + 1;
+
+        s.wfifoB(len + 9, jenis.length);
+        pos = len + 10;
+        for (byte b : jenis) {
+            s.wfifoB(pos++, b);
+        }
+        len += jenis.length + 1;
+
+        s.wfifoLBE(len + 9, it.dura);
+        len += 4;
+        s.wfifoWBE(len + 9, 0);
+        len += 2;
+
+        headSeq(s, 0x37, len + 6);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /** clif_unequipit(): kosongkan satu slot panel — opcode 0x38. */
+    public static void unequipIt(User sd, int slotEq) {
+        Session s = sessionOf(sd);
+        int kode = panelCode(slotEq);
+        if (s == null || kode < 0) {
+            return;
+        }
+        s.wfifoB(0, 0xAA);
+        s.wfifoWBE(1, 4);
+        s.wfifoB(3, 0x38);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, kode);
+        s.wfifoB(6, 0x00);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    // ------------------------------------------------------------------
     // toko (clif_buydialog / clif_selldialog)
     // ------------------------------------------------------------------
 

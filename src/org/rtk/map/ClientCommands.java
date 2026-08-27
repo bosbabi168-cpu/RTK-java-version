@@ -51,9 +51,10 @@ package org.rtk.map;
  *
  * <h2>Cakupan saat ini, dan apa yang menyusul</h2>
  *
- * <p>Sebelas aksi punya jalur penuh: berjalan, mengklik, menjawab
+ * <p>Enam belas aksi punya jalur penuh: berjalan, mengklik, menjawab
  * menu/input, menjawab dialog, bicara, berbisik, memungut, menjatuhkan
- * barang, menjatuhkan emas, menyerahkan barang/emas, dan menyerang —
+ * barang, menjatuhkan emas, menyerahkan barang/emas, menyerang,
+ * mengenakan, melepas, memakan, memakai, dan melempar —
  * ditambah lima perintah pertukaran. Pembacanya
  * {@code org.rtk.map.proto.Inbound} (protokol <b>RTK2</b>, rancangan
  * sendiri); {@code Clif.parse*} melayani empat aksi pertama untuk klien
@@ -63,10 +64,6 @@ package org.rtk.map;
  * menurut aksi dan bukan menurut opcode:</p>
  *
  * <ul>
- *   <li><b>Perlengkapan</b> — memakai dan melepas. Ini yang menutup
- *       binding {@code takeOff}, dan logikanya <b>belum ada</b>.</li>
- *   <li><b>Barang</b> — memakai, memakan, melempar. Menutup
- *       {@code throwItem}.</li>
  *   <li><b>Mantra</b> — merapal, mengganti mantra.</li>
  *   <li><b>Sosial</b> — grup, teman, profil, emosi, daftar abaikan
  *       (yang terakhir juga menutup penyaring {@code clif_isignore}).</li>
@@ -234,6 +231,52 @@ public interface ClientCommands {
 
     /** Pemain menyerahkan emas ke pemain yang dihadapinya. */
     void playerHandsGold(User sd, long amount);
+
+    // ------------------------------------------------------------------
+    // Perlengkapan & memakai barang
+    // ------------------------------------------------------------------
+
+    /**
+     * Pemain mengenakan isi satu slot inventaris.
+     *
+     * <p>⚠️ <b>Mengenakan tidak langsung memasang.</b> Server memeriksa
+     * syaratnya lalu memanggil kait skrip {@code onEquip}; skrip itulah
+     * yang memanggil {@code player:equip()} dan memindahkan barangnya.
+     * Banyak barang khusus menumpang kait tersebut, jadi jalan pintas
+     * langsung ke pemasangan akan melewatinya.</p>
+     */
+    void playerWields(User sd, int slot);
+
+    /**
+     * Pemain melepas isi satu slot perlengkapan.
+     *
+     * @param equipSlot indeks {@code EQ_*}, bukan kode panel klien
+     */
+    void playerUnequips(User sd, int equipSlot);
+
+    /**
+     * Pemain memakan sesuatu. Hanya barang berjenis {@code ITM_EAT};
+     * selain itu ditolak dengan pesan.
+     */
+    void playerEatsItem(User sd, int slot);
+
+    /**
+     * Pemain memakai barang apa pun.
+     *
+     * <p>⚠️ Ini pintu yang <b>tidak menyaring jenis</b> sama sekali —
+     * mengenakan perlengkapan pun sah lewat sini. Yang menentukan apa yang
+     * terjadi adalah jenis barangnya, dan tiap jenis punya kait skrip
+     * globalnya sendiri.</p>
+     */
+    void playerUsesItem(User sd, int slot);
+
+    /**
+     * Pemain melempar isi satu slot.
+     *
+     * @param confirmed pemain sudah menjawab pertanyaan "yakin?"; hanya
+     *                  barang ber-{@code ItmThrownConfirm} yang menanyakannya
+     */
+    void playerThrowsItem(User sd, int slot, boolean confirmed);
 
     // ------------------------------------------------------------------
     // Pertarungan

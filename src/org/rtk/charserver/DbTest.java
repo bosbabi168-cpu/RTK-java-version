@@ -138,6 +138,7 @@ public final class DbTest {
         worldData(sql);
         spellQueries(sql);
         pathQueries(sql);
+        itemReqQueries(sql);
         parcelTest(sql);
         boardTest(sql);
         clanBankTest(sql);
@@ -331,6 +332,48 @@ public final class DbTest {
         var takAda = db.classSpells(sql, 9999);
         check("getAllClassSpells: jalur tak dikenal mengembalikan kosong",
                 takAda.isEmpty());
+    }
+
+    /**
+     * Kolom syarat di tabel {@code Items} — dibaca, bukan sekadar di-SELECT.
+     *
+     * <p>Audit SQL tahap 1 membuktikan kuerinya <b>bisa di-prepare</b>;
+     * ia tidak membuktikan hasilnya sampai ke {@code Reqs}. Beda itu nyata:
+     * salah nama ladang di sisi Java tetap lolos audit. Karena itu di sini
+     * diperiksa bahwa data aslinya benar-benar terbaca.</p>
+     */
+    private static void itemReqQueries(Sql sql) {
+        log.info("=== tahap 2b3: syarat barang (kolom Items) ===");
+
+        org.rtk.map.data.ItemDb db = new org.rtk.map.data.ItemDb();
+        int n = db.load(sql);
+        check("tabel Items termuat", n > 0);
+
+        int berlevel = 0;
+        int berjalur = 0;
+        int terkunci = 0;
+        int bisaDilempar = 0;
+        for (org.rtk.map.data.ItemDb.Info info : db.all()) {
+            var r = info.reqs();
+            if (r.level() > 0) {
+                berlevel++;
+            }
+            if (r.path() > 0) {
+                berjalur++;
+            }
+            if (r.unequip() == 1) {
+                terkunci++;
+            }
+            if (r.thrown() != 0) {
+                bisaDilempar++;
+            }
+        }
+        log.info("[DBTEST] syarat barang: {} berlevel, {} berjalur, {} terkunci, "
+                + "{} bisa dilempar", berlevel, berjalur, terkunci, bisaDilempar);
+        check("ItmLevel terbaca: ada barang bersyarat level", berlevel > 0);
+        check("ItmPthId terbaca: ada barang bersyarat jalur", berjalur > 0);
+        check("ItmSex bawaan 2 tidak menolak siapa pun secara massal",
+                db.all().stream().filter(i -> i.reqs().sex() == 2).count() > 0);
     }
 
     /**

@@ -52,6 +52,14 @@ public final class User extends BlockList
     /** Id benda yang terakhir melukai pemain ini ({@code sd->attacker}). */
     public long attacker;
 
+    /**
+     * Sasaran pemain saat ini ({@code sd->target}).
+     *
+     * <p>Disetel kembali ke dirinya sendiri saat perlengkapan berubah —
+     * mengganti senjata membatalkan bidikan yang sedang berjalan.</p>
+     */
+    public long target;
+
     /** Nyawa sesaat SEBELUM pukulan terakhir ({@code sd->lastvita}). */
     public long lastVita;
 
@@ -179,6 +187,41 @@ public final class User extends BlockList
      * {@code MapCommands.playerAttacks}.</p>
      */
     public boolean attacked;
+
+    /**
+     * Barang yang <b>sedang dipasang</b> ({@code sd->equipid}) — id jenisnya,
+     * bukan slot. Diisi sebelum kait {@code onEquip} dan dibaca
+     * {@code equip()} untuk tahu apa yang harus dipasang.
+     */
+    public long equipId;
+
+    /**
+     * Slot perlengkapan yang <b>sedang dilepas</b> ({@code sd->takeoffid}).
+     * ⚠️ Bernilai <b>-1</b> saat tidak ada yang sedang dilepas, bukan 0 —
+     * 0 adalah slot senjata yang sah.
+     */
+    public int takeOffId = -1;
+
+    /** Petak tujuan lemparan ({@code sd->throwx}/{@code sd->throwy}). */
+    public int throwX;
+    public int throwY;
+
+    /**
+     * Pengganda senjata terpesona ({@code sd->enchanted}); 1.0 = biasa.
+     * Dibaca skrip lewat atribut {@code enchant}.
+     */
+    public float enchanted = 1.0f;
+
+    /**
+     * Bendera serangan sisi/belakang ({@code sd->flank}, {@code sd->backstab}).
+     *
+     * <p>⚠️ Keduanya <b>boolean</b> di sisi skrip
+     * ({@code lua_pushboolean}), dipakai 134x oleh skrip pertarungan.
+     * Mengirimnya sebagai angka membuat {@code if player.flank then} selalu
+     * benar — lihat {@code ScriptPlayer.Owner.scriptGetSpecial}.</p>
+     */
+    public boolean flank;
+    public boolean backstab;
 
     /**
      * Barang yang <b>hancur pada sapuan yang sedang berjalan</b>
@@ -758,13 +801,28 @@ public final class User extends BlockList
     }
 
     @Override
-    public String scriptGetSpeech() {
-        return speech;
+    public org.luaj.vm2.LuaValue scriptGetSpecial(String name) {
+        return switch (name) {
+            case "speech" -> org.luaj.vm2.LuaValue.valueOf(speech);
+            case "flank" -> org.luaj.vm2.LuaValue.valueOf(flank);
+            case "backstab" -> org.luaj.vm2.LuaValue.valueOf(backstab);
+            case "enchant" -> org.luaj.vm2.LuaValue.valueOf(enchanted);
+            default -> null;
+        };
     }
 
     @Override
-    public void scriptSetSpeech(String s) {
-        speech = s == null ? "" : s;
+    public boolean scriptSetSpecial(String name, org.luaj.vm2.LuaValue v) {
+        switch (name) {
+            case "speech" -> speech = v.isnil() ? "" : v.tojstring();
+            case "flank" -> flank = v.toboolean();
+            case "backstab" -> backstab = v.toboolean();
+            case "enchant" -> enchanted = (float) v.todouble();
+            default -> {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** pcl_setattr(): tulis atribut karakter ke data tersimpan. */
