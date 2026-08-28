@@ -1761,3 +1761,40 @@ ekor daftar dengan nomor lanjutan.
    peta 330 masih miliknya — jadi C3 gagal ("pemain berhenti di (21,13)
    tanpa dialihkan") padahal kodenya benar. Sebelum menjalankan gerbang dua
    server: `pgrep -a java | grep RTK-java` harus KOSONG.
+
+128. **Kesimpulan dari membaca rumus harus dibuktikan pada server hidup.**
+   Saya menyimpulkan `core = NPC(4294967295)` selalu nil — "di C pun" —
+   dengan menalar dari rumus id NPC (`NPC_START_NUM + NpcId − 2`, jadi
+   0xFFFFFFFF mustahil). Salah: NPC F1 (`NpcIsF1Npc=1`) diberi id blok
+   **khusus** `F1_NPC = 0xFFFFFFFF` (`npc.c:268,315`), barisnya ada di
+   `NPCs0`, dan di map server 0 `core` terisi. Yang nil adalah `core` di
+   map server KEDUA, yang tabel `NPCs1`-nya tidak ada di dump ini. Satu
+   baris log saat start ("NPC F1 siap" / peringatan) sekarang menjawab
+   pertanyaan itu dalam satu detik, alih-alih satu jam menalar.
+
+129. **Yang tidak diport tidak selalu berbunyi — kadang ia hanya DIAM.**
+   `map_cronjob()` (timer 1 detik yang memanggil `cronJobSec` sampai
+   `cronJobDay`) tidak pernah diport. Tidak ada error, tidak ada log, tidak
+   ada gerbang yang merah: hanya **tidak ada acara berkala yang pernah
+   dimulai** — elixir, carnage, sumo, beach, kelahiran bos, penerangan
+   peta, pemunculan barang. Hal yang sama berlaku untuk
+   `map_loadgameregistry()`: tabelnya ada dan berisi, dan tidak ada satu
+   baris kode pun yang membacanya. Cara menemukannya bukan membaca kode
+   Java, melainkan membaca apa yang DIPANGGIL skrip lalu bertanya "siapa
+   yang memanggil ini?" — `cronJobSec` tidak punya satu pun pemanggil.
+
+130. **Satu lapisan gambar bisa memuat BEBERAPA bagian.** `Layer.tbl`
+   menyimpan `nama, n, n × partIndex, layerId`. Pembacaan pertama menyimpan
+   namanya saja lalu menebak pemetaan nama-lapisan → satu keluarga berkas.
+   Akibatnya bagian KEDUA tiap lapisan hilang tanpa suara: helm (di dalam
+   `HairDeco`), baju (di dalam `Body`, sehingga baju tergambar di kedalaman
+   layer `All` dan menutupi mantel), tombak/busur/kipas (di dalam
+   `MainWeapon`, sehingga hanya pedang yang pernah tergambar), serta anak
+   panah. Nama bagian di `Part.tbl` sama persis dengan nama berkas `.dsc`
+   (huruf kecil) untuk kesembilan belas bagian — tabel tebakan itu tidak
+   pernah dibutuhkan.
+   ⚠️ Id grafik senjata juga memakai EMBER: tombak `10000+`, busur
+   `20000+`, kipas `30000+`; indeks wujud = id − idMin. Tetapi rentang
+   `1..1` di `Part.tbl` adalah penanda "tanpa ember" — memperlakukannya
+   sebagai ember membuat helm ber-look 1 menjadi wujud 0, yaitu helm yang
+   SALAH, bukan helm yang hilang.

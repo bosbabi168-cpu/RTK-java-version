@@ -744,6 +744,96 @@ public final class MapServer {
         return true;
     }
 
+    /** Detik dinding terakhir yang sudah dijalankan kait cronjob-nya. */
+    private static long detikCronTerakhir = -1;
+
+    /**
+     * {@code map_cronjob()}: kait skrip berkala.
+     *
+     * <p>Mengikuti C persis: kaitnya dipilih dari SISA BAGI detik jam
+     * dinding, bukan dari penghitung sendiri — {@code cronJobMin} jalan saat
+     * detik habis dibagi 60, dan seterusnya sampai harian.</p>
+     *
+     * <p>⚠️ Detik yang sama tidak boleh dijalankan dua kali. Timernya
+     * berjeda 1.000 ms, tetapi tik yang terlambat sedikit lalu terkejar bisa
+     * jatuh pada detik dinding yang sama — dan `cronJobMin` yang jalan dua
+     * kali berarti mis. donasi diproses ganda.</p>
+     */
+    private static void cronjobTick() {
+        if (scriptEngine == null) {
+            return;
+        }
+        long detik = System.currentTimeMillis() / 1000L;
+        if (detik == detikCronTerakhir) {
+            return;
+        }
+        detikCronTerakhir = detik;
+
+        if (detik % 60 == 0) {
+            scriptEngine.doScript("cronJobMin", "cronJobMin");
+        }
+        if (detik % 300 == 0) {
+            scriptEngine.doScript("cronJob5Min", "cronJob5Min");
+        }
+        if (detik % 1800 == 0) {
+            scriptEngine.doScript("cronJob30Min", "cronJob30Min");
+        }
+        if (detik % 3600 == 0) {
+            scriptEngine.doScript("cronJobHour", "cronJobHour");
+        }
+        if (detik % 86400 == 0) {
+            scriptEngine.doScript("cronJobDay", "cronJobDay");
+        }
+        scriptEngine.doScript("cronJobSec", "cronJobSec");
+    }
+
+    /**
+     * {@code map_loadgameregistry()}: registry sedunia dari basis data.
+     *
+     * <p>Tanpa ini nilai seperti {@code red_potions_available} atau
+     * {@code elixirRound} selalu mulai dari 0 tiap server dinyalakan, dan
+     * apa pun yang ditulis skrip hilang saat mati — acara yang berjalan
+     * lintas restart tidak pernah bisa selesai.</p>
+     */
+    private static void muatGameRegistry(org.rtk.map.script.ScriptEngine engine) {
+        int[] n = {0};
+        int rows = sql.forEachRow(
+                "SELECT `GrgIdentifier`,`GrgValue` FROM `GameRegistry" + serverId + "`",
+                rs -> {
+                    engine.gameRegMuat(rs.getString("GrgIdentifier"),
+                            rs.getInt("GrgValue"));
+                    n[0]++;
+                });
+        if (rows < 0) {
+            log.warn("[MAP] tabel `GameRegistry{}` tidak terbaca; registry "
+                    + "sedunia mulai kosong dan TIDAK akan tersimpan", serverId);
+            return;
+        }
+        log.info("[MAP] {} registry sedunia dimuat dari `GameRegistry{}`",
+                n[0], serverId);
+    }
+
+    /**
+     * {@code map_savegameregistry()}: tulis-terus tiap kali nilainya berubah.
+     *
+     * <p>⚠️ Nilai 0 MENGHAPUS barisnya, persis seperti C — di sana nol
+     * adalah "tidak ada", dan baris bernilai nol yang tertinggal akan
+     * dibaca kembali sebagai entri yang menghabiskan slot.</p>
+     */
+    private static void simpanGameRegistry(String nama, int nilai) {
+        String tabel = "`GameRegistry" + serverId + "`";
+        if (nilai == 0) {
+            sql.update("DELETE FROM " + tabel + " WHERE `GrgIdentifier` = ?", nama);
+            return;
+        }
+        int diubah = sql.update("UPDATE " + tabel + " SET `GrgValue` = ?"
+                + " WHERE `GrgIdentifier` = ?", nilai, nama);
+        if (diubah <= 0) {
+            sql.update("INSERT INTO " + tabel
+                    + " (`GrgIdentifier`,`GrgValue`) VALUES (?, ?)", nama, nilai);
+        }
+    }
+
     /** Pemain terputus: simpan lalu lepaskan dari dunia. */
     static void handleDisconnect(int fd) {
         rtk2Fds.remove(fd);
@@ -861,6 +951,25 @@ public final class MapServer {
                         return npcs == null ? null : npcs.byName(name);
                     }
                 });
+                // ⚠️ `core = NPC(4294967295)` di sys.lua bergantung pada NPC
+                // F1 (`NpcIsF1Npc=1`), dan `core.gameRegistry` dipakai 1.036
+                // kali di 27 berkas — termasuk jalur biasa seperti membeli
+                // ramuan merah. Kalau barisnya tidak ada, SELURUH pemakaian
+                // itu melempar "attempt to index ? (a nil value)" di tempat
+                // yang tampak tidak berhubungan. Lebih baik diketahui saat
+                // start daripada ditemukan dari satu petak acara.
+                if (npcs.byId(org.rtk.map.Npc.F1_NPC) == null) {
+                    log.warn("[MAP] NPC F1 (NpcIsF1Npc=1) tidak ada di `NPCs{}` — "
+                            + "`core` di skrip akan nil dan setiap "
+                            + "`core.gameRegistry` melempar", serverId);
+                } else {
+                    log.info("[MAP] NPC F1 siap: `core` di skrip terisi");
+                }
+                // map_loadgameregistry(): registry sedunia dari
+                // `GameRegistry<serverid>`. Dimuat SEBELUM skrip berjalan,
+                // karena skrip membacanya sejak tik pertama.
+                muatGameRegistry(scriptEngine);
+                scriptEngine.setGameRegistryWriter(MapServer::simpanGameRegistry);
                 int errors = scriptEngine.init(luaPath);
                 if (errors < 0) {
                     log.warn("[MAP] Lua scripting disabled: rtklua not found at {} (set lua_path in map.conf)", luaPath);
@@ -899,6 +1008,14 @@ public final class MapServer {
         // di sini satu timer menyapu semua pemain online, karena logika
         // permainan berjalan di satu thread (lihat Peringatan #8).
         timers.insert(1000, 1000, (a, b) -> duraTick(), 0, 0);
+        // map_cronjob(): tik 1 detik yang memanggil kait berkala milik
+        // skrip. Tanpa ini `minigames.timer()` tidak pernah jalan, jadi
+        // TIDAK ADA acara berkala yang pernah dimulai — begitu juga
+        // kelahiran bos, penerangan peta, dan pemunculan barang.
+        timers.insert(1000, 1000, (a, b) -> {
+            cronjobTick();
+            return 0;
+        }, 0, 0);
 
         log.info("RetroTK Map Server (Java skeleton) is ready! Listening at {}.", mapPort);
         ServerLog.addLog("Server Ready! Listening at %d.%n", mapPort);

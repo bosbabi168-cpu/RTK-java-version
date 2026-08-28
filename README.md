@@ -196,13 +196,17 @@ terjemahan di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 pemeriksaan hijau (194 pada dua map server), protokol RTK2 dua arah
 simetris, celah binding 0, `map.log` 0 ERROR/WARN. Pemain baru kini bisa
 **mendaftar sendiri** lewat klien (masuk akun, buat karakter, pilih
-karakter) — lihat K3-lanjutan. ⚠️ Sapu `logs/common.log` juga: dua bug
+karakter) — lihat K3-lanjutan. Sejak 29 Agu 2026 **mesin acara berkala
+hidup**: `map_cronjob()` (timer 1 detik: `cronJobSec`…`cronJobDay`) dan
+registry sedunia `GameRegistry<serverid>` keduanya belum pernah diport,
+sehingga tidak ada acara, kelahiran bos, penerangan peta, atau pemunculan
+barang yang pernah berjalan. ⚠️ Sapu `logs/common.log` juga: dua bug
 nyata bersembunyi di sana, bukan di `map.log` (Peringatan #123, #125).
 
 Roadmap menuju "server dipakai normal & lancar tanpa bug" — lengkap dengan
 tabel aksi pemain yang belum punya jalur masuk RTK2 — ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#127 di
+Jebakan & pelajaran #1–#130 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder

@@ -200,14 +200,18 @@ terminology in [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 green (194 on two map servers), RTK2 protocol symmetric in both directions,
 binding gaps 0, `map.log` 0 ERROR/WARN. New players can now **sign
 themselves up** through the client (account login, character creation,
-character picking) — see K3-lanjutan. ⚠️ Sweep `logs/common.log` too: two
+character picking) — see K3-lanjutan. Since 29 Aug 2026 the **periodic
+event engine runs**: `map_cronjob()` (a 1-second timer driving
+`cronJobSec`…`cronJobDay`) and the world registry
+`GameRegistry<serverid>` had never been ported, so no event, boss spawn,
+map lighting, or item spawner had ever run. ⚠️ Sweep `logs/common.log` too: two
 real bugs hid there rather than in `map.log` (Peringatan #123, #125).
 
 The roadmap toward "a server that runs normally and smoothly with no
 bugs" — including the table of player actions that still lack an RTK2
 inbound path — is in
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Traps & lessons #1–#127 are in
+Traps & lessons #1–#130 are in
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)** (Indonesian).
 
 ## Folder structure

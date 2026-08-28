@@ -210,6 +210,36 @@ public final class ScriptTest {
             check("kait global '" + nama + "' ada sebagai fungsi Lua",
                     !engine.globals().get(nama).isnil());
         }
+
+        // map_cronjob(): seluruh acara berkala digerakkan dari sini. Kait
+        // yang hilang atau berganti nama tidak menghasilkan error apa pun —
+        // `doScript` mengembalikan false tanpa suara, dan acaranya sekadar
+        // tidak pernah dimulai lagi. Persis pola kegagalan yang membuat
+        // seluruh mesin acara diam selama ini.
+        String[] cron = {"cronJobSec", "cronJobMin", "cronJob5Min",
+            "cronJob30Min", "cronJobHour", "cronJobDay"};
+        for (String nama : cron) {
+            check("kait cronjob '" + nama + "' ada sebagai fungsi Lua",
+                    !engine.globals().get(nama).isnil());
+        }
+        // `cronJobDay` berbadan kosong, jadi ia aman dipanggil di gerbang
+        // luring — dan yang dibuktikan adalah JALUR PANGGILNYA, bukan isinya.
+        check("cronJobDay benar-benar bisa dipanggil lewat doScript",
+                engine.doScript("cronJobDay", "cronJobDay"));
+
+        // Registry sedunia: peka-huruf-besar-kecil seperti `strcmpi` di C,
+        // dan ejaan pertama dipertahankan supaya barisnya di
+        // `GameRegistry<serverid>` tidak berlipat.
+        engine.gameRegMuat("carnageMaxHealth", 160000);
+        check("registry sedunia dibaca tanpa peduli huruf besar-kecil",
+                engine.gameRegGet("CARNAGEMAXHEALTH") == 160000
+                        && engine.gameRegGet("carnagemaxhealth") == 160000);
+        engine.gameRegSet("CarnageMaxHealth", 42);
+        check("menulis dengan ejaan lain memakai ejaan yang SUDAH ada",
+                engine.gameRegistry.get("carnageMaxHealth") == 42
+                        && engine.gameRegistry.size() == 1);
+        check("registry yang belum ada bernilai 0, bukan null",
+                engine.gameRegGet("belum-pernah-ada") == 0);
     }
 
     private static void check(String what, boolean ok) {

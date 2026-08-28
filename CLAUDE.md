@@ -266,7 +266,7 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 | Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v10) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#127 → `docs/PERINGATAN.md` |
+| Peringatan tercatat | #1–#130 → `docs/PERINGATAN.md` |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug
@@ -410,17 +410,26 @@ negatif membuktikan keduanya merah.
 diuji.** Sisa WARN/ERROR seluruhnya dipicu ujinya sendiri (sandi salah,
 bingkai rusak, sambung-putus beruntun) — itu memang yang harus dicatat.
 
-⚠️ **Satu golongan `script error` TERSISA dan bukan cacat port:** menginjak
-petak skrip Elixir/Arena memicu `attempt to index ? (a nil value)` karena
-`core` nil. `core = NPC(4294967295)` (`luascript/Developers/sys.lua:53`)
-dipakai **1.036 kali di 27 berkas** sebagai pemegang `gameRegistry`, tetapi
-tidak ada NPC ber-id itu — dan **di C pun tidak akan ada**: `map_id2npc`
-mencari id BLOCK LIST, dan id NPC di C selalu `NPC_START_NUM + NpcId − 2`
-(`NPC_START_NUM` = 3221225472), jadi 0xFFFFFFFF tak mungkin dihasilkan;
-`npcl_ctor` mengembalikan nil, persis seperti port ini. Isi acara itu
-memang mati di sumbernya. **Belum diputuskan** apakah port ini sebaiknya
-menyediakan NPC `core` sintetis (akan menghidupkan 1.036 pemakaian
-sekaligus) atau membiarkannya setia pada C.
+⚠️ **`script error` yang tersisa datang dari FIXTURE, bukan dari kode.**
+`core = NPC(4294967295)` (`luascript/Developers/sys.lua:53`) dipakai
+**1.036 kali di 27 berkas** sebagai pemegang `gameRegistry`. Ia menunjuk
+NPC F1 — baris `NPCs0` ber-`NpcIsF1Npc=1`, yang di C DAN di port ini diberi
+id blok khusus `F1_NPC = 0xFFFFFFFF` alih-alih rumus biasa
+`NPC_START_NUM + NpcId − 2` (`npc.c:268,315`). Barisnya **ada** di
+`NPCs0`, jadi di map server 0 `core` terisi dan skripnya jalan.
+
+Yang tidak punya NPC sama sekali adalah **map server kedua**: tabel
+`NPCs1`/`NPCEquipment1` tidak ada di dump ini, jadi di sana `core` nil dan
+`NPC("Tower")` nil — dan dari sanalah dua `script error`
+(`onScriptedTilesArena`, `onScriptedTilesElixir`) berasal saat gerbang dua
+server berjalan. Map server kini **mengatakannya saat start**
+("NPC F1 siap" / peringatan bila tidak ada), supaya kegagalan sediam itu
+tidak lagi ditemukan dari satu petak acara.
+
+⚠️ Saya sempat menyimpulkan sebaliknya ("`core` selalu nil, di C pun") dari
+membaca rumus id saja tanpa memeriksa jalur F1 — pelajaran yang sama
+dengan Peringatan #114/#124: kesimpulan dari membaca kode saja harus
+dibuktikan pada server hidup.
 
 **Putaran kedua (28 Agu 2026 malam, bersama K2-lanjutan & K3-lanjutan).**
 Empat cacat lagi, semuanya lolos dari kedelapan gerbang luring:
@@ -436,6 +445,42 @@ Empat cacat lagi, semuanya lolos dari kedelapan gerbang luring:
 sandi kosong"), bukan pembacaan kode — kodenya terlihat benar. #123 dan
 #125 tercatat di `logs/common.log`, yang sebelumnya tidak pernah disapu:
 disiplin "map.log 0 ERROR" ternyata buta terhadap seluruh `org.rtk.common`.
+
+**Putaran ketiga (29 Agu 2026 dini hari) — MESIN ACARA BERKALA.** Dua
+bagian besar dari `map.c` ternyata belum diport sama sekali, dan keduanya
+tidak menghasilkan error apa pun: mereka hanya membuat sebagian dunia diam.
+
+| Yang hilang | Akibat |
+|---|---|
+| `map_cronjob()` — timer 1 detik yang memanggil `cronJobSec/Min/5Min/30Min/Hour/Day` | **tidak ada acara berkala yang pernah dimulai** (elixir, carnage, sumo, beach), tidak ada kelahiran bos, tidak ada `mapLight()`, tidak ada `itemspawner()` |
+| `map_loadgameregistry()` / `map_savegameregistry()` — registry sedunia di `GameRegistry<serverid>` | nilai seperti `red_potions_available` dan `elixirRound` selalu mulai 0 dan hilang saat server mati; tabelnya ADA dan berisi, tetapi tidak pernah dibaca |
+
+Keduanya kini ada. Buktinya di server hidup: `sumo_respawn_time` berubah
+tiap tik, baris `msg1` **ditulis sendiri** oleh `cronJob30Min`, dan
+broadcast setengah-jamnya benar-benar terkirim. Registry mengikuti C:
+tulis-terus tiap perubahan, nilai 0 MENGHAPUS barisnya, dan kuncinya
+tidak peka huruf besar-kecil (`strcmpi`) tetapi **ejaan pertama
+dipertahankan** supaya `carnageMaxHealth` tidak berpasangan dengan baris
+kedua bernama `carnagemaxhealth`.
+
+Gerbang baru di `scripttest`: keenam kait cron ada sebagai fungsi Lua, dan
+`cronJobDay` benar-benar bisa dipanggil lewat `doScript` — kait yang
+berganti nama membuat `doScript` mengembalikan false **tanpa suara**, pola
+kegagalan yang sama yang membuat mesin ini diam selama ini. Kontrol negatif
+membuktikannya merah.
+
+⚠️ **Yang masih membuat `script error` di gerbang dua server, dan memang
+seharusnya:** map server yang hanya memegang SATU peta tidak bisa
+menemukan NPC atau peta milik server lain. `boss_spawn.lua:44` memanggil
+`math.random(1, getMapXMax(peta))` untuk peta yang tidak ia miliki (0 →
+"interval is empty"), dan `onScriptedTilesArena` mencari `NPC("Tower")`
+yang tinggal di peta 31 milik server 0. C berperilaku sama; isi skripnya
+menganggap dunia satu server.
+
+⚠️ **Acara yang tetap TIDAK bisa jalan:** `ctf` (dipakai
+`arena_exit_teleporter.lua`) dan `bomb_game` (bomber war) tidak
+terdefinisi di mana pun di pohon Lua ini — berkasnya memang tidak ikut.
+`processKanDonations` juga hilang (peringatan sekali per proses).
 
 **Sisa putaran berikutnya:** 7 opcode belum pernah dikirim klien
 (`profileEdit`, `dropGold`, `handItem`, `handGold`, `eat`, `throw`, dan
