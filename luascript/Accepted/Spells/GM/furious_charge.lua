@@ -13,7 +13,7 @@ furious_charge = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("No will, no way.")
+			player:sendMinitext("Tanpa kehendak, tidak ada jalan.")
 			return
 		end
 		if (player.gmLevel == 0) then
@@ -91,7 +91,7 @@ furious_charge = {
 					player:playSound(247)
 					player:sendAction(1, 20)
 					target[i]:sendAnimation(396)
-					player:sendMinitext("You charge into " .. target[i].name)
+					player:sendMinitext("Kau menerjang ke " .. target[i].name)
 					target[i]:removeHealthExtend(damage, 1, 1, 1, 1, 0)
 				elseif (player:canPK(target[i])) then
 					target[i].attacker = player.ID
@@ -99,14 +99,14 @@ furious_charge = {
 					player:playSound(247)
 					player:sendAction(1, 20)
 					target[i]:sendAnimation(396)
-					player:sendMinitext("You charge into " .. target[i].name)
+					player:sendMinitext("Kau menerjang ke " .. target[i].name)
 					target[i]:removeHealthExtend(damage, 1, 1, 1, 1, 0)
 					target[i]:sendStatus()
 				elseif (target[i].blType == BL_PC) then
 					player:talk(2, "Rraaa~~~!!!!!")
 					player:sendAction(1, 20)
 					target[i]:sendAnimation(396)
-					player:sendMinitext("You should watch where you're going.")
+					player:sendMinitext("Sebaiknya kau perhatikan jalanmu.")
 				end
 			end
 		end

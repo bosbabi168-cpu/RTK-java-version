@@ -10,17 +10,17 @@ paralyze_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType == BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if (target.paralyzed == true) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -34,7 +34,7 @@ paralyze_mage = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(70)
-			player:sendMinitext("You cast Paralyze.")
+			player:sendMinitext("Kau merapal Paralyze.")
 			target:setDuration("paralyze_mage", duration)
 			target:sendAnimation(1, 0)
 			target.paralyzed = true
@@ -66,17 +66,17 @@ spirit_leash_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType == BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if (target.paralyzed == true) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -90,7 +90,7 @@ spirit_leash_mage = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(86)
-			player:sendMinitext("You cast Spirit Leash.")
+			player:sendMinitext("Kau merapal Spirit Leash.")
 			target:setDuration("spirit_leash_mage", duration)
 			target:sendAnimation(88, 0)
 			target.paralyzed = true
@@ -122,17 +122,17 @@ cold_binds_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType == BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if (target.paralyzed == true) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -146,7 +146,7 @@ cold_binds_mage = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(48)
-			player:sendMinitext("You cast Cold Binds.")
+			player:sendMinitext("Kau merapal Cold Binds.")
 			target:setDuration("cold_binds_mage", duration)
 			target:sendAnimation(99, 0)
 			target.paralyzed = true
@@ -178,17 +178,17 @@ lockup_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType == BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if (target.paralyzed == true) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -202,7 +202,7 @@ lockup_mage = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(20)
-			player:sendMinitext("You cast Lockup.")
+			player:sendMinitext("Kau merapal Lockup.")
 			target:setDuration("lockup_mage", duration)
 			target:sendAnimation(120, 0)
 			target.paralyzed = true

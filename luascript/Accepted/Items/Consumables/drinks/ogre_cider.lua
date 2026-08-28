@@ -8,7 +8,7 @@ ogre_cider = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("Spirits can't do that.")
+			player:sendMinitext("Arwah tidak bisa melakukan itu.")
 			return
 		end
 
@@ -31,7 +31,7 @@ ogre_drought = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("Spirits can't do that.")
+			player:sendMinitext("Arwah tidak bisa melakukan itu.")
 			return
 		end
 

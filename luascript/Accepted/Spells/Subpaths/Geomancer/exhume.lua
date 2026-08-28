@@ -9,7 +9,7 @@ exhume = {
 			return
 		end
 		if player.magic < manaCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -20,7 +20,7 @@ exhume = {
 	while_cast = function(player)
 		local manaCost = 200
 		if player.magic < manaCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			player:setDuration("exhume", 0)
 			return
 		end

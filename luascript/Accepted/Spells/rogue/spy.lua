@@ -5,11 +5,11 @@ spy_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if target.level > player.level then
-			player:sendMinitext("Target player must be lower level than you for you to use this spell")
+			player:sendMinitext("Pemain sasaran harus berlevel lebih rendah darimu untuk memakai mantra ini")
 			return
 		end
 
@@ -63,11 +63,11 @@ spiritual_guide_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if target.level > player.level then
-			player:sendMinitext("Target player must be lower level than you for you to use this spell")
+			player:sendMinitext("Pemain sasaran harus berlevel lebih rendah darimu untuk memakai mantra ini")
 			return
 		end
 
@@ -121,11 +121,11 @@ natures_handiwork_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if target.level > player.level then
-			player:sendMinitext("Target player must be lower level than you for you to use this spell")
+			player:sendMinitext("Pemain sasaran harus berlevel lebih rendah darimu untuk memakai mantra ini")
 			return
 		end
 
@@ -179,11 +179,11 @@ judgement_day_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if target.level > player.level then
-			player:sendMinitext("Target player must be lower level than you for you to use this spell")
+			player:sendMinitext("Pemain sasaran harus berlevel lebih rendah darimu untuk memakai mantra ini")
 			return
 		end
 

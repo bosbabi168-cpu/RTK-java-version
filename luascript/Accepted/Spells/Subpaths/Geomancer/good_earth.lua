@@ -14,7 +14,7 @@ good_earth = {
 			return
 		end
 		if player.magic < manaCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 		good_earth.setASVTraps(player)
@@ -29,7 +29,7 @@ good_earth = {
 
 		if duration >= 90000 then
 			if player.magic < manaCost then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				player:setDuration("good_earth", 0)
 				return
 			end
@@ -79,7 +79,7 @@ good_earth = {
 GoodEarthAsvTrapNpc = {
 	click = function(player)
 		player:sendAnimation(18, 500)
-		player:sendMinitext("It is peaceful here.")
+		player:sendMinitext("Di sini damai.")
 		sanctuary.cast(player)
 		harden_armor.cast(player)
 		valor.cast(player)

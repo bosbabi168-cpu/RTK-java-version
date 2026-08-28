@@ -13,7 +13,7 @@ feral_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -67,7 +67,7 @@ kwisin_cloak_rogue = {
 			return
 		end
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -108,7 +108,7 @@ mingken_cloak_rogue = {
 			return
 		end
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -149,7 +149,7 @@ ohaeng_cloak_rogue = {
 			return
 		end
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 

@@ -7,11 +7,11 @@ elemental_mastery = {
 			return
 		end
 		if player:hasDuration("elemental_mastery") then
-			player:sendMinitext("Spell already cast.")
+			player:sendMinitext("Mantra sudah dirapal.")
 			return
 		end
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -30,7 +30,7 @@ elemental_mastery = {
 			"Wood manifest"
 		}
 		local choice = player:menuString(
-			"Which element do you choose to manifest?",
+			"Unsur mana yang kau pilih untuk diwujudkan?",
 			opts
 		)
 

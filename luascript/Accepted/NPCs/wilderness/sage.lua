@@ -13,7 +13,7 @@ SageNpc = {
 
 		if player.level < 50 then
 			player:dialogSeq(
-				{t, "Come back when you have reached the 50th insight."},
+				{t, "Kembalilah kalau kau sudah mencapai pencerahan ke-50."},
 				0
 			)
 			return
@@ -42,7 +42,7 @@ SageNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have your spell for now, and I will not let you upgrade again for " .. playerTimerValues(
+					"Untuk sekarang mantramu sudah ada, dan aku tidak akan mengizinkanmu meningkatkannya lagi selama " .. playerTimerValues(
 						player,
 						"learnSageSpellTimer"
 					)
@@ -64,30 +64,30 @@ SageNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Read the following rules very carefully, for if you should break one then you will lose this spell for a long time!",
-				"Share wisdom is for you to share your wisdom with the community.",
-				"Use of the spell in any way to offend or harass anyone in the game will result in its loss.",
-				"Repeated spamming of your wisdom to the world can result in the loss of this spell.",
-				"Keep personal grievances out of sage.",
-				"Jailing for ANY crime will result in loss of this spell.",
-				"Breaking any other law in RetroTK using this spell will result in loss of the spell."
+				"Baca aturan berikut baik-baik, sebab kalau kau melanggarnya, mantra ini akan hilang untuk waktu yang lama!",
+				"Share wisdom dipakai untuk membagikan kebijaksanaanmu kepada masyarakat.",
+				"Memakai mantra ini dengan cara apa pun untuk menyinggung atau mengganggu siapa pun dalam permainan akan membuatnya hilang.",
+				"Menyebarkan kebijaksanaanmu berulang-ulang ke seluruh dunia bisa membuatmu kehilangan mantra ini.",
+				"Jangan bawa perselisihan pribadi ke dalam sage.",
+				"Dipenjara karena kejahatan APA PUN akan membuatmu kehilangan mantra ini.",
+				"Melanggar hukum lain di RetroTK dengan mantra ini akan membuat mantranya hilang."
 			},
 			1
 		)
 
 		if player:hasSpell("sages_wisdom") then
 			player:dialogSeq(
-				{t, "I have already taught you the highest level of wisdom"},
+				{t, "Aku sudah mengajarkanmu tingkat kebijaksanaan tertinggi"},
 				0
 			)
 			return
 		end
 
 		local choice = player:menuSeq(
-			"Do you understand these rules completely?",
+			"Kau memahami aturan ini sepenuhnya?",
 			{
-				"Yes, I understand and accept the rules.",
-				"No, please repeat them to me."
+				"Ya, aku memahami dan menerima aturannya.",
+				"Tidak, tolong ulangi untukku."
 			},
 			{}
 		)
@@ -123,8 +123,8 @@ SageNpc = {
 			end
 
 			local choice2 = player:menuSeq(
-				"This spell will cost " .. Tools.formatNumber(sageCost) .. " gold to learn.",
-				{"Yes, I have the money.", "No, I will not pay."},
+				"Mantra ini berharga " .. Tools.formatNumber(sageCost) .. " emas untuk dipelajari.",
+				{"Ya, uangnya ada padaku.", "Tidak, aku tidak akan membayar."},
 				{}
 			)
 
@@ -134,7 +134,7 @@ SageNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"The spell I will teach you cost " .. Tools.formatNumber(sageCost) .. " gold. Return to me when you have that."
+							"Mantra yang akan kuajarkan berharga " .. Tools.formatNumber(sageCost) .. " emas. Temui aku lagi kalau kau sudah punya."
 						},
 						0
 					)
@@ -149,7 +149,7 @@ SageNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Use your spell well, abuse will result in its loss, and you will end up having to learn the spells again from the start."
+						"Pakai mantramu baik-baik; penyalahgunaan akan membuatnya hilang, dan kau harus mempelajarinya lagi dari awal."
 					},
 					0
 				)

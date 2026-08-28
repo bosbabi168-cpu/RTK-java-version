@@ -18,7 +18,7 @@ barber = {
 
 	browse = function(player, npc, type)
 		local type = string.lower(type)
-		local opts = {"Next", "OK", "Prev"}
+		local opts = {"Berikutnya", "OK", "Prev"}
 		local text, x = "", ""
 		local val, valC, look, color = 0, 0, 0, 0
 
@@ -51,7 +51,7 @@ barber = {
 		menu = player:menuString("" .. text, opts)
 
 		if menu ~= nil then
-			if menu == "Next" then
+			if menu == "Berikutnya" then
 				if type == "Hair Style" then
 					if npc.gfxHair > 129 then
 						npc.gfxHair = 1
@@ -116,7 +116,7 @@ hair2 = {
 		player.dialogType = 2
 		local opts = {"Hair style", "Hair color", "Finish"}
 		local dialog = "Hair  : " .. npc.gfxHair .. "\nColor : " .. npc.gfxHairC .. "\n\n"
-		option = player:menuSeq(dialog .. "How can I help you?", opts, {})
+		option = player:menuSeq(dialog .. "Ada yang bisa kubantu?", opts, {})
 
 		if option == 1 then
 			player.registry["hair_style"] = 1
@@ -128,7 +128,7 @@ hair2 = {
 			hair2.browse(player, npc)
 		elseif option == 3 then
 			if (player:hasDuration("supporter_buff") == false) then
-				player:sendMinitext("You must be a Runegard Supporter to use this.")
+				player:sendMinitext("Kau harus jadi Runegard Supporter untuk memakai ini.")
 				return
 			end
 			player.hair = npc.gfxHair
@@ -136,15 +136,15 @@ hair2 = {
 			player:updateState()
 			player:sendStatus()
 			player:calcStat()
-			player:sendMinitext("Your hair style is changed!")
+			player:sendMinitext("Gaya rambutmu berubah!")
 			player:sendMinitext("Done!!")
 		end
 	end,
 
 	browse = function(player, npc)
 		player.dialogType = 2
-		local opts = {"Next >>", "Options", "<< Previous"}
-		menu = player:menuSeq("Make your choice", opts, {})
+		local opts = {"Berikutnya >>", "Pilihan", "<< Sebelumnya"}
+		menu = player:menuSeq("Tentukan pilihanmu", opts, {})
 
 		if menu == 1 then
 			if player.registry["hair_style"] == 1 and player.registry["hair_color"] == 0 then

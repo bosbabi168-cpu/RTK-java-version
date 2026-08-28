@@ -7,7 +7,7 @@ pork = {
 		player:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 		if player.health == player.maxHealth then
-			player:sendMinitext("You feel satiated.")
+			player:sendMinitext("Kau merasa kenyang.")
 		end
 	end
 }
@@ -21,7 +21,7 @@ rare_pork = {
 		player:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 		if player.health == player.maxHealth then
-			player:sendMinitext("You feel satiated.")
+			player:sendMinitext("Kau merasa kenyang.")
 		end
 	end
 }

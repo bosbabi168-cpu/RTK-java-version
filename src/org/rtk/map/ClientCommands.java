@@ -366,6 +366,63 @@ public interface ClientCommands {
      */
     void playerRides(User sd);
 
+    /**
+     * Pemain berputar di tempat menghadap {@code arah} (R1/K4).
+     * Bukan langkah: posisinya tidak berubah.
+     */
+    void playerTurns(User sd, int arah);
+
+    /** Pemain memperagakan emosi (R1/K4). */
+    void playerEmotes(User sd, int emosi);
+
+    /** Pemain minta sekelilingnya digambar ulang (R1/K4). */
+    void playerRequestsRefresh(User sd);
+
+    /**
+     * Pemain memeriksa sebuah benda (R1/K4) — memicu kait skrip
+     * {@code onLook}; apa yang muncul di layar diputuskan skripnya.
+     */
+    void playerLooksAt(User sd, long objectId);
+
+    /** Pemain menukar posisi dua barang di kantong (R1/K4). */
+    void playerSwapsItems(User sd, int dari, int ke);
+
+    /** Pemain menukar posisi dua mantra di buku mantra (R1/K4). */
+    void playerSwapsSpells(User sd, int dari, int ke);
+
+    /**
+     * Pemain membuka profilnya sendiri (R1).
+     *
+     * @param ragam 0 = profil diri, 1 = status grup
+     */
+    void playerOpensProfile(User sd, int ragam);
+
+    /** Pemain menyunting teks profilnya (R1). */
+    void playerEditsProfile(User sd, String teks);
+
+    /** Pemain minta daftar kota (R1). */
+    void playerRequestsTowns(User sd);
+
+    /** Pemain minta papan peringkat (R1). */
+    void playerRequestsRanking(User sd);
+
+    /** Pemain menyimpan daftar temannya (R1); daftar kosong = menghapus. */
+    void playerSavesFriends(User sd, java.util.List<String> teman);
+
+    /** Pemain menyalakan/mematikan penanda pemburu beserta catatannya (R1). */
+    void playerSetsHunter(User sd, boolean nyala, String catatan);
+
+    /**
+     * Pemain memakai papan pesan (R1).
+     *
+     * @param aksi  1 daftar papan, 2 isi papan, 3 baca pos, 5 hapus pos,
+     *              9 nmail — nomor yang sama dengan {@code clif_handle_boards}
+     */
+    void playerUsesBoard(User sd, int aksi, int papan, int pos);
+
+    /** Pemain mencoba mengambil kiriman (R1). */
+    void playerCollectsParcel(User sd);
+
     void playerAnswersMenu(User sd, Answer answer);
 
     /**

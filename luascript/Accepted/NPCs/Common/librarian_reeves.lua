@@ -8,7 +8,7 @@ LibrarianReevesNpc = {
 		player.npcColor = t.color
 		player.dialogType = 0
 		player.lastClick = npc.ID
-		player:dialogSeq({t, "Hello, how can I help you?."}, 1)
+		player:dialogSeq({t, "Halo, ada yang bisa kubantu?"}, 1)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -28,7 +28,7 @@ LibrarianReevesNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah yes, Spoon. What an interesting fellow. He was here earlier very eager to learn more about demons and statues and spicy chicken wings... I wonder what that was about."
+						"Ah ya, Spoon. Orang yang menarik. Tadi ia ke sini, bersemangat sekali ingin tahu lebih banyak soal iblis, patung, dan sayap ayam pedas... entah apa maksudnya."
 					},
 					0
 				)
@@ -43,9 +43,9 @@ LibrarianReevesNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Spoon was quite eager to acquire any and all material we had on demons.",
-						"While we don't have much in the way of factual demons, he seemed interested in both the rumours and documented accounts of these foul beings.",
-						"Let me see if I can remember the book he was hunched over for hours by candlelight."
+						"Spoon sangat bersemangat mendapatkan segala bahan yang kami punya tentang iblis.",
+						"Meski catatan faktual kami tentang iblis tidak banyak, ia tampak tertarik pada desas-desus maupun kesaksian tertulis tentang makhluk keji itu.",
+						"Coba kuingat buku apa yang ia tekuni berjam-jam di bawah cahaya lilin."
 					},
 					0
 				)
@@ -57,9 +57,9 @@ LibrarianReevesNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Spoon was quite eager to acquire any and all material we had on demons.",
-						"While we don't have much in the way of factual demons, he seemed interested in both the rumours and documented accounts of these foul beings.",
-						"Let me see if I can remember the book he was hunched over for hours by candlelight."
+						"Spoon sangat bersemangat mendapatkan segala bahan yang kami punya tentang iblis.",
+						"Meski catatan faktual kami tentang iblis tidak banyak, ia tampak tertarik pada desas-desus maupun kesaksian tertulis tentang makhluk keji itu.",
+						"Coba kuingat buku apa yang ia tekuni berjam-jam di bawah cahaya lilin."
 					},
 					0
 				)
@@ -68,17 +68,17 @@ LibrarianReevesNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"I cannot believe it, he told me others would also be interested in his chicken wing recipe.",
-						"He left the recipe with me, after talking for hours on end about the balance between the hot sauce and the garlic powder... I have honestly never been so bored. Anyways, here you go!",
+						"Sulit kupercaya, ia bilang orang lain juga akan tertarik pada resep sayap ayamnya.",
+						"Resepnya ia titipkan padaku, setelah berjam-jam bicara soal keseimbangan antara saus pedas dan bubuk bawang putih... sejujurnya aku belum pernah sebosan itu. Pokoknya, ini dia!",
 						"Spoon's Spicy Chicken Wings",
-						"Prep: 15-20 min | Cooking: 45m | Ready in ~ 2 hours",
-						"3/4 cup all-purpose flour, 1/2 teaspoon cayenne pepper, 1/2 teaspoon garlic powder, 1/2 teaspoon salt, 1/2 cup melted butter and as much hotsauce as you can handle",
-						"Line a baking sheet with aluminum foil, and lightly grease with cooking spray. Place the flour, cayenne pepper, garlic powder, and salt into a resealable plastic bag, and shake to mix. Add the chicken wings, seal, and toss until well coated with the flour mixture.",
-						"Place the wings onto the prepared baking sheet, and place into the refrigerator. Refrigerate at least 1 hour.",
-						"Preheat oven to 400 degrees F (200 degrees C).",
-						"Whisk together the melted butter and hot sauce in a small bowl. Dip the wings into the butter mixture, and place back on the baking sheet.",
-						"Bake in the preheated oven until the chicken is no longer pink in the center, and crispy on the outside, about 45 minutes. Turn the wings over halfway during cooking so they cook evenly.",
-						"Partner with an IPA. Enjoy! ~GM Spoon"
+						"Persiapan: 15-20 menit | Memasak: 45 menit | Siap dalam ~2 jam",
+						"3/4 cangkir tepung serbaguna, 1/2 sendok teh cabai rawit bubuk, 1/2 sendok teh bubuk bawang putih, 1/2 sendok teh garam, 1/2 cangkir mentega leleh, dan saus pedas sebanyak yang sanggup kau tahan",
+						"Lapisi loyang dengan kertas aluminium dan olesi tipis dengan minyak semprot. Masukkan tepung, cabai rawit bubuk, bubuk bawang putih, dan garam ke kantong plastik berpenutup, lalu kocok sampai tercampur. Masukkan sayap ayam, tutup, dan guncang sampai terbalut rata.",
+						"Tata sayapnya di loyang yang sudah disiapkan lalu masukkan ke lemari es. Dinginkan sedikitnya 1 jam.",
+						"Panaskan oven sampai 400 derajat F (200 derajat C).",
+						"Kocok mentega leleh dan saus pedas dalam mangkuk kecil. Celupkan sayapnya ke campuran mentega lalu kembalikan ke loyang.",
+						"Panggang dalam oven yang sudah panas sampai bagian tengah ayamnya tidak lagi merah muda dan luarnya renyah, sekitar 45 menit. Balik sayapnya di tengah waktu memanggang supaya matang merata.",
+						"Padukan dengan IPA. Selamat menikmati! ~GM Spoon"
 					},
 					0
 				)
@@ -90,9 +90,9 @@ LibrarianReevesNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Oh I could talk about statues for days! The kingdom used to be filled with statues of our heroes...",
-						"But alas, our ruler decided that there should be no effigies placed inside the kingdom aside from the Totems.",
-						"Oh well, here's hoping he changes his mind."
+						"Oh, aku bisa bicara soal patung berhari-hari! Dulu kerajaan ini penuh patung para pahlawan kami...",
+						"Sayangnya penguasa kami memutuskan tidak boleh ada patung di dalam kerajaan selain Totem.",
+						"Yah, semoga saja ia berubah pikiran."
 					},
 					0
 				)
@@ -101,9 +101,9 @@ LibrarianReevesNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Oh I could talk about statues for days! The kingdom used to be filled with statues of our heroes...",
-						"But alas, our ruler decided that there should be no effigies placed inside the kingdom aside from the Totems.",
-						"Oh well, here's hoping he changes his mind."
+						"Oh, aku bisa bicara soal patung berhari-hari! Dulu kerajaan ini penuh patung para pahlawan kami...",
+						"Sayangnya penguasa kami memutuskan tidak boleh ada patung di dalam kerajaan selain Totem.",
+						"Yah, semoga saja ia berubah pikiran."
 					},
 					0
 				)
@@ -118,9 +118,9 @@ LibrarianReevesNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"We have quite a few books on ghouls and goblins, as well as demons.",
-						"Spoon seemed rather concerned about a book referencing... oh what was it now... oh yes 'The Calamity'.",
-						"If I am not mistaken it is over there on next to my assistant, Yan. Why don't you go ask him about it."
+						"Kami punya cukup banyak buku tentang ghoul dan goblin, juga iblis.",
+						"Spoon tampak agak cemas soal sebuah buku yang menyebut... oh apa tadi... oh ya, 'The Calamity'.",
+						"Kalau tidak salah bukunya ada di sana, di sebelah asistenku, Yan. Coba tanyakan kepadanya."
 					},
 					0
 				)

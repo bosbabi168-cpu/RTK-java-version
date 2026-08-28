@@ -12,7 +12,7 @@ PyungPetNpc = {
 		local opts = {"Reincarnate", "Observe"}
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 

@@ -10,7 +10,7 @@ herb_pipe = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("Spirits can't do that.")
+			player:sendMinitext("Arwah tidak bisa melakukan itu.")
 			return
 		end
 
@@ -41,7 +41,7 @@ sonhi_pipe = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("Spirits can't do that.")
+			player:sendMinitext("Arwah tidak bisa melakukan itu.")
 			return
 		end
 

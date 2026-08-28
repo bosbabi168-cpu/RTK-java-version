@@ -60,45 +60,45 @@ SumoWarNpc = {
 		local time = SumoWarNpc.getStartTimer()
 
 		local opts = {}
-		table.insert(opts, "How To Play?")
+		table.insert(opts, "Cara Bermain?")
 		if core.gameRegistry["sumo_war"] == 1 then
 			if player.registry["sumo_war_team"] == 0 then
-				table.insert(opts, "Register For Sumo War")
+				table.insert(opts, "Daftar untuk Sumo War")
 			else
 				par = " participant."
 			end
 
 			if player.registry["sumo_war_team"] > 0 then
-				table.insert(opts, "I can't register!")
+				table.insert(opts, "Aku tidak bisa mendaftar!")
 			end
 		end
 
-		table.insert(opts, "Exit")
+		table.insert(opts, "Keluar")
 
 		if core.gameRegistry["sumo_war_start"] > os.time() then
 			str = "Waiting time: " .. SumoWarNpc.getStartTimer()
 		end
 
 		menu = player:menuString(
-			n .. "Hello," .. par .. " The game will start in few minutes.\n" .. str .. "\nTotal players: " .. #pc,
+			n .. "Halo," .. par .. " Permainan akan dimulai beberapa menit lagi.\n" .. str .. "\nTotal players: " .. #pc,
 			opts
 		)
 
-		if menu == "How To Play?" then
+		if menu == "Cara Bermain?" then
 			player:dialogSeq(
 				{
 					t,
-					n .. "Sumo War is a team based game about knocking oppenents into the water in order to score points.",
-					n .. "Depending on the total number of players, your team may need 5, 10 or 15 points to win the game.",
-					n .. "Use your attack to push enemies around, and if they splash into the water your team scores a point.",
-					n .. "Anyone who gets knocked into the water will re-enter the game after a short wait.",
-					n .. "Be careful of the bridges, they can be tricky."
+					n .. "Sumo War adalah permainan beregu tentang mendorong lawan ke air untuk mengumpulkan angka.",
+					n .. "Bergantung pada jumlah pemain, regumu mungkin butuh 5, 10, atau 15 angka untuk menang.",
+					n .. "Pakai seranganmu untuk mendorong musuh; kalau mereka tercebur ke air, regumu mendapat satu angka.",
+					n .. "Siapa pun yang terdorong ke air akan kembali masuk permainan setelah menunggu sebentar.",
+					n .. "Hati-hati dengan jembatannya, bisa menipu."
 				},
 				1
 			)
 			player:freeAsync()
 			SumoWarNpc.click(player, npc)
-		elseif menu == "Register For Sumo War" then
+		elseif menu == "Daftar untuk Sumo War" then
 			if os.time() < player.registry["minigameBan"] then
 				--Check if player is banned from minigames
 				player:popUp("You are currently banned from minigames! Try again later maybe.")
@@ -106,15 +106,15 @@ SumoWarNpc = {
 			end
 
 			local confirm = player:menuSeq(
-				"It will cost 2,000 gold to play. Do you agree?",
-				{"Yes, pay 2,000 gold.", "Nevermind."},
+				"Biaya bermainnya 2.000 emas. Kau setuju?",
+				{"Ya, bayar 2.000 emas.", "Nevermind."},
 				{}
 			)
 
 			if confirm == 1 then
 				if player.money < 2000 then
 					player:dialogSeq(
-						{t, "You don't have enough gold to play."},
+						{t, "Emasmu tidak cukup untuk bermain."},
 						0
 					)
 					return
@@ -128,17 +128,17 @@ SumoWarNpc = {
 				player:dialogSeq(
 					{
 						t,
-						n .. "Alright, your character is registered for Sumo War.\nPlease wait until the game starts!"
+						n .. "Baik, karaktermu terdaftar untuk Sumo War.\nTunggu sampai permainannya dimulai!"
 					},
 					1
 				)
 			end
-		elseif menu == "I can't register!" then
+		elseif menu == "Aku tidak bisa mendaftar!" then
 			player.registry["sumo_war_team"] = 0
 			player:dialogSeq(
 				{
 					t,
-					n .. "Looks like a simple paperwork mixup. You should be all set to register now, have fun at the game!"
+					n .. "Sepertinya cuma berkas yang tertukar. Sekarang kau sudah bisa mendaftar. Selamat bermain!"
 				},
 				1
 			)
@@ -406,7 +406,7 @@ SumoWarNpc = {
 				"sumo_war_entries"
 			] + 1
 			player:addLegend(
-				"Participated in " .. player.registry["sumo_war_entries"] .. " Sumo Wars",
+				"Ikut serta dalam " .. player.registry["sumo_war_entries"] .. " Sumo Wars",
 				"sumo_war_entries",
 				204,
 				16
@@ -414,7 +414,7 @@ SumoWarNpc = {
 		else
 			player.registry["sumo_war_entries"] = 1
 			player:addLegend(
-				"Participated in 1 Sumo War",
+				"Ikut serta dalam 1 Sumo War",
 				"sumo_war_entries",
 				204,
 				16

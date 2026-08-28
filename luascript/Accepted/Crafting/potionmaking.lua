@@ -5,7 +5,7 @@ potionmaking = {
 				player:dialogSeq(
 					{
 						t,
-						"You are not an alchemist, I can't let you work with my alchemy tools."
+						"Kau bukan ahli ramuan; aku tidak bisa membiarkanmu memakai alat ramuanku."
 					},
 					0
 				)
@@ -29,7 +29,7 @@ potionmaking = {
 			end
 
 			local choice = player:menuSeq(
-				"Which task shall you attempt?",
+				"Tugas mana yang akan kau coba?",
 				opts,
 				{}
 			)
@@ -97,10 +97,10 @@ potionmaking = {
 			if math.random(1, 5) == 1 then
 				-- success
 				player:addItem(itemCreated, 1)
-				player:dialogSeq({tItemCreated, "You were successful."}, 0)
+				player:dialogSeq({tItemCreated, "Kau berhasil."}, 0)
 			else
 				player:dialogSeq(
-					{tItemCreated, "Your efforts were unsuccessful."},
+					{tItemCreated, "Usahamu tidak berhasil."},
 					0
 				)
 			end

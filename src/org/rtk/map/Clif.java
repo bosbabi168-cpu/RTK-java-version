@@ -71,8 +71,9 @@ public final class Clif {
     private static final int FLAG_NECKLACE = SettingFlags.NECKLACE;
 
     /** Waktu & tahun dalam permainan; nanti diisi kalender dunia (map.c). */
-    public static int curTime = 0;
-    public static int curYear = 0;
+    // ⚠️ Jam dan tahun dunia kini milik WorldTime (R2); dulu dua statik
+    // ini tetap 0 sehingga paket waktu selalu mengabarkan tengah malam
+    // tahun nol.
 
     private Clif() {
     }
@@ -320,8 +321,8 @@ public final class Clif {
         }
         head(s, 0x20, 0x04);
         s.wfifoB(4, 0x03);
-        s.wfifoB(5, curTime);
-        s.wfifoB(6, curYear);
+        s.wfifoB(5, WorldTime.hour);
+        s.wfifoB(6, WorldTime.year);
         s.wfifoSet(encrypt(s, sd));
     }
 
@@ -1545,6 +1546,35 @@ public final class Clif {
             ts.wfifoB(22, 0);
             ts.wfifoSet(encrypt(ts, to));
         });
+    }
+
+    /**
+     * clif_sendmagic() — satu entri buku mantra. Opcode 0x17.
+     *
+     * <p>Tata letak C (clif.c:8768): {@code [5]=pos+1, [6]=SplType,
+     * [7]=len(nama), nama, [len+8]=len(pertanyaan), pertanyaan}; panjang
+     * isi {@code len+5} dengan {@code len = nama + pertanyaan + 1}.
+     * ⚠️ Slot dikirim <b>+1</b>, seperti {@link #removeSpell}.</p>
+     */
+    public static void sendMagic(User sd, int slot) {
+        Session s = sessionOf(sd);
+        if (s == null || slot < 0 || slot >= sd.status.spells.length) {
+            return;
+        }
+        int id = sd.status.spells[slot];
+        if (id <= 0) {
+            return;
+        }
+        String nama = MapServer.spellDb.displayNameOf(id);
+        String tanya = MapServer.spellDb.questionOf(id);
+        head(s, 0x17, nama.length() + tanya.length() + 1 + 5);
+        s.wfifoB(5, slot + 1);
+        s.wfifoB(6, MapServer.spellDb.typeOf(id));
+        s.wfifoB(7, nama.length());
+        s.wfifoStringRaw(8, nama);
+        s.wfifoB(nama.length() + 8, tanya.length());
+        s.wfifoStringRaw(nama.length() + 9, tanya);
+        s.wfifoSet(encrypt(s, sd));
     }
 
     /**
@@ -3648,7 +3678,7 @@ public final class Clif {
      * mati — rumusnya berganti. Tanpa tabel level (db/level_db.txt hilang)
      * hasilnya 0, jadi barnya kosong, bukan angka ngawur.</p>
      */
-    static float xpBarPercent(User sd) {
+    public static float xpBarPercent(User sd) {
         int level = sd.status.level;
         int path = sd.status.charClass;
 
@@ -3668,6 +3698,82 @@ public final class Clif {
         }
         long tnl = thisLevel - sd.status.exp;
         return (float) ((double) (expInLevel - tnl) / expInLevel * 100.0);
+    }
+
+    /**
+     * clif_transfer() — alihkan klien ke map server lain. Opcode 0x03.
+     *
+     * <p>Tata letak C: alamat IP di [4], port di [8], lalu panjang blok di
+     * [10], kunci handshake {@code "KruIn7inc"} berprefiks panjang, dan
+     * nama karakter berprefiks panjang.</p>
+     *
+     * <p>⚠️ Ladang [10] ditulis DUA KALI di C: mula-mula 0x16, lalu ditimpa
+     * panjang sebenarnya setelah namanya diketahui. Yang berlaku yang
+     * kedua.</p>
+     */
+    public static void transfer(User sd, String host, int port) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] kunci = org.rtk.common.Props.get("crypt.handshake_key", "KruIn7inc")
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x03);
+        s.wfifoLBE(4, ipAsInt(host));
+        s.wfifoWBE(8, port);
+        s.wfifoWBE(11, kunci.length);
+        s.wfifoBytes(13, kunci);
+        int len = 11;
+        s.wfifoB(len + 11, nama.length);
+        s.wfifoStringRaw(len + 12, sd.status.name);
+        len += nama.length + 1 + 4;
+        s.wfifoB(10, len);
+        s.wfifoWBE(1, len + 8);
+        s.wfifoSet(len + 11);
+    }
+
+    /** Alamat IPv4 titik-desimal jadi int; 0 bila tidak terbaca. */
+    private static int ipAsInt(String host) {
+        try {
+            byte[] b = java.net.InetAddress.getByName(host).getAddress();
+            return ((b[0] & 0xFF) << 24) | ((b[1] & 0xFF) << 16)
+                    | ((b[2] & 0xFF) << 8) | (b[3] & 0xFF);
+        } catch (java.net.UnknownHostException | RuntimeException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * clif_sendtowns() — daftar kota. Opcode 0x59.
+     *
+     * <p>Tata letak C: {@code [5]=64, [6..7]=0, [8]=34, [9]=jumlah}, lalu
+     * per kota {@code u8 indeks, u8 panjangNama, nama}.</p>
+     */
+    public static void sendTowns(User sd, java.util.List<String> kota) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        int len = 0;
+        for (String k : kota) {
+            len += k.length() + 2;
+        }
+        head(s, 0x59, len + 6);
+        s.wfifoB(5, 64);
+        s.wfifoWBE(6, 0);
+        s.wfifoB(8, 34);
+        s.wfifoB(9, kota.size());
+        int off = 0;
+        for (int i = 0; i < kota.size(); i++) {
+            String nama = kota.get(i);
+            s.wfifoB(off + 10, i);
+            s.wfifoB(off + 11, nama.length());
+            s.wfifoStringRaw(off + 12, nama);
+            off += nama.length() + 2;
+        }
+        s.wfifoSet(encrypt(s, sd));
     }
 
     /** clif_sendminitext(): pesan status baris tunggal (tipe 3). */

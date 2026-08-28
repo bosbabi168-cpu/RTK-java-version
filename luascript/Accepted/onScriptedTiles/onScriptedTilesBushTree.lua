@@ -10,7 +10,7 @@ onScriptedTilesBushTree = function(player)
 		if math.random(1, 50) == 1 then
 			-- give apple
 			player:addItem("apple", 1)
-			player:sendMinitext("You found an apple.")
+			player:sendMinitext("Kau menemukan sebuah apel.")
 		end
 	end
 
@@ -23,7 +23,7 @@ onScriptedTilesBushTree = function(player)
 		if math.random(1, 50) == 1 then
 			-- give rose
 			player:addItem("rose", 1)
-			player:sendMinitext("You find a beautiful rose!")
+			player:sendMinitext("Kau menemukan setangkai mawar yang indah!")
 		end
 	end
 end

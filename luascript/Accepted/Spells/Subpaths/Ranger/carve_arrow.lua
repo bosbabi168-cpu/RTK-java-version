@@ -22,11 +22,11 @@ carve_arrow = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
-		player:sendMinitext("You cast Carve arrow.")
+		player:sendMinitext("Kau merapal Carve arrow.")
 		player:setAether("carve_arrow", aethers)
 
 		local choice = ""
@@ -59,7 +59,7 @@ carve_arrow = {
 
 		while str == "buffer" do
 			choice = player:menuString(
-				"What do you wish to make, Ranger?",
+				"Apa yang ingin kau buat, Ranger?",
 				arrowChoices,
 				{}
 			)
@@ -104,7 +104,7 @@ carve_arrow = {
 
 			if player:hasItem("ginko_wood", 3) ~= true then
 				player:dialogSeq(
-					{t, "You need some ginko wood to make this arrow."},
+					{t, "Kau butuh ginko wood untuk membuat anak panah ini."},
 					0
 				)
 				return
@@ -114,7 +114,7 @@ carve_arrow = {
 				player:dialogSeq(
 					{
 						t,
-						"You need a " .. Item(regeant).name .. " to make this arrow."
+						"Kau butuh " .. Item(regeant).name .. " untuk membuat anak panah ini."
 					},
 					0
 				)

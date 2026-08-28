@@ -95,7 +95,7 @@ magis_bane_poet = {
 				scourge_poet.cast(player, castable[1])
             end
         else
-            player:sendMinitext("No targets available.")
+            player:sendMinitext("Tidak ada sasaran yang tersedia.")
 		end
 	end,
 

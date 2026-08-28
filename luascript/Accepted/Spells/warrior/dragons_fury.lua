@@ -5,18 +5,18 @@ dragons_fury_warrior = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(lesserFuries) or player.rage > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player.magic = player.magic - magic
 		player:playSound(4)
-		player:sendMinitext("You cast Dragon's Fury.")
+		player:sendMinitext("Kau merapal Dragon's Fury.")
 		player:setDuration("dragons_fury_warrior", 625000)
 		player:sendAnimation(11)
 		player:sendAction(6, 35)
@@ -52,18 +52,18 @@ strength_of_ancestors_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(lesserFuries) or player.rage > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player.magic = player.magic - magic
 		player:playSound(4)
-		player:sendMinitext("You cast Strength of Ancestors.")
+		player:sendMinitext("Kau merapal Strength of Ancestors.")
 		player:setDuration("strength_of_ancestors_warrior", 625000)
 		player:sendAnimation(103)
 		player:sendAction(6, 35)
@@ -99,18 +99,18 @@ spirit_of_the_dragon_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(lesserFuries) or player.rage > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player.magic = player.magic - magic
 		player:playSound(4)
-		player:sendMinitext("You cast Spirit of the Dragon.")
+		player:sendMinitext("Kau merapal Spirit of the Dragon.")
 		player:setDuration("spirit_of_the_dragon_warrior", 625000)
 		player:sendAnimation(106)
 		player:sendAction(6, 35)
@@ -146,18 +146,18 @@ ohaengs_anger_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(lesserFuries) or player.rage > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player.magic = player.magic - magic
 		player:playSound(4)
-		player:sendMinitext("You cast Ohaeng's Anger.")
+		player:sendMinitext("Kau merapal Ohaeng's Anger.")
 		player:setDuration("ohaengs_anger_warrior", 625000)
 		player:sendAnimation(70)
 		player:sendAction(6, 35)

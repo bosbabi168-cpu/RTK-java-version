@@ -8,17 +8,17 @@ harden_body = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (player.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if player:checkIfCast(hardBodies) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -45,7 +45,7 @@ harden_body = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(5)
-		player:sendMinitext("You cast Harden Body.")
+		player:sendMinitext("Kau merapal Harden Body.")
 		player:setDuration("harden_body_poet", duration)
 		player:sendAnimation(11, 3)
 	end

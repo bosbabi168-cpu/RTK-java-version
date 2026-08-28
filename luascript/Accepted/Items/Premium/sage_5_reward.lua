@@ -8,25 +8,25 @@ sage_5_reward = {
 		player.dialogType = 0
 
 		if not player:canCast(1, 1, 0) then
-			player:sendMinitext("You can't use this.")
+			player:sendMinitext("Kau tidak bisa memakai ini.")
 			return
 		end
 
 		if player:hasSpell("sages_wisdom") then
-			player:dialogSeq({t, "You already have Sages Wisdom (Sage 5)."}, 0)
+			player:dialogSeq({t, "Kau sudah punya Sages Wisdom (Sage 5)."}, 0)
 			return
 		end
 
 		local confirm = player:menuSeq(
-			"Are you sure you want to add Sages Wisdom (Sage 5) to your character? This will replace all previous versions of sage.",
-			{"Yes", "No"},
+			"Kau yakin ingin menambahkan Sages Wisdom (Sage 5) ke karaktermu? Ini akan menggantikan seluruh versi sage sebelumnya.",
+			{"Ya", "Tidak"},
 			{}
 		)
 
 		if confirm == 1 then
 			if player:hasItem("sage_5_reward", 1) ~= true then
 				player:dialogSeq(
-					{t, "You are missing the Sage 5 Reward item."},
+					{t, "Barang Sage 5 Reward tidak ada padamu."},
 					0
 				)
 				return

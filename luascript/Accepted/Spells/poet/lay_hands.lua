@@ -6,7 +6,7 @@ lay_hands_poet = {
 		end
 		local worked = global_heal.cast(player, player, 100, 90, 0)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -27,7 +27,7 @@ spirits_smile_poet = {
 		end
 		local worked = global_heal.cast(player, player, 100, 90, 1)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -48,7 +48,7 @@ lifes_water_poet = {
 		end
 		local worked = global_heal.cast(player, player, 100, 90, 2)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -69,7 +69,7 @@ quicken_poet = {
 		end
 		local worked = global_heal.cast(player, player, 100, 90, 3)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 

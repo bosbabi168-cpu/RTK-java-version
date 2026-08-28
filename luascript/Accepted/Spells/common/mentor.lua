@@ -14,7 +14,7 @@ mentor = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -32,14 +32,14 @@ mentor = {
 			return
 		end
 		if string.lower(choice) == string.lower(player.name) then
-			player:dialog("You can't mentor yourself.", {})
+			player:dialog("Kau tidak bisa membimbing dirimu sendiri.", {})
 			return
 		end
 
 		local target = Player(choice)
 
 		if target == nil then
-			player:dialog("Player is not valid or not online.", {})
+			player:dialog("Pemain tidak sah atau tidak daring.", {})
 			return
 		end
 
@@ -50,19 +50,19 @@ mentor = {
 
 		if target.level < 3 or target.level > 8 then
 			if target:hasLegend("mentored_by") then
-				player:dialog(target.name .. " has already been mentored!", {})
+				player:dialog(target.name .. " sudah pernah dibimbing!", {})
 				return
 			end
 			if target.registry["mentor"] ~= player.ID and target.registry["mentor"] ~= 0 then
-				player:dialog(target.name .. " is not your protege!", {})
+				player:dialog(target.name .. " bukan bimbinganmu!", {})
 				return
 			end
 
 			if target.level >= 15 then
 				if target.registry["mentor"] == player.ID then
 					local choice_a = player:menuSeq(
-						"You may complete mentoring someone at level 15. Do you wish to continue?",
-						{"Yes, that's fine.", "No, absolutely not."},
+						"Kau boleh menuntaskan bimbingan seseorang pada level 15. Kau ingin melanjutkan?",
+						{"Ya, tidak masalah.", "Tidak, sama sekali tidak."},
 						{}
 					)
 
@@ -77,7 +77,7 @@ mentor = {
 						end
 
 						player:addLegend(
-							"Mentored " .. player.registry["mentored"] .. " new players",
+							"Mentored " .. player.registry["mentored"] .. " pemain baru",
 							"mentored",
 							3,
 							1
@@ -95,11 +95,11 @@ mentor = {
 						)
 
 						player:dialog(
-							"This culminates your mentorship of " .. target.name .. ". Hopefully they have learned much from your teachings.",
+							"Ini menuntaskan bimbinganmu atas " .. target.name .. ". Semoga ia banyak belajar dari ajaranmu.",
 							{}
 						)
 						target:dialog(
-							"This culminates your mentorship under " .. player.name .. ". Hopefully you have learned much from their teachings.",
+							"Ini menuntaskan bimbinganmu di bawah " .. player.name .. ". Semoga kau banyak belajar dari ajarannya.",
 							{}
 						)
 					end
@@ -107,25 +107,25 @@ mentor = {
 				end
 			else
 				player:dialog(
-					target.name .. " must be between the levels of 3 and 8 to accept a mentor.",
+					target.name .. " harus berada di antara level 3 dan 8 untuk bisa menerima pembimbing.",
 					{}
 				)
 			end
 		else
 			if target:hasLegend("mentored_by") then
-				player:dialog(target.name .. " has already been mentored!", {})
+				player:dialog(target.name .. " sudah pernah dibimbing!", {})
 				return
 			end
 			if target.registry["mentor"] ~= 0 then
 				if target.registry["mentor"] == player.ID then
 					player:dialog(
-						target.name .. " is already being mentored by you!",
+						target.name .. " sudah kau bimbing!",
 						{}
 					)
 				end
 				if target.registry["mentor"] ~= player.ID then
 					player:dialog(
-						target.name .. " is already being mentored by someone else!",
+						target.name .. " sudah dibimbing orang lain!",
 						{}
 					)
 				end
@@ -136,7 +136,7 @@ mentor = {
 				player:dialogSeq(
 					{
 						t,
-						"The player must be at least level 3 to accept your mentorship."
+						"Pemain itu harus sedikitnya level 3 untuk bisa menerima bimbinganmu."
 					},
 					0
 				)
@@ -146,16 +146,16 @@ mentor = {
 			player:dialogSeq(
 				{
 					t,
-					"Mentoring someone in the lands of RetroTK is a great way to show your knowledge of the game and support for the community.",
-					"You may begin mentoring someone as long as they have reached the 3rd insight and have not exceeded the 8th insight.",
-					"The proposed mentoree must also be free from another's mentorship.",
-					"After you have taught your mentoree much, you may culminate the mentorship when the mentoree has reached the 15th insight."
+					"Membimbing seseorang di tanah RetroTK adalah cara yang bagus untuk menunjukkan pengetahuanmu tentang permainan serta dukunganmu pada masyarakatnya.",
+					"Kau boleh mulai membimbing seseorang selama ia sudah mencapai pencerahan ke-3 dan belum melewati pencerahan ke-8.",
+					"Calon bimbingan juga harus bebas dari bimbingan orang lain.",
+					"Setelah kau banyak mengajari bimbinganmu, kau boleh menuntaskan bimbingan itu ketika ia mencapai pencerahan ke-15."
 				},
 				1
 			)
 			local choice = player:menuSeq(
-				"Are you sure you would like to offer mentorship to " .. target.name .. "?",
-				{"Yes", "No"},
+				"Kau yakin ingin menawarkan bimbingan kepada " .. target.name .. "?",
+				{"Ya", "Tidak"},
 				{}
 			)
 			if choice == 1 then
@@ -169,8 +169,8 @@ mentor = {
 	prompt = async(function(target)
 		local proposer = Player(target.registry["proposer"])
 		local accept = target:menuSeq(
-			proposer.name .. " would like to offer you mentorship. Do you accept?",
-			{"Yes! I need guidance.", "No, I must decline."},
+			proposer.name .. " ingin menawarkan bimbingan kepadamu. Kau terima?",
+			{"Ya! Aku butuh bimbingan.", "Tidak, aku harus menolak."},
 			{"close"}
 		)
 
@@ -190,7 +190,7 @@ mentor = {
 			)
 
 			proposer:dialog(
-				target.name .. " accepts your offer of mentorship!. Please guide them until level 15 where you will need to cast this spell again to end the mentorship",
+				target.name .. " menerima tawaran bimbinganmu! Bimbinglah ia sampai level 15; di sana kau harus merapal mantra ini lagi untuk mengakhiri bimbingan",
 				{}
 			)
 		elseif accept == 2 then

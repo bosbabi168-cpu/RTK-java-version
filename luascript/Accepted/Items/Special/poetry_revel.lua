@@ -12,7 +12,7 @@ poetry_revel_1st_place = {
 
 		if times == 1 then
 			player:addLegend(
-				"First Place in Poetry Revel " .. times .. " time",
+				"Juara Pertama Poetry Revel " .. times .. " kali",
 				"poetry_revel_1st",
 				96,
 				128
@@ -20,7 +20,7 @@ poetry_revel_1st_place = {
 		end
 		if times > 1 then
 			player:addLegend(
-				"First Place in Poetry Revel " .. times .. " times",
+				"Juara Pertama Poetry Revel " .. times .. " times",
 				"poetry_revel_1st",
 				96,
 				128

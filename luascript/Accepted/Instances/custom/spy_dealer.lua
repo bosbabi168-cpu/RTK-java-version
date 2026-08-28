@@ -31,7 +31,7 @@ spy_dealer = {
 
 	move = function(mob, target)
 		if math.random(1, 100) == 1 then
-			mob:talk(0, "Dealer: Step right up and try your luck!")
+			mob:talk(0, "Bandar: Mari mendekat dan coba peruntunganmu!")
 		end
 		mob.side = math.random(0, 3)
 		mob:sendSide()

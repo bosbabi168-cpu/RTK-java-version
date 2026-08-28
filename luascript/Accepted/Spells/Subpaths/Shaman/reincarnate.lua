@@ -15,13 +15,13 @@ reincarnate = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		player.magic = player.magic - magicCost
 		player:sendStatus()
-		player:sendMinitext("You cast Reincarnate.")
+		player:sendMinitext("Kau merapal Reincarnate.")
 		player:setAether("reincarnate", aethers)
 
 		local targets = getTargetsAround(player, BL_PC)
@@ -35,7 +35,7 @@ reincarnate = {
 					targets[i].health = math.floor(targets[i].maxHealth * 0.10)
 					targets[i]:sendStatus()
 					targets[i]:updateState()
-					targets[i]:sendMinitext(player.name .. " casts Reincarnate on you.")
+					targets[i]:sendMinitext(player.name .. " merapal Reincarnate padamu.")
 				end
 			end
 			player:sendAction(6, 35)

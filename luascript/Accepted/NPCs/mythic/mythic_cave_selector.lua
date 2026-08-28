@@ -65,7 +65,7 @@ MythicCaveSelector = {
 		local choice = opts[maxCaveLevel]
 
 		if (player.gmLevel > 0 or Config.mythicCaveSelectEnabled) then
-			choice = player:menuString("You see multiple paths before you. Which will you choose?", opts)
+			choice = player:menuString("Kau melihat beberapa jalan di hadapanmu. Mana yang kau pilih?", opts)
 		end
 
 		local caveNumber = 1

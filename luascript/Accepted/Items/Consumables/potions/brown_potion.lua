@@ -1,7 +1,7 @@
 brown_potion = {
 	use = function(player)
 		if player:checkIfCast(hardarmors) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 

@@ -9,7 +9,7 @@ lava_surge = {
 			return
 		end
 		if (player.magic < 210) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -35,12 +35,12 @@ lava_surge = {
 			if #hits > 0 then
 				local worked = global_zap.cast(player, hits[1], damage, 0, 35)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 

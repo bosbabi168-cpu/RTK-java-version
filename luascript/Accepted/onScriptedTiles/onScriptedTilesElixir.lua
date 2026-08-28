@@ -5,7 +5,7 @@ onScriptedTilesElixir = function(player)
 
 			if player.registry["elixirTeam"] == 0 then
 				player:warp(player.m, player.x, player.y + 5)
-				player:sendMinitext("Not on an elixir team.")
+				player:sendMinitext("Bukan anggota regu elixir.")
 				return
 			end
 

@@ -6,7 +6,7 @@ masos_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 3000, 2000, 0)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 
 		--if worked == 2 then target:sendMinitext(player.name.." cast "..spellName.." on you.") end
@@ -29,7 +29,7 @@ kwisin_masos_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 3000, 2000, 1)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 
 		--if worked == 2 then target:sendMinitext(player.name.." cast "..spellName.." on you.") end
@@ -52,7 +52,7 @@ mingken_masos_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 3000, 2000, 2)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 
 		--if worked == 2 then target:sendMinitext(player.name.." cast "..spellName.." on you.") end
@@ -75,7 +75,7 @@ ohaeng_masos_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 3000, 2000, 3)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 
 		--if worked == 2 then target:sendMinitext(player.name.." cast "..spellName.." on you.") end

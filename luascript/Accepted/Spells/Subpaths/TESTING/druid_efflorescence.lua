@@ -54,7 +54,7 @@ efflorescence = {
 		if owner.magic > owner.baseMagic *.01 then
 			owner.magic = owner.magic - (owner.baseMagic *.01)
 		else
-			owner:sendMinitext("Your magic is too low.")
+			owner:sendMinitext("Sihirmu terlalu rendah.")
 			return
 		end
 		local base = 500

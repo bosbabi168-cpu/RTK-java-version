@@ -20,11 +20,11 @@ ginko_tree = {
 			if weapon ~= nil then
 				if weapon.yname == "axe" or weapon.yname == "hunangs_axe" then
 					if attacker:hasItem("ginko_wood", Item("ginko_wood").maxAmount) == true then
-						attacker:sendMinitext("(Ginko wood) You can't have more than (" .. Item("ginko_wood").maxAmount .. ").")
+						attacker:sendMinitext("(Ginko wood) Kau tidak boleh punya lebih dari (" .. Item("ginko_wood").maxAmount .. ").")
 						return
 					end
 					if not attacker:hasSpace("ginko_wood", 1) then
-						attacker:sendMinitext("Your bags are full.")
+						attacker:sendMinitext("Kantongmu penuh.")
 						return
 					end
 
@@ -68,11 +68,11 @@ ginko_tree = {
 
 						if math.random(1, 33) == 1 then
 							damage = damage * 5
-							attacker:sendMinitext("You wind up and give the tree a big whack!  *CRACK*")
+							attacker:sendMinitext("Kau mengayun dan menghantam pohon itu keras-keras!  *KRAK*")
 						end
 
 						if math.random(1, breakChance) == 2 then
-							attacker:sendMinitext("Your " .. weapon.name .. " has broke!")
+							attacker:sendMinitext("" .. weapon.name .. " milikmu patah!")
 							attacker:stripEquip(EQ_WEAP, 1)
 						end
 
@@ -81,7 +81,7 @@ ginko_tree = {
 					end
 				end
 			else
-				attacker:sendMinitext("You cannot chop with an empty hand.")
+				attacker:sendMinitext("Kau tidak bisa menebang dengan tangan kosong.")
 			end
 		end
 	end,
@@ -106,7 +106,7 @@ ginko_tree = {
 			attacker:addItem("silver_tree_branch", 1)
 		end
 
-		attacker:sendMinitext("You have gathered some Ginko wood.")
+		attacker:sendMinitext("Kau mengumpulkan beberapa Ginko wood.")
 	end,
 
 	move = function(mob)

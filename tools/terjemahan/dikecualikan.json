@@ -1,0 +1,27 @@
+{
+ "_catatan": "Teks tampilan yang SENGAJA tidak diterjemahkan. Nama barang, nama stat, dan nama fitur adalah IDENTIFIER di mata pemain: ia muncul di kantong, di toko, dan di deskripsi database. Terjemahannya dikerjakan di kolom ItmDescription (lihat GLOSARIUM), bukan di skrip. Menerjemahkan hanya di satu tempat justru membuat menu dan kantong menyebut benda yang sama dengan dua nama berbeda. ⚠️ 'next'/'previous'/'quit' BUKAN teks layar: itu nilai protokol yang DIKIRIM KLIEN (Ui.java answerDialog) dan dibandingkan player.lua untuk membalik halaman dialog. Menerjemahkannya membuat SELURUH dialog NPC tidak bisa dibalik halamannya — ketahuan oleh scripttest, bukan oleh alat terjemahan.",
+ "nama": [
+  "Armor of the Winds",
+  "Suit of invisibility",
+  "Scroll of Protection",
+  "Scroll of Invocation",
+  "Scroll of Defense",
+  "Scroll of Immortality",
+  "Juk-do",
+  "Will",
+  "Mail dress",
+  "Armor dress",
+  "Rogue's armor",
+  "Gold ore",
+  "Giasomo stick (20,000 gold)",
+  "Frozen spear (400,000 gold)",
+  "Wasabi (5000 gold)",
+  "Super Wasabi (12000 gold)",
+  "Brown (1000 gold)",
+  "5 Gold acorns",
+  "Harden body spell",
+  "next",
+  "previous",
+  "quit"
+ ]
+}

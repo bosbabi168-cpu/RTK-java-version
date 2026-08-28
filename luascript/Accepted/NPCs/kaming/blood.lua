@@ -11,14 +11,14 @@ BloodNpc = {
 
 		local spells = {"slash_warrior"}
 
-		local opts = {"Buy", "Sell", "Forget Secret"}
+		local opts = {"Beli", "Jual", "Forget Secret"}
 
 		if player:hasLegend("forged_blood_oath") and not player:hasLegend("engaged") and not player:hasLegend("married") then
 			table.insert(opts, "Break Off Blood Oath")
 		end
 
 		if not player:hasLegend("forged_blood_oath") and not player:hasLegend("sealed_blood_oath") and not player:hasLegend("married") and not player:hasLegend("engaged") and player.partner == 0 then
-			table.insert(opts, "Make blood oath")
+			table.insert(opts, "Ikat sumpah darah")
 		end
 
 		if player:hasLegend("forged_blood_oath") and not player:hasLegend("married") and not player:hasLegend("engaged") and player.partner == 0 then
@@ -30,63 +30,63 @@ BloodNpc = {
 		end
 
 		if player.baseClass == 1 then
-			table.insert(opts, "Learn Spell")
+			table.insert(opts, "Pelajari Mantra")
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 		local choice2 = ""
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				BloodNpc.buyItems()
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				BloodNpc.sellItems()
 			)
 		elseif choice == "Forget Secret" then
 			player:forgetSpell(npc)
-		elseif choice == "Learn Spell" then
+		elseif choice == "Pelajari Mantra" then
 			player:learnSpecificSpells(npc, spells)
-		elseif choice == "Make blood oath" then
+		elseif choice == "Ikat sumpah darah" then
 			player:dialogSeq(
 				{
 					t,
-					"So, you'd like to make a commitment to another person by the mixing of each other's blood? You've come to the right place."
+					"Jadi kau ingin mengikat janji dengan orang lain lewat percampuran darah? Kau datang ke tempat yang tepat."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"This ritual dates back centuries and is not for the faint of heart, coming with some significant costs and risks. But hey, don't let that stop you from showing someone you care."
+					"Ritual ini berumur berabad-abad dan bukan untuk yang berhati lemah; ongkos dan risikonya besar. Tapi jangan sampai itu menghalangimu menunjukkan kepedulian pada seseorang."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"If you are willing to part with some gold, I can help you out."
+					"Kalau kau rela melepas sedikit emas, aku bisa membantumu."
 				},
 				1
 			)
 			choice2 = player:menuString(
-				"Are you willing to willing to give 1,000 gold in search of knowledge of the ritual?",
-				{"Yes, I want this.", "No, I've changed my mind."},
+				"Bersediakah kau memberikan 1.000 emas demi pengetahuan tentang ritual ini?",
+				{"Ya, aku mau ini.", "Tidak, aku berubah pikiran."},
 				{}
 			)
 
-			if choice2 == "Yes, I want this." then
+			if choice2 == "Ya, aku mau ini." then
 				if player.money < 1000 then
 					player:dialogSeq(
 						{
 							t,
-							"Knowledge of the ritual does come with a cost and it must be paid before I am willing to share this knowledge. If you'd still like to learn, please return to me when you have enough gold."
+							"Pengetahuan tentang ritual ini ada harganya, dan harus dibayar sebelum aku bersedia membagikannya. Kalau kau masih ingin belajar, kembalilah kepadaku kalau emasmu sudah cukup."
 						},
 						0
 					)
@@ -101,16 +101,16 @@ BloodNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"I've just provided you with the knowledge you need to begin the ritual and I wish you the best of luck. The ritual is not easy."
+						"Aku baru saja memberimu pengetahuan yang kau butuhkan untuk memulai ritual, dan kudoakan kau beruntung. Ritual ini tidak mudah."
 					},
 					0
 				)
 				return
-			elseif choice2 == "No, I've changed my mind." then
+			elseif choice2 == "Tidak, aku berubah pikiran." then
 				player:dialogSeq(
 					{
 						t,
-						"Fortunately, such a commitment is not for everyone and it is better you are realizing this now instead of later after you have mixed your blood."
+						"Untungnya janji semacam ini tidak untuk semua orang, dan lebih baik kau menyadarinya sekarang daripada nanti setelah darah kalian tercampur."
 					},
 					0
 				)
@@ -121,7 +121,7 @@ BloodNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have forged your blood oath recently. Please return in " .. playerTimerValues(
+						"Kau baru saja mengikat sumpah darahmu. Kembalilah dalam " .. playerTimerValues(
 							player,
 							"seal_blood_oath_timer"
 						)
@@ -138,7 +138,7 @@ BloodNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Both parties must be present for the ceremony to commence"
+						"Kedua pihak harus hadir agar upacaranya bisa dimulai"
 					},
 					0
 				)
@@ -147,7 +147,7 @@ BloodNpc = {
 
 			if proposer:hasLegend("married") or player:hasLegend("engaged") then
 				player:dialogSeq(
-					{t, "That person is already engaged or married."},
+					{t, "Orang itu sudah bertunangan atau menikah."},
 					0
 				)
 				return
@@ -155,7 +155,7 @@ BloodNpc = {
 
 			if proposer:hasLegend("sealed_blood_oath") then
 				player:dialogSeq(
-					{t, "That person is already part of a blood union."},
+					{t, "Orang itu sudah menjadi bagian dari ikatan darah."},
 					0
 				)
 				return
@@ -164,15 +164,15 @@ BloodNpc = {
 			if player.registry["partner2"] ~= player.ID then
 				-- this logic returns true if player accessing menu is the person who orignally proposed the marriage
 				player:dialogSeq(
-					{t, "The proposee should start the blood oath ceremony."},
+					{t, "Yang dilamar yang harus memulai upacara sumpah darah."},
 					0
 				)
 				return
 			end
 
 			local choice = player:menuSeq(
-				"Are you certain you wish to devote yourself to this man or woman for life?",
-				{"Yes", "No"},
+				"Kau yakin ingin mengabdikan diri kepada lelaki atau perempuan ini seumur hidup?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -184,7 +184,7 @@ BloodNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Come back when you are firm in your resolve to join blood."
+						"Kembalilah kalau tekadmu menyatukan darah sudah bulat."
 					},
 					0
 				)
@@ -193,16 +193,16 @@ BloodNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"How sad this is necessary. At least you reached this decision before sealing your oath."
+					"Sedih sekali ini harus terjadi. Setidaknya kau sampai pada keputusan ini sebelum sumpahmu dimeteraikan."
 				},
 				1
 			)
 
 			local var = player:menuSeq(
-				"Are you sure you want to end the engagement?",
+				"Kau yakin ingin membatalkan pertunangan ini?",
 				{
-					"Yes, it is necessary (You will lose some XP)",
-					"No, I need to consider further."
+					"Ya, itu perlu (Kau akan kehilangan sebagian XP)",
+					"Tidak, aku perlu berpikir lagi."
 				},
 				{}
 			)
@@ -224,34 +224,34 @@ BloodNpc = {
 				player.registry["partner1"] = 0
 				player.registry["partner2"] = 0
 				player:sendStatus()
-				player:dialogSeq({t, "It is done."}, 0)
+				player:dialogSeq({t, "Sudah selesai."}, 0)
 				return
 			elseif var == 2 then
-				player:dialogSeq({t, "I hope you can salvage your bond."}, 0)
+				player:dialogSeq({t, "Kuharap ikatan kalian masih bisa diselamatkan."}, 0)
 				return
 			end
 		elseif choice == "Unseal Blood Oath" then
 			player:dialogSeq(
 				{
 					t,
-					"Oh no! You made a horrible mistake!",
-					"However, I can help you remove your blood bond."
+					"Aduh! Kau membuat kesalahan besar!",
+					"Namun aku bisa membantumu memutus ikatan darahmu."
 				},
 				1
 			)
 
 			local expCost = player.baseHealth * 2550
 			local confirm = player:menuString(
-				"It will cost " .. Tools.formatNumber(expCost) .. " experience. Are you sure you want to break your blood bond?",
-				{"Yes", "No"}
+				"Biayanya " .. Tools.formatNumber(expCost) .. " pengalaman. Kau yakin ingin memutus ikatan darahmu?",
+				{"Ya", "Tidak"}
 			)
 
-			if confirm == "Yes" then
+			if confirm == "Ya" then
 				if player.exp < expCost then
 					player:dialogSeq(
 						{
 							t,
-							"Hmmm.. you don't have the experience to break your blood bond, but there is something else you can offer."
+							"Hmmm.. pengalamanmu tidak cukup untuk memutus ikatan darahmu, tetapi ada hal lain yang bisa kau tawarkan."
 						},
 						1
 					)
@@ -261,11 +261,11 @@ BloodNpc = {
 					local stat = ""
 
 					local choice2 = player:menuSeq(
-						"Perhaps some physical suffering would be sufficient?",
+						"Mungkin penderitaan jasmani sudah cukup?",
 						{
 							"Sacrifice " .. vitaPenalty .. " Vita",
 							"Sacrifice " .. manaPenalty .. " Mana",
-							"I'd rather not."
+							"Aku lebih baik tidak."
 						},
 						{}
 					)
@@ -280,8 +280,8 @@ BloodNpc = {
 					end
 
 					local confirm2 = player:menuSeq(
-						"It will cost you " .. Tools.formatNumber(penalty) .. " base " .. stat .. " as a penalty. Continue?",
-						{"Yes, do it", "No, nevermind"},
+						"Harganya " .. Tools.formatNumber(penalty) .. " base " .. stat .. " sebagai hukuman. Lanjutkan?",
+						{"Ya, lakukan", "Tidak, lupakan saja"},
 						{}
 					)
 
@@ -290,7 +290,7 @@ BloodNpc = {
 							player:dialogSeq(
 								{
 									t,
-									"You need to gain more experience in your health before you can make this sacrifice."
+									"Kau perlu lebih banyak pengalaman pada kesehatanmu sebelum bisa berkorban seperti ini."
 								},
 								0
 							)
@@ -301,7 +301,7 @@ BloodNpc = {
 							player:dialogSeq(
 								{
 									t,
-									"You need to gain more experience in your magic before you can make this sacrifice."
+									"Kau perlu lebih banyak pengalaman pada sihirmu sebelum bisa berkorban seperti ini."
 								},
 								0
 							)
@@ -324,7 +324,7 @@ BloodNpc = {
 						player:calcStat()
 
 						player:dialogSeq(
-							{t, "You are now free of a blood bond."},
+							{t, "Kau kini terbebas dari ikatan darah."},
 							0
 						)
 						return
@@ -333,8 +333,8 @@ BloodNpc = {
 					return
 				elseif player.exp >= expCost then
 					local confirmXPLoss = player:menuSeq(
-						"It will cost you " .. Tools.formatNumber(expCost) .. " experience as a penalty. Continue?",
-						{"Yes, do it", "No, nevermind"},
+						"Harganya " .. Tools.formatNumber(expCost) .. " pengalaman sebagai hukuman. Lanjutkan?",
+						{"Ya, lakukan", "Tidak, lupakan saja"},
 						{}
 					)
 
@@ -345,17 +345,17 @@ BloodNpc = {
 						player:removeLegendbyName("sealed_blood_oath")
 						player:removeItem("blood_stone", 1)
 						player:dialogSeq(
-							{t, "You are now free of a blood bond."},
+							{t, "Kau kini terbebas dari ikatan darah."},
 							0
 						)
 						return
 					end
 				end
-			elseif confirm == "No" then
+			elseif confirm == "Tidak" then
 				player:dialogSeq(
 					{
 						t,
-						"Patience and love will save your blood bond.\n\nBreaking your blood bond is not something to take lightly."
+						"Kesabaran dan kasih akan menyelamatkan ikatan darahmu.\n\nMemutus ikatan darah bukan perkara sepele."
 					},
 					0
 				)
@@ -366,17 +366,17 @@ BloodNpc = {
 
 	sealbloodoath = async(function(proposer, proposee)
 		local choice = proposer:menuSeq(
-			"Do you, " .. proposer.name .. " wish to join your blood with " .. proposee.name .. "?",
+			"Bersediakah kau, " .. proposer.name .. " ingin menyatukan darahmu dengan " .. proposee.name .. "?",
 			{
-				"I do. (you will lose much xp if you break this blood bond)",
-				"I don't."
+				"Aku bersedia. (kau akan kehilangan banyak xp kalau memutus ikatan darah ini)",
+				"Aku tidak bersedia."
 			},
 			{}
 		)
 
 		if choice == 1 then
-			proposer:sendMinitext("You are now bound by blood with " .. proposee.name)
-			proposee:sendMinitext("You are now bound by blood with " .. proposer.name)
+			proposer:sendMinitext("Kau kini terikat darah dengan " .. proposee.name)
+			proposee:sendMinitext("Kau kini terikat darah dengan " .. proposer.name)
 
 			proposer:removeLegendbyName("forged_blood_oath")
 			proposee:removeLegendbyName("forged_blood_oath")
@@ -433,18 +433,18 @@ BloodNpc = {
 			proposee:addItem("blood_stone", 1)
 
 			proposer:dialog(
-				"Congratulations you are both now blood siblings.",
+				"Selamat, kalian berdua kini bersaudara darah.",
 				{}
 			)
 			proposee:dialog(
-				"Congratulations you are both now blood siblings.",
+				"Selamat, kalian berdua kini bersaudara darah.",
 				{}
 			)
 
 			proposee:sendStatus()
 			proposer:sendStatus()
 		elseif choice == 2 then
-			proposer:sendMinitext("It seems that your partner is not sure of blood union.")
+			proposer:sendMinitext("Sepertinya pasanganmu belum yakin pada ikatan darah ini.")
 		end
 	end),
 
@@ -472,7 +472,7 @@ BloodNpc = {
 
 			if player:hasLegend("defeated_ice_beast") == true then
 				player:dialogSeq(
-					{t, "\"I hope you have found your Frost sabre useful!\""},
+					{t, "\"Semoga Frost sabre-mu berguna!\""},
 					1
 				)
 				return
@@ -483,8 +483,8 @@ BloodNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"The Sonhi looks surprised. \"I do not know how one as wimpy as you could defeat an Ice beast, but somehow you have triumphed.\"",
-							"\"As promised, I will forge you a Frost sabre.\""
+							"Sonhi itu tampak terkejut. \"Aku tidak tahu bagaimana orang selemah kau bisa mengalahkan Ice beast, tetapi entah bagaimana kau menang.\"",
+							"\"Seperti yang kujanjikan, akan kutempakan Frost sabre untukmu.\""
 						},
 						1
 					)
@@ -492,7 +492,7 @@ BloodNpc = {
 					player:addItem("frost_sabre", 1, 0, player.ID)
 					player:giveXP(2300)
 					player:addLegend(
-						"Defeated the Ice beast (" .. curT() .. ")",
+						"Mengalahkan Ice beast (" .. curT() .. ")",
 						"defeated_ice_beast",
 						5,
 						128
@@ -504,7 +504,7 @@ BloodNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The Sonhi seems to be suppressing laughter. \"Bring me an Ice heart and I will make you a Frost sabre.\""
+						"Sonhi itu tampak menahan tawa. \"Bawakan aku Ice heart dan akan kubuatkan Frost sabre untukmu.\""
 					},
 					0
 				)
@@ -514,8 +514,8 @@ BloodNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Sonhi grins. \"Ice Beast, eh? You must be after a Frost sabre.\"",
-					"\"You have heard of the Frost sabre, haven't you? No? Then let me tell you what you are missing.\""
+					"Sonhi itu menyeringai. \"Ice Beast, ya? Kau pasti mengincar Frost sabre.\"",
+					"\"Kau pernah dengar tentang Frost sabre, kan? Belum? Kalau begitu biar kuceritakan apa yang kau lewatkan.\""
 				},
 				1
 			)
@@ -523,9 +523,9 @@ BloodNpc = {
 			player:dialogSeq(
 				{
 					tfrostsabre,
-					"\"Though only a modest weapon, the Frost sabre has many great powers.\"",
-					"\"When you die, it will not leave your side. When it is worn, it can be repaired with ease. In combat, sometimes it chills your foe, making them easier to hit.\"",
-					"\"Perhaps most impressive is that only YOU will be able to wield your Forst sabre if it is crafted for you.\nUnfortunately, very, very few know how to make one.\""
+					"\"Meski hanya senjata sederhana, Frost sabre punya banyak kekuatan hebat.\"",
+					"\"Saat kau mati, ia tidak meninggalkanmu. Saat aus, ia mudah diperbaiki. Dalam pertempuran, kadang ia membekukan musuhmu sehingga lebih mudah dikenai.\"",
+					"\"Yang mungkin paling mengesankan: hanya KAU yang bisa memakai Frost sabre-mu kalau ia ditempa untukmu.\nSayangnya sangat, sangat sedikit yang tahu cara membuatnya.\""
 				},
 				1
 			)
@@ -533,21 +533,21 @@ BloodNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"\"I know what you are thinking. Yes, I know how to craft a Frost sabre. I can see in your eyes that you are eager for one aren't you?\""
+					"\"Aku tahu apa yang kau pikirkan. Ya, aku tahu cara membuat Frost sabre. Dari matamu kelihatan kau sangat menginginkannya, bukan?\""
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"\"For a mere 100 gold, I will forge you one if you bring me the item needed to make one. Will you pay?\"",
-				{"Yes, I want a Frost sabre.", "No, I'll keep my money."},
+				"\"Hanya dengan 100 emas akan kutempakan satu untukmu, asal kau membawakan bahan yang diperlukan. Kau mau membayar?\"",
+				{"Ya, aku mau Frost sabre.", "Tidak, uangku kusimpan saja."},
 				{}
 			)
 
 			if choice == 1 then
 				if player.money < 100 then
 					player:dialogSeq(
-						{t, "Come back when you have more gold."},
+						{t, "Kembalilah kalau emasmu lebih banyak."},
 						1
 					)
 					return
@@ -559,9 +559,9 @@ BloodNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"\"To forge it, I will need the Ice heart of a mighty and wicked Ice Beast.\"",
-						"\"Where do you find an Ice Beast? I wouldn't know. We Sonhi aren't from this area. Perhaps one who has dwelt here a long time would know.\"",
-						"As you are leaving, you hear the Sonhi captain chuckle to himself, \"Even if the fool finds an Ice beast, they'll surely die. An easy 100 gold, heh, heh.\""
+						"\"Untuk menempanya aku butuh Ice heart dari Ice Beast yang perkasa dan jahat.\"",
+						"\"Di mana mencari Ice Beast? Aku tidak tahu. Kami orang Sonhi bukan dari daerah ini. Mungkin yang sudah lama tinggal di sini tahu.\"",
+						"Saat kau pergi, kau mendengar kapten Sonhi terkekeh sendiri, \"Sekalipun si tolol itu menemukan Ice beast, ia pasti mati. Seratus emas yang mudah, heh, heh.\""
 					},
 					0
 				)
@@ -569,7 +569,7 @@ BloodNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"\"As you wish... I suppose I will make a Frost sabre for another then.\""
+						"\"Terserah kau... kalau begitu kurasa Frost sabre-nya akan kubuat untuk orang lain.\""
 					},
 					1
 				)
@@ -585,7 +585,7 @@ BloodNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Uhh... I really have no idea what you are talking about."
+							"Ehh... aku sungguh tidak paham apa yang kau bicarakan."
 						},
 						0
 					)
@@ -597,14 +597,14 @@ BloodNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Eh? Who told you about the seal? Nevermind, I think I know, it was that loud mouth Sya.",
-							"Gah! Not her fault I guess, I should learn to keep my mouth shut.",
-							"It's not even my secret to share, the seal is in the hands of another.",
-							"I shouldn't even be telling you this, but my mouth, it just gets me into more and more trouble.",
-							"That's probably why KaMing left me here to rot with you ugly townie...",
-							"Yes, well, anyways... he left me... here.",
-							"Tell you what - I teach many the secrets of the Frost sabre, but it has been my dream for a long time to own one myself.",
-							"If you were to bring me one, I will tell you who has it, and how to get it from them!"
+							"Eh? Siapa yang memberitahumu tentang segel itu? Sudahlah, kurasa aku tahu; pasti si mulut besar Sya.",
+							"Gah! Kurasa itu bukan salahnya, aku yang harus belajar tutup mulut.",
+							"Rahasia itu bahkan bukan milikku untuk dibagikan; segelnya ada di tangan orang lain.",
+							"Seharusnya aku tidak menceritakan ini padamu, tetapi mulutku ini selalu menyeretku ke masalah baru.",
+							"Mungkin itu sebabnya KaMing meninggalkanku membusuk di sini bersama orang kota jelek sepertimu...",
+							"Ya, yah, pokoknya... ia meninggalkanku... di sini.",
+							"Begini saja - aku mengajarkan rahasia Frost sabre kepada banyak orang, tetapi sudah lama aku bermimpi memiliki satu untuk diriku sendiri.",
+							"Kalau kau membawakan satu untukku, akan kuberitahu siapa pemegangnya dan bagaimana cara mendapatkannya!"
 						},
 						0
 					)
@@ -615,7 +615,7 @@ BloodNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"I am still waiting for that frost sabre before I can tell you more about the seal."
+								"Aku masih menunggu frost sabre itu sebelum bisa bercerita lebih jauh tentang segelnya."
 							},
 							0
 						)
@@ -628,13 +628,13 @@ BloodNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"This is one fine sabre! Thank you so much for getting it to me.",
-							"I don't care who owns it, I will never wield it, but to have this in my collection is such an honor",
-							"Well, as promised, the information you seek. Gan was once the personal blacksmith to KaMing himself.",
-							"Once when KaMing dropped off his armor to be repaired after battle, Gan found the seal inside once of the folds.",
-							"He kept it to one side to return it to KaMing, but KaMing never returned for the armor.",
-							"You should talk to him about it, but don't mention the seal, he won't give it to you out right.",
-							"You will need to find another way to get him to talk about it."
+							"Ini sabre yang bagus sekali! Terima kasih banyak sudah membawakannya.",
+							"Aku tidak peduli siapa pemiliknya, aku tidak akan pernah memakainya, tetapi memiliki benda ini dalam koleksiku adalah kehormatan",
+							"Nah, seperti yang dijanjikan, inilah keterangan yang kau cari. Gan dulu pandai besi pribadi KaMing sendiri.",
+							"Suatu kali ketika KaMing menitipkan zirahnya untuk diperbaiki seusai pertempuran, Gan menemukan segel itu di salah satu lipatannya.",
+							"Ia menyimpannya untuk dikembalikan kepada KaMing, tetapi KaMing tidak pernah datang mengambil zirah itu.",
+							"Sebaiknya kau bicarakan itu dengannya, tetapi jangan sebut segelnya; ia tidak akan langsung menyerahkannya.",
+							"Kau harus mencari cara lain supaya ia mau membicarakannya."
 						},
 						0
 					)
@@ -644,7 +644,7 @@ BloodNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Thanks again for the frost sabre. Don't forget to visit Gan."
+							"Sekali lagi terima kasih frost sabre-nya. Jangan lupa menemui Gan."
 						},
 						0
 					)

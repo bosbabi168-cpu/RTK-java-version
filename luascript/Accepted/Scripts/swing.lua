@@ -1282,7 +1282,7 @@ bowAttack = function(player)
 				if player:canPK(check[1]) then
 					check[1].attacker = player.ID
 					check[1]:removeHealthExtend(damage, 1, 1, 1, 1, 0)
-					check[1]:sendMinitext(player.name .. " hit you with an arrow.")
+					check[1]:sendMinitext(player.name .. " memanahmu.")
 				end
 			end
 			if #check2 > 0 then

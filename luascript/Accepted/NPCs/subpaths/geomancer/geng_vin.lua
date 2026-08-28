@@ -9,7 +9,7 @@ NpcSubpathGeomancerGengVinNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell", "Geng Vin's Welcome"}
+		local opts = {"Beli", "Jual", "Geng Vin's Welcome"}
 
 		local buysellopts = {
 			"rabbit_meat",
@@ -20,14 +20,14 @@ NpcSubpathGeomancerGengVinNpc = {
 			"tigers_heart"
 		}
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buysellopts
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				buysellopts
@@ -36,9 +36,9 @@ NpcSubpathGeomancerGengVinNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Hello and welcome to the House of Chi. The Geomancers have allowed me to reside here in this Hallowed Pass and rest from my journeys in the West. In return I help protect their home.",
-					"Feel free to step inside and have a look around, perhaps even grab a Shu Jing. I would give you one myself, but the Earths Dragon and I don't always see eye to eye. I'm quick, but he's quicker...",
-					"If you're hungry I am always willing to share the spoils of my hunts. Being a predator at the top...*glances inside the House of Chi* ..near the top has its advantages."
+					"Halo dan selamat datang di House of Chi. Para Geomancer mengizinkanku tinggal di Hallowed Pass ini dan beristirahat dari perjalananku di Barat. Sebagai gantinya aku membantu menjaga rumah mereka.",
+					"Silakan masuk dan lihat-lihat, mungkin sekalian ambil satu Shu Jing. Aku ingin memberikannya sendiri, tetapi aku dan Naga Bumi tidak selalu sepaham. Aku cepat, tetapi ia lebih cepat...",
+					"Kalau kau lapar, aku selalu bersedia berbagi hasil buruanku. Menjadi pemangsa di puncak...*melirik ke dalam House of Chi* ..dekat puncak, ada untungnya."
 				},
 				0
 			)
@@ -50,7 +50,7 @@ NpcSubpathGeomancerGengVinNpc = {
 		local random = math.random(1, 15)
 
 		if random == 1 then
-			npc:talk(0, npc.name .. ": Welcome to the House of Chi")
+			npc:talk(0, npc.name .. ": Selamat datang di House of Chi")
 		end
 	end,
 

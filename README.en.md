@@ -16,7 +16,7 @@ Since 26 August 2026 this project **no longer pursues byte-per-byte
 compatibility** with the RetroTK client. What applies now:
 
 - **Our own protocol (RTK2)** — bidirectional, designed from the real
-  needs of the scripts: 29 inbound opcodes, 48 outbound events. Spec:
+  needs of the scripts: 43 inbound opcodes, 54 outbound events. Spec:
   [`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md).
 - **Our own client (libGDX)** — developed in the separate repo
   `../RTK-client`, not committed until every asset is replaced with our
@@ -44,8 +44,13 @@ writing a new adapter, not touching the logic.
   mutable at runtime.
 - **Scripting**: 906/906 scripts load with 0 errors; binding gaps **0**
   (the only remainder is `testPacket`, deliberately not ported).
-- **Testing**: 8 offline regression gates (824 `cliftest` assertions,
-  234 `dbtest`) + the real-client gate `livetest` (89 checks).
+- **Testing**: 8 offline regression gates (903 `cliftest` assertions,
+  234 `dbtest`) + the real-client gate `livetest` (155 checks; **167** on a
+  two-map-server setup, `./tools/uji-dua-server.sh`).
+  36 of 43 RTK2 opcodes have now actually been sent by a real client.
+- **Indonesian translation**: COMPLETE — 0 of 9,812 dialogue points are
+  still English; `livetest` asserts that the dialogue reaching the player
+  is Indonesian.
 
 For the remaining work, see the **ROADMAP in [CLAUDE.md](CLAUDE.md)**
 (written in Indonesian).
@@ -152,21 +157,25 @@ MySQL 8.0.
 
 Item/mob/NPC name translations are done in the `*Description` columns
 (`database/terjemahan/`) — **not** in the Lua scripts, because names in
-scripts are identifiers.
+scripts are identifiers. The dialogue text itself is **fully translated**
+(0 of 9,812 points left); the tooling and catalogue live in
+`tools/terjemahan/`, the rules in
+[`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Testing — nine gates
 
 | Gate | Tests | Notes |
 |---|---|---|
-| `scripttest` | 906 Lua scripts + dialog coroutines | |
+| `scripttest` | 906 Lua scripts + dialog coroutines + world calendar | |
 | `maptest` | 3,544 map files | |
 | `chartest` | character serialization | |
 | `worldtest` | map world + player placement | |
-| `cliftest` | packets, RTK2 protocol, every subsystem | 824 assertions |
+| `cliftest` | packets, RTK2 protocol, every subsystem | 903 assertions |
 | `dbtest` | database layer against live MySQL | 234 assertions; needs MySQL |
 | `luaaudit` | static checker for 907 scripts + binding gaps | `-Drtk.audit.penuh=true` for the full list |
 | `wiresync` | `Wire.java` identical to the client repo copy | skips itself if the client repo is absent |
-| `livetest` | a **real RTK2 client** enters the world + 89 checks | run from `../RTK-client` |
+| `livetest` | a **real RTK2 client** enters the world + 155 checks | run from `../RTK-client` |
+| `tools/uji-dua-server.sh` | player transfer between map servers (R3/C3) | 167 checks; sets up and restores its own fixture |
 
 The first eight gates are offline — they test the code against itself and
 cannot see "something that did not happen". That is why every new
@@ -187,7 +196,7 @@ terminology in [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 28 August 2026:** 8/8 offline gates green, `livetest` 89 checks
+**Status 28 August 2026:** 8/8 offline gates green, `livetest` 155 checks
 green, RTK2 protocol symmetric in both directions, binding gaps 0,
 `map.log` 0 ERROR/WARN. The main blocker is now on the client side
 (`../RTK-client`) — the server already sends more than the client can
@@ -197,7 +206,7 @@ The roadmap toward "a server that runs normally and smoothly with no
 bugs" — including the table of player actions that still lack an RTK2
 inbound path — is in
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Traps & lessons #1–#102 are in
+Traps & lessons #1–#122 are in
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)** (Indonesian).
 
 ## Folder structure

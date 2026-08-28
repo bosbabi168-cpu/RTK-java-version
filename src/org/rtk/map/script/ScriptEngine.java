@@ -471,22 +471,17 @@ public final class ScriptEngine {
         set("realMinute", args -> LuaValue.valueOf(Calendar.getInstance().get(Calendar.MINUTE)));
         set("realHour", args -> LuaValue.valueOf(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)));
         set("realDay", args -> LuaValue.valueOf(Calendar.getInstance().get(Calendar.DAY_OF_MONTH)));
-        set("curDay", args -> LuaValue.valueOf(Calendar.getInstance().get(Calendar.DAY_OF_MONTH)));
-        set("curYear", args -> LuaValue.valueOf(Calendar.getInstance().get(Calendar.YEAR)));
-        set("curTime", args -> {
-            Calendar c = Calendar.getInstance();
-            return LuaValue.valueOf(c.get(Calendar.HOUR_OF_DAY) * 100 + c.get(Calendar.MINUTE));
-        });
-        // TODO: game seasons come from the in-game calendar once map.c is
-        // ported; approximated with real months for now
-        set("curSeason", args -> {
-            int month = Calendar.getInstance().get(Calendar.MONTH); // 0..11
-            return LuaValue.valueOf((month / 3) % 4 + 1);
-        });
-        // ⚠️ Nilai TETAP, bukan stub — jadi ia tidak muncul di laporan stub
-        // LuaAudit. Server tunggal, jadi 0 memang jawaban yang benar untuk
-        // sekarang; kalau nanti ada lebih dari satu map server, ini berbohong.
-        set("curServer", args -> LuaValue.valueOf(0));
+        // ⚠️ curDay/curYear/curTime/curSeason menjawab dari kalender
+        // DUNIA (R2), bukan jam dinding — hanya keluarga real* yang memakai
+        // waktu sungguhan. Port ini sempat mencampurnya, dan skrip musiman
+        // jadi menyala menurut bulan komputer.
+        set("curDay", args -> LuaValue.valueOf(org.rtk.map.WorldTime.day));
+        set("curYear", args -> LuaValue.valueOf(org.rtk.map.WorldTime.year));
+        set("curTime", args -> LuaValue.valueOf(org.rtk.map.WorldTime.hour));
+        set("curSeason", args -> LuaValue.valueOf(org.rtk.map.WorldTime.season));
+        // curserver(): id server ini, dari conf/map.conf (R2). Dulu tetap 0
+        // — benar untuk satu server, berbohong begitu ada yang kedua.
+        set("curServer", args -> LuaValue.valueOf(org.rtk.map.MapServer.serverId));
 
         set("timeMS", args -> LuaValue.valueOf(System.currentTimeMillis()));
         // getWarp(m, x, y): apakah petak ini portal? Mengembalikan
@@ -513,24 +508,36 @@ public final class ScriptEngine {
             }
             int x = args.optint(2, 0);
             int y = args.optint(3, 0);
-            if (x > md.xs - 1 || y > md.ys - 1) {
+            if (diLuar(md, x, y)) {
                 return LuaValue.valueOf(1);
             }
             return LuaValue.valueOf(md.pass(x, y));
         });
+        // ⚠️ getObject/getTile TIDAK BOLEH MELEMPAR untuk petak di luar
+        // peta. Di C keduanya mengindeks larik tanpa pemeriksaan batas
+        // (`map[m].obj[x + y * xs]`), jadi membaca sepetak di luar tepi
+        // hanya menghasilkan angka tetangga — tidak ada yang mati. Di sini
+        // MapFile.index() melempar, dan pengecualian itu MEMBUNUH skripnya.
+        // Skrip yang memeriksa petak di depan pemain (scripts.lua:265)
+        // melakukannya setiap kali pemain berdiri di tepi peta, dan
+        // seluruh kait `onLook` di sana ikut gagal.
         set("getObject", args -> {
             var md = org.rtk.map.MapServer.world.get(args.optint(1, -1));
+            int x = args.optint(2, 0);
+            int y = args.optint(3, 0);
             if (md == null) {
                 return LuaValue.NONE;
             }
-            return LuaValue.valueOf(md.obj(args.optint(2, 0), args.optint(3, 0)));
+            return LuaValue.valueOf(diLuar(md, x, y) ? 0 : md.obj(x, y));
         });
         set("getTile", args -> {
             var md = org.rtk.map.MapServer.world.get(args.optint(1, -1));
+            int x = args.optint(2, 0);
+            int y = args.optint(3, 0);
             if (md == null) {
                 return LuaValue.NONE;
             }
-            return LuaValue.valueOf(md.tile(args.optint(2, 0), args.optint(3, 0)));
+            return LuaValue.valueOf(diLuar(md, x, y) ? 0 : md.tile(x, y));
         });
 
         // sl_getMapRegistry / sl_setMapRegistry: registry per peta.
@@ -584,20 +591,52 @@ public final class ScriptEngine {
             log.info("[gmbroadcast] {}", args.optjstring(1, ""));
             return LuaValue.NONE;
         });
-        // ⚠️ Nilai TETAP, bukan stub — tidak terlihat di laporan stub
-        // LuaAudit. Tidak dipakai satu pun skrip saat ini (0x), jadi
-        // dibiarkan; kalau mulai dipakai, ia akan menjawab "tidak online"
-        // untuk semua orang tanpa memberi tanda apa pun.
-        set("checkOnline", args -> LuaValue.valueOf(0));
+        /**
+         * checkonline(): berapa karakter yang sedang online (R2).
+         *
+         * <p>Tiga ragam, persis seperti C: angka &gt; 0 memeriksa satu id,
+         * teks kosong menghitung seluruh pemain BUKAN-GM, dan teks berisi
+         * memeriksa satu nama. Jawabannya jumlah baris, bukan boolean.</p>
+         */
+        set("checkOnline", args -> {
+            var sql = org.rtk.map.MapServer.sql;
+            if (sql == null) {
+                return LuaValue.valueOf(0);
+            }
+            Integer n;
+            if (args.arg(1).isnumber() && args.optint(1, 0) > 0) {
+                n = sql.queryInt("SELECT COUNT(*) FROM `Character` "
+                        + "WHERE `ChaOnline` = 1 AND `ChaId` = ?", args.optint(1, 0));
+            } else {
+                String nama = args.optjstring(1, "");
+                if (nama.isEmpty()) {
+                    n = sql.queryInt("SELECT COUNT(*) FROM `Character` "
+                            + "WHERE `ChaOnline` = 1 AND `ChaGMLevel` = 0");
+                } else {
+                    n = sql.queryInt("SELECT COUNT(*) FROM `Character` "
+                            + "WHERE `ChaOnline` = 1 AND `ChaName` = ?", nama);
+                }
+            }
+            return LuaValue.valueOf(n == null ? 0 : n);
+        });
         set("throw", args -> {
             throw new LuaError(args.optjstring(1, "script error"));
         });
         set("luaReload", args -> LuaValue.valueOf(reload()));
-        // ⚠️ Nilai TETAP, bukan stub — tidak terlihat di laporan stub
-        // LuaAudit, padahal dipakai 12x. Tabel levelnya SUDAH ada di
-        // MapServer.classDb (dari db/level_db.txt); tinggal disambungkan.
-        // Lihat butir 1d roadmap.
-        set("getXPforLevel", args -> LuaValue.valueOf(0));
+        /**
+         * sl_getXPforLevel(path, level) (R2): pengalaman yang dibutuhkan
+         * untuk satu tingkat. ⚠️ {@code path > 5} adalah <b>kelas</b>, dan
+         * C menerjemahkannya lebih dulu lewat {@code classdb_path} —
+         * memakainya mentah membaca baris tabel yang salah.
+         */
+        set("getXPforLevel", args -> {
+            int path = args.optint(1, 0);
+            int level = args.optint(2, 0);
+            if (path > 5) {
+                path = org.rtk.map.MapServer.classDb.pathOf(path);
+            }
+            return LuaValue.valueOf(org.rtk.map.MapServer.classDb.level(path, level));
+        });
 
         // Global yang menyentuh dunia: peta, cuaca, klan, papan, lelang.
         // Dulu 59 di antaranya stub — lihat WorldBindings dan Peringatan #73.
@@ -654,6 +693,11 @@ public final class ScriptEngine {
      * Daftarkan satu global. Package-private supaya {@link WorldBindings}
      * bisa memakainya tanpa membuat {@code ScriptEngine} membengkak.
      */
+    /** Petak di luar batas peta — termasuk koordinat negatif. */
+    private static boolean diLuar(org.rtk.map.data.MapData md, int x, int y) {
+        return x < 0 || y < 0 || x > md.xs - 1 || y > md.ys - 1;
+    }
+
     void set(String name, JavaFunc f) {
         globals.set(name, new VarArgFunction() {
             @Override

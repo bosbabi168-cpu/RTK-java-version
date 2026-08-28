@@ -6,7 +6,7 @@ restore_poet = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		target.attacker = player.ID
@@ -18,7 +18,7 @@ restore_poet = {
 		target:sendStatus()
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:sendMinitext("You cast Restore.")
+		player:sendMinitext("Kau merapal Restore.")
 	end,
 	requirements = function(player)
 		local level = 99

@@ -1,7 +1,7 @@
 # CLAUDE.md — RTK-java-version
 
 Panduan sesi pengembangan. Baca file ini SEBELUM mengubah kode; README.md
-untuk gambaran lengkap; **`docs/PERINGATAN.md` untuk 102 jebakan yang sudah
+untuk gambaran lengkap; **`docs/PERINGATAN.md` untuk 122 jebakan yang sudah
 pernah memakan waktu** — wajib dibuka setiap kali menyentuh area yang
 disebut di sana.
 
@@ -81,11 +81,11 @@ selesai:
 
 ```
 ./build.sh
-./run.sh scripttest   # 906 skrip Lua + coroutine dialog
+./run.sh scripttest   # 906 skrip Lua + coroutine dialog + kalender dunia
 ./run.sh maptest      # 3.544 berkas peta
 ./run.sh chartest     # serialisasi karakter
 ./run.sh worldtest    # dunia peta + penempatan pemain
-./run.sh cliftest     # paket, protokol RTK2, subsistem — 824 assertion
+./run.sh cliftest     # paket, protokol RTK2, subsistem — 903 assertion
 ./run.sh dbtest       # lapisan database — 234 assertion; butuh MySQL
 ./run.sh luaaudit     # pemeriksa statis 907 skrip Lua
 ./run.sh wiresync     # Wire.java sinkron dengan repo klien
@@ -98,8 +98,26 @@ luring):
 
 ```
 ./run.sh all
-(cd ../RTK-client && ./run.sh livetest 127.0.0.1 2001 Adrielle)   # 89 pemeriksaan
+(cd ../RTK-client && ./run.sh livetest 127.0.0.1 2001 Adrielle)   # 155 pemeriksaan
 ```
+
+**Gerbang KESEPULUH — dua map server.** Perpindahan pemain antar map
+server (R3/C3) tidak bisa dibuktikan oleh satu server, dan pembagian
+petanya ada di kolom `Maps.MapServer` di database — bukan di conf. Satu
+perintah menyiapkan semuanya lalu **memulihkan fixture-nya sendiri**
+(termasuk bila gagal atau ditekan Ctrl-C):
+
+```
+./tools/uji-dua-server.sh      # 167 pemeriksaan (155 + 12 butir C3)
+```
+
+Ia meminjamkan peta 330 (Buya) ke map server 1, menjalankan
+`conf/map2.conf` di port 2002, menjalankan `livetest`, lalu memulangkan
+peta itu ke server 0. ⚠️ Jangan biarkan pinjamannya menetap: di setup satu
+server, peta milik server lain tidak dimuat sama sekali — Buya lenyap.
+⚠️ `livetest` MELEWATI langkah C3 bila tidak ada apa pun di port 2002,
+tetapi bila port itu hidup dan perpindahannya gagal, ia **MERAH**
+(Peringatan #112).
 
 ⚠️ **Aturan uji untuk setiap subsistem baru:** pemeriksaan di `cliftest`
 DAN `livetest`, lalu **rusak kodenya sengaja** untuk membuktikan gerbangnya
@@ -108,6 +126,10 @@ bisa merah (kontrol negatif — dua kali menemukan lubang di ujinya sendiri).
 `logs/map.log` yang sama dan hitungan ERROR jadi tercemar.
 ⚠️ `livetest` memakan barang karakter uji (Peringatan #102) — periksa
 kantong `Adrielle` bila langkah masuk dunia mendadak merah.
+⚠️ `livetest` juga MEMINDAHKAN pemain uji (langkah C3 berjalan ke portal
+dan pulang lagi). Ia memulangkannya sendiri ke petak semula — kalau tidak,
+langkah "abaikan" dan "grup" gagal karena JARAK, bukan karena fiturnya
+(Peringatan #110).
 
 Tanpa MySQL: login/char server exit saat start (sama dengan C); map server
 dan gerbang selain `dbtest` tetap jalan. Setup MySQL lokal (jebakan
@@ -143,6 +165,13 @@ mysql -h 127.0.0.1 -u rtk -p < database/2020-09-02-21-55-01_RTK.sql.bak
 ## Terjemahan Indonesia
 
 Sumber kebenaran gaya & istilah: **`luascript/GLOSARIUM.md`**.
+**Status: SELESAI — 0 dari 9.812 titik dialog masih Inggris (R4).**
+Alatnya di `tools/terjemahan/`: `inventaris.py` (ukur), `terapkan.py`
+(terapkan katalog secara POSISIONAL), `separuh.py` (baris separuh
+terjemah), `petunjuk-ketik.py` (kalimat yang menyuruh mengetik harus
+menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
+(3.980 entri) dan daftar yang sengaja dibiarkan Inggris
+`dikecualikan.json`.
 
 - **Nama barang/mob/NPC di skrip = IDENTIFIER, bukan teks tampilan** —
   menerjemahkannya mematahkan `addItem` dkk. secara senyap. Terjemahan nama
@@ -167,14 +196,53 @@ Sumber kebenaran gaya & istilah: **`luascript/GLOSARIUM.md`**.
 
 ## STATUS — 28 Agustus 2026 (diaudit ulang hari ini)
 
+**K1.1–K1.5 SELESAI (28 Agu 2026)** — sisi server dari roadmap K1 klien:
+- **K1.1** sapuan area RTK2 MENYERTAKAN pemain sendiri
+  (`Rtk2ClientView.playerViewRefreshed`); klien mengenali bloknya lewat id
+  `EV_SELF_IDENTITY`, posisi tetap dari `EV_SELF_STEPPED`.
+- **K1.2 (Wire v2):** blok benda dibenahi mengikuti RetroTK — NPC
+  `npcType==1` kini DIKIRIM (dulu tidak pernah) dengan FLAG_AS_CHAR + blok
+  wujud + slot NPCEquipment (`NeqLook` = nomor grafik LANGSUNG, tanpa
+  ItemDb); NPC biasa kini TANPA FLAG_AS_CHAR dan membawa `graphicId`
+  mentah (ruang look mob — di RetroTK "32768 + graphicId"), dulu
+  benderanya keliru menyala dan klien menggambar badan telanjang. Mob
+  ber-`MobIsNpc` juga membawa blok wujud (0 baris di DB, tapi jalurnya
+  ada). `Wire.VERSION` naik ke 2 di kedua repo.
+- Semua dijaga `cliftest` + `livetest` + kontrol negatif.
+- **K2 sisi server:** `EV_SELF_SETTINGS` kini dikirim SAAT masuk dunia
+  (`playerEnteredWorld`) — dulu hanya saat setelan berubah, sehingga
+  jendela setelan klien buta sampai pemain membalik sesuatu.
+
+**K3 sisi server SELESAI (28 Agu 2026):**
+- **K3.1** ERROR bising `sendWorldEntry` "tidak punya sesi aktif" tiap
+  login RTK2 sudah jadi `log.debug` (klien RTK2 selalu melewati jalur
+  RetroTK — itu jalannya router, bukan cacat).
+- **K3.2 buku mantra** (`EV_SPELL_SLOT`, Wire v3): dulu hanya PENGHAPUSAN
+  mantra (`EV_SPELL_REMOVED`) yang pernah dikirim; kini isi buku ikut saat
+  masuk dunia (cermin `pc_loadmagic`) dan saat `addSpell`. Tiap slot bawa
+  tipe (`SplType`) supaya klien tahu bentuk muatan `OP_CAST`. `SpellDb`
+  dapat kolom `SplQuestion`; `Clif.sendMagic` (0x17) untuk sisi RetroTK.
+- **K3.3 penyusun blok pindah ke `Wire.Blok`** (Wire.java): blok barang,
+  dasar, dan wujud kini punya satu penulis+pembaca di berkas yang dijaga
+  `wiresync` — drift tata letak muatan langsung merah dengan nomor baris,
+  bukan lagi tak terjaga. `Rtk2ClientView` dan `Blocks` klien tinggal
+  memetakan domain ke primitif.
+- **K3.4 login bersandi** (`OP_HELLO` + sandi, Wire v4): map server
+  memverifikasi sandi terhadap `ChaPassword` (`CharDb.isPass`) sebelum
+  meminta data karakter — dulu siapa pun yang tahu nama bisa masuk. Sandi
+  salah = sambungan ditolak.
+- Semua dijaga `cliftest` + `livetest` + kontrol negatif (K3.4 sempat
+  lolos palsu karena karakter masih online → diberi baseline "sandi benar
+  masuk" lebih dulu; `cobaMasuk` wajib memompa `Connection.proses()`).
+
 | | |
 |---|---|
-| Gerbang luring | **8/8 hijau** (`cliftest` 824, `dbtest` 234) |
-| Gerbang klien sungguhan | `livetest` 89 pemeriksaan hijau |
-| Protokol RTK2 | **29 opcode masuk, 48 peristiwa keluar** |
+| Gerbang luring | **8/8 hijau** (`cliftest` 903, `dbtest` 234) |
+| Gerbang klien sungguhan | `livetest` **155** pemeriksaan hijau (**167** pada dua map server) |
+| Protokol RTK2 | **43 opcode masuk, 54 peristiwa keluar** (Wire v8) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#102 → `docs/PERINGATAN.md` |
+| Peringatan tercatat | #1–#122 → `docs/PERINGATAN.md` |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug
@@ -183,48 +251,145 @@ Goal: pemain masuk lewat klien RTK2, semua aksi pemain punya jalur, tidak
 ada jalur yang gagal senyap. Urutan = prioritas. Angka opcode C hanya
 rujukan perilaku — format kabelnya RTK2, bukan port byte.
 
-**R1. Aksi pemain yang BELUM punya jalur masuk RTK2** (hasil audit
-`clif_parse()` C 54 opcode vs `Wire.java` 29 — sisanya sudah ada:
-jalan, klik, ambil/jatuhkan/lempar, pakai/kenakan, makan/pakai barang,
-bicara/bisik, abaikan, grup, setelan, tunggangan, pertukaran, serang,
-rapal mantra, jawab menu/dialog):
+**R1. Aksi pemain tanpa jalur masuk RTK2 — ✅ SELESAI 28 Agustus 2026.**
+Seluruh 16 butir hasil audit `clif_parse()` kini punya jalurnya, dikerjakan
+berpasangan dengan K4 di repo klien (Wire v5 lalu v6).
 
-| Aksi | Rujukan C | Catatan |
+| Aksi | Opcode RTK2 | Catatan port |
 |---|---|---|
-| Status diri lengkap + status grup | `0x2D` `clif_mystaytus`/`clif_groupstatus` | jendela profil sendiri; pengganti `sendMyStatus` TAHAP 1 |
-| Melihat pemain/objek lain | `0x09`/`0x0A` `clif_parselookat*`, `0x73` sub-4 userlook | profil + perlengkapan orang lain |
-| Berputar di tempat | `0x11` `clif_parseside` | |
-| Emosi | `0x1D` `clif_parseemotion` | |
-| Susun ulang mantra / geser barang | `0x30` `clif_parsechangespell`/`changepos` | |
-| Minta refresh | `0x38` `clif_refresh` | keluarnya (`EV_SELF_REFRESH`) sudah ada |
-| Papan pesan & pos — arah masuk | `0x3B`, `0x34`, `0x4C` powerboards, `0x73` sub-0 | sisi tampilan (`EV_BOARD_*`) sudah ada |
-| Kiriman/parcel — arah masuk | `0x41` `clif_parseparcel` | logika `Parcels` sudah ada |
-| Simpan paperpopup | `0x23` | menulis di kertas |
-| Daftar kota | `0x66` `clif_sendtowns` | |
-| Minimap | `0x7C` `clif_sendminimap` | |
-| Ranking + hadiah | `0x7D` | |
-| Daftar teman & hunter | `0x77`, `0x84` | |
-| Ubah profil | `0x4F` `clif_changeprofile` | |
-| Ganti tampilan | `0x82` `clif_parseviewchange` | |
-| Sistem kreasi | `0x6B` `createdb_start` | niche — putuskan perlu/tidak |
+| Berputar di tempat | `OP_TURN` | `clif_parseside`: setel arah + kait `onTurn`; bukan langkah |
+| Emosi | `OP_EMOTE` | aksi = **emosi + 11**, waktu `0x4E`, hanya keadaan normal |
+| Segarkan sekeliling | `OP_REFRESH` | `case 0x38` → `clif_refresh` |
+| Melihat pemain/objek lain | `OP_LOOK_AT` | kait `onLook`; RTK2 mengirim **id**, bukan petak |
+| Susun ulang barang | `OP_SWAP_ITEM` | `pc_changeitem`: tukar POS, kirim ulang KEDUA slot |
+| Susun ulang mantra | `OP_SWAP_SPELL` | `clif_parsechangespell` |
+| Status diri lengkap | `OP_PROFILE` ragam 0 → `EV_SELF_PROFILE` | **pengganti `sendMyStatus` TAHAP 1**: nama kelas, gelar, klan, pasangan, TNL, persen XP, teks profil, legenda |
+| Status grup | `OP_PROFILE` ragam 1 | menyegarkan `EV_GROUP` yang sudah ada |
+| Ubah profil | `OP_PROFILE_EDIT` | teks saja; gambar profil RetroTK adalah blob klien lama |
+| Daftar kota | `OP_TOWNS` → `EV_TOWNS` | dari baris `town:` di `conf/map.conf` (`map_town_add`) |
+| Ranking | `OP_RANKING` → `EV_RANKING` | dari `RankingScores`; daftar KOSONG tetap dikirim |
+| Daftar teman | `OP_FRIENDS` | 20 kolom tetap di tabel `Friends`, seperti C |
+| Penanda pemburu | `OP_HUNTER` | `ChaHunter` + `ChaHunterNote` (dipotong 40 huruf) |
+| Papan pesan & pos | `OP_BOARD` | aksi 1/2/9 tersambung; 3 & 5 (baca/hapus pos) belum |
+| Kiriman/parcel | `OP_PARCEL` | `clif_parseparcel` memang hanya satu baris pesan di C |
+| Minimap | — | **tidak perlu opcode**: klien sudah tahu nomor petanya sendiri; di C 0x7C hanya mengirim balik id peta |
+| Simpan paperpopup | — | `case 0x23` di C **badannya kosong** (kode mati) |
+| Sistem kreasi | — | `0x6B` `createdb_start`; niche, diputuskan tidak diport |
 
-**R2. TODO di kode** (semua sudah ditandai di sumbernya):
-`MapCommands:243` mob mati tidak menghalangi langkah · `MapCommands:395`
-klik mob → `onLook` + kait `click` · `ScriptEngine:480` musim dari
-kalender dunia · `ScriptEngine:489,591` `curServer`/`checkOnline`
-mengembalikan nilai tetap.
+⚠️ **Yang ditemukan saat mengerjakannya:** papan pesan membongkar
+Peringatan **#103** — entri tabel panjang paket antar-server `0x3009`
+salah ditandai variabel, yang MEMUTUS sambungan char server. Sisi
+tampilannya sudah lama ada, tapi tidak ada jalur masuk yang pernah
+memintanya; kode yang tidak pernah dipanggil tidak pernah salah.
 
-**R3. Sisa Trek C:** C3 warp antar map server (masih ditolak dengan pesan
-jelas; butuh dua map server + klien) · C2 empat berkas meta RetroTK
-(nilai menurun — klien sendiri tidak membacanya; kandidat di
-`RTK-Server/rtk/decrypted/`).
+**R2. TODO di kode — ✅ SELESAI 28 Agustus 2026.** Nol TODO tersisa di
+`src/`.
 
-**R4. Terjemahan dialog** — ~3.800 titik dialog NPC (903 di 56 berkas
-prioritas); ikuti aturan di atas + GLOSARIUM.
+| Butir | Perbaikan |
+|---|---|
+| Mob mati menghalangi langkah | `clif_canmove_sub`: `MOB_DEAD` tidak menghalangi. Bangkai masih terdaftar di petaknya sampai disapu, jadi pemain dulu terhalang oleh sesuatu yang tak terlihat |
+| Klik mob | port cabang `BL_MOB` di `clif_handle_clickgetinfo`: kait `onLook` lalu `click` milik `mob->data->yname`; radius 10, atau 0 untuk mob bertipe 3 |
+| Kalender dunia | **`WorldTime` baru** — port `get_time_thing` + `change_time_char`: dimuat dari tabel `Time`, tik tiap 450 detik (jam→hari 92→musim 4→tahun), disiarkan (`EV_WORLD_TIME`, Wire v7), disimpan balik. `curTime/curDay/curSeason/curYear` kini menjawab dari kalender DUNIA; hanya keluarga `real*` yang memakai jam dinding |
+| `curServer` | id server dari `conf/map.conf`, bukan 0 tetap |
+| `checkOnline` | tiga ragam SQL seperti C (id / semua non-GM / nama) |
+| `getXPforLevel` | membaca `ClassDb`; ⚠️ `path > 5` adalah **kelas** dan diterjemahkan dulu lewat `pathOf` |
 
-**R5. Stabilisasi berkelanjutan:** setiap subsistem R1 dapat pemeriksaan
-`cliftest` + `livetest` + kontrol negatif; skenario multi-pemain diperluas;
-`map.log` dijaga 0 ERROR/WARN dengan pemain sungguhan online.
+⚠️ **Dua jebakan uji yang ikut ketahuan** (Peringatan #105 & #106): uji
+kalender sempat **menimpa tabel `Time` sungguhan** dengan nilai bawaan
+karena ia menyimpan "nilai lama" yang tidak pernah dibaca; dan uji
+`curSeason` sempat **lulus dengan kode yang salah** karena satu nilai uji
+kebetulan sama dengan hasil jam dinding. Keduanya diperbaiki — baca dulu
+sebelum menyimpan, dan uji dengan dua nilai berbeda.
+
+**R3. Sisa Trek C — ✅ SELESAI 28 Agustus 2026.**
+
+**C3 perpindahan antar map server: DIPORT dan TERBUKTI HIDUP.** Pemain
+yang menginjak portal ke peta milik map server lain kini diserahkan
+(`EV_TRANSFER`, Wire **v8**): server asal mengirim host+port+peta+petak,
+klien menyambung ke sana, dan pemainnya masuk di peta tujuan. Dibuktikan
+dua map server sungguhan, pulang-pergi, di gerbang `./tools/uji-dua-server.sh`.
+
+| Butir | Isi |
+|---|---|
+| Peristiwa baru | `EV_TRANSFER` + `ClientView.playerTransferred` + `Clif.transfer` (0x03, port RetroTK) |
+| Jalur masuk | `Pc.warp()` memanggil `transferKeServerLain()` bila petanya tidak dimuat di sini |
+| Portal | ⚠️ `MapRegistry.loadWarps` **sengaja menyimpang dari C** — hanya peta ASAL yang wajib dimuat. Di C portal lintas-server dibuang pemuatnya, jadi cabang lintas-server `pc_warp` tak pernah tercapai (Peringatan #108) |
+| Pemain terdampar | ⚠️ C mengusirnya (badan `intif.c:215` kosong); port ini MENGALIHKANNYA, dengan jeda tutup 500 ms supaya paketnya sempat terkirim (Peringatan #109) |
+| Koordinat di luar batas | dijepit ke **1**, bukan 255 — "Just for Justin" di C |
+
+**C2 empat berkas meta RetroTK: DIPUTUSKAN TIDAK DIPORT.** Alasannya dua,
+dan yang kedua menentukan:
+
+1. Berkas meta hanya dipakai paket **login RetroTK** `0x6F`
+   (`LoginClif`: daftar nama + CRC32). Klien RTK2 tidak pernah bicara ke
+   login server sama sekali — sejak K3.4 map server memeriksa sandi
+   sendiri. Tidak ada satu pun jalur yang membacanya.
+2. Satu-satunya sumber berkas itu adalah `RTK-Server/rtk/decrypted/` —
+   **data klien NexusTK**. Repo ini ada di bawah git; menyalinnya ke
+   `meta/` berarti menaruh aset NexusTK ke dalam riwayat git, persis yang
+   dihindari aturan K6 di repo klien. Nilainya nol, ongkosnya permanen.
+
+Perilaku sekarang aman apa adanya: `metacrc()` mengembalikan **0** untuk
+berkas yang tidak ada, jadi klien RetroTK menerima daftar dengan checksum
+nol dan tidak ada yang melempar. Kalau suatu saat berkas meta memang
+dibutuhkan, isinya **dibuat sendiri**, bukan disalin.
+
+**R4. Terjemahan dialog — ✅ SELESAI 28 Agustus 2026.** Nol dari **9.812**
+titik dialog di 665 berkas masih berbahasa Inggris; katalog 3.980 entri di
+`tools/terjemahan/kamus-*.json`, diterapkan **posisional** sehingga nama
+barang/mob/NPC (identifier) tidak pernah tersentuh.
+
+| Yang dikerjakan | Catatan |
+|---|---|
+| Prosa dialog, menu, pesan sistem | dari `sendMinitext`, `talk`, `dialogSeq`, `menuSeq`, `menuString`, `input`, `addLegend` (arg 0 saja) |
+| Pembanding ikut diterjemahkan | nilai balik `menuString` adalah string opsinya; `pilihan == "Yes"` diganti bersama opsinya |
+| Sengaja Inggris | nama barang (`Scroll of Protection`, `Juk-do`), nama stat (`Will`), dan **nilai protokol** (`next`/`previous`/`quit`) → `dikecualikan.json` |
+
+⚠️ **Empat temuan yang hanya muncul karena diuji lewat klien sungguhan**
+(Peringatan #113–#117): kalimat yang menyuruh pemain mengetik kata kunci
+sempat menyebut kata yang salah dan **membuat dua quest buntu**; opsi menu
+dibangun dengan **tiga konstruksi** berbeda sehingga alat statis tiga kali
+melapor "nol sisa" sementara menu di layar masih Inggris; literal di dalam
+tabel dialog bisa berupa **nama ruang grafik**, bukan teks; dan
+`next`/`previous` ternyata **nilai protokol** yang dikirim klien —
+menerjemahkannya memutus paging seluruh dialog NPC (ditangkap
+`scripttest`). `livetest` kini menuntut dialog + opsi menu yang sampai ke
+pemain berbahasa Indonesia, dengan kontrol negatif yang terbukti merah.
+
+**R5. Stabilisasi berkelanjutan — ⏳ BERJALAN, putaran pertama selesai
+28 Agustus 2026.** Cara kerjanya: **ukur cakupan, isi celahnya, lalu biarkan
+klien sungguhan yang memutuskan.** Putaran pertama menaikkan opcode yang
+pernah benar-benar dikirim klien dari **25 menjadi 36 dari 43**, dan
+menemukan tiga cacat yang tidak satu pun gerbang luring bisa lihat:
+
+| Cacat | Akibat sebelum diperbaiki |
+|---|---|
+| Slot kantong: klien mengirim **posisi**, server memakainya sebagai **indeks daftar** (Peringatan #118) | tujuh perintah (jatuh, pakai, kenakan, makan, lempar, serah, tukar) mengenai barang yang SALAH atau diam saja — tanpa pesan |
+| Perubahan inventaris tidak dikabarkan ke klien (#119) | barang yang dijatuhkan tetap terlihat, barang yang dipungut tidak pernah muncul, sampai login ulang |
+| **`.ID` tidak pernah diimplementasikan** — 1.292 pemakaian di 347 berkas (#120) | **memungut barang dari tanah tidak pernah berhasil**, untuk siapa pun, sejak awal; plus 12 `script error` di `map.log` yang tampak tidak berhubungan |
+
+⚠️ Ketiganya ditemukan oleh langkah `livetest` baru, bukan oleh gerbang
+luring — dan yang ketiga menutup **seluruh** `script error` di `map.log`
+sekaligus. Satu perbaikan menyelesaikan dua gejala yang tampak terpisah.
+
+Langkah `livetest` yang ditambahkan (18 pemeriksaan): jatuh-pungut yang
+memulihkan dirinya sendiri, kenakan-lepas, membalik halaman dialog
+(`answerDialog "next"` — penjaga nyaris-celaka R4), serangan, dan
+**pertukaran dua pemain** yang dibuka, diisi, lalu DIBATALKAN sehingga
+kantong kedua pemain kembali seperti semula. Gerbang luring baru:
+`scripttest` memeriksa kait GLOBAL (`onPickUp`/`onLook`/`onTurn`/`onGetExp`)
+benar-benar ada — `doScript()` mengembalikan false tanpa suara bila
+namanya salah; `cliftest` memeriksa `.ID` menjawab id benda. Kontrol
+negatif membuktikan keduanya merah.
+
+**`map.log` dengan pemain sungguhan: 0 `script error`.** Sisa WARN/ERROR
+seluruhnya dipicu ujinya sendiri (sandi salah, bingkai rusak, sambung-putus
+beruntun) — itu memang yang harus dicatat.
+
+**Sisa putaran berikutnya:** 7 opcode belum pernah dikirim klien
+(`profileEdit`, `dropGold`, `handItem`, `handGold`, `eat`, `throw`, dan
+`hello` yang dikirim `Connection.sambung` tetapi tidak lewat `Commands`);
+skenario multi-pemain masih terbatas pada grup, abaikan, dan pertukaran.
 
 **Sengaja TIDAK dikerjakan:** `testPacket` (debug GM tulis byte mentah) ·
 melengkapi `sendMyStatus` RetroTK · 8 nama binding yang tidak ada di

@@ -8,7 +8,7 @@ blue_potion = {
 		player:removeItem("blue_potion", 1, 6)
 
 		if player.health == player.maxHealth then
-			player:sendMinitext("You feel satiated.")
+			player:sendMinitext("Kau merasa kenyang.")
 		end
 	end
 }

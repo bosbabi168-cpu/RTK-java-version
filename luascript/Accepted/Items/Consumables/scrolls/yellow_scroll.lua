@@ -1,13 +1,13 @@
 yellow_scroll = {
 	use = function(player)
 		if player.warpOut == 0 then
-			player:sendMinitext("Unable to warp out.")
+			player:sendMinitext("Tidak bisa berpindah keluar.")
 			return
 		end
 
 		if player:canPK(player) then
 			-- pvp maps
-			player:sendMinitext("Unable to warp out.")
+			player:sendMinitext("Tidak bisa berpindah keluar.")
 			return
 		end
 
@@ -16,7 +16,7 @@ yellow_scroll = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("You need a physical body in order to use this yellow scroll.")
+			player:sendMinitext("Kau butuh tubuh jasmani untuk memakai gulungan kuning ini.")
 			return
 		end
 

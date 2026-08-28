@@ -3,7 +3,7 @@ iron_key = {
 		local t = {graphic = convertGraphic(26, "item"), color = 0}
 
 		if player.m ~= 1307 then
-			player:sendMinitext("You can't use this here.")
+			player:sendMinitext("Kau tidak bisa memakai ini di sini.")
 			return
 		end
 
@@ -14,7 +14,7 @@ iron_key = {
 				player:removeItemSlot(player.invSlot, 1, 9)
 				IronLabTreasureChestNpc.open(player, npc)
 			else
-				player:sendMinitext("It's already unlocked.")
+				player:sendMinitext("Kuncinya sudah terbuka.")
 			end
 		end
 	end

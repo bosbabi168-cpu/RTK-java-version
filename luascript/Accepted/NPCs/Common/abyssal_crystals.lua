@@ -14,13 +14,13 @@ RatCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -32,7 +32,7 @@ RatCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it..."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya..."
 					},
 					0
 				)
@@ -64,14 +64,14 @@ TigerCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -83,7 +83,7 @@ TigerCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -115,14 +115,14 @@ DogCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -134,7 +134,7 @@ DogCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -165,14 +165,14 @@ DragonCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -184,7 +184,7 @@ DragonCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -215,14 +215,14 @@ SnakeCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -234,7 +234,7 @@ SnakeCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -265,14 +265,14 @@ RoosterCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -284,7 +284,7 @@ RoosterCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -315,14 +315,14 @@ SheepCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -334,7 +334,7 @@ SheepCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -365,14 +365,14 @@ MonkeyCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -384,7 +384,7 @@ MonkeyCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -415,14 +415,14 @@ OxCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -434,7 +434,7 @@ OxCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -465,14 +465,14 @@ HorseCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -484,7 +484,7 @@ HorseCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -515,14 +515,14 @@ PigCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -534,7 +534,7 @@ PigCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)
@@ -565,14 +565,14 @@ RabbitCrystalNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crystal surges with power as you place your hand on it!",
-					"As you recoil in pain you see a small crystal shard stuck to your palm."
+					"Kristal itu meluapkan kekuatan begitu telapak tanganmu menyentuhnya!",
+					"Saat kau menarik tangan menahan sakit, tampak serpihan kristal kecil menancap di telapakmu."
 				},
 				0
 			)
 			player:addItem("crystal_shard", 1, 0, player.ID)
 		end
-		player:dialogSeq({t, "The crystal seems dormant."}, 0)
+		player:dialogSeq({t, "Kristal itu tampak tidur."}, 0)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -584,7 +584,7 @@ RabbitCrystalNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crystal emits a faint glow. You almost want to touch it."
+						"Kristal itu memancarkan cahaya samar. Kau hampir tergoda menyentuhnya."
 					},
 					0
 				)

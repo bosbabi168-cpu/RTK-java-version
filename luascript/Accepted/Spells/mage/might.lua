@@ -7,7 +7,7 @@ might_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -15,7 +15,7 @@ might_mage = {
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Might.")
+		player:sendMinitext("Kau merapal Might.")
 		player:setDuration("might_mage", 625000)
 		player:playSound(12)
 		player:sendAnimation(11)
@@ -48,7 +48,7 @@ spirit_strength_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -56,7 +56,7 @@ spirit_strength_mage = {
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Spirit Strength.")
+		player:sendMinitext("Kau merapal Spirit Strength.")
 		player:setDuration("spirit_strength_mage", 625000)
 		player:playSound(31)
 		player:sendAnimation(117)
@@ -89,7 +89,7 @@ inner_blessing_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -97,7 +97,7 @@ inner_blessing_mage = {
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Inner Blessing.")
+		player:sendMinitext("Kau merapal Inner Blessing.")
 		player:setDuration("inner_blessing_mage", 625000)
 		player:playSound(31)
 		player:sendAnimation(11)
@@ -130,7 +130,7 @@ temper_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -138,7 +138,7 @@ temper_mage = {
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Temper.")
+		player:sendMinitext("Kau merapal Temper.")
 		player:setDuration("temper_mage", 625000)
 		player:playSound(31)
 		player:sendAnimation(11)

@@ -14,7 +14,7 @@ energy_bloom = {
 		-- maximum 10 tiles away in either direction (verified on NTK)
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -25,17 +25,17 @@ energy_bloom = {
 		target:sendAnimation(4)
 		player:playSound(701)
 		player:playSound(1)
-		player:sendMinitext("You cast Energy bloom.")
+		player:sendMinitext("Kau merapal Energy bloom.")
 
 		if target.blType == BL_MOB then
 			local threat = threat.getHighestThreat(target)
 			player:setThreat(target.ID, threat + damage)
 		elseif target.blType == BL_PC then
 			if not player:canPK(target) then
-				player:sendMinitext("You cannot attack that target.")
+				player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 				return
 			end
-			target:sendMinitext(player.name .. " cast Energy bloom on you.")
+			target:sendMinitext(player.name .. " merapal Energy bloom padamu.")
 		end
 
 		target.attacker = player.ID

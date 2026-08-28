@@ -7,7 +7,7 @@ dispell_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -31,7 +31,7 @@ dispell_poet = {
 		local random = math.random(1, 100)
 
 		if target.blType == BL_NPC or target.blType == BL_MOB then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 		if random > successRate then
@@ -51,9 +51,9 @@ dispell_poet = {
 
 		--13
 		if (player.ID ~= target.ID) then
-			target:sendMinitext(player.name .. " casts Dispell on you.")
+			target:sendMinitext(player.name .. " merapal Dispell padamu.")
 		end
-		player:sendMinitext("You cast Dispell.")
+		player:sendMinitext("Kau merapal Dispell.")
 	end,
 
 	requirements = function(player)
@@ -74,7 +74,7 @@ remove_magic_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -98,7 +98,7 @@ remove_magic_poet = {
 		local random = math.random(1, 100)
 
 		if target.blType == BL_NPC or target.blType == BL_MOB then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 		if random > successRate then
@@ -118,9 +118,9 @@ remove_magic_poet = {
 
 		--13
 		if (player.ID ~= target.ID) then
-			target:sendMinitext(player.name .. " casts Remove magic on you.")
+			target:sendMinitext(player.name .. " merapal Remove magic padamu.")
 		end
-		player:sendMinitext("You cast Remove magic.")
+		player:sendMinitext("Kau merapal Remove magic.")
 	end,
 
 	requirements = function(player)
@@ -141,7 +141,7 @@ return_natural_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -165,7 +165,7 @@ return_natural_poet = {
 		local random = math.random(1, 100)
 
 		if target.blType == BL_NPC or target.blType == BL_MOB then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 		if random > successRate then
@@ -185,9 +185,9 @@ return_natural_poet = {
 
 		--13
 		if (player.ID ~= target.ID) then
-			target:sendMinitext(player.name .. " casts Return natural on you.")
+			target:sendMinitext(player.name .. " merapal Return natural padamu.")
 		end
-		player:sendMinitext("You cast Return natural.")
+		player:sendMinitext("Kau merapal Return natural.")
 	end,
 
 	requirements = function(player)
@@ -208,7 +208,7 @@ restore_balance_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -232,7 +232,7 @@ restore_balance_poet = {
 		local random = math.random(1, 100)
 
 		if target.blType == BL_NPC or target.blType == BL_MOB then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 		if random > successRate then
@@ -252,9 +252,9 @@ restore_balance_poet = {
 
 		--13
 		if (player.ID ~= target.ID) then
-			target:sendMinitext(player.name .. " casts Restore balance on you.")
+			target:sendMinitext(player.name .. " merapal Restore balance padamu.")
 		end
-		player:sendMinitext("You cast Restore balance.")
+		player:sendMinitext("Kau merapal Restore balance.")
 	end,
 
 	requirements = function(player)

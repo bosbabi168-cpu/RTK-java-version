@@ -14,7 +14,7 @@ earth_strike = {
 		-- maximum 10 tiles away in either direction (verified on NTK)
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -25,17 +25,17 @@ earth_strike = {
 		target:sendAnimation(4)
 		player:playSound(701)
 		player:playSound(1)
-		player:sendMinitext("You cast Earth strike.")
+		player:sendMinitext("Kau merapal Earth strike.")
 
 		if target.blType == BL_MOB then
 			local threat = threat.getHighestThreat(target)
 			player:setThreat(target.ID, threat + damage)
 		elseif target.blType == BL_PC then
 			if not player:canPK(target) then
-				player:sendMinitext("You cannot attack that target.")
+				player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 				return
 			end
-			target:sendMinitext(player.name .. " cast Earth strike on you.")
+			target:sendMinitext(player.name .. " merapal Earth strike padamu.")
 		end
 
 		target.attacker = player.ID

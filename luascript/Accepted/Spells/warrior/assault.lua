@@ -16,7 +16,7 @@ assault_warrior = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if (s == 0) then
@@ -68,7 +68,7 @@ assault_warrior = {
 					0
 				)
 				if worked == 2 then
-					target[1]:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target[1]:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 					landed = 1
 				end
 			end
@@ -79,7 +79,7 @@ assault_warrior = {
 		end
 		player:sendStatus()
 		player:playSound(sound)
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 	end,
 	requirements = function(player)
 		local l = 99
@@ -109,7 +109,7 @@ deaths_challenge_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if (s == 0) then
@@ -161,7 +161,7 @@ deaths_challenge_warrior = {
 					127
 				)
 				if worked == 2 then
-					target[1]:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target[1]:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 					landed = 1
 				end
 			end
@@ -171,7 +171,7 @@ deaths_challenge_warrior = {
 		end
 		player:sendStatus()
 		player:playSound(sound)
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 	end,
 	requirements = function(player)
 		local l = 99
@@ -201,7 +201,7 @@ cold_snap_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if (s == 0) then
@@ -253,7 +253,7 @@ cold_snap_warrior = {
 					126
 				)
 				if worked == 2 then
-					target[1]:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target[1]:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 					landed = 1
 				end
 			end
@@ -263,7 +263,7 @@ cold_snap_warrior = {
 		end
 		player:sendStatus()
 		player:playSound(sound)
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 	end,
 	requirements = function(player)
 		local l = 99
@@ -293,7 +293,7 @@ volley_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if (s == 0) then
@@ -344,7 +344,7 @@ volley_warrior = {
 					3
 				)
 				if worked == 2 then
-					target[1]:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target[1]:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 					landed = 1
 				end
 			end
@@ -354,7 +354,7 @@ volley_warrior = {
 		end
 		player:sendStatus()
 		player:playSound(sound)
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 	end,
 	requirements = function(player)
 		local l = 99

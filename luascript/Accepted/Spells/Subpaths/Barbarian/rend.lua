@@ -41,13 +41,13 @@ rend = {
 				target:removeHealthExtend(damage, 1, 1, 1, 1, 0)
 				target:sendStatus()
 				target:playSound(30)
-				target:sendMinitext(player.name .. " cast Rend on you.")
+				target:sendMinitext(player.name .. " merapal Rend padamu.")
 			end
 		end
 
 		player:sendStatus()
-		player:sendMinitext("You cast Rend.")
-		player:sendMinitext("You can not touch the spirit world.")
+		player:sendMinitext("Kau merapal Rend.")
+		player:sendMinitext("Kau tidak bisa menyentuh dunia arwah.")
 	end,
 
 	requirements = function(player)

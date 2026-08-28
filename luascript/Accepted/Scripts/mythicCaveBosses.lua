@@ -198,7 +198,7 @@ Player.allEnemyMythicCaveBosses = function(player, alliance)
 	end
 
 	if enemy1 == nil or enemy2 == nil or enemy3 == nil then
-		player:dialogSeq({"You do not have enough lesser alliances."})
+		player:dialogSeq({"Persekutuan kecilmu belum cukup."})
 		return
 	end
 

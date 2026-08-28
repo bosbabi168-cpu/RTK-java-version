@@ -12,21 +12,21 @@ ElixirGameNpc = {
 		local invItem = player:getInventoryItem(player.invSlot)
 
 		if invItem.yname ~= "acorn" then
-			player:sendMinitext("Hand me an acorn.")
+			player:sendMinitext("Serahkan satu acorn kepadaku.")
 			return
 		end
 
 		if player.registry["elixirTeam"] == 1 and player:hasItem("blue_elixir", 1) ~= true then
-			player:sendMinitext("You need the blue elixir!")
+			player:sendMinitext("Kau butuh elixir biru!")
 			return
 		end
 		if player.registry["elixirTeam"] == 2 and player:hasItem("red_elixir", 1) ~= true then
-			player:sendMinitext("You need the red elixir!")
+			player:sendMinitext("Kau butuh elixir merah!")
 			return
 		end
 
 		if core.gameRegistry["elixirRoundWinner"] ~= 0 then
-			player:sendMinitext("Your team handed in elixir already.")
+			player:sendMinitext("Regumu sudah menyerahkan elixir.")
 			return
 		end
 

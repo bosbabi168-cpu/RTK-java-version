@@ -1,13 +1,13 @@
 CarnageGameNpc = {
 	click = async(function(player, npc)
-		local opts = {"Send me back"}
+		local opts = {"Kirim aku kembali"}
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 
-		if choice == "Send me back" then
+		if choice == "Kirim aku kembali" then
 			if player.state == 1 then
 				--dead
 
@@ -31,8 +31,8 @@ CarnageGameNpc = {
 				end
 			else
 				local confirm = player:menuSeq(
-					"You are abandoning your team! Are you sure you wish to leave?",
-					{"Yes", "No"},
+					"Kau meninggalkan regumu! Kau yakin ingin pergi?",
+					{"Ya", "Tidak"},
 					{}
 				)
 

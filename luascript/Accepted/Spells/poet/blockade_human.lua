@@ -13,7 +13,7 @@ blockade_human_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -36,7 +36,7 @@ blockade_human_poet = {
 		player:sendAnimation(2)
 		player.magic = player.magic - magicCost
 		player.snare = true
-		player:sendMinitext("You cast Blockade Human.")
+		player:sendMinitext("Kau merapal Blockade Human.")
 		player:sendStatus()
 	end,
 
@@ -69,7 +69,7 @@ block_entry_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -92,7 +92,7 @@ block_entry_poet = {
 		player:sendAnimation(2)
 		player.magic = player.magic - magicCost
 		player.snare = true
-		player:sendMinitext("You cast Blockade Human.")
+		player:sendMinitext("Kau merapal Blockade Human.")
 		player:sendStatus()
 	end,
 
@@ -125,7 +125,7 @@ distance_self_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -148,7 +148,7 @@ distance_self_poet = {
 		player:sendAnimation(2)
 		player.magic = player.magic - magicCost
 		player.snare = true
-		player:sendMinitext("You cast Blockade Human.")
+		player:sendMinitext("Kau merapal Blockade Human.")
 		player:sendStatus()
 	end,
 
@@ -181,7 +181,7 @@ protect_sides_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -204,7 +204,7 @@ protect_sides_poet = {
 		player:sendAnimation(2)
 		player.magic = player.magic - magicCost
 		player.snare = true
-		player:sendMinitext("You cast Blockade Human.")
+		player:sendMinitext("Kau merapal Blockade Human.")
 		player:sendStatus()
 	end,
 

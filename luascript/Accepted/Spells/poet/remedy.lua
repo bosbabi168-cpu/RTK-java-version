@@ -9,7 +9,7 @@ remedy_poet = {
 		end
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -26,12 +26,12 @@ remedy_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 500, 0, 0)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -55,7 +55,7 @@ brethren_of_spirits_poet = {
 		end
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -72,12 +72,12 @@ brethren_of_spirits_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 500, 0, 1)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -101,7 +101,7 @@ gathering_of_the_flock_poet = {
 		end
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -118,12 +118,12 @@ gathering_of_the_flock_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 500, 0, 2)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -147,7 +147,7 @@ gathering_of_majesty_poet = {
 		end
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -164,12 +164,12 @@ gathering_of_majesty_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 500, 0, 3)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 

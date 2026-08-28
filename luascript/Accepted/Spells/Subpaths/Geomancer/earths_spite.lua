@@ -8,27 +8,27 @@ earths_spite = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType == BL_PC and not player:canPK(target)) or target.blType == BL_NPC then
-			player:sendMinitext("You cannot attack that target.")
+			player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 			return
 		end
 
 		if target:checkIfCast(curses) or target.cursed == 1 then
-			player:sendMinitext("Another spell of this type is in effect.")
+			player:sendMinitext("Mantra lain sejenis ini sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is already protected.")
+			player:sendMinitext("Sasaran itu sudah terlindungi.")
 			return
 		end
 
@@ -40,7 +40,7 @@ earths_spite = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(702)
-		player:sendMinitext("You cast Earths spite.")
+		player:sendMinitext("Kau merapal Earths spite.")
 		target:setDuration("earths_spite", duration)
 		target:sendAnimation(1, 0)
 
@@ -48,7 +48,7 @@ earths_spite = {
 			target.armor = target.armor + 45
 			target.cursed = 1
 		elseif (target.blType == BL_PC and player:canPK(target)) then
-			target:sendMinitext(player.name .. " casts Earths spite on you.")
+			target:sendMinitext(player.name .. " merapal Earths spite padamu.")
 			target:calcStat()
 		end
 	end,

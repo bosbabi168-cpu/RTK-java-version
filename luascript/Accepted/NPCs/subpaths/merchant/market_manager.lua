@@ -23,7 +23,7 @@ MarketManagerNpc = {
 				1
 			)
 			player:dialogSeq(
-				{t, "Step carefully down the pass here behind this booth..."},
+				{t, "Melangkahlah hati-hati menuruni lorong di balik kios ini..."},
 				0
 			)
 		end

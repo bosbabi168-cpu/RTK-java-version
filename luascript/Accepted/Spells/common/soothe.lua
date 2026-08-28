@@ -4,7 +4,7 @@ soothe = {
 			return
 		end
 		if (player.magic < 3) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		player.attacker = player.ID
@@ -12,7 +12,7 @@ soothe = {
 		player.magic = player.magic - 3
 		player:playSound(708)
 		player:sendAnimation(5)
-		player:sendMinitext("You cast Soothe.")
+		player:sendMinitext("Kau merapal Soothe.")
 		player:sendStatus()
 		player:sendAction(6, 35)
 	end,

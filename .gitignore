@@ -40,4 +40,8 @@ nbproject/private/
 # IDE lain
 *.iml
 .idea/
+
+# Cache Python dari alat di tools/
+__pycache__/
+*.pyc
 logs/arsip-2026-08-24/packetlog-0824.txt

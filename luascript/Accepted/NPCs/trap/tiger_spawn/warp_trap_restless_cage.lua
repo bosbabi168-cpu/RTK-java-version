@@ -33,7 +33,7 @@ WarpTrapRestlessCageNpc = {
 			block:warp(4100, 28, 4)
 		end
 
-		block:sendMinitext("You fall into a steep winding passage.")
+		block:sendMinitext("Kau terjatuh ke lorong curam yang berkelok.")
 		removeTrapItem(npc)
 		npc:delete()
 	end,

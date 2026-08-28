@@ -6,8 +6,8 @@ local _resurrect = function(player, npc)
 	end
 
 	local rez = player:menuSeq(
-		"Ah, another of the fallen come for my aid. Are you ready to return to the world of the living?",
-		{"Yes", "No"},
+		"Ah, satu lagi yang gugur datang meminta bantuanku. Siapkah kau kembali ke dunia orang hidup?",
+		{"Ya", "Tidak"},
 		{}
 	)
 
@@ -20,7 +20,7 @@ local _resurrect = function(player, npc)
 	player.magic = player.maxMagic
 	player:sendStatus()
 	player:updateState()
-	player:dialogSeq({"So shall it be! Keep yourself safe and free from harm."}, 0)
+	player:dialogSeq({"Jadilah demikian! Jagalah dirimu tetap aman dan jauh dari bahaya."}, 0)
 end
 
 local _showTotemAnimals = function(player, npc)
@@ -35,9 +35,9 @@ local _showTotemAnimals = function(player, npc)
 
 	player:dialogSeq(
 		{
-			"You wish to learn of the totem animals, do you? The four totems are divine beings of great power.",
-			"Ah, I see you worship the " .. playerTotem .. ". ((Press the letter s then page down to find your totem animal. You will see the word Nation and next to that will tell your totem.))",
-			"Each animal rules a certain time of day. During an animal's time of day, all of his followers, and all of those grouped with his followers, learn more quickly. ((Experience bonus))"
+			"Kau ingin mempelajari hewan-hewan totem? Keempat totem itu makhluk ilahi berkekuatan besar.",
+			"Ah, kulihat kau menyembah " .. playerTotem .. ". ((Tekan huruf s lalu page down untuk menemukan hewan totemmu. Kau akan melihat kata Nation, dan di sebelahnya tertera totemmu.))",
+			"Tiap hewan menguasai satu waktu tertentu dalam sehari. Pada waktunya, semua pengikutnya dan semua yang bergrup dengan pengikutnya belajar lebih cepat. ((Bonus pengalaman))"
 		},
 		1
 	)
@@ -62,8 +62,8 @@ local _showTotemAnimals = function(player, npc)
 
 	player:dialogSeq(
 		{
-			"By visiting the shrine of a totem animal, you may decide to worship it if you offer a suitable donation. These shrines can be found in the Wilderness.",
-			"You can reaffirm your worship every 7 days ((21 hours)). Frequent worship of your totem animal will doubtless improve your Karma."
+			"Dengan mengunjungi kuil sebuah hewan totem, kau bisa memutuskan menyembahnya bila memberi persembahan yang pantas. Kuil-kuil itu ada di Wilderness.",
+			"Kau bisa meneguhkan kembali sembahmu tiap 7 hari ((21 jam)). Sering menyembah hewan totemmu pasti memperbaiki Karma-mu."
 		},
 		1
 	)
@@ -99,7 +99,7 @@ local _worship = function(player, totemIndex)
 	local worshipCount = "totem_total_worships"
 
 	if (os.time() < player.registry[timer]) then
-		player:dialogSeq({"You have worshipped a totem animal within the last 7 days ((21 hours))."}, 0)
+		player:dialogSeq({"Kau sudah menyembah hewan totem dalam 7 hari terakhir ((21 jam))."}, 0)
 		return
 	end
 
@@ -113,13 +113,13 @@ local _worship = function(player, totemIndex)
 	local totem = totems[totemIndex]
 
 	local choice1 = player:menuSeq(
-		"Do you wish to worship " .. totem.name .. "?",
-		{"Yes", "No"},
+		"Apakah kau ingin menyembah " .. totem.name .. "?",
+		{"Ya", "Tidak"},
 		{}
 	)
 
 	if (choice1 ~= 1) then
-		player:dialogSeq({"Then begone with you."}, 0)
+		player:dialogSeq({"Kalau begitu, pergilah."}, 0)
 		return
 	end
 
@@ -133,17 +133,17 @@ local _worship = function(player, totemIndex)
 
 	if (player.totem ~= totemIndex) then
 		choice2 = player:menuSeq(
-			"You must prove your devotion to " .. totem.name .. ".  Which do you offer?",
+			"Kau harus membuktikan pengabdianmu kepada " .. totem.name .. ". Mana yang kau persembahkan?",
 			{
-				"I offer a " .. totem.name .. " key.",
-				"I offer five Gold acorns.",
-				"I have nothing to offer."
+				"Aku mempersembahkan " .. totem.name .. " key.",
+				"Aku mempersembahkan lima Gold acorn.",
+				"Aku tidak punya persembahan."
 			},
 			{}
 		)
 
 		if (choice2 == 3) then
-			player:dialogSeq({"Then begone with you."}, 0)
+			player:dialogSeq({"Kalau begitu, pergilah."}, 0)
 			return
 		end
 	end
@@ -151,7 +151,7 @@ local _worship = function(player, totemIndex)
 	local opt = opts[choice2]
 
 	if (player:hasItem(opt.item, opt.amount) ~= true) then
-		player:dialogSeq({"Return when you have the " .. opt.description .. "."}, 0)
+		player:dialogSeq({"Kembalilah kalau kau sudah punya " .. opt.description .. "."}, 0)
 		return
 	end
 
@@ -169,10 +169,10 @@ local _worship = function(player, totemIndex)
 
 	_questCheck(player, totemIndex)
 	player.totem = totemIndex
-	player:sendMinitext("You worship the mighty " .. totem.name .. ".")
+	player:sendMinitext("Kau menyembah yang perkasa " .. totem.name .. ".")
 	player.registry[worshipCount] = player.registry[worshipCount] + 1
 	player:calcStat()
-	player:dialogSeq({totem.name .. " accepts your devotion."}, 0)
+	player:dialogSeq({totem.name .. " menerima pengabdianmu."}, 0)
 end
 
 local _requestHelmet = function(player, totemIndex)
@@ -196,46 +196,46 @@ local _requestHelmet = function(player, totemIndex)
 	local totem = totems[totemIndex]
 
 	if (player.totem ~= totemIndex) then
-		player:dialogSeq({"You are not one who follows the " .. totem.description .. "."}, 0)
+		player:dialogSeq({"Kau bukan pengikut " .. totem.description .. "."}, 0)
 		return
 	end
 
 	if (player.class ~= totem.subpath) then
-		player:dialogSeq({"The " .. totem.description .. " will not grant a helmet to one who has not attained mastery of his totem."}, 0)
+		player:dialogSeq({"" .. totem.description .. " tidak akan memberikan helm kepada orang yang belum menguasai totemnya."}, 0)
 		return
 	end
 
-	player:dialogSeq({"So ye who follows the " .. totem.description .. ", " .. totem.name .. ", wishes a helmet?"}, 1)
+	player:dialogSeq({"Maka engkau yang mengikuti " .. totem.description .. ", " .. totem.name .. ", menginginkan helm?"}, 1)
 
 	local buychoice = player:menuSeq(
-		"The cost of his protection is " .. totem.cost .. ". Do you wish to continue?",
+		"Harga perlindungannya " .. totem.cost .. ". Kau ingin melanjutkan?",
 		{
-			"Yes, I would like the helmet.",
-			"No, I do not wish to purchase one now."
+			"Ya, aku mau helmnya.",
+			"Tidak, aku tidak ingin membelinya sekarang."
 		},
 		{}
 	)
 
 	if (buychoice ~= 1) then
-		player:dialogSeq({"Perhaps another time then."}, 0)
+		player:dialogSeq({"Kalau begitu mungkin lain kali."}, 0)
 		return
 	end
 
 	local key = totem.id .. "_key"
 
 	if (player:hasItem(key, 1) ~= true) then
-		player:dialogSeq({"Return when you have the " .. totem.name .. " key."}, 0)
+		player:dialogSeq({"Kembalilah kalau kau sudah punya " .. totem.name .. " key."}, 0)
 		return
 	end
 
 	if (player.money < 7000) then
-		player:dialogSeq({"Return when you have the required gold."}, 0)
+		player:dialogSeq({"Kembalilah kalau emas yang diperlukan sudah kau punya."}, 0)
 		return
 	end
 
 	if (player.totem == 3) then
 		if (player:killCount("blood_wolf") == 0) then
-			player:dialogSeq({"Return when you have slain the Blood wolf."}, 0)
+			player:dialogSeq({"Kembalilah kalau kau sudah membunuh Blood wolf."}, 0)
 			return
 		end
 
@@ -251,7 +251,7 @@ local _requestHelmet = function(player, totemIndex)
 		end
 
 		if (not item) then
-			player:dialogSeq({"Return when you have " .. totem.cost .. "."}, 0)
+			player:dialogSeq({"Kembalilah kalau kau sudah punya " .. totem.cost .. "."}, 0)
 			return
 		end
 
@@ -266,7 +266,7 @@ local _requestHelmet = function(player, totemIndex)
 
 	player:removeItem(key, 1)
 	player:addItem(helm, 1, 0, player.ID)
-	player:dialogSeq({"There you are. May it protect you well"}, 0)
+	player:dialogSeq({"Ini dia. Semoga ia melindungimu dengan baik"}, 0)
 end
 
 local _sellItems = function(player, totemIndex)
@@ -301,11 +301,11 @@ local _showClickMenu = function(player, npc, totemIndex)
 	}
 
 	if (Config.bossDropSalesEnabled) then
-		table.insert(opts, "Sell")
+		table.insert(opts, "Jual")
 	end
 
 	local choice = player:menuSeq(
-		"Hello! How can I help you today?",
+		"Halo! Ada yang bisa kubantu hari ini?",
 		opts,
 		{}
 	)
@@ -352,12 +352,12 @@ local _forgiveCheck = function(player, npc, totemIndex)
 		player:sendMinitext(totemMsg)
 		player.registry[forgiveTotem] = player.registry[forgiveTotem] + 1
 	else
-		player:sendMinitext("Your plea falls on deaf ears. Seek out another totem.")
+		player:sendMinitext("Permohonanmu tidak didengar. Carilah totem lain.")
 		return
 	end
 
 	if (player.registry[forgiveTotem] < 4) then
-		player:dialogSeq({"Please visit another totem to seek further forgiveness."}, 0)
+		player:dialogSeq({"Kunjungilah totem lain untuk memohon ampun lebih jauh."}, 0)
 		return
 	end
 
@@ -365,9 +365,9 @@ local _forgiveCheck = function(player, npc, totemIndex)
 
 	if (player.quest["needsForgiveWarriorShieldTotem"] == 1) then
 		player.quest["needsForgiveWarriorShieldTotem"] = 0
-		player:sendMinitext("You have been forgiven for being a killer.")
+		player:sendMinitext("Kau telah diampuni atas perbuatanmu membunuh.")
 	else
-		player:dialogSeq({"You have been forgiven."}, 0)
+		player:dialogSeq({"Kau telah diampuni."}, 0)
 	end
 end
 
@@ -375,8 +375,8 @@ local _enableBaekdu = function(player)
 	player:removeItem("chung_ryongs_might", 1)
 	player.quest["instance"] = 8
 	player:sendAnimation(3)
-	player:sendMinitext("Your soul has been infused.")
-	player:dialogSeq({"You may now travel to Mount Baekdu. Good luck."}, 0)
+	player:sendMinitext("Jiwamu telah diisi.")
+	player:dialogSeq({"Sekarang kau boleh pergi ke Gunung Baekdu. Semoga berhasil."}, 0)
 end
 
 local _baekduCheck = function(player)
@@ -387,8 +387,8 @@ local _baekduCheck = function(player)
 			if (player.totem == 3) then
 				player:dialogSeq(
 					{
-						"Welcome disciple of Chung Ryong. It is good to see you.",
-						"You wish to infuse your soul with the essence of a dragon?",
+						"Selamat datang, murid Chung Ryong. Senang bertemu denganmu.",
+						"Kau ingin mengisi jiwamu dengan sari seekor naga?",
 						"Stand still."
 					},
 					1
@@ -401,9 +401,9 @@ local _baekduCheck = function(player)
 
 				player:dialogSeq(
 					{
-						"So you wish to travel to the sacred Baekdu mountain?",
-						"Because you are not a disciple of Chung Ryong, it will cost you.",
-						"Bring me Chung Ryong's key and I will infuse your soul with the essence."
+						"Jadi kau ingin pergi ke gunung suci Baekdu?",
+						"Karena kau bukan murid Chung Ryong, ada harganya.",
+						"Bawakan kunci Chung Ryong dan akan kuisi jiwamu dengan sari itu."
 					},
 					0
 				)
@@ -418,11 +418,11 @@ local _baekduCheck = function(player)
 			player:hasItem("chung_ryongs_might", 1) == true and
 			player:hasItem("chung_ryong_key", 1) == true) then
 
-			player:dialogSeq({"You have done well. Stand still."}, 1)
+			player:dialogSeq({"Kerjamu bagus. Berdirilah diam."}, 1)
 			player:removeItem("chung_ryong_key", 1)
 			_enableBaekdu(player)
 		else
-			player:dialogSeq({"Bring me Chung Ryong's key and I will infuse your soul with the essence."}, 1)
+			player:dialogSeq({"Bawakan kunci Chung Ryong dan akan kuisi jiwamu dengan sari itu."}, 1)
 		end
 	end
 end

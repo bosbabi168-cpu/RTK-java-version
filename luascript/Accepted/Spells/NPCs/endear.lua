@@ -14,13 +14,13 @@ endear = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if mob ~= nil then
 			if mob.isBoss == 1 then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 			if mob.owner ~= 0 then
@@ -28,7 +28,7 @@ endear = {
 			end
 
 			if mob:checkIfCast(endears) then
-				player:sendMinitext("A spell of this type is already cast.")
+				player:sendMinitext("Mantra sejenis ini sudah dirapal.")
 				return
 			end
 
@@ -42,7 +42,7 @@ endear = {
 
 			player.magic = player.magic - magicCost
 			player:sendStatus()
-			player:sendMinitext("You cast Endear.")
+			player:sendMinitext("Kau merapal Endear.")
 			player:playSound(34)
 			player:setAether(spellName, aether)
 		end

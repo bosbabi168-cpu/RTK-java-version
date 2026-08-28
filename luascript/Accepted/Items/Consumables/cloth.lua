@@ -11,7 +11,7 @@ cloth = {
 				player:addItem("salt_block", 1)
 				player:removeItem("cloth", 1, 1)
 				player.fakeDrop = 1
-				player:dialogSeq({t, "You found a salt block."}, 0)
+				player:dialogSeq({t, "Kau menemukan sebongkah garam."}, 0)
 			end
 		end
 	end

@@ -12,7 +12,7 @@ love = {
 		local failcheck = 0
 
 		if not player:hasLegend("married") then
-			player:sendMinitext("You are not married.")
+			player:sendMinitext("Kau belum menikah.")
 			return
 		end
 
@@ -22,12 +22,12 @@ love = {
 		end
 
 		if target == nil then
-			player:sendMinitext("Your companion is with you in spirit, but not in body.")
+			player:sendMinitext("Pendampingmu menyertaimu dalam jiwa, tetapi tidak dalam raga.")
 			return
 		end
 
 		if target.partner ~= player.ID then
-			player:sendMinitext("You are no longer married to that person.")
+			player:sendMinitext("Kau tidak lagi menikah dengan orang itu.")
 			return
 		end
 

@@ -117,10 +117,10 @@ arenaPVPReqsCheckAndWarp = function(player, mapName)
 
 	if rejectLow == true or rejectHigh == true then
 		if rejectLow == true then
-			player:sendMinitext("Nightmarish visions of your own death repel you.")
+			player:sendMinitext("Bayangan mengerikan tentang kematianmu sendiri mengusirmu.")
 		end
 		if rejectHigh == true then
-			player:sendMinitext("Your honor forbids you from entering.")
+			player:sendMinitext("Kehormatanmu melarangmu masuk.")
 		end
 
 		if player.side == 3 then
@@ -137,7 +137,7 @@ arenaPVPReqsCheckAndWarp = function(player, mapName)
 	player:dialogSeq(
 		{
 			t,
-			"Be careful, you may be slain by another player within this realm and items on the floor can be destroyed by bombs!"
+			"Hati-hati, kau bisa dibunuh pemain lain di alam ini, dan barang di lantai bisa hancur oleh bom!"
 		},
 		1
 	)

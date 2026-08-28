@@ -5,12 +5,12 @@ judge_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if target.level >= player.level then
-			player:sendMinitext("Target player must be lower level than you for you to use this spell")
+			player:sendMinitext("Pemain sasaran harus berlevel lebih rendah darimu untuk memakai mantra ini")
 			return
 		end
 
@@ -53,12 +53,12 @@ spiritual_advisor_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if target.level >= player.level then
-			player:sendMinitext("Target player must be lower level than you for you to use this spell")
+			player:sendMinitext("Pemain sasaran harus berlevel lebih rendah darimu untuk memakai mantra ini")
 			return
 		end
 
@@ -101,12 +101,12 @@ natural_talent_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if target.level >= player.level then
-			player:sendMinitext("Target player must be lower level than you for you to use this spell")
+			player:sendMinitext("Pemain sasaran harus berlevel lebih rendah darimu untuk memakai mantra ini")
 			return
 		end
 
@@ -149,12 +149,12 @@ appraise_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if target.level >= player.level then
-			player:sendMinitext("Target player must be lower level than you for you to use this spell")
+			player:sendMinitext("Pemain sasaran harus berlevel lebih rendah darimu untuk memakai mantra ini")
 			return
 		end
 

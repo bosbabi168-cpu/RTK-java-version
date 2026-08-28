@@ -9,16 +9,16 @@ RandomMerchantNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local choices = {"Follow him", "Attack him", "Ignore him"}
+		local choices = {"Ikuti dia", "Serang dia", "Abaikan dia"}
 
 		local choice = player:menuSeq(
-			"A scraggly dressed fellow subtly motions for you to follow him.",
+			"Seorang lelaki berpakaian lusuh memberi isyarat halus agar kau mengikutinya.",
 			choices,
 			{}
 		)
 
 		if choice == 1 then
-			player:dialogSeq({t, "You follow him into a quiet alley."}, 1)
+			player:dialogSeq({t, "Kau mengikutinya ke gang yang sepi."}, 1)
 
 			local chance = math.random(1, 100)
 			if chance >= 1 and chance < 50 then
@@ -34,7 +34,7 @@ RandomMerchantNpc = {
 					0,
 					0
 				)
-				player:dialogSeq({t, "The thief ducks into the shadows."}, 0)
+				player:dialogSeq({t, "Si pencuri menyelinap ke dalam bayang-bayang."}, 0)
 				return
 			elseif chance >= 50 then
 				RandomMerchantNpc.presentDeal(player, npc)
@@ -44,14 +44,14 @@ RandomMerchantNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"As you move aggressively towards him, he ducks into the shadows and vanishes from sight."
+					"Saat kau maju menyerangnya, ia menyelinap ke bayang-bayang dan lenyap dari pandangan."
 				},
 				1
 			)
 			return
 		elseif choice == 3 then
 			--ignore
-			player:dialogSeq({t, "He vanishes as suddenly as he appeared."}, 0)
+			player:dialogSeq({t, "Ia lenyap secepat kemunculannya."}, 0)
 			return
 		end
 	end),
@@ -92,14 +92,14 @@ RandomMerchantNpc = {
 		if goldChoice == 1000 then
 			-- message
 			choice = player:menuSeq(
-				"He looks at you eagerly, 'I got some information you might be interested in. Give me " .. Tools.formatNumber(goldChoice) .. " gold for it?'",
-				{"Yes, I'll pay.", "No thanks."},
+				"Ia menatapmu penuh minat, 'Aku punya keterangan yang mungkin kau butuhkan. Beri aku " .. Tools.formatNumber(goldChoice) .. " emas untuk itu?'",
+				{"Ya, aku akan membayar.", "Tidak, terima kasih."},
 				{}
 			)
 		else
 			choice = player:menuSeq(
-				"The thief takes a shiny object from his pocket. 'I got some information you might be interested in. Give me " .. Tools.formatNumber(goldChoice) .. " gold for it?'",
-				{"Yes, I'll pay.", "No thanks."},
+				"Si pencuri mengeluarkan benda berkilau dari sakunya. 'Aku punya keterangan yang mungkin kau butuhkan. Beri aku " .. Tools.formatNumber(goldChoice) .. " emas untuk itu?'",
+				{"Ya, aku akan membayar.", "Tidak, terima kasih."},
 				{}
 			)
 		end
@@ -108,7 +108,7 @@ RandomMerchantNpc = {
 			-- yes
 			if player.money < goldChoice then
 				-- not enough money
-				player:dialogSeq({t, "You don't have enough gold."}, 0)
+				player:dialogSeq({t, "Emasmu tidak cukup."}, 0)
 				return
 			end
 
@@ -119,7 +119,7 @@ RandomMerchantNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"'Thanks for the money, sucker!' The merchant disappears with your gold."
+						"'Terima kasih uangnya, bodoh!' Pedagang itu menghilang bersama emasmu."
 					},
 					0
 				)
@@ -201,7 +201,7 @@ RandomMerchantNpc = {
 						player:dialogSeq(
 							{
 								tfb,
-								"He holds up the shiny object and begins to twirl it around. The merchant decides to be generous and hands you the blade before disappearing."
+								"Ia mengangkat benda berkilau itu dan memutar-mutarnya. Si pedagang memutuskan bermurah hati dan menyerahkan bilahnya kepadamu sebelum menghilang."
 							},
 							0
 						)
@@ -242,10 +242,10 @@ RandomMerchantNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"He holds up the shiny object and begins to twirl it around. Its softly twinkling lights lull you into a gentle, peaceful trance. A vision of a " .. elements[
+								"Ia mengangkat benda berkilau itu dan memutar-mutarnya. Cahayanya yang berkelip lembut menghanyutkanmu ke dalam kesurupan yang tenang. Bayangan seekor " .. elements[
 									elementChoice
-								] .. " " .. animals[animalChoice] .. " appears before you and says, 'Do not be afraid my child. I am here to protect you.'",
-								"You snap out of the trance as the thief puts the object away. He seems disappointed. 'Seems that damn gypsy sold me a dud! Well thanks for the money, sucker!' He vanishes as suddenly as he had appeared."
+								] .. " " .. animals[animalChoice] .. " muncul di hadapanmu dan berkata, 'Jangan takut, Nak. Aku di sini untuk melindungimu.'",
+								"Kau tersentak dari kesurupan saat si pencuri menyimpan benda itu. Ia tampak kecewa. 'Rupanya gipsi sialan itu menjualku barang rusak! Yah, terima kasih uangnya, bodoh!' Ia lenyap secepat kemunculannya."
 							},
 							0
 						)
@@ -256,11 +256,11 @@ RandomMerchantNpc = {
 				if item ~= "" then
 					player:addItem(item, 1)
 					player:dialogSeq(
-						{t, "You receive a " .. Item(item).name .. "!"},
+						{t, "Kau menerima " .. Item(item).name .. "!"},
 						1
 					)
 					player:dialogSeq(
-						{t, "The merchant vanishes as quickly as he appeared."},
+						{t, "Pedagang itu lenyap secepat kemunculannya."},
 						0
 					)
 					return
@@ -269,7 +269,7 @@ RandomMerchantNpc = {
 		elseif choice == 2 then
 			-- no
 			player:dialogSeq(
-				{t, "'Suit yourself.' He vanishes as suddenly as he appeared."},
+				{t, "'Terserah kau.' Ia lenyap secepat kemunculannya."},
 				0
 			)
 			return

@@ -9,7 +9,7 @@ ChapelNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell", "Buy Engagement Ring"}
+		local opts = {"Beli", "Jual", "Beli Cincin Pertunangan"}
 
 		if player:hasLegend("engaged") and not player:hasLegend("married") and not player:hasLegend("forged_blood_oath") and not player:hasLegend("sealed_blood_oath") and player.registry[
 			"partner1"
@@ -27,24 +27,24 @@ ChapelNpc = {
 			table.insert(opts, "Divorce")
 		end
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				ChapelNpc.buyItems()
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				ChapelNpc.sellItems()
 			)
-		elseif menu == "Buy Engagement Ring" then
+		elseif menu == "Beli Cincin Pertunangan" then
 			if os.time() < player.registry["engagement_timer"] then
 				player:dialogSeq(
 					{
 						t,
-						"Whoa! Weren't you just here? Let your heart cool a bit from your last love."
+						"Wah! Bukankah kau baru saja ke sini? Biarkan hatimu mendingin dulu dari cinta terakhirmu."
 					},
 					0
 				)
@@ -55,7 +55,7 @@ ChapelNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Whoa! Your heart is already committed to someone else."
+						"Wah! Hatimu sudah terikat pada orang lain."
 					},
 					0
 				)
@@ -63,20 +63,20 @@ ChapelNpc = {
 			end
 
 			local choice = player:menuSeq(
-				"Have you met one you hope to one day marry?",
+				"Sudahkah kau bertemu seseorang yang kelak kau harap kau nikahi?",
 				{
-					"Yes, I am very much in love!",
-					"You mean I'm expected to LOVE them?"
+					"Ya, aku sangat jatuh cinta!",
+					"Maksudmu aku harus MENCINTAI dia?"
 				},
 				{}
 			)
 
 			if choice == 1 then
 				local choice2 = player:menuSeq(
-					"The engagement ring will cost you " .. Item("engagement_ring").price .. " gold. Do you wish to buy one?",
+					"Cincin pertunangannya berharga " .. Item("engagement_ring").price .. " emas. Kau mau membelinya?",
 					{
-						"No price is too high for my love.",
-						"That much?!? Forget it!"
+						"Tidak ada harga yang terlalu mahal untuk cintaku.",
+						"Semahal itu?!? Lupakan saja!"
 					},
 					{}
 				)
@@ -88,7 +88,7 @@ ChapelNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Come back when you can afford to make the commitment."
+								"Kembalilah kalau kau sanggup membayar janji itu."
 							},
 							1
 						)
@@ -106,36 +106,36 @@ ChapelNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"To propose, cast this spell near your beloved. Then follow the directions. Make sure you have your ring with you!"
+							"Untuk melamar, rapal mantra ini di dekat kekasihmu, lalu ikuti petunjuknya. Pastikan cincinmu kau bawa!"
 						},
 						0
 					)
 					return
 				elseif choice2 == 2 then
 					player:dialogSeq(
-						{t, "Come back when your heart is ready."},
+						{t, "Kembalilah kalau hatimu sudah siap."},
 						0
 					)
 					return
 				end
 			elseif choice == 2 then
-				player:dialogSeq({t, "Come back when your heart is ready."}, 0)
+				player:dialogSeq({t, "Kembalilah kalau hatimu sudah siap."}, 0)
 				return
 			end
 		elseif menu == "Break Off Engagement" then
 			player:dialogSeq(
 				{
 					t,
-					"How sad this is necessary. At least you reached this decision before marriage."
+					"Sedih sekali ini harus terjadi. Setidaknya kau sampai pada keputusan ini sebelum menikah."
 				},
 				1
 			)
 
 			local var = player:menuSeq(
-				"Are you sure you want to end the engagement?",
+				"Kau yakin ingin membatalkan pertunangan ini?",
 				{
-					"Yes, it is necessary (You will lose some XP)",
-					"No, I need to consider further."
+					"Ya, itu perlu (Kau akan kehilangan sebagian XP)",
+					"Tidak, aku perlu berpikir lagi."
 				},
 				{}
 			)
@@ -157,11 +157,11 @@ ChapelNpc = {
 				player.registry["partner1"] = 0
 				player.registry["partner2"] = 0
 				player:sendStatus()
-				player:dialogSeq({t, "It is done."}, 0)
+				player:dialogSeq({t, "Sudah selesai."}, 0)
 				return
 			elseif var == 2 then
 				player:dialogSeq(
-					{t, "I hope you can salvage your relationship."},
+					{t, "Kuharap hubungan kalian masih bisa diselamatkan."},
 					0
 				)
 				return
@@ -171,7 +171,7 @@ ChapelNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have engaged too recently. Please return in " .. playerTimerValues(
+						"Kau baru saja bertunangan. Kembalilah dalam " .. playerTimerValues(
 							player,
 							"marriage_timer"
 						)
@@ -188,7 +188,7 @@ ChapelNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Both parties must be present for the ceremony to commence"
+						"Kedua pihak harus hadir agar upacaranya bisa dimulai"
 					},
 					0
 				)
@@ -196,13 +196,13 @@ ChapelNpc = {
 			end
 
 			if proposer:hasLegend("married") then
-				player:dialogSeq({t, "The person is already married."}, 0)
+				player:dialogSeq({t, "Orang itu sudah menikah."}, 0)
 				return
 			end
 
 			if proposer:hasLegend("sealed_blood_oath") or proposer:hasLegend("forged_blood_oath") then
 				player:dialogSeq(
-					{t, "The person is already in a blood union."},
+					{t, "Orang itu sudah terikat dalam ikatan darah."},
 					0
 				)
 				return
@@ -211,15 +211,15 @@ ChapelNpc = {
 			if player.registry["partner2"] ~= player.ID then
 				-- this logic returns true if player accessing menu is the person who orignally proposed the marriage
 				player:dialogSeq(
-					{t, "The proposee should start the marriage ceremony."},
+					{t, "Yang dilamar yang harus memulai upacara pernikahan."},
 					0
 				)
 				return
 			end
 
 			local choice = player:menuSeq(
-				"Are you certain you wish to devote yourself to this man or woman for life?",
-				{"Yes", "No"},
+				"Kau yakin ingin mengabdikan diri kepada lelaki atau perempuan ini seumur hidup?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -229,7 +229,7 @@ ChapelNpc = {
 			elseif choice == 2 then
 				-- No
 				player:dialogSeq(
-					{t, "Come back when you are firm in your resolve to marry."},
+					{t, "Kembalilah kalau tekadmu menikah sudah bulat."},
 					0
 				)
 			end
@@ -239,24 +239,24 @@ ChapelNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Oh no! You made a horrible mistake!",
-					"However, I can help you get that divorce you want."
+					"Aduh! Kau membuat kesalahan besar!",
+					"Namun aku bisa membantumu memperoleh perceraian yang kau inginkan."
 				},
 				1
 			)
 
 			local expCost = player.baseHealth * 2550
 			local choice = player:menuString(
-				"It will cost " .. Tools.formatNumber(expCost) .. " experience. Are you sure you want this divorce?",
-				{"Yes", "No"}
+				"Biayanya " .. Tools.formatNumber(expCost) .. " pengalaman. Kau yakin ingin bercerai?",
+				{"Ya", "Tidak"}
 			)
 
-			if choice == "Yes" then
+			if choice == "Ya" then
 				if player.exp < expCost then
 					player:dialogSeq(
 						{
 							t,
-							"Hmmm.. you don't have the experience to divorce, but there is something else you can offer."
+							"Hmmm.. pengalamanmu tidak cukup untuk bercerai, tetapi ada hal lain yang bisa kau tawarkan."
 						},
 						1
 					)
@@ -266,11 +266,11 @@ ChapelNpc = {
 					local stat = ""
 
 					local choice2 = player:menuSeq(
-						"Perhaps some physical suffering would be sufficient?",
+						"Mungkin penderitaan jasmani sudah cukup?",
 						{
 							"Sacrifice " .. vitaPenalty .. " Vita",
 							"Sacrifice " .. manaPenalty .. " Mana",
-							"I'd rather not."
+							"Aku lebih baik tidak."
 						},
 						{}
 					)
@@ -285,8 +285,8 @@ ChapelNpc = {
 					end
 
 					local confirm = player:menuSeq(
-						"It will cost you " .. Tools.formatNumber(penalty) .. " base " .. stat .. " as a penalty. Continue?",
-						{"Yes, do it", "No, nevermind"},
+						"Harganya " .. Tools.formatNumber(penalty) .. " base " .. stat .. " sebagai hukuman. Lanjutkan?",
+						{"Ya, lakukan", "Tidak, lupakan saja"},
 						{}
 					)
 
@@ -295,7 +295,7 @@ ChapelNpc = {
 							player:dialogSeq(
 								{
 									t,
-									"You need to gain more experience in your health before you can make this sacrifice."
+									"Kau perlu lebih banyak pengalaman pada kesehatanmu sebelum bisa berkorban seperti ini."
 								},
 								0
 							)
@@ -306,7 +306,7 @@ ChapelNpc = {
 							player:dialogSeq(
 								{
 									t,
-									"You need to gain more experience in your magic before you can make this sacrifice."
+									"Kau perlu lebih banyak pengalaman pada sihirmu sebelum bisa berkorban seperti ini."
 								},
 								0
 							)
@@ -328,15 +328,15 @@ ChapelNpc = {
 
 						player:calcStat()
 
-						player:dialogSeq({t, "You are now divorced."}, 0)
+						player:dialogSeq({t, "Kau kini bercerai."}, 0)
 						return
 					end
 
 					return
 				elseif player.exp >= expCost then
 					local confirmXPLoss = player:menuSeq(
-						"It will cost you " .. Tools.formatNumber(expCost) .. " experience as a penalty. Continue?",
-						{"Yes, do it", "No, nevermind"},
+						"Harganya " .. Tools.formatNumber(expCost) .. " pengalaman sebagai hukuman. Lanjutkan?",
+						{"Ya, lakukan", "Tidak, lupakan saja"},
 						{}
 					)
 
@@ -346,15 +346,15 @@ ChapelNpc = {
 						player.partner = 0
 						player:removeLegendbyName("married")
 						player:removeItem("love", 1)
-						player:dialogSeq({t, "You are now divorced."}, 0)
+						player:dialogSeq({t, "Kau kini bercerai."}, 0)
 						return
 					end
 				end
-			elseif choice == "No" then
+			elseif choice == "Tidak" then
 				player:dialogSeq(
 					{
 						t,
-						"Patience and love will save your marriage.\n\nDivorce is not something to take lightly."
+						"Kesabaran dan kasih akan menyelamatkan pernikahanmu.\n\nPerceraian bukan perkara sepele."
 					},
 					0
 				)
@@ -365,18 +365,18 @@ ChapelNpc = {
 
 	marriageprompt = async(function(proposer, proposee)
 		local choice = proposer:menuSeq(
-			"Do you, " .. proposer.name .. " take " .. proposee.name .. " as your partner?",
-			{"I do. (you will lose much xp if you divorce)", "I don't."},
+			"Bersediakah kau, " .. proposer.name .. " ambil " .. proposee.name .. " sebagai pasanganmu?",
+			{"Aku bersedia. (kau akan kehilangan banyak xp bila bercerai)", "Aku tidak bersedia."},
 			{}
 		)
 
 		if choice == 1 then
-			proposer:sendMinitext("I now pronounce you (married)")
-			proposee:sendMinitext("I now pronounce you (married)")
+			proposer:sendMinitext("Dengan ini kunyatakan kalian (menikah)")
+			proposee:sendMinitext("Dengan ini kunyatakan kalian (menikah)")
 
 			proposer:removeLegendbyName("engaged")
 			proposer:addLegend(
-				"Married to $player (" .. curT() .. ")",
+				"Menikah dengan $player (" .. curT() .. ")",
 				"married",
 				6,
 				1,
@@ -385,7 +385,7 @@ ChapelNpc = {
 
 			proposee:removeLegendbyName("engaged")
 			proposee:addLegend(
-				"Married to $player (" .. curT() .. ")",
+				"Menikah dengan $player (" .. curT() .. ")",
 				"married",
 				6,
 				1,
@@ -406,12 +406,12 @@ ChapelNpc = {
 			proposer:addItem("love", 1)
 			proposee:addItem("love", 1)
 
-			proposer:dialog("Congratulations you are both now married.", {})
-			proposee:dialog("Congratulations you are both now married.", {})
+			proposer:dialog("Selamat, kalian berdua kini menikah.", {})
+			proposee:dialog("Selamat, kalian berdua kini menikah.", {})
 		elseif choice == 2 then
-			proposer:sendMinitext("It seems that your partner is not sure of this marriage.")
+			proposer:sendMinitext("Sepertinya pasanganmu belum yakin pada pernikahan ini.")
 			proposer:freeAsync()
-			proposer:dialog("What but love can last forever?", {})
+			proposer:dialog("Apa lagi selain cinta yang bisa bertahan selamanya?", {})
 		end
 	end),
 

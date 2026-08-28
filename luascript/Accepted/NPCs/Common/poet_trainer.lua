@@ -17,15 +17,15 @@ PoetTrainerNpc = {
 			if player.level < 99 then
 				table.insert(opts, "Divine Secret")
 			end
-			table.insert(opts, "Learn Secret")
+			table.insert(opts, "Pelajari Rahasia")
 		end
 		table.insert(opts, "Forget Secret")
 
 		table.insert(opts, "Become Noble")
-		table.insert(opts, "Minor Quest")
+		table.insert(opts, "Tugas Kecil")
 
 		if (player.registryString["minor_quest"] ~= "") then
-			table.insert(opts, "Complete Minor Quest")
+			table.insert(opts, "Tuntaskan Tugas Kecil")
 		end
 
 		if npc.mapTitle == "Staff" and player.baseClass == 4 and player.level >= 10 and not player:hasLegend("destroyed_nagnang_evil") then
@@ -77,7 +77,7 @@ PoetTrainerNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 		local choice2
@@ -87,7 +87,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are still young, and not ready for this yet. Return when you have gained your 75th level."
+						"Kau masih muda dan belum siap untuk ini. Kembalilah kalau sudah mencapai level 75."
 					},
 					1
 				)
@@ -95,16 +95,16 @@ PoetTrainerNpc = {
 			else
 				general_npc_funcs.setTitle(player, npc)
 			end
-		elseif choice == "Minor Quest" then
+		elseif choice == "Tugas Kecil" then
 			MinorQuest.quest(player, npc)
-		elseif choice == "Complete Minor Quest" then
+		elseif choice == "Tuntaskan Tugas Kecil" then
 			MinorQuest.complete(player, npc)
 		elseif choice == "Become a Poet" then
 			if player.level < 5 then
 				player:dialogSeq(
 					{
 						t,
-						"Hail, little one! Please return to me when you have reached the 5th insight."
+						"Salam, anak kecil! Kembalilah kepadaku kalau kau sudah mencapai pencerahan kelima."
 					},
 					0
 				)
@@ -114,18 +114,18 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Hail, mighty one! Welcome to my sanctuary, the sanctuary of the healer.",
-					"Have you come to pick your path? I think you would make a great poet, and a great hero."
+					"Salam, yang perkasa! Selamat datang di tempat sucianku, tempat sucian sang penyembuh.",
+					"Kau datang untuk memilih jalurmu? Kurasa kau akan jadi poet yang hebat, sekaligus pahlawan besar."
 				},
 				1
 			)
 			choice2 = player:menuString(
-				"Will you join the path of the poet?",
-				{"Yes", "Tell me more", "No"}
+				"Maukah kau menempuh jalur poet?",
+				{"Ya", "Ceritakan lebih banyak", "Tidak"}
 			)
 		elseif choice == "Divine Secret" then
 			player:futureSpells(npc)
-		elseif choice == "Learn Secret" then
+		elseif choice == "Pelajari Rahasia" then
 			player:learnSpell(npc)
 		elseif choice == "Forget Secret" then
 			player:forgetSpell(npc)
@@ -135,7 +135,7 @@ PoetTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"I am still waiting for you to bring me a branch from the Forever tree."
+							"Aku masih menunggumu membawakan sebatang ranting dari Forever tree."
 						},
 						0
 					)
@@ -157,7 +157,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, the wood will be well used in this order of Poets. Thank you."
+						"Ah, kayu ini akan sangat berguna bagi ordo Poet ini. Terima kasih."
 					},
 					0
 				)
@@ -181,7 +181,7 @@ PoetTrainerNpc = {
 					player:dialogSeq(
 						{
 							magic_rabbit,
-							"You killed one of our rabbits! You must cleanse yourself by asking for forgiveness from all of the Totem Animals."
+							"Kau membunuh salah satu kelinci kami! Kau harus menyucikan diri dengan memohon ampun kepada seluruh Hewan Totem."
 						},
 						0
 					)
@@ -192,9 +192,9 @@ PoetTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Congratulations! You have helped us in our need to keep balance in our kingdom by relieving a great pressure of evil from within our land.",
-							"Please take this protective charm. It has been imbued with the essence of the sacred water that you used to destroy the evil presence.",
-							"May it shield you from evil in your upcoming battles. This is the only one I shall ever give you. Thank you again."
+							"Selamat! Kau telah membantu kami menjaga keseimbangan kerajaan dengan meredakan tekanan kejahatan yang besar dari dalam tanah kami.",
+							"Terimalah jimat pelindung ini. Ia telah diisi sari air suci yang kau pakai untuk memusnahkan kehadiran jahat itu.",
+							"Semoga ia melindungimu dari kejahatan dalam pertempuran mendatang. Hanya ini satu-satunya yang akan kuberikan padamu. Sekali lagi terima kasih."
 						},
 						1
 					)
@@ -217,11 +217,11 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Now for the story of our service. A long time ago, a great evil presence grew here. It began to affect the townsfolk, turning them into a warlike people.",
-						"Nagnang has always been strong with a sword, but these people began to become crazy with power. It was only through the honor and intelligence of our Leader Kija that we managed to drive them out.",
-						"But the evil stil existed. The Poets managed to banish this presence to another realm. But it grows upon war and pain and our lands are filled with it.",
-						"To keep the evil in check, we created magical rabbits to keep the evil balanced. But now it is out of our control once again.",
-						"It has begun to pour all of its energy into one of itself, deep in a hidden pocket of Oblivion. If the power increases too much, a hole will tear into this realm and the evil will be free once again."
+						"Sekarang kisah pengabdian kami. Dahulu kala, kehadiran jahat yang besar tumbuh di sini. Ia mulai memengaruhi penduduk kota dan mengubah mereka jadi kaum yang haus perang.",
+						"Nagnang selalu tangguh dengan pedang, tetapi orang-orang itu mulai gila kekuasaan. Hanya berkat kehormatan dan kecerdasan Pemimpin kami, Kija, kami berhasil mengusir mereka.",
+						"Tetapi kejahatannya tetap ada. Para Poet berhasil mengusir kehadiran itu ke alam lain. Sayangnya ia tumbuh dari perang dan penderitaan, dan tanah kami penuh dengan keduanya.",
+						"Untuk menahan kejahatan itu, kami menciptakan kelinci bersihir agar keseimbangannya terjaga. Tetapi kini ia lepas dari kendali kami lagi.",
+						"Ia mulai menuangkan seluruh tenaganya ke dalam satu wujud dirinya, jauh di kantong tersembunyi Oblivion. Kalau kekuatannya bertambah terlalu besar, akan robek lubang ke alam ini dan kejahatan itu bebas kembali."
 					},
 					1
 				)
@@ -230,7 +230,7 @@ PoetTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You must wait 24 hours before I give you another sacred water."
+							"Kau harus menunggu 24 jam sebelum kuberi air suci lagi."
 						},
 						0
 					)
@@ -243,7 +243,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						sacred_water,
-						"You need to take this sacred water into the realm and drop it next to the ugly green infected creature. The water will destroy it and balance will be restored once again."
+						"Bawalah air suci ini ke alam itu dan jatuhkan di sebelah makhluk hijau buruk yang terjangkit. Airnya akan memusnahkannya dan keseimbangan pun pulih kembali."
 					},
 					1
 				)
@@ -254,7 +254,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						infected_creature,
-						"Note! You need to be NEXT to the creature and FACING it in order for the magic water to work! Do not lose or give this water away. That would be disrespectful."
+						"Ingat! Kau harus berada TEPAT DI SEBELAH makhluk itu dan MENGHADAPNYA agar air sihirnya bekerja! Jangan menghilangkan atau memberikan air ini. Itu tidak sopan."
 					},
 					1
 				)
@@ -262,7 +262,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						magic_rabbit,
-						"Do not kill any of the rabbits you see. They are our allegiance and our power against the evil."
+						"Jangan bunuh satu pun kelinci yang kau lihat. Merekalah sekutu dan kekuatan kami melawan kejahatan."
 					},
 					1
 				)
@@ -270,7 +270,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The entrance to this realm is at the pagoda just south of here. Only our order my enter. When you return... if you return... come see me, I will be most grateful for your help."
+						"Pintu masuk ke alam itu ada di pagoda tepat di selatan sini. Hanya ordo kami yang boleh masuk. Saat kau kembali... kalau kau kembali... temuilah aku; aku akan sangat berterima kasih atas bantuanmu."
 					},
 					0
 				)
@@ -279,7 +279,7 @@ PoetTrainerNpc = {
 			if player.quest["nangen_acolyte"] == 0 then
 				if player.quest["gave_sonhi_pipe"] == 0 then
 					if player:hasItem("sonhi_pipe", 1) ~= true then
-						player:sendMinitext("Hmmm, what? Oh hello, Stranger")
+						player:sendMinitext("Hmmm, apa? Oh, halo, Orang Asing")
 						return
 					end
 
@@ -290,17 +290,17 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Why, thank you for the pipe. I have not seen its kind since we had moved into the town. What a thoughtful gift.",
-						"Perhaps not all strangers are as evil as we have thought. Hmm... Perhaps we could even ask them to assist us in our service."
+						"Wah, terima kasih pipanya. Aku belum pernah melihat yang seperti ini sejak kami pindah ke kota. Hadiah yang sungguh berkesan.",
+						"Mungkin tidak semua orang asing sejahat yang kami kira. Hmm... mungkin kita bahkan bisa meminta mereka membantu pengabdian kami."
 					},
 					1
 				)
 
 				local choice2 = player:menuSeq(
-					"I wonder, would you be willing to help us? It would require you to follow the path of the Staff and of Nagnang, if only for a short while.",
+					"Aku ingin tahu, bersediakah kau membantu kami? Kau harus menempuh jalur Staff dan Nagnang, walau hanya sebentar.",
 					{
-						"I would be honored to help you and your lovely town.",
-						"I am sorry, but my path lies along another way."
+						"Aku merasa terhormat bisa membantumu dan kotamu yang indah.",
+						"Maaf, tetapi jalanku berada di arah lain."
 					},
 					{}
 				)
@@ -311,25 +311,25 @@ PoetTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Well then, you will still need to become an initiate of the Staff before we can allow you to know our secrets. You must quest to find a shard of wood that will last forever.",
-							"Bring it back to me as a gift and I will allow you to be an initiate of the Staff. Note - it MUST be you who picks up the branch from the tree."
+							"Kalau begitu kau tetap harus menjadi pemula Staff sebelum kami mengizinkanmu mengetahui rahasia kami. Kau harus mencari sekeping kayu yang bertahan selamanya.",
+							"Bawa kembali kepadaku sebagai hadiah dan kau kuizinkan menjadi pemula Staff. Ingat - HARUS kau sendiri yang memetik ranting itu dari pohonnya."
 						},
 						0
 					)
 				elseif choice2 == 2 then
 					-- deny
-					player:sendMinitext("Then I wish you the best of luck on your path.")
-					player:sendMinitext("Thanks again for the pipe.")
+					player:sendMinitext("Kalau begitu semoga jalanmu penuh keberuntungan.")
+					player:sendMinitext("Sekali lagi terima kasih pipanya.")
 					return
 				end
 			end
 		end
 
-		if choice2 == "Yes" then
+		if choice2 == "Ya" then
 			player:dialogSeq(
 				{
 					t,
-					"Great! You have made a great decision. I see you becoming a great hero in these lands. Now let me set you up with some supplies."
+					"Bagus! Itu keputusan yang tepat. Aku melihatmu kelak jadi pahlawan besar di tanah ini. Sekarang biar kubekali kau dengan perlengkapan."
 				},
 				1
 			)
@@ -353,42 +353,42 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Here is some armor, and a weapon. These are specific to the poet path, and will help get you started.",
-					"I have also given you some gold, it's all I can spare right now. It will help you with repairs, and getting some other equipment like rings.",
-					"You also have four herb pipes, these will replenish your mana. Once they are used up you should buy some more, shop keepers around town sell them",
-					"If you wish to learn some skills let me know, I can teach you many things to help you in battle."
+					"Ini zirah dan senjata untukmu. Keduanya khusus jalur pujangga dan akan membantumu memulai.",
+					"Kuberi juga sedikit emas, hanya itu yang bisa kusisihkan sekarang. Emas itu akan membantumu memperbaiki barang dan membeli perlengkapan lain seperti cincin.",
+					"Kau juga punya empat pipa herbal; benda itu memulihkan manamu. Kalau sudah habis, belilah lagi, para pedagang di kota menjualnya",
+					"Kalau kau ingin mempelajari beberapa keahlian, bilang saja. Banyak yang bisa kuajarkan untuk membantumu bertarung."
 				},
 				1
 			)
-		elseif choice2 == "Tell me more" then
+		elseif choice2 == "Ceritakan lebih banyak" then
 			player:dialogSeq(
 				{
 					t,
-					"Tell you about poets? Poets are the most sought after path, wanted by every other path to join them in adventures.",
-					"Poets are masters of defense with the ability to heal and protect large numbers of people easily.",
-					"Higher level poets gain the ability to charm animals, and can become an incredible power themselves if they have the skill."
+					"Bercerita soal poet? Poet adalah jalur yang paling dicari, diinginkan setiap jalur lain untuk menemani petualangan.",
+					"Poet adalah ahli pertahanan, dengan kemampuan menyembuhkan dan melindungi banyak orang dengan mudah.",
+					"Poet berlevel tinggi memperoleh kemampuan memikat binatang, dan bisa menjadi kekuatan luar biasa sendiri kalau keahliannya memadai."
 				},
 				1
 			)
 
 			local choice3 = player:menuString(
-				"Will you join us now?",
-				{"Yes", "No"}
+				"Maukah kau bergabung dengan kami sekarang?",
+				{"Ya", "Tidak"}
 			)
 
-			if choice3 == "No" then
+			if choice3 == "Tidak" then
 				player:dialogSeq(
 					{
 						t,
-						"Very well, I will be waiting here if you change your mind. I am seeking great people all the time to join this great path."
+						"Baiklah, aku menunggu di sini kalau kau berubah pikiran. Aku selalu mencari orang-orang hebat untuk bergabung dengan jalan yang agung ini."
 					},
 					1
 				)
-			elseif choice3 == "Yes" then
+			elseif choice3 == "Ya" then
 				player:dialogSeq(
 					{
 						t,
-						"Great! You have made a great decision. I see you becoming a great hero in these lands. Now let me set you up with some supplies."
+						"Bagus! Itu keputusan yang tepat. Aku melihatmu kelak jadi pahlawan besar di tanah ini. Sekarang biar kubekali kau dengan perlengkapan."
 					},
 					1
 				)
@@ -411,19 +411,19 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Here is some armor, and a weapon. These are specific to the poet path, and will help get you started.",
-						"I have also given you some gold, it's all I can spare right now. It will help you with repairs, and getting some other equipment like rings.",
-						"You also have four herb pipes, these will replenish your mana. Once they are used up you should buy some more, shop keepers around town sell them",
-						"If you wish to learn some skills let me know, I can teach you many things to help you in battle."
+						"Ini zirah dan senjata untukmu. Keduanya khusus jalur pujangga dan akan membantumu memulai.",
+						"Kuberi juga sedikit emas, hanya itu yang bisa kusisihkan sekarang. Emas itu akan membantumu memperbaiki barang dan membeli perlengkapan lain seperti cincin.",
+						"Kau juga punya empat pipa herbal; benda itu memulihkan manamu. Kalau sudah habis, belilah lagi, para pedagang di kota menjualnya",
+						"Kalau kau ingin mempelajari beberapa keahlian, bilang saja. Banyak yang bisa kuajarkan untuk membantumu bertarung."
 					},
 					1
 				)
 			end
-		elseif choice2 == "No" then
+		elseif choice2 == "Tidak" then
 			player:dialogSeq(
 				{
 					t,
-					"Very well, I will be waiting here if you change your mind. I am seeking great people all the time to join this great path."
+					"Baiklah, aku menunggu di sini kalau kau berubah pikiran. Aku selalu mencari orang-orang hebat untuk bergabung dengan jalan yang agung ini."
 				},
 				1
 			)
@@ -442,15 +442,15 @@ PoetTrainerNpc = {
 			end
 			player.quest["star_armor"] = 1
 
-			player:dialogSeq({t, "Every man and woman is a star."}, 1)
-			player:dialogSeq({star, "You wish to twinkle?"}, 1)
-			player:dialogSeq({t, "Everyone does. Yet many have failed."}, 1)
+			player:dialogSeq({t, "Setiap lelaki dan perempuan adalah bintang."}, 1)
+			player:dialogSeq({star, "Kau ingin berkelip?"}, 1)
+			player:dialogSeq({t, "Semua orang ingin. Namun banyak yang gagal."}, 1)
 
 			if not player:karmaCheck("rabbit") then
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -459,7 +459,7 @@ PoetTrainerNpc = {
 
 			if player:killCount("nine_tailed_fox") >= 9 then
 				player.quest["star_armor"] = 2
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 
 				return
 			end
@@ -467,7 +467,7 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"One that has failed has turned to trickery and deceit. Find him. He's grown anotheer tail for each of his generations of deceit. Slay him once for each tail, then return."
+					"Salah satu yang gagal berpaling pada muslihat dan tipu daya. Temukan dia. Ia menumbuhkan satu ekor untuk tiap keturunan tipu dayanya. Bunuh dia sekali untuk tiap ekornya, lalu kembalilah."
 				},
 				0
 			)
@@ -478,7 +478,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -488,14 +488,14 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Your hands do not show any power. Receive the power of the Sen Gloves."
+					"Tanganmu belum menunjukkan kekuatan apa pun. Terimalah kekuatan Sen Gloves."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -504,7 +504,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are missing the gloves. Please return when you have them."
+						"Sarung tangannya belum ada. Kembalilah kalau sudah kau punya."
 					},
 					0
 				)
@@ -513,7 +513,7 @@ PoetTrainerNpc = {
 
 			player:removeItem("sen_glove", 2)
 			player.quest["star_armor"] = 3
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Poet Star 3" then
@@ -521,7 +521,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -543,21 +543,21 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"To twinkle brightly, you must present that lance that twinkles most brightly."
+					"Untuk berkelip terang, kau harus menunjukkan tombak yang paling terang kelipnya."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
 
 			if player:hasItem("titanium_lance", 1) ~= true then
 				player:dialogSeq(
-					{t, "Please come back when you have a Titanium Lance."},
+					{t, "Kembalilah kalau kau sudah punya Titanium Lance."},
 					0
 				)
 				return
@@ -568,7 +568,7 @@ PoetTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armor,
-					"You want to wear this armor? It shall cost you some of your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Harganya sebagian kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -580,12 +580,12 @@ PoetTrainerNpc = {
 				player.quest["star_armor"] = 0
 				player.registry["flushed_kills"] = 0
 				player:addLegend(
-					"Mastered the stars (" .. curT() .. ")",
+					"Menguasai bintang (" .. curT() .. ")",
 					"mastered_the_stars",
 					5,
 					128
 				)
-				player:dialogSeq({t, "It is yours."}, 0)
+				player:dialogSeq({t, "Itu milikmu."}, 0)
 				player:calcStat()
 			end
 		end
@@ -597,17 +597,17 @@ PoetTrainerNpc = {
 			player.quest["moon_armor"] = 1
 
 			player:dialogSeq(
-				{t, "You have returned for guidance from the moon?"},
+				{t, "Kau kembali untuk memohon bimbingan bulan?"},
 				1
 			)
 			player:dialogSeq(
-				{t, "Very well, but the sacrifices shall be much greater!"},
+				{t, "Baiklah, tetapi pengorbanannya akan jauh lebih besar!"},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"You follow the path of Love. Prove your devotion through sacrifice."
+					"Kau menempuh jalur Love. Buktikan pengabdianmu lewat pengorbanan."
 				},
 				1
 			)
@@ -616,7 +616,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -626,14 +626,14 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Not all victories stem from combat. Bring to me 50 roses to offer in the name of love."
+					"Tidak semua kemenangan lahir dari pertempuran. Bawakan aku 50 mawar untuk dipersembahkan atas nama cinta."
 				},
 				1
 			)
 
 			if player:hasItem("rose", 50) ~= true then
 				player:dialogSeq(
-					{t, "Please return to me when you have the 50 roses."},
+					{t, "Kembalilah kepadaku kalau 50 mawarnya sudah kau punya."},
 					0
 				)
 				return
@@ -641,7 +641,7 @@ PoetTrainerNpc = {
 
 			player:removeItem("rose", 50)
 			player.quest["moon_armor"] = 2
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Poet Moon 2" then
@@ -649,7 +649,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -659,7 +659,7 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Do you understand the feeling of true companionship? Has another touched your soul?"
+					"Apakah kau memahami rasa kebersamaan sejati? Sudahkah seseorang menyentuh jiwamu?"
 				},
 				1
 			)
@@ -667,7 +667,7 @@ PoetTrainerNpc = {
 			if player.partner == 0 then
 				-- no marriage or blood brother/sister
 				player:dialogSeq(
-					{t, "Please return to me when you have made a commitment."},
+					{t, "Kembalilah kepadaku kalau kau sudah mengikat janji."},
 					0
 				)
 				return
@@ -677,7 +677,7 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"I see that you have found your true companion. That is good."
+					"Kulihat kau sudah menemukan pendamping sejatimu. Bagus."
 				},
 				0
 			)
@@ -688,7 +688,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -698,7 +698,7 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"For this next task, I will ask that you show me another example of commitment, mentoring 3 others."
+					"Untuk tugas berikutnya, tunjukkan padaku satu lagi bukti komitmen: membimbing 3 orang."
 				},
 				1
 			)
@@ -707,7 +707,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Return to me when you have mentored at least 3 others."
+						"Kembalilah kepadaku kalau kau sudah membimbing sedikitnya 3 orang."
 					},
 					0
 				)
@@ -715,7 +715,7 @@ PoetTrainerNpc = {
 			end
 
 			player.quest["moon_armor"] = 4
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Poet Moon 4" then
@@ -723,7 +723,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -747,21 +747,21 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"I require your star garment from which to create your new clothing."
+					"Aku butuh star garment-mu sebagai bahan pakaian barumu."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
 
 			if player:hasItem(armor.yname, 1) ~= true then
 				player:dialogSeq(
-					{t, "Please return when you have the required item."},
+					{t, "Silakan kembali kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -772,7 +772,7 @@ PoetTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armorg,
-					"You want to wear this clothing? It shall cost you some of your abilities and some karma."
+					"Kau ingin mengenakan pakaian ini? Harganya sebagian kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -784,12 +784,12 @@ PoetTrainerNpc = {
 				player.quest["moon_armor"] = 0
 				player.registry["flushed_kills"] = 0
 				player:addLegend(
-					"Understood the moon (" .. curT() .. ")",
+					"Memahami bulan (" .. curT() .. ")",
 					"understood_the_moon",
 					5,
 					128
 				)
-				player:dialogSeq({t, "It is yours."}, 0)
+				player:dialogSeq({t, "Itu milikmu."}, 0)
 				player:calcStat()
 			end
 		end
@@ -804,11 +804,11 @@ PoetTrainerNpc = {
 			player.quest["sun_armor"] = 1
 
 			player:dialogSeq(
-				{t, "The sun is the mightiest and fiercest of all."},
+				{t, "Matahari adalah yang terperkasa dan paling ganas di antara semuanya."},
 				1
 			)
 			player:dialogSeq(
-				{t, "Only the very best and most true can master it."},
+				{t, "Hanya yang terbaik dan paling tulus yang bisa menguasainya."},
 				1
 			)
 
@@ -816,7 +816,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -826,14 +826,14 @@ PoetTrainerNpc = {
 			if player:killCount("massive_scorpion") >= 1 and player:killCount("sute") >= 1 then
 				player.quest["sun_armor"] = 2
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"I do not envy you, mage. For to prove your worthiness, you must slay 1 Massive Scorpion and Sute."
+					"Aku tidak iri padamu, mage. Sebab untuk membuktikan kelayakanmu, kau harus membunuh 1 Massive Scorpion dan Sute."
 				},
 				1
 			)
@@ -843,7 +843,7 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Next I would like you to bring to me: 10 crafted white ambers, 1 purified water, and 6 sen gloves"
+					"Berikutnya bawakan aku: 10 white amber olahan, 1 purified water, dan 6 sen glove"
 				},
 				1
 			)
@@ -851,7 +851,7 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -860,7 +860,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -872,7 +872,7 @@ PoetTrainerNpc = {
 				1
 			) ~= true or player:hasItem("sen_glove", 6) ~= true then
 				player:dialogSeq(
-					{t, "Please return when you have all the items."},
+					{t, "Kembalilah kalau seluruh barangnya sudah kau punya."},
 					0
 				)
 				return
@@ -883,15 +883,15 @@ PoetTrainerNpc = {
 			player:removeItem("sen_glove", 6)
 
 			player.quest["sun_armor"] = 3
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Poet Sun 3" then
 			player:dialogSeq(
 				{
 					t,
-					"Next I would like you to show your devotion to the four totem animals.",
-					"First I would like you to worship Chung ryong, then Baekho, then Ju Jak, and finally Hyun moo."
+					"Berikutnya tunjukkan pengabdianmu kepada keempat hewan totem.",
+					"Pertama sembahlah Chung ryong, lalu Baekho, lalu Ju Jak, dan terakhir Hyun moo."
 				},
 				1
 			)
@@ -899,7 +899,7 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You do not need to return to me after you worship each totem, only when you have worshipped all four totems."
+					"Kau tidak perlu kembali kepadaku setiap selesai menyembah satu totem, cukup setelah keempatnya kau sembah."
 				},
 				1
 			)
@@ -908,7 +908,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -919,7 +919,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have yet to worship all four totems, please return to me when you have done so."
+						"Kau belum menyembah keempat totem; kembalilah kepadaku setelah semuanya selesai."
 					},
 					0
 				)
@@ -930,14 +930,14 @@ PoetTrainerNpc = {
 			player.quest["sun_armor_ntotem"] = 0
 
 			-- reset registry
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Poet Sun 4" then
 			player:dialogSeq(
 				{
 					t,
-					"Next I would like to see your devotion to the crafts. You will need to be the level of Adept or higher in either Tailoring, Smithing, or Carpentry"
+					"Berikutnya aku ingin melihat pengabdianmu pada kerajinan. Kau harus mencapai tingkat Adept atau lebih tinggi pada salah satu dari Tailoring, Smithing, atau Carpentry"
 				},
 				1
 			)
@@ -946,7 +946,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -960,7 +960,7 @@ PoetTrainerNpc = {
 			) or crafting.checkSkillLevel(player, "woodworking", "adept") then
 				player.quest["sun_armor"] = 5
 				player:dialogSeq(
-					{t, "You have shown your devotion to the crafts."},
+					{t, "Kau sudah menunjukkan pengabdianmu pada kerajinan."},
 					0
 				)
 				return
@@ -968,7 +968,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Return to me when you have achieved Adept status in Tailoring, Smithing, or Carpentry."
+						"Kembalilah kepadaku kalau kau sudah mencapai tingkat Adept pada Tailoring, Smithing, atau Carpentry."
 					},
 					0
 				)
@@ -976,12 +976,12 @@ PoetTrainerNpc = {
 		end
 
 		if choice == "Poet Sun 5" then
-			player:dialogSeq({t, "Next I will require 2 Titanium Lances"}, 1)
+			player:dialogSeq({t, "Berikutnya aku minta 2 Titanium Lance"}, 1)
 
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -990,7 +990,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -999,7 +999,7 @@ PoetTrainerNpc = {
 
 			if player:hasItem("titanium_lance", 2) ~= true then
 				player:dialogSeq(
-					{t, "Return when you have 2 titanium lances"},
+					{t, "Kembalilah kalau kau sudah punya 2 titanium lance"},
 					0
 				)
 				return
@@ -1008,7 +1008,7 @@ PoetTrainerNpc = {
 			player:removeItem("titanium_lance", 2)
 
 			player.quest["sun_armor"] = 6
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Poet Sun 6" then
@@ -1026,12 +1026,12 @@ PoetTrainerNpc = {
 
 			local armorg = {graphic = item.icon, color = item.iconC}
 
-			player:dialogSeq({t, "Please present your moon garment"}, 1)
+			player:dialogSeq({t, "Tunjukkan busana bulanmu"}, 1)
 
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -1040,7 +1040,7 @@ PoetTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -1049,7 +1049,7 @@ PoetTrainerNpc = {
 
 			if player:hasItem(armor.yname, 1) ~= true then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -1060,7 +1060,7 @@ PoetTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have persevered through many trials. A mighty reward is almost yours!"
+					"Kau bertahan melewati banyak ujian. Sebentar lagi ganjaran besar jadi milikmu!"
 				},
 				1
 			)
@@ -1068,7 +1068,7 @@ PoetTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armorg,
-					"You want to wear this armor? It shall drain your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Ia akan menguras kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -1080,12 +1080,12 @@ PoetTrainerNpc = {
 				player.registry["flushed_kills"] = 0
 				player.quest["sun_armor"] = 0
 				player:addLegend(
-					"Survived the sun (" .. curT() .. ")",
+					"Bertahan di bawah matahari (" .. curT() .. ")",
 					"survived_the_sun",
 					5,
 					128
 				)
-				player:dialogSeq({t, "It is yours."}, 0)
+				player:dialogSeq({t, "Itu milikmu."}, 0)
 				player:calcStat()
 			end
 		end

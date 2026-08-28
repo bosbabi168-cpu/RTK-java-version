@@ -10,7 +10,7 @@ empty_water_jug = {
 			player:addItem("water_jug", 1)
 			player:removeItem("empty_water_jug", 1, 1)
 			player.fakeDrop = 1
-			player:dialogSeq({t, "You filled your jug with water."}, 0)
+			player:dialogSeq({t, "Kau mengisi kendimu dengan air."}, 0)
 		end
 	end
 }

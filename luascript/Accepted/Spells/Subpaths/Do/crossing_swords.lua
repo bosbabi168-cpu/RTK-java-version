@@ -17,7 +17,7 @@ crossing_swords = {
 		if (player:hasDuration("crossing_swords") and player.rage == 6) then
 			-- cast rage2
 			if (player.magic < 10000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -26,7 +26,7 @@ crossing_swords = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 2] Crossing swords grows within you.")
+			player:sendMinitext("[Rage 2] Crossing swords tumbuh di dalam dirimu.")
 
 			player.registry["crossingswordslevel"] = 2
 			player:setAether("crossing_swords", aethers)
@@ -35,7 +35,7 @@ crossing_swords = {
 		elseif (player:hasDuration("crossing_swords") and player.rage == 9) then
 			-- cast rage3
 			if (player.magic < 22000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -44,14 +44,14 @@ crossing_swords = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 3] Crossing swords inspires you.")
+			player:sendMinitext("[Rage 3] Crossing swords mengilhamimu.")
 			player.registry["crossingswordslevel"] = 3
 			player:setAether("crossing_swords", aethers)
 			player:calcStat()
 		elseif (player:hasDuration("crossing_swords") and player.rage == 12) then
 			-- cast rage4
 			if (player.magic < 38000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -60,14 +60,14 @@ crossing_swords = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 4] Your body trembles with incredible strength.")
+			player:sendMinitext("[Rage 4] Tubuhmu bergetar oleh kekuatan luar biasa.")
 			player.registry["crossingswordslevel"] = 4
 			player:setAether("crossing_swords", aethers)
 			player:calcStat()
 		elseif (player:hasDuration("crossing_swords") and player.rage == 18) then
 			-- cast rage5
 			if (player.magic < 78000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -76,14 +76,14 @@ crossing_swords = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 5] You enter a mindless frenzy.")
+			player:sendMinitext("[Rage 5] Kau masuk ke amukan tanpa nalar.")
 			player.registry["crossingswordslevel"] = 5
 			player:setAether("crossing_swords", aethers)
 			player:calcStat()
 		elseif (player:hasDuration("crossing_swords") and player.rage == 27) then
 			-- cast rage6
 			if (player.magic < 150000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -92,13 +92,13 @@ crossing_swords = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 6] Your body is torn apart with Crossing swords.")
+			player:sendMinitext("[Rage 6] Tubuhmu tercabik oleh Crossing swords.")
 			player.registry["crossingswordslevel"] = 6
 			player:setAether("crossing_swords", aethers)
 			player:calcStat()
 		elseif (player:hasDuration("crossing_swords") == false) then
 			if (player.magic < 3000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -113,7 +113,7 @@ crossing_swords = {
 			-- setting this to calculate the end ac and vita
 			player:setDuration("crossing_swords", duration)
 			player:setAether("crossing_swords", aethers)
-			player:sendMinitext("[Rage 1] You cast Chung Ryong's rage.")
+			player:sendMinitext("[Rage 1] Kau merapal amarah Chung Ryong.")
 			player:calcStat()
 		end
 	end,

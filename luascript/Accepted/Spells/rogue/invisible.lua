@@ -14,12 +14,12 @@ invisible_rogue = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(invis) then
-			player:sendMinitext("Another spell of this type is already active.")
+			player:sendMinitext("Mantra lain sejenis ini sudah aktif.")
 			return
 		end
 
@@ -62,12 +62,12 @@ spirits_form_rogue = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(invis) then
-			player:sendMinitext("Another spell of this type is already active.")
+			player:sendMinitext("Mantra lain sejenis ini sudah aktif.")
 			return
 		end
 
@@ -111,12 +111,12 @@ lifes_cloak_rogue = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(invis) then
-			player:sendMinitext("Another spell of this type is already active.")
+			player:sendMinitext("Mantra lain sejenis ini sudah aktif.")
 			return
 		end
 
@@ -159,12 +159,12 @@ glass_form_rogue = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(invis) then
-			player:sendMinitext("Another spell of this type is already active.")
+			player:sendMinitext("Mantra lain sejenis ini sudah aktif.")
 			return
 		end
 

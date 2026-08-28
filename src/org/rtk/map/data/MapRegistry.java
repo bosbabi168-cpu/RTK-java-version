@@ -215,7 +215,9 @@ public final class MapRegistry {
      */
     public int loadWarps(org.rtk.common.Sql sql) {
         long t0 = System.currentTimeMillis();
-        int[] stat = new int[3]; // 0=terdaftar, 1=peta tak dimuat, 2=di luar batas
+        // 0=terdaftar, 1=peta ASAL tak dimuat, 2=di luar batas,
+        // 3=tujuan di map server lain (tetap didaftarkan)
+        int[] stat = new int[4];
         int rows = sql.forEachRow(
                 "SELECT `SourceMapId`, `SourceX`, `SourceY`, "
                 + "`DestinationMapId`, `DestinationX`, `DestinationY` FROM `Warps`",
@@ -229,12 +231,26 @@ public final class MapRegistry {
 
                     MapData src = maps.get(mm);
                     MapData dst = maps.get(tm);
-                    if (src == null || dst == null) {
+                    if (src == null) {
                         stat[1]++;
                         return;
                     }
+                    // ⚠️ MENYIMPANG DARI C, DENGAN SENGAJA (R3/C3).
+                    // C membuang portal yang peta TUJUANNYA tidak dimuat di
+                    // server ini (`npc.c`: `if (!map_isloaded(mm) ||
+                    // !map_isloaded(tm)) continue;`). Akibatnya setiap portal
+                    // antar map server lenyap saat dimuat — dan jalur
+                    // perpindahan antar-server di `pc_warp` jadi kode mati
+                    // yang tidak bisa dicapai portal mana pun.
+                    // Port ini menyimpannya: yang wajib dimuat hanya peta
+                    // ASAL, karena hanya itu yang perlu didaftari petaknya.
+                    // Menginjaknya menyerahkan pemain ke server pemilik peta
+                    // tujuan (Pc.warp), bukan diam-diam tidak terjadi apa-apa.
+                    if (dst == null) {
+                        stat[3]++;
+                    }
                     if (mx > src.xs - 1 || my > src.ys - 1
-                            || tx > dst.xs - 1 || ty > dst.ys - 1) {
+                            || (dst != null && (tx > dst.xs - 1 || ty > dst.ys - 1))) {
                         stat[2]++;
                         if (stat[2] <= 5) {
                             log.warn("[MAP] portal di luar batas: {}:{},{} -> {}:{},{}",
@@ -250,9 +266,9 @@ public final class MapRegistry {
             log.error("[MAP] gagal membaca tabel Warps");
             return 0;
         }
-        log.info("[MAP] {} portal dimuat dari {} baris `Warps` ({} peta tak dimuat, "
-                + "{} di luar batas) dalam {} ms",
-                stat[0], rows, stat[1], stat[2], System.currentTimeMillis() - t0);
+        log.info("[MAP] {} portal dimuat dari {} baris `Warps` ({} peta asal tak dimuat, "
+                + "{} di luar batas, {} menuju map server lain) dalam {} ms",
+                stat[0], rows, stat[1], stat[2], stat[3], System.currentTimeMillis() - t0);
         return stat[0];
     }
 

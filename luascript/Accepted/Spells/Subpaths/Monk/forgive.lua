@@ -14,7 +14,7 @@ forgive = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -22,7 +22,7 @@ forgive = {
 			player:dialogSeq(
 				{
 					t,
-					"Your soul is too impure restore karma. Improve your karma first."
+					"Jiwamu terlalu kotor untuk memulihkan karma. Perbaiki dulu karmamu."
 				},
 				0
 			)
@@ -35,13 +35,13 @@ forgive = {
 		if karma <= -3 then
 			-- snake karma
 			if target.ID == player.ID then
-				player:dialogSeq({t, "You cannot restore your own karma."}, 0)
+				player:dialogSeq({t, "Kau tidak bisa memulihkan karmamu sendiri."}, 0)
 				return
 			end
 
 			choice = player:menuSeq(
-				"Are you sure you want to restore " .. player.name .. "'s karma? It will cost between 1 and 2 points of karma to do so.",
-				{"Yes, I want to restore them.", "No, nevermind."},
+				"Kau yakin ingin memulihkan " .. player.name .. " karmanya? Itu memakan 1 sampai 2 angka karmamu.",
+				{"Ya, aku ingin memulihkannya.", "Tidak, lupakan saja."},
 				{}
 			)
 
@@ -50,7 +50,7 @@ forgive = {
 				player:removeKarma(penalty)
 				target:sendAnimation(49)
 				target.karma = 0
-				target:sendMinitext("Your karma has been restored.")
+				target:sendMinitext("Karmamu sudah dipulihkan.")
 
 				target.registry["been_forgiven"] = target.registry[
 					"been_forgiven"
@@ -58,7 +58,7 @@ forgive = {
 
 				if not target:hasLegend("been_forgiven") then
 					target:addLegend(
-						"Has been forgiven",
+						"Telah diampuni",
 						"been_forgiven",
 						12,
 						128
@@ -66,7 +66,7 @@ forgive = {
 				else
 					target:removeLegendbyName("been_forgiven")
 					target:addLegend(
-						"Has been forgiven " .. target.registry["been_forgiven"] .. " times",
+						"Telah diampuni " .. target.registry["been_forgiven"] .. " times",
 						"been_forgiven",
 						12,
 						128
@@ -74,16 +74,16 @@ forgive = {
 				end
 
 				player:dialogSeq(
-					{t, target.name .. "'s karma has been restored to Cat."},
+					{t, target.name .. " karmanya sudah dipulihkan ke Cat."},
 					0
 				)
 			elseif choice == 2 then
 				-- No
-				player:dialogSeq({t, "Very well."}, 0)
+				player:dialogSeq({t, "Baiklah."}, 0)
 			end
 		else
 			player:dialogSeq(
-				{t, target.name .. "'s karma is not Snake level."},
+				{t, target.name .. " karmanya bukan tingkat Snake."},
 				0
 			)
 		end

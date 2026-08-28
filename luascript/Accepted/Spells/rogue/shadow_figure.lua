@@ -7,7 +7,7 @@ shadow_figure_rogue = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -15,7 +15,7 @@ shadow_figure_rogue = {
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Shadow Figure.")
+		player:sendMinitext("Kau merapal Shadow Figure.")
 		player:setDuration("shadow_figure_rogue", duration)
 		player:playSound(4)
 		player:sendAnimation(2)
@@ -48,7 +48,7 @@ spirit_warrior_rogue = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -56,7 +56,7 @@ spirit_warrior_rogue = {
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Spirit Warrior.")
+		player:sendMinitext("Kau merapal Spirit Warrior.")
 		player:setDuration("spirit_warrior_rogue", duration)
 		player:playSound(4)
 		player:sendAnimation(20)
@@ -89,7 +89,7 @@ natural_defense_rogue = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -97,7 +97,7 @@ natural_defense_rogue = {
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Natural Defense.")
+		player:sendMinitext("Kau merapal Natural Defense.")
 		player:setDuration("natural_defense_rogue", duration)
 		player:playSound(4)
 		player:sendAnimation(20)
@@ -130,7 +130,7 @@ ohaengs_armor_rogue = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -138,7 +138,7 @@ ohaengs_armor_rogue = {
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Ohaeng's Armor.")
+		player:sendMinitext("Kau merapal Ohaeng's Armor.")
 		player:setDuration("ohaengs_armor_rogue", duration)
 		player:playSound(4)
 		player:sendAnimation(21)

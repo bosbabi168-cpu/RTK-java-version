@@ -9,7 +9,7 @@ invoke_poet = {
 		end
 
 		if (player.magic < minMagic) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -25,7 +25,7 @@ invoke_poet = {
 		player:sendAnimation(11)
 		player.magic = player.maxMagic
 		player:sendStatus()
-		player:sendMinitext("You cast Invoke.")
+		player:sendMinitext("Kau merapal Invoke.")
 	end,
 
 	requirements = function(player)
@@ -48,7 +48,7 @@ spirits_power_poet = {
 		end
 
 		if (player.magic < minMagic) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -64,7 +64,7 @@ spirits_power_poet = {
 		player:sendAnimation(95)
 		player.magic = player.maxMagic
 		player:sendStatus()
-		player:sendMinitext("You cast Spirit's Power.")
+		player:sendMinitext("Kau merapal Spirit's Power.")
 	end,
 
 	requirements = function(player)
@@ -87,7 +87,7 @@ life_force_poet = {
 		end
 
 		if (player.magic < minMagic) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -103,7 +103,7 @@ life_force_poet = {
 		player:sendAnimation(90)
 		player.magic = player.maxMagic
 		player:sendStatus()
-		player:sendMinitext("You cast Life Force.")
+		player:sendMinitext("Kau merapal Life Force.")
 	end,
 
 	requirements = function(player)
@@ -126,7 +126,7 @@ gather_magic_poet = {
 		end
 
 		if (player.magic < minMagic) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -142,7 +142,7 @@ gather_magic_poet = {
 		player:sendAnimation(78)
 		player.magic = player.maxMagic
 		player:sendStatus()
-		player:sendMinitext("You cast Gather Magic.")
+		player:sendMinitext("Kau merapal Gather Magic.")
 	end,
 
 	requirements = function(player)

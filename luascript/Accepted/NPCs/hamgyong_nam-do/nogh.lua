@@ -5,10 +5,10 @@ NoghNpc = {
 		Tools.configureDialog(player, npc)
 
 		local opts = {
-			"Buy",
-			"Sell",
-			"Talk to Nogh",
-			"Mining the Substratum",
+			"Beli",
+			"Jual",
+			"Bicara dengan Nogh",
+			"Menambang Substratum",
 			--"Rings of Substratum"
 		}
 
@@ -27,26 +27,26 @@ NoghNpc = {
 			"mountain_ginseng"
 		}
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buyopts
 			)
 			return
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend("What are you willing to sell today?", sellopts)
 			return
-		elseif menu == "Talk to Nogh" then
-			player:dialogSeq({"I sell plenty of fine cider. Why not buy some?"}, 0)
+		elseif menu == "Bicara dengan Nogh" then
+			player:dialogSeq({"Aku menjual banyak cider bermutu. Mau beli?"}, 0)
 			return
-		elseif menu == "Mining the Substratum" then
+		elseif menu == "Menambang Substratum" then
 			player:dialogSeq(
 				{
-					"I have heard that the ogres of Hamgyong Nam-Do have been mining very deeply into the earth. They have even reached below the rocks and dirt in to the Substratum.",
-					"I don't know what is down there, but legend has it that the area is home to the living earth itself. Those ogres may be getting themselves in troublle; I have seen many crates of supplies going into the mines.",
-					"This could mean they are planning something massive or they are having some difficulty down there in the depths. If you find anything from the Substratum, bring it to me so I can look at it."
+					"Kudengar para ogre Hamgyong Nam-Do menambang sangat dalam ke perut bumi. Mereka bahkan sudah menembus batu dan tanah sampai ke Substratum.",
+					"Aku tidak tahu ada apa di bawah sana, tetapi menurut legenda daerah itu rumah bumi yang hidup itu sendiri. Para ogre itu mungkin sedang mencari masalah; kulihat banyak peti perbekalan masuk ke tambang.",
+					"Ini bisa berarti mereka merencanakan sesuatu yang besar, atau mereka sedang kesulitan di kedalaman sana. Kalau kau menemukan apa pun dari Substratum, bawakan padaku supaya bisa kuperiksa."
 				},
 				0
 			)

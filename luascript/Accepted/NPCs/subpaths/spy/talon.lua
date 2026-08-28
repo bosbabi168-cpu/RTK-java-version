@@ -9,7 +9,7 @@ TalonNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell"}
+		local opts = {"Beli", "Jual"}
 
 		-- 1 - chongun
 		-- 2 - barbarian
@@ -32,14 +32,14 @@ TalonNpc = {
 			"tigers_heart"
 		}
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buysellopts
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				buysellopts
@@ -83,11 +83,11 @@ TalonNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Ugh, you're the second person they've sent today for this special order... Well then, you can tell your people that I've already sent it along.",
-							"It wasn't easy or safe coming into that stuff, but it's on the way to get prepared. You might be able to intercept it before that other guy.",
-							"Maybe our smithy associate, Gruff, at his shop in the northern valley will know about the Special Delivery.",
-							"** Talon hands you a small token embossed with a raven **",
-							"Give this to him to show you're an affiliate of ours."
+							"Ugh, kau orang kedua yang mereka kirim hari ini untuk pesanan khusus ini... Kalau begitu katakan pada orang-orangmu barangnya sudah kukirim.",
+							"Mendapatkan barang itu tidak mudah dan tidak aman, tetapi ia sedang dalam perjalanan untuk disiapkan. Mungkin kau bisa mencegatnya sebelum orang yang satunya.",
+							"Mungkin rekan pandai besi kami, Gruff, di tokonya di lembah utara tahu soal Kiriman Khusus itu.",
+							"** Talon menyerahkan tanda kecil bergambar timbul seekor gagak **",
+							"Berikan ini kepadanya sebagai bukti kau bagian dari kami."
 						},
 						0
 					)
@@ -95,7 +95,7 @@ TalonNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"** Turns his head away from you when you mention those words **"
+							"** Ia memalingkan wajah saat kau menyebut kata-kata itu **"
 						},
 						0
 					)

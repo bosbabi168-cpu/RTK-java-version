@@ -31,7 +31,7 @@ desperate_attack_rogue = {
 		end
 
 		if (currentMagic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -88,7 +88,7 @@ desperate_attack_rogue = {
 			)
 
 			if (worked == 2) then
-				targets[1]:sendMinitext(player.name .. " cast " .. spellNames[alignmentIndex] .. " on you.")
+				targets[1]:sendMinitext(player.name .. " merapal " .. spellNames[alignmentIndex] .. " padamu.")
 				landed = 1
 			end
 		end
@@ -99,7 +99,7 @@ desperate_attack_rogue = {
 			Backflow.Cast(player, backflowAmount, currentHealth, currentMagic)
 		end
 
-		player:sendMinitext("You cast " .. spellNames[alignmentIndex] .. ".")
+		player:sendMinitext("Kau merapal " .. spellNames[alignmentIndex] .. ".")
 		player:sendStatus()
 	end,
 

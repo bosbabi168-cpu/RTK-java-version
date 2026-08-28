@@ -7,14 +7,14 @@ atone_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(curses)
 		target:removeDuras(snares)
 
-		player:sendMinitext("You cast Atone.")
+		player:sendMinitext("Kau merapal Atone.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -41,14 +41,14 @@ restore_will_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(curses)
 		target:removeDuras(snares)
 
-		player:sendMinitext("You cast Restore will.")
+		player:sendMinitext("Kau merapal Restore will.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -75,13 +75,13 @@ raise_guard_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(curses)
 		target:removeDuras(snares)
-		player:sendMinitext("You cast Raise guard.")
+		player:sendMinitext("Kau merapal Raise guard.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -108,13 +108,13 @@ align_armor_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(curses)
 		target:removeDuras(snares)
-		player:sendMinitext("You cast Align armor.")
+		player:sendMinitext("Kau merapal Align armor.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic

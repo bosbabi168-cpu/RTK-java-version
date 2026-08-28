@@ -12,16 +12,16 @@ inspire_poet = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That cannot save them now.")
+			player:sendMinitext("Itu tidak bisa menyelamatkannya lagi.")
 			return
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 		if target.ID == player.ID then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
@@ -36,10 +36,10 @@ inspire_poet = {
 
 			target:sendAnimation(11)
 			target:sendStatus()
-			target:sendMinitext(player.name .. " casts Inspire on you.")
+			target:sendMinitext(player.name .. " merapal Inspire padamu.")
 			player:sendAction(6, 20)
 			player:playSound(22)
-			player:sendMinitext("You cast Inspire.")
+			player:sendMinitext("Kau merapal Inspire.")
 			player:sendStatus()
 		end
 	end,
@@ -67,16 +67,16 @@ share_energy_poet = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That cannot save them now.")
+			player:sendMinitext("Itu tidak bisa menyelamatkannya lagi.")
 			return
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 		if target.ID == player.ID then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
@@ -91,10 +91,10 @@ share_energy_poet = {
 
 			target:sendAnimation(33)
 			target:sendStatus()
-			target:sendMinitext(player.name .. " casts Share Energy on you.")
+			target:sendMinitext(player.name .. " merapal Share Energy padamu.")
 			player:sendAction(6, 20)
 			player:playSound(22)
-			player:sendMinitext("You cast Share Energy.")
+			player:sendMinitext("Kau merapal Share Energy.")
 			player:sendStatus()
 		end
 	end,
@@ -122,16 +122,16 @@ bestow_power_poet = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That cannot save them now.")
+			player:sendMinitext("Itu tidak bisa menyelamatkannya lagi.")
 			return
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 		if target.ID == player.ID then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
@@ -146,10 +146,10 @@ bestow_power_poet = {
 
 			target:sendAnimation(70)
 			target:sendStatus()
-			target:sendMinitext(player.name .. " casts Bestow Power on you.")
+			target:sendMinitext(player.name .. " merapal Bestow Power padamu.")
 			player:sendAction(6, 20)
 			player:playSound(22)
-			player:sendMinitext("You cast Bestow Power.")
+			player:sendMinitext("Kau merapal Bestow Power.")
 			player:sendStatus()
 		end
 	end,
@@ -177,16 +177,16 @@ release_focus_poet = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That cannot save them now.")
+			player:sendMinitext("Itu tidak bisa menyelamatkannya lagi.")
 			return
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 		if target.ID == player.ID then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
@@ -201,10 +201,10 @@ release_focus_poet = {
 
 			target:sendAnimation(49)
 			target:sendStatus()
-			target:sendMinitext(player.name .. " casts Release Focus on you.")
+			target:sendMinitext(player.name .. " merapal Release Focus padamu.")
 			player:sendAction(6, 20)
 			player:playSound(22)
-			player:sendMinitext("You cast Release Focus.")
+			player:sendMinitext("Kau merapal Release Focus.")
 			player:sendStatus()
 		end
 	end,

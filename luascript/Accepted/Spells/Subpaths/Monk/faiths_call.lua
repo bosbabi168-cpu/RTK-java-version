@@ -17,7 +17,7 @@ faiths_call = {
 		-- maximum 10 tiles away in either direction (verified on NTK)
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -28,7 +28,7 @@ faiths_call = {
 			player:setThreat(target.ID, threat + damage)
 		elseif target.blType == BL_PC then
 			if not player:canPK(target) then
-				player:sendMinitext("You cannot attack that target.")
+				player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 				return
 			end
 		end
@@ -39,7 +39,7 @@ faiths_call = {
 		target:removeHealthExtend(damage, 1, 1, 1, 1, 0)
 		target:sendStatus()
 
-		player:sendMinitext("You cast Faiths call.")
+		player:sendMinitext("Kau merapal Faiths call.")
 	end,
 
 	requirements = function(player)

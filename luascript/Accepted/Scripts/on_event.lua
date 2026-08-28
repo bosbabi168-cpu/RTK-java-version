@@ -23,7 +23,7 @@ useBeardItem = async(function(player)
 		player:dialogSeq(
 			{
 				t,
-				"You will need to shave your beard before you can get a new style!"
+				"Kau harus mencukur janggutmu dulu sebelum bisa mengganti gaya!"
 			},
 			0
 		)
@@ -31,8 +31,8 @@ useBeardItem = async(function(player)
 	end
 
 	local confirm = player:menuSeq(
-		"Are you sure you want to equip the beard? This is a one time operation and the item disappears upon use.",
-		{"Yes, add my beard.", "No, nevermind."},
+		"Kau yakin ingin memasang janggut itu? Ini hanya bisa sekali, dan barangnya lenyap setelah dipakai.",
+		{"Ya, tambahkan janggutku.", "Tidak, lupakan saja."},
 		{}
 	)
 
@@ -47,7 +47,7 @@ useBeardItem = async(function(player)
 
 		player:updateState()
 
-		player:dialogSeq({t, "I hope you enjoy your new beard."}, 0)
+		player:dialogSeq({t, "Semoga kau menyukai janggut barumu."}, 0)
 	end
 end)
 
@@ -60,8 +60,8 @@ useHairDye = async(function(player)
 	player.dialogType = 0
 
 	local confirm = player:menuSeq(
-		"Are you sure you want to apply " .. item.name .. " to your hair?",
-		{"Yes, do it.", "Nevermind."},
+		"Kau yakin ingin memakai " .. item.name .. " pada rambutmu?",
+		{"Ya, lakukan.", "Nevermind."},
 		{}
 	)
 
@@ -75,7 +75,7 @@ useHairDye = async(function(player)
 
 		player:removeItem(item.yname, 1, 9)
 
-		player:dialogSeq({t, "I hope you enjoy your new hair dye!"}, 0)
+		player:dialogSeq({t, "Semoga kau menyukai warna rambut barumu!"}, 0)
 		return
 	end
 end)
@@ -124,7 +124,7 @@ useSkinItem = async(function(player)
 			player:dialogSeq(
 				{
 					t,
-					"You are not wearing the base item type the skin is meant for."
+					"Kau tidak mengenakan jenis barang dasar yang sesuai untuk lapisan ini."
 				},
 				0
 			)
@@ -139,8 +139,8 @@ useSkinItem = async(function(player)
 		end
 
 		local confirm = player:menuSeq(
-			"Are you sure you want to apply this skin to your " .. name .. "?",
-			{"Yes, do it.", "Nevermind."},
+			"Kau yakin ingin memasang lapisan ini pada " .. name .. "?",
+			{"Ya, lakukan.", "Nevermind."},
 			{}
 		)
 
@@ -166,17 +166,17 @@ onMountItem = function(player)
 	local item = player:getInventoryItem(player.invSlot)
 
 	if player:checkIfCast(invis) or player.state == 2 then
-		player:sendMinitext("You cannot do that.")
+		player:sendMinitext("Kau tidak bisa melakukan itu.")
 		return
 	end
 
 	if player:canPK(player) and player.mapTitle ~= "Vale" then
-		player:sendMinitext("You cannot do that.")
+		player:sendMinitext("Kau tidak bisa melakukan itu.")
 		return
 	end
 
 	if player.canMount == 0 then
-		player:sendMinitext("That doesn't work here.")
+		player:sendMinitext("Itu tidak berlaku di sini.")
 		return
 	end
 
@@ -195,12 +195,12 @@ end
 
 onEquip = function(player, item)
 	if player.state == 2 or player.state == 4 then
-		player:sendMinitext("You can't do that while transformed.")
+		player:sendMinitext("Kau tidak bisa melakukan itu dalam wujud berubah.")
 		return
 	end
 
 	if player.state == 3 then
-		player:sendMinitext("You can't do that while riding a mount.")
+		player:sendMinitext("Kau tidak bisa melakukan itu sambil menunggang.")
 		return
 	end
 
@@ -211,12 +211,12 @@ end
 
 onUnequip = function(player, item)
 	if player.state == 2 or player.state == 4 then
-		player:sendMinitext("You can't do that while transformed.")
+		player:sendMinitext("Kau tidak bisa melakukan itu dalam wujud berubah.")
 		return
 	end
 
 	if player.state == 3 then
-		player:sendMinitext("You can't do that while riding a mount.")
+		player:sendMinitext("Kau tidak bisa melakukan itu sambil menunggang.")
 		return
 	end
 
@@ -307,9 +307,9 @@ onLook = function(player, block)
 				local owner = FloorItem(block.ID).owner
 
 				if realName ~= "" then
-					player:sendMinitext(realName .. " (" .. block.yname .. ") (" .. ((dura / block.maxDura) * 100) .. "%) \a Amt: " .. block.amount)
+					player:sendMinitext(realName .. " (" .. block.yname .. ") (" .. ((dura / block.maxDura) * 100) .. "%) \a Jml: " .. block.amount)
 				else
-					player:sendMinitext(block.name .. " (" .. block.yname .. ") (" .. ((dura / block.maxDura) * 100) .. "%) \a Amt: " .. block.amount)
+					player:sendMinitext(block.name .. " (" .. block.yname .. ") (" .. ((dura / block.maxDura) * 100) .. "%) \a Jml: " .. block.amount)
 				end
 			end
 		end
@@ -326,14 +326,14 @@ onLook = function(player, block)
 		elseif block.blType == BL_ITEM then
 			if block.id <= 3 then
 				-- gold
-				player:sendMinitext(block.name .. " \a Amt: " .. block.amount)
+				player:sendMinitext(block.name .. " \a Jml: " .. block.amount)
 			else
 				local realName = FloorItem(block.ID).realName
 
 				if realName ~= "" then
-					player:sendMinitext(realName .. " \a Amt: " .. block.amount)
+					player:sendMinitext(realName .. " \a Jml: " .. block.amount)
 				else
-					player:sendMinitext(block.name .. " \a Amt: " .. block.amount)
+					player:sendMinitext(block.name .. " \a Jml: " .. block.amount)
 				end
 			end
 		end
@@ -387,7 +387,7 @@ onDismount = function(player)
 	end
 	player:updateState()
 
-	player:sendMinitext("You precariously step again onto the ground.")
+	player:sendMinitext("Dengan susah payah kau kembali menjejakkan kaki ke tanah.")
 
 	if mountMobId ~= 0 then
 		local x = 0

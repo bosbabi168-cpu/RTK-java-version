@@ -7,11 +7,11 @@ wilderness_guise = {
 			return
 		end
 		if player:hasDuration("wilderness_guise") then
-			player:sendMinitext("Spell already cast.")
+			player:sendMinitext("Mantra sudah dirapal.")
 			return
 		end
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -26,7 +26,7 @@ wilderness_guise = {
 
 		local opts = {"Wolf", "Rabbit", "Deer", "Sheep", "Thirsty ogre"}
 		local choice = player:menuString(
-			"Which guise would you like to use?",
+			"Samaran mana yang ingin kau pakai?",
 			opts
 		)
 

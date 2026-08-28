@@ -26,11 +26,11 @@ ElixirPrizeNpc = {
 		--player:dialogSeq({t,"Disabled."},0)
 
 		if player.registry["elixirTeam"] == 0 then
-			player:dialogSeq({t, "You are not on an elixir team."}, 0)
+			player:dialogSeq({t, "Kau bukan anggota regu elixir."}, 0)
 			return
 		end
 		if player.registry["elixirTeam"] ~= core.gameRegistry["elixirWinner"] then
-			player:dialogSeq({t, "You are not the winning elixir team."}, 0)
+			player:dialogSeq({t, "Kau bukan regu elixir yang menang."}, 0)
 			return
 		end
 
@@ -53,14 +53,14 @@ ElixirPrizeNpc = {
 		local prizeAmounts = {12, 12, 12, 12, 12, 12, 12, 12, 1}
 
 		local choice = player:menuSeq(
-			"Please select your prize.",
+			"Pilih hadiahmu.",
 			prizeNames,
 			{}
 		)
 
 		if player:hasSpace(prizes[choice], prizeAmounts[choice]) ~= true then
 			player:dialogSeq(
-				{t, "You do not have enough room in your inventory."},
+				{t, "Ruang di kantongmu tidak cukup."},
 				0
 			)
 			return

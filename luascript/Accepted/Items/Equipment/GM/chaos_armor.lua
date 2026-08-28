@@ -20,7 +20,7 @@ chaos_armor = {
 				end
 			end
 		end
-		player:talk(0, "In " .. runcount .. " runs, dropped:")
+		player:talk(0, "Di " .. runcount .. " runs, dropped:")
 		player:talk(
 			0,
 			"1: " .. dropItems[1] .. " " .. counts[1] .. " base chance " .. dropChance[

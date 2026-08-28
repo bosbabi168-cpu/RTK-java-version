@@ -9,7 +9,7 @@ SsalNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell"}
+		local opts = {"Beli", "Jual"}
 		local items = {}
 		local itemStrings = {"basic_sickle"}
 
@@ -17,14 +17,14 @@ SsalNpc = {
 			table.insert(items, Item(itemStrings[i]).id)
 		end
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				items
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend("What are you willing to sell today?", items)
 		end
 	end),

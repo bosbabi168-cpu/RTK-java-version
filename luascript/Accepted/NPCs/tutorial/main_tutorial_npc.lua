@@ -15,25 +15,25 @@ MainTutorialNpc = {
 			-- choose path -- Peasant lvl 5 check/bother
 
 			local opts = {
-				"Can you explain the paths?",
-				"Show me the Warriors guild.",
-				"Show me the Rogues guild.",
-				"Show me the Mage guild.",
-				"Show me the Poet guild.",
-				"I will pick one later."
+				"Bisakah kau menjelaskan jalur-jalurnya?",
+				"Tunjukkan guild Warrior.",
+				"Tunjukkan guild Rogue.",
+				"Tunjukkan guild Mage.",
+				"Tunjukkan guild Poet.",
+				"Nanti saja aku memilih."
 			}
 
 			player:dialogSeq(
 				{
 					t,
-					"Oh my, you are growing fast! You have already reached the 5th level. But I notice you have not yet picked your path.",
-					"You should really look into picking your path before you continue with these tasks."
+					"Astaga, kau tumbuh cepat! Kau sudah mencapai level 5. Tapi kulihat kau belum memilih jalurmu.",
+					"Sebaiknya kau benar-benar memikirkan pilihan jalurmu sebelum melanjutkan tugas-tugas ini."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Would you like me to send you to your guild to pick your destiny, or would you like to continue?",
+				"Mau kukirim ke guild-mu untuk memilih takdirmu, atau kau ingin melanjutkan dulu?",
 				opts,
 				{}
 			)
@@ -44,12 +44,12 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"In this land we have 4 main paths. They are the Warriors, the Rogues, the Mages, and the Poets.",
-						"Warriors are the fighters, they use their brute force to kill their foes, and can power through large numbers of mobs quickly.",
-						"Rogues are also fighters, but use more magic to assist them. A nimble and deadly killer one on one.",
-						"Magi are the magic users of the land. Powerful in the art of offensive magic, and relies on range attacks",
-						"Finally the Poets. They are the healers of the land. While they kill very little for themselves, they are always a welcomed addition to every group.",
-						"You can learn more about each path from the Guild tutors, found in the lower left corner of each guild."
+						"Di tanah ini ada 4 jalur utama: Warrior, Rogue, Mage, dan Poet.",
+						"Warrior adalah petarung; mereka memakai kekuatan kasar untuk membunuh musuh dan bisa menerjang banyak mob dengan cepat.",
+						"Rogue juga petarung, tetapi lebih banyak dibantu sihir. Pembunuh yang gesit dan mematikan dalam duel.",
+						"Mage adalah pengguna sihir di tanah ini. Kuat dalam seni sihir serang dan mengandalkan serangan jarak jauh",
+						"Terakhir, Poet. Merekalah penyembuh di tanah ini. Meski sedikit membunuh sendiri, mereka selalu disambut di tiap kelompok.",
+						"Kau bisa mempelajari tiap jalur lebih jauh dari tutor Guild, yang ada di sudut kiri bawah tiap guild."
 					},
 					1
 				)
@@ -60,7 +60,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, the heart of a fighter. This is the path for the true fighter. Let me show you to their hall now.",
+						"Ah, hati seorang petarung. Inilah jalur bagi petarung sejati. Mari kutunjukkan aulanya sekarang.",
 						returnText
 					},
 					1
@@ -73,7 +73,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"A nimble fighter is what you want to be? Let me show you to their hall now.",
+						"Kau ingin jadi petarung yang gesit? Mari kutunjukkan aulanya sekarang.",
 						returnText
 					},
 					1
@@ -86,7 +86,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"A mastery of magic is what you seek? Let me show you to their hall now.",
+						"Penguasaan sihir yang kau cari? Mari kutunjukkan aulanya sekarang.",
 						returnText
 					},
 					1
@@ -99,7 +99,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"A caring, nurturing soul you are indeed. Let me show you to their hall now.",
+						"Kau memang berjiwa penyayang dan mengasuh. Mari kutunjukkan aulanya sekarang.",
 						returnText
 					},
 					1
@@ -112,7 +112,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"This is your choice... But remember this, any experience you gain now until you pick your path will go to waste. Pick your path soon..."
+						"Ini pilihanmu... Tapi ingat, semua pengalaman yang kau peroleh sampai kau memilih jalur akan terbuang percuma. Pilihlah jalurmu segera..."
 					},
 					1
 				)
@@ -131,7 +131,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You wish to learn the essence of the tiger?",
+						"Kau ingin mempelajari sari sang harimau?",
 						"Listen carefully."
 					},
 					1
@@ -139,17 +139,17 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						chongun,
-						"There is an old, old soul that dwells within a cave. You must hurry to him."
+						"Ada jiwa yang sangat tua bersemayam di dalam sebuah gua. Bergegaslah menemuinya."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						t,
-						"When you can, go within and speak to him. He will imbue your armor with the essence of the tiger.",
-						"He knows me and knows his old title, Chongun. Go to him immediately. Say that to him, and give him what he demands.",
-						"But beware, it is the essence within, your own experience that is made into your armor.",
-						"Go to the heart of the Tiger's cave and say Chongun."
+						"Kalau sempat, masuklah dan berbicaralah kepadanya. Ia akan mengisi zirahmu dengan sari sang harimau.",
+						"Ia mengenalku dan mengingat gelar lamanya, Chongun. Temui dia segera. Katakan itu kepadanya, dan berikan apa yang ia minta.",
+						"Tapi hati-hati: yang menjadi zirahmu adalah sari di dalam dirimu, yaitu pengalamanmu sendiri.",
+						"Pergilah ke jantung gua Harimau dan ucapkan Chongun."
 					},
 					0
 				)
@@ -159,7 +159,7 @@ MainTutorialNpc = {
 			if player.quest["tiger_armor"] == player.level then
 				player:dialogSeq({
 					t,
-					"Your tiger armor looks outdated. Go visit my friend Claw again to see about an upgrade."
+					"Zirah harimaumu tampak ketinggalan zaman. Temui lagi kawanku Claw untuk meningkatkannya."
 				})
 				return
 			end
@@ -170,7 +170,7 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Greetings and welcome to my home. I see you are eager to get on with your adventure. Before you do however, there is much more you need to learn. Click on me to learn... "
+					"Salam, selamat datang di rumahku. Kulihat kau tidak sabar melanjutkan petualanganmu. Tapi sebelum itu, masih banyak yang perlu kau pelajari. Klik aku untuk belajar... "
 				},
 				0
 			)
@@ -190,8 +190,8 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You've done well. Keep the armor. It will serve you well against your first foe... later. Press <u> to wear it.",
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"Kerjamu bagus. Simpan zirah itu. Ia akan berguna melawan musuh pertamamu... nanti. Tekan <u> untuk mengenakannya.",
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					0
 				)
@@ -211,7 +211,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						titem,
-						"I am still waiting for that " .. Item(neededItem).name .. ". Please go visit the blacksmith."
+						"Aku masih menunggu " .. Item(neededItem).name .. " itu. Temuilah pandai besi."
 					},
 					0
 				)
@@ -221,16 +221,16 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"A hero has to be very wise of the world, and that only comes from experience.",
-					"Experience will teach you that you'd better equip yourself well.",
-					"You need to understand how to buy and sell items. First, you need to buy something..."
+					"Seorang pahlawan harus sangat memahami dunia, dan itu hanya datang dari pengalaman.",
+					"Pengalaman akan mengajarimu bahwa sebaiknya kau melengkapi dirimu dengan baik.",
+					"Kau perlu paham cara membeli dan menjual barang. Pertama, kau harus membeli sesuatu..."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"You've gained some of this old warrior's trust. Here's some money for some armor."
+					"Kau sudah mendapat sedikit kepercayaan prajurit tua ini. Ini uang untuk membeli zirah."
 				},
 				1
 			)
@@ -240,28 +240,28 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					titem,
-					"Go to the blacksmith, get a " .. Item(neededItem).name .. ", and bring it back. You'll find it listed under <Peasant's Clothes>"
+					"Pergilah ke pandai besi, ambil " .. Item(neededItem).name .. ", lalu bawa kembali. Kau akan menemukannya di daftar <Peasant's Clothes>"
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					tblacksmith,
-					"You can find the blacksmith in Buya, at the location 18,103, or in Kugnae, 60,122. If you forget, you can check on the mini map by pressing 'm'."
+					"Pandai besi ada di Buya pada 18,103, atau di Kugnae pada 60,122. Kalau lupa, periksa peta kecil dengan menekan 'm'."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					tblacksmith,
-					"Just try clicking on the old man, he's got a one track mind. He'll try to sell you something."
+					"Coba saja klik si orang tua itu, pikirannya cuma satu arah. Ia pasti mencoba menjual sesuatu kepadamu."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					titem,
-					"Get the " .. Item(neededItem).name .. " now. Return and tap on me"
+					"Ambil " .. Item(neededItem).name .. " sekarang. Kembalilah dan ketuk aku"
 				},
 				0
 			)
@@ -279,21 +279,21 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You're a lot better than that last apprentice. He was...well, I'll not go on about that."
+						"Kau jauh lebih baik daripada murid yang terakhir. Dia... yah, tidak usah kubahas."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						t,
-						"Keep it up and you might find yourself getting referred to as a Hero sometime... or a merchant at any rate."
+						"Pertahankan, dan suatu saat orang mungkin menyebutmu Pahlawan... atau setidaknya pedagang."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						t,
-						"If you would like another quest, let me know. I have plenty to teach a young one like yourself."
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					0
 				)
@@ -317,7 +317,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						tmeatscraps,
-						"I've already given you the rabbit meat. Buy a meat scrap while you are at the butcher."
+						"Daging kelincinya sudah kuberikan. Belilah meat scrap selagi kau di tukang daging."
 					},
 					0
 				)
@@ -327,14 +327,14 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Money doesn't make a man, but it does mend a sword. You can take some of the animal flesh to the butcher."
+					"Uang tidak membuat seseorang jadi manusia, tetapi ia bisa memperbaiki pedang. Bawalah sebagian daging binatang itu ke tukang daging."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					tbutcher,
-					"She's stingy... but it's a way to get some money. Anyway, if you're going to the butcher, learn to sell."
+					"Dia pelit... tetapi itu salah satu cara mendapat uang. Lagi pula, kalau kau ke tukang daging, belajarlah menjual."
 				},
 				1
 			)
@@ -343,28 +343,28 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					trabbitmeat,
-					"Here's five rabbit corpses. Whew! they do start to stink. Take these to the butcher's shop."
+					"Ini lima bangkai kelinci. Huh! baunya mulai menyengat. Bawa ke toko tukang daging."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					tbutcher,
-					"You can find the butcher in Buya, at the location 39,129, or in Kugnae 41,131. If you forget, you can check on the mini map by pressing 'm'."
+					"Tukang daging ada di Buya pada 39,129, atau di Kugnae pada 41,131. Kalau lupa, periksa peta kecil dengan menekan 'm'."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"You'll see what kind of bargain she'll get from ya. And don't stop nowhere on the way back."
+					"Kau akan lihat tawaran macam apa yang ia berikan padamu. Dan jangan mampir ke mana-mana saat kembali."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					tmeatscraps,
-					"Buy a Meat scrap while you are at the butcher's. I'll be expecting Meat scrap."
+					"Beli satu Meat scrap selagi kau di tukang daging. Aku menunggu Meat scrap itu."
 				},
 				0
 			)
@@ -383,8 +383,8 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Perfect! A Rose for my love, and some Chestnuts to eat. Thank you for getting these items for me.",
-						"Remember that there are other ways to get some items to sell to the merchants, or to other citizens."
+						"Sempurna! Rose untuk kekasihku, dan Chestnut untuk dimakan. Terima kasih sudah mengambilkannya.",
+						"Ingat, ada cara lain mendapatkan barang untuk dijual kepada pedagang atau warga lain."
 					},
 					1
 				)
@@ -392,7 +392,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					0
 				)
@@ -402,24 +402,24 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You are quite a merchant now, but you only know how to buy and sell items you already have.",
-					"You need to learn about getting your own items. Yes, some come from the creatures you have slain, but there is more you can find."
+					"Sekarang kau lumayan pandai berdagang, tetapi kau baru tahu cara membeli dan menjual barang yang sudah kau punya.",
+					"Kau perlu belajar mendapatkan barangmu sendiri. Memang sebagian datang dari makhluk yang kau bunuh, tetapi masih banyak yang bisa kau temukan."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"First you should find me a Rose, I hear there is a bush in the city that you can pick them from."
+					"Pertama, carikan aku sekuntum Rose. Kudengar ada semak di kota tempat kau bisa memetiknya."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"In Buya the bush is located in the South, near 112,138. In Kugnae, the bush is located near the Lotus Chapel at 152,190.\n\nJust go near the bush, and you will find some.",
-					"I am also hungry for some Chestnuts, you can collect 5 for me in the Northwest of Buya at 27,47. In Kugnae, there is a small farm at 111,156.\n\nThey are small dark nuts, so you will have to look carefully.",
-					"Collect these items, and return to me when you have them."
+					"Di Buya semaknya ada di Selatan, sekitar 112,138. Di Kugnae, semaknya dekat Lotus Chapel pada 152,190.\n\nDekati saja semaknya dan kau akan menemukannya.",
+					"Aku juga ingin Chestnut; kumpulkan 5 untukku di Barat Laut Buya pada 27,47. Di Kugnae ada ladang kecil pada 111,156.\n\nBentuknya kacang gelap kecil, jadi carilah dengan teliti.",
+					"Kumpulkan barang-barang itu, dan temui aku lagi kalau sudah kau dapat."
 				},
 				0
 			)
@@ -437,9 +437,9 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Thanks for the fish! That wasn't so hard was it?",
-						"I've heard stores about people finding pretty strange things while fishing.",
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"Terima kasih ikannya! Tidak sesulit itu, kan?",
+						"Aku dengar cerita tentang orang yang menemukan hal-hal aneh saat memancing.",
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					1
 				)
@@ -449,9 +449,9 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"So, you are interested in more things to do? Fishing can weaken your fighting skills, but is a nice diversion from time to time.",
+					"Jadi kau mau kegiatan lain? Memancing bisa melemahkan keahlian bertarungmu, tetapi sesekali menyenangkan sebagai selingan.",
 					"Temui Bate di sisi barat Kugnae pada 28,170 atau Wim di tenggara Buya pada 109,88. Katakan lantang padanya 'aku ingin memancing'.",
-					"If you bring me back a Minnow, I'll give you a little gold."
+					"Kalau kau membawakan satu Minnow, akan kuberi sedikit emas."
 				},
 				0
 			)
@@ -470,8 +470,8 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"I am glad to see you have discovered our kingdoms heart, and I hope you enjoyed looking around inside the safety of the kingdoms walls.",
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"Aku senang kau sudah menemukan jantung kerajaan kami, dan semoga kau menikmati berkeliling di dalam tembok kerajaan yang aman.",
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					1
 				)
@@ -481,11 +481,11 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Well, we are finding our way around now, arn't we? But do you understand the Kingdom around you?",
-					"It's time you got some culture in you.\n\nGo to the palace and look around. You will find the main palace with the kingdom greeter in Buya at 73,56, or in Kugnae at 110,123.",
-					"To the south east of Buya is the Kingdom of Koguryo, whose capitol city is Kugnae. Their King is called Mhul.",
-					"You will also find the theater where the Muses occasionally hold poetry competitions, and the library where our kingdoms knowledge is stored.",
-					"When you get to the library mention my name to the librarian, I am sure he will have some words to say to you. Remember to say my name out loud."
+					"Nah, kita mulai tahu jalan sekarang, bukan? Tapi apakah kau memahami Kerajaan di sekelilingmu?",
+					"Sudah saatnya kau menyerap sedikit budaya.\n\nPergilah ke istana dan lihat-lihatlah. Istana utama beserta penyambut kerajaan ada di Buya pada 73,56, atau di Kugnae pada 110,123.",
+					"Di tenggara Buya terletak Kerajaan Koguryo, yang ibu kotanya Kugnae. Rajanya bernama Mhul.",
+					"Kau juga akan menemukan teater tempat para Muse sesekali mengadakan sayembara puisi, dan perpustakaan tempat pengetahuan kerajaan kami disimpan.",
+					"Setibanya di perpustakaan, sebutkan namaku kepada pustakawan; aku yakin ia punya sesuatu untuk dikatakan kepadamu. Ingat, ucapkan namaku dengan lantang."
 				},
 				0
 			)
@@ -503,9 +503,9 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Terrific, you have some Ogre cider! Nothing like some cider to wash down a meal.",
-						"If you want to be successful, you'll have to explore many places outside of the cozy towns.",
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"Hebat, kau membawa Ogre cider! Tidak ada yang menandingi cider untuk menyudahi santapan.",
+						"Kalau kau ingin berhasil, kau harus menjelajahi banyak tempat di luar kota yang nyaman.",
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					1
 				)
@@ -519,7 +519,7 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"There's much more to the world than the city. Other lands hold different terrain, challenges, and goods."
+					"Dunia jauh lebih luas daripada kota. Tanah lain punya bentang alam, tantangan, dan barang yang berbeda."
 				},
 				1
 			)
@@ -527,7 +527,7 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					togrecider,
-					"I have a taste for ogre cider, but it's tough stuff to find around here. Most ogres will rough you up pretty good, too."
+					"Aku ingin sekali ogre cider, tetapi barang itu sulit dicari di sini. Kebanyakan ogre juga akan menghajarmu habis-habisan."
 				},
 				1
 			)
@@ -535,7 +535,7 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					togre,
-					"But I hear that in Hamgyong Nam-Do to the south east lives a relatively pleasant ogre who sometimes trades with humans."
+					"Tapi kudengar di Hamgyong Nam-Do di tenggara tinggal seekor ogre yang cukup ramah dan kadang berdagang dengan manusia."
 				},
 				1
 			)
@@ -543,8 +543,8 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"To journey to other lands, first go out the north gate of the city. You'll find yourself in a gathering place. You will be able to get on a map there.",
-					"Visit Hamgyong Nam-Do and pick up some cider for me."
+					"Untuk pergi ke tanah lain, keluarlah dulu lewat gerbang utara kota. Kau akan sampai di tempat berkumpul, dan dari sana kau bisa naik ke sebuah peta.",
+					"Kunjungi Hamgyong Nam-Do dan ambilkan cider untukku."
 				},
 				1
 			)
@@ -552,7 +552,7 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					togrecider,
-					"I'll be waiting here for the cider. Don't get lost now!"
+					"Aku menunggu cider itu di sini. Jangan sampai tersesat!"
 				},
 				0
 			)
@@ -565,7 +565,7 @@ MainTutorialNpc = {
 			if (player:hasLegend("aided_chu_rua")) then
 				player.quest["tutorial_quest"] = 8
 				player:dialogSeq(
-					{t, "The Dragon King shall fare better because of you."},
+					{t, "Dragon King akan membaik berkat dirimu."},
 					1
 				)
 				return
@@ -579,14 +579,14 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Dragon King lives beneath the waves, but he has fallen very ill. I know because a turtle told me."
+					"Dragon King tinggal di bawah ombak, tetapi ia jatuh sakit parah. Aku tahu karena seekor kura-kura memberitahuku."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					tturtle,
-					"The turtle, named Chu Rua, swam to shore to ask young men of land to help him. He is in distress and needs help."
+					"Kura-kura itu, bernama Chu Rua, berenang ke pantai untuk meminta pemuda daratan menolongnya. Ia sedang susah dan butuh bantuan."
 				},
 				1
 			)
@@ -595,8 +595,8 @@ MainTutorialNpc = {
 			player.npcColor = t.color
 
 			local cchoice = player:menuSeq(
-				"Will you go to him now? Be careful, it is dangerous and you may get lost.",
-				{"I am willing to risk it", "O, in that case, never mind"},
+				"Maukah kau menemuinya sekarang? Hati-hati, perjalanannya berbahaya dan kau bisa tersesat.",
+				{"Aku bersedia mengambil risikonya", "Oh, kalau begitu, lupakan saja"},
 				{}
 			)
 
@@ -605,14 +605,14 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"I know of a secret way to the shore. From there, you must find Chu Rua and use all your wits and cunning to succeed."
+						"Aku tahu jalan rahasia ke pantai. Dari sana kau harus menemukan Chu Rua dan memakai seluruh akal serta kelicikanmu agar berhasil."
 					},
 					1
 				)
 				player:warp(1111, 4, 18)
 			elseif (cchoice == 2) then
 				--nevermind
-				player:dialogSeq({t, "So be it."}, 0)
+				player:dialogSeq({t, "Biarlah begitu."}, 0)
 			end
 			return
 		end
@@ -631,8 +631,8 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are a great fighter, that has learnt well. I hope you fought well and defended your other members well.",
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"Kau petarung hebat yang belajar dengan baik. Semoga kau bertarung dengan baik dan melindungi anggota lainmu.",
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					0
 				)
@@ -642,15 +642,15 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You're coming well by yourself, but solitary legends die fast. Form a covenant with others for great adventure.",
-					"Close this scroll. Press <f> or click 'GROUP' tab. Then return and read on.",
-					"It is your group status, which might be blank right now.",
-					"You will gain more Experience when you are in a group. You and the members have more total Experience gained.",
-					"You want to find someone about your level, so that you both get enough Experience.",
-					"Adventure with someone you like and trust. You'll learn which Paths combine well. Poets always help groups.",
-					"Press <shift><g> to make yourself sociable so that you can join a group.",
-					"You can whisper to someone by pressing \"<shift><quote> then typing his or her name.",
-					"In a group you can whisper to all the members by pressing \"<shift><quote> then typing !<shift><1> two times."
+					"Kau berkembang baik sendirian, tetapi legenda yang menyendiri cepat mati. Jalinlah ikatan dengan orang lain untuk petualangan besar.",
+					"Tutup gulungan ini. Tekan <f> atau klik tab 'GROUP'. Lalu kembali dan lanjutkan membaca.",
+					"Itulah status grupmu, yang mungkin masih kosong sekarang.",
+					"Kau memperoleh lebih banyak Pengalaman saat berada dalam grup. Kau dan para anggota mendapat total Pengalaman yang lebih besar.",
+					"Carilah orang yang levelnya sepadan denganmu, supaya kalian berdua mendapat cukup Pengalaman.",
+					"Bertualanglah dengan orang yang kau sukai dan percayai. Kau akan tahu Jalur mana yang saling melengkapi. Poet selalu membantu kelompok.",
+					"Tekan <shift><g> supaya kau bisa diajak bergabung ke dalam grup.",
+					"Kau bisa berbisik kepada seseorang dengan menekan \"<shift><quote> lalu mengetik namanya.",
+					"Dalam grup, kau bisa berbisik kepada semua anggota dengan menekan \"<shift><quote> lalu mengetik !<shift><1> dua kali."
 				},
 				1
 			)
@@ -658,9 +658,9 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					tdeer,
-					"Go now, group with a number of persons to hunt about 12 deer (they have antlers). Hunt more if your group is larger.",
-					"It is best to divide the antlers fairly. They, by the way, are a great boon to a warrior, for they hold the power of the deer.",
-					"When ground and eaten <u> the vitality flows into you. Be very careful. If you're as fresh as you look you won't survive against a deer!"
+					"Pergilah sekarang, bergrup dengan beberapa orang untuk memburu sekitar 12 rusa (yang bertanduk). Buru lebih banyak kalau grupmu lebih besar.",
+					"Sebaiknya tanduknya dibagi adil. Omong-omong, tanduk itu sangat berguna bagi prajurit karena menyimpan kekuatan sang rusa.",
+					"Kalau ditumbuk dan dimakan <u>, daya hidupnya mengalir ke dalam dirimu. Hati-hati sekali. Kalau kau sehijau penampilanmu, kau tidak akan selamat melawan seekor rusa!"
 				},
 				0
 			)
@@ -686,19 +686,19 @@ MainTutorialNpc = {
 				player:addItem("blue_potion", 1)
 				player:giveXP(500)
 
-				player:dialogSeq({tmica, "A Mica! Just what I needed."}, 1)
+				player:dialogSeq({tmica, "Mica! Persis yang kubutuhkan."}, 1)
 				player:dialogSeq(
 					{
 						tpotion,
-						"Take this, it is one of the potions I made. It will heal some of your wounds..."
+						"Ambil ini, salah satu ramuan buatanku. Ia akan menyembuhkan sebagian lukamu..."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						t,
-						"and remember this, you will find many greater secrets in other caves.",
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"dan ingatlah, kau akan menemukan rahasia yang jauh lebih besar di gua-gua lain.",
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					0
 				)
@@ -708,14 +708,14 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You are ready for something a bit more adventurous now!\nThus far, your travels have been limited to lands above ground, where the Sun keeps much evil away.",
-					"But many greater rewards - and challenges - await you beneath the ground."
+					"Sekarang kau siap untuk sesuatu yang sedikit lebih menantang!\nSelama ini perjalananmu terbatas di tanah permukaan, tempat Matahari menjauhkan banyak kejahatan.",
+					"Tetapi ganjaran - dan tantangan - yang jauh lebih besar menantimu di bawah tanah."
 				},
 				1
 			)
 			local choice = player:menuSeq(
-				"I am trying to brew some healing potions. Will you help me to gather the needed components?",
-				{"Yes. I am ready for greater things.", "No, not right now."},
+				"Aku sedang meramu obat penyembuh. Maukah kau membantuku mengumpulkan bahannya?",
+				{"Ya. Aku siap untuk hal yang lebih besar.", "Tidak, tidak sekarang."},
 				{}
 			)
 
@@ -723,48 +723,48 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Excellent. I have everything I need except for some mica."
+						"Bagus. Semua bahannya sudah ada kecuali mica."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						trats,
-						"There is a cave, not too far from here, where some white rats can occasionally be found."
+						"Ada gua, tidak jauh dari sini, tempat tikus putih kadang bisa ditemukan."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						t,
-						"You can find their home near a well, beneath a tall golden tree near the Dusk Shaman."
+						"Sarangnya ada dekat sebuah sumur, di bawah pohon emas tinggi dekat Dusk Shaman."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						trats,
-						"The rats have been corrupted by evil chi. They live not off food like you and I, but from eating the very rock that makes their home."
+						"Tikus-tikus itu dirusak oleh chi jahat. Mereka tidak hidup dari makanan seperti kita, melainkan dari memakan batu yang menjadi rumahnya."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						tmica,
-						"Sometimes, you will find that they possess mica, a mineral that can be found in the rock in this area."
+						"Kadang kau akan mendapati mereka membawa mica, mineral yang ada di dalam batuan daerah ini."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						t,
-						"Be careful! Many of the creatures that live below ground are much more dangerous than those you have met thus far.",
-						"Bring me one piece of mica so that I may make my potions."
+						"Hati-hati! Banyak makhluk yang hidup di bawah tanah jauh lebih berbahaya daripada yang pernah kau temui selama ini.",
+						"Bawakan aku sekeping mica supaya aku bisa membuat ramuanku."
 					},
 					0
 				)
 			elseif choice == 2 then
-				player:dialogSeq({t, "Perhaps another time, then."}, 0)
+				player:dialogSeq({t, "Kalau begitu, mungkin lain kali."}, 0)
 			end
 
 			return
@@ -782,8 +782,8 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"What a great steed you have there. Very impressive indeed, I love to watch horses.",
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"Tunggangan yang hebat. Sungguh mengesankan; aku suka memperhatikan kuda.",
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					0
 				)
@@ -793,21 +793,21 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Nothing is better than a swift steed carrying you off to where you want to go. You should learn to ride now, as it will aid you greatly on your way to destiny."
+					"Tidak ada yang lebih baik daripada tunggangan cepat yang membawamu ke tujuanmu. Belajarlah menunggang sekarang, itu akan sangat membantumu menuju takdirmu."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					thorse,
-					"You can't do much while mounted on a horse, but it is much faster than walking. Go find a horse and ride it back to me."
+					"Kau tidak bisa berbuat banyak di atas kuda, tetapi jauh lebih cepat daripada berjalan. Carilah kuda dan tunggangilah kembali ke sini."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"Talk to me again when you are mounted on a horse. Near the top left of the city is a good place to look for horses, there is usually a few there. Once you find one walk up to it and ride it by pressing the [r] key."
+					"Bicaralah lagi kepadaku saat kau menunggang kuda. Bagian kiri atas kota tempat yang bagus untuk mencari kuda; biasanya ada beberapa di sana. Begitu ketemu, dekati dan tunggangi dengan menekan tombol [r]."
 				},
 				0
 			)
@@ -823,8 +823,8 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Oh thank you so much for finding my brother! It is such a burden off my mind. He is such a noble one trying to help that town like that.",
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"Oh, terima kasih banyak sudah menemukan adikku! Beban pikiranku jadi hilang. Ia sungguh mulia, mau menolong kota itu seperti tadi.",
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					0
 				)
@@ -834,14 +834,14 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Oh my... I have just received some bad news. My youngest brother has just gone missing from his home. Are you willing to do me a favor?"
+					"Astaga... aku baru saja menerima kabar buruk. Adik bungsuku hilang dari rumahnya. Bersediakah kau menolongku?"
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Will you go look for him, and find out what has happened?",
-				{"No, I will not help.", "Yes, I will go look."},
+				"Maukah kau mencarinya dan mencari tahu apa yang terjadi?",
+				{"Tidak, aku tidak mau menolong.", "Ya, aku akan mencarinya."},
 				{}
 			)
 
@@ -849,7 +849,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Oh, what a shame. Sorry, but I can not continue your training until I know what has happened to him"
+						"Oh, sayang sekali. Maaf, tetapi aku tidak bisa melanjutkan latihanmu sampai aku tahu apa yang menimpanya"
 					},
 					0
 				)
@@ -857,9 +857,9 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"All I can tell you is that he lives in Sanhae, a town far to the north.",
-						"You can get there by going back to the stables, and traveling to the Arctic Land.",
-						"From there go south east, and follow the valley around. Talk to the Mayor there, he may be able to tell you what happened."
+						"Yang bisa kukatakan hanyalah bahwa ia tinggal di Sanhae, kota jauh di utara.",
+						"Kau bisa ke sana dengan kembali ke kandang kuda lalu bepergian ke Arctic Land.",
+						"Dari sana pergilah ke tenggara dan susuri lembahnya. Bicaralah dengan Wali Kota di sana, mungkin ia bisa menceritakan apa yang terjadi."
 					},
 					0
 				)
@@ -875,8 +875,8 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Well done, I see you have upgraded yourself to a better weapon. I hope it works out for you.",
-						"If you would like another quest, let me know, I have plenty to teach a young one like yourself."
+						"Bagus, kulihat kau sudah beralih ke senjata yang lebih baik. Semoga cocok untukmu.",
+						"Kalau kau mau tugas lagi, bilang saja. Masih banyak yang bisa kuajarkan kepada anak muda sepertimu."
 					},
 					0
 				)
@@ -886,10 +886,10 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"So you are still carrying that little stick around to beat on things with? I think you need to upgrade to something better!",
-					"Let's see... Ah yes! A good weapon, with great magical properties, and perhaps even a challenge too great for even you.",
-					"I have heard tales of a warrior who is a bit of a trickster in the KaMing's encampment. You can get there from the stables you used before.",
-					"Go there and talk to him about a new weapon. I am sure he will be willing to \"help\" you, ask about the \"Ice beast\""
+					"Jadi kau masih membawa-bawa tongkat kecil itu untuk memukul? Kurasa kau perlu beralih ke sesuatu yang lebih baik!",
+					"Coba kupikir... Ah ya! Senjata bagus dengan sifat sihir yang hebat, dan mungkin tantangan yang terlalu besar bahkan untukmu.",
+					"Aku pernah dengar kisah tentang seorang prajurit yang agak licik di perkemahan KaMing. Kau bisa ke sana dari kandang kuda yang tadi kau pakai.",
+					"Pergilah ke sana dan bicarakan soal senjata baru. Aku yakin ia bersedia \"membantu\"mu; tanyakan tentang \"Ice beast\""
 				},
 				0
 			)
@@ -912,7 +912,7 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"I have taught you all that I can, young one. The time has now come for you to venture out into the Kingdoms and create your own legends."
+						"Semua yang bisa kuajarkan sudah kuajarkan, anak muda. Kini saatnya kau melangkah ke Kerajaan-kerajaan dan menciptakan legendamu sendiri."
 					},
 					0
 				)
@@ -924,8 +924,8 @@ MainTutorialNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, I see you have visited Yon.. how was she?",
-						"Now that you have the cloth, you must visit the museum Caretaker, whom resides in the museum north of Dae Shore. He is the only one who can make your Student Cap."
+						"Ah, kulihat kau sudah menemui Yon.. bagaimana dia?",
+						"Setelah kainnya kau punya, temuilah Caretaker museum yang tinggal di museum utara Dae Shore. Hanya dia yang bisa membuat Student Cap-mu."
 					},
 					0
 				)
@@ -935,26 +935,26 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Well, your time with me is nearly at an end, but before we part I want to give you a small gift to show your time here."
+					"Nah, waktumu bersamaku hampir usai, tetapi sebelum berpisah aku ingin memberimu hadiah kecil sebagai kenangan."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					tstudentcap,
-					"I will show you the way to prove your worth, by making your very own Student's cap!"
+					"Akan kutunjukkan cara membuktikan kelayakanmu: membuat Student's cap-mu sendiri!"
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"This offers good protection during battle even though it is made of cloth.",
-					"The first step to making your cap is to get some cloth.\nGoto the center of the wilderness, you will find some sheep there.",
-					"Collect some of the wool they drop, and take it to the weavers hut. There are many skills you can learn later on, weaving is just one of them.",
-					"There is armor making, weapon smith in both wood and metal, gem crafting, and even cooking!",
-					"You will find the weavers near 45,30 in the Wilderness, that's out of the North gate of Kugnae. Ask about \"weaving\" when you get there.",
-					"It's quite a walk, so you might want to use a horse. Go now, and return when you have made some cloth."
+					"Benda ini memberi perlindungan yang lumayan dalam pertempuran meski terbuat dari kain.",
+					"Langkah pertama membuat topimu adalah mendapatkan kain.\nPergilah ke tengah belantara, di sana ada domba-domba.",
+					"Kumpulkan wol yang mereka jatuhkan lalu bawa ke pondok penenun. Ada banyak keahlian yang bisa kau pelajari nanti; menenun hanya salah satunya.",
+					"Ada pembuatan zirah, penempaan senjata dari kayu maupun logam, pengasahan permata, bahkan memasak!",
+					"Penenunnya ada sekitar 45,30 di Wilderness, di luar gerbang Utara Kugnae. Tanyakan soal \"tenun\" setibanya di sana.",
+					"Jalannya cukup jauh, jadi sebaiknya pakai kuda. Pergilah sekarang, dan kembalilah kalau kainnya sudah jadi."
 				},
 				0
 			)
@@ -965,7 +965,7 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"I have taught you all that I can, young one. The time has come for you to venture out into the Kingdoms and create your own legends."
+					"Semua yang bisa kuajarkan sudah kuajarkan, anak muda. Saatnya kau melangkah ke Kerajaan-kerajaan dan menciptakan legendamu sendiri."
 				},
 				0
 			)
@@ -995,7 +995,7 @@ MainTutorialNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Do you seek to understand the stars? It is simple to do. Visit the center of the star with twelve points. Drop a single white amber there. Then you will understand."
+					"Kau ingin memahami bintang? Caranya sederhana. Kunjungi pusat bintang berujung dua belas. Jatuhkan satu white amber di sana. Maka kau akan mengerti."
 				},
 				0
 			)

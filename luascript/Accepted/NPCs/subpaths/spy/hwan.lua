@@ -35,33 +35,33 @@ hwan = {
 			player:dialogSeq(
 				{
 					gfx,
-					"** You tie Hwan securely to the tree and stand behind the tree so that he cannot see you. **"
+					"** Kau mengikat Hwan erat-erat ke pohon lalu berdiri di baliknya supaya ia tidak bisa melihatmu. **"
 				},
 				1
 			)
 			local choices = {
-				"Pour water on head to wake up",
-				"Slap the back of his head",
-				"Tickle him awake..."
+				"Siram kepalanya dengan air agar bangun",
+				"Tampar belakang kepalanya",
+				"Gelitik dia sampai bangun..."
 			}
 			local choice = player:menuSeq(
-				"What do you want to do?",
+				"Apa yang ingin kau lakukan?",
 				choices,
 				{}
 			)
 			if choice == 1 or choice == 2 or choice == 3 then
 				player:dialogSeq(
-					{gfx, "What the HELL is this?! Do you know who I am?!"},
+					{gfx, "Apa-apaan INI?! Kau tahu siapa aku?!"},
 					1
 				)
 				local choices = {
-					"Some imperial lackey who wants to die.",
-					"It doesn't matter who you are.",
-					"Father of a lovely little girl who would",
-					"miss her daddy greatly if he went missing."
+					"Sekadar antek kekaisaran yang ingin mati.",
+					"Tidak penting siapa kau.",
+					"Ayah dari seorang gadis kecil yang manis, yang akan",
+					"sangat merindukan ayahnya kalau ia menghilang."
 				}
 				local choice = player:menuSeq(
-					"How do you want to irritate him?",
+					"Bagaimana kau ingin membuatnya jengkel?",
 					choices,
 					{}
 				)
@@ -69,7 +69,7 @@ hwan = {
 					player:dialogSeq(
 						{
 							gfx,
-							"I'm not telling you a damn thing! Don't you know who I am?!"
+							"Aku tidak akan bilang apa pun! Kau tidak tahu siapa aku?!"
 						},
 						1
 					)
@@ -77,22 +77,22 @@ hwan = {
 					player:dialogSeq(
 						{
 							gfx,
-							"I'm not telling you a damn thing! Don't you know who I am?!"
+							"Aku tidak akan bilang apa pun! Kau tidak tahu siapa aku?!"
 						},
 						1
 					)
 				elseif choice == 3 or choice == 4 then
 					player:dialogSeq(
-						{gfx, "You leave Mari out of this! What do you want?"},
+						{gfx, "Jangan bawa-bawa Mari! Apa maumu?"},
 						1
 					)
 					local choices = {
-						"I need to know the transport route for the Jewels",
-						"I want you to go home safely to Mari",
-						"I need to know who has the Imperial jewels!"
+						"Aku perlu tahu jalur pengangkutan Permata itu",
+						"Aku ingin kau pulang dengan selamat kepada Mari",
+						"Aku perlu tahu siapa yang memegang Imperial jewels!"
 					}
 					local choice = player:menuSeq(
-						"What do you want to do know that you have Hwan's attention?",
+						"Apa yang ingin kau lakukan sekarang setelah perhatian Hwan tertuju padamu?",
 						choices,
 						{}
 					)
@@ -100,7 +100,7 @@ hwan = {
 						player:dialogSeq(
 							{
 								gfx,
-								"Haha you are going to have to try harder than that."
+								"Haha, kau harus berusaha lebih keras dari itu."
 							},
 							1
 						)
@@ -108,17 +108,17 @@ hwan = {
 						player:dialogSeq(
 							{
 								gfx,
-								"I said leave her out of this! They'll come for me you know! You're about to have the Imperial Scouts knocking down these doors!."
+								"Sudah kubilang jangan bawa-bawa dia! Mereka akan menjemputku, tahu! Sebentar lagi Pengintai Kekaisaran mendobrak pintu-pintu ini!"
 							},
 							1
 						)
 						local choices = {
-							"*Dig your dagger into one of his hands*",
-							"Ha! They'll never find you.",
-							"Maybe we should ask Mari to come find you."
+							"*Tancapkan belatimu ke salah satu tangannya*",
+							"Ha! Mereka tidak akan pernah menemukanmu.",
+							"Mungkin sebaiknya kita minta Mari datang mencarimu."
 						}
 						local choice = player:menuSeq(
-							"What do you do now with the unhelpful Hwan?",
+							"Apa yang kau lakukan sekarang terhadap Hwan yang tidak kooperatif ini?",
 							choices,
 							{}
 						)
@@ -126,17 +126,17 @@ hwan = {
 							player:dialogSeq(
 								{
 									gfx,
-									"** Hwans screams ** Okay, okay! OKAY! What do you want to know, I'll tell you..."
+									"** Hwan menjerit ** Baik, baik! BAIK! Apa yang ingin kau ketahui, akan kuberitahu..."
 								},
 								1
 							)
 							local choices = {
-								"I need to know where the Jewels are.",
-								"I need to know where the Jewels are going.",
-								"I need you to describe the Jewels."
+								"Aku perlu tahu di mana Permata itu berada.",
+								"Aku perlu tahu ke mana Permata itu dibawa.",
+								"Aku ingin kau menggambarkan Permata itu."
 							}
 							local choice = player:menuSeq(
-								"What do you do now with the helpful Hwan?",
+								"Apa yang kau lakukan sekarang terhadap Hwan yang sudah kooperatif ini?",
 								choices,
 								{}
 							)
@@ -144,7 +144,7 @@ hwan = {
 								player:dialogSeq(
 									{
 										gfx,
-										"They're guarded by the highest security in the palace. ** That wasn't the answer you wanted **"
+										"Benda itu dijaga pengamanan tertinggi di istana. ** Itu bukan jawaban yang kau inginkan **"
 									},
 									1
 								)
@@ -165,21 +165,21 @@ hwan = {
 								player:dialogSeq(
 									{
 										gfx,
-										"They're going through the Vale, through a small passage in the southeast",
-										"Are you going to let me go now?"
+										"Mereka lewat Vale, melalui lorong kecil di tenggara",
+										"Sekarang kau akan melepaskanku?"
 									},
 									1
 								)
 								player:dialogSeq(
 									{
 										mistress,
-										"** A woman appears from behind the tree and offers a silent greeting **",
-										"We will indeed release you and spare your life so that you can remember who really controls these lands.",
-										"Say anything of this and you'll never be heard from again.",
-										"** The guild mistress knocks out Hwan and calls for the Gravekeeper **",
-										"See to it our special guest rests comfortably somewhere away from here.",
-										"Go quickly take care of that envoy before they reach Nagnang. Leave no trace of them - use our Guild's special explosives from Pyung's shop in Buya.",
-										"Maybe you will get there before that other affiliate we sent... I'll wait here at this tree a little longer for whichever one of you gets the task done first."
+										"** Seorang perempuan muncul dari balik pohon dan memberi salam tanpa suara **",
+										"Kami memang akan melepaskanmu dan membiarkanmu hidup, supaya kau ingat siapa yang sebenarnya menguasai tanah ini.",
+										"Sebut sepatah kata pun soal ini dan kau tidak akan pernah terdengar lagi.",
+										"** Nyonya guild memingsankan Hwan lalu memanggil Penjaga Makam **",
+										"Pastikan tamu istimewa kita beristirahat dengan nyaman di suatu tempat jauh dari sini.",
+										"Cepat urus utusan itu sebelum mereka mencapai Nagnang. Jangan tinggalkan jejak - pakai bahan peledak khusus Guild kami dari toko Pyung di Buya.",
+										"Mungkin kau sampai lebih dulu daripada rekan lain yang kami kirim... Aku menunggu sebentar lagi di pohon ini untuk siapa pun di antara kalian yang menuntaskan tugasnya duluan."
 									},
 									1
 								)
@@ -188,21 +188,21 @@ hwan = {
 								player:dialogSeq(
 									{
 										gfx,
-										"These are some of the most precious jewels ever found. ** Clearly not what you needed to know **"
+										"Ini termasuk permata paling berharga yang pernah ditemukan. ** Jelas bukan yang perlu kau ketahui **"
 									},
 									1
 								)
 							end
 						elseif choice == 2 then
 							player:dialogSeq(
-								{gfx, "They will definitely find me."},
+								{gfx, "Mereka pasti menemukanku."},
 								1
 							)
 						elseif choice == 3 then
 							player:dialogSeq(
 								{
 									gfx,
-									"If you're going to kill me, get it over with."
+									"Kalau kau mau membunuhku, cepat selesaikan."
 								},
 								1
 							)
@@ -211,7 +211,7 @@ hwan = {
 						player:dialogSeq(
 							{
 								gfx,
-								"Haha you are going to have to try harder than that."
+								"Haha, kau harus berusaha lebih keras dari itu."
 							},
 							1
 						)

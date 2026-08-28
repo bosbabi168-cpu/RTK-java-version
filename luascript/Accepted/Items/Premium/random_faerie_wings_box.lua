@@ -11,7 +11,7 @@ random_faerie_wings_box = {
 		local randomFaerieWing = faerie_wings[math.random(1, #faerie_wings)]
 
 		if not player:hasSpace(randomFaerieWing, 1) then
-			player:sendMinitext("Your inventory is full.")
+			player:sendMinitext("Kantongmu penuh.")
 			return
 		end
 		if player:hasItem("random_faerie_wings_box", 1) ~= true then

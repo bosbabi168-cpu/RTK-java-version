@@ -9,10 +9,10 @@ KukSaNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell", "Kuk-Sa's Welcome"}
+		local opts = {"Beli", "Jual", "Kuk-Sa's Welcome"}
 
 		if player.class == 1 and (player.quest["subpath_trials"] == 0 or player.quest["subpath_trials"] == 18) and (player.gameRegistry["subpaths_released"] == 0 or player.gmLevel == 99) then
-			table.insert(opts, "Join the Do")
+			table.insert(opts, "Bergabung dengan Do")
 		end
 
 		if player.quest["subpath_trials"] == 18 then
@@ -22,38 +22,38 @@ KukSaNpc = {
 		local buyitems = KukSaNpc.buyItems()
 		local sellitems = KukSaNpc.sellItems()
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accommodate some of the things you need. What would you like?",
 				buyitems
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend("What are you willing to sell today?", sellitems)
 		elseif menu == "Kuk-Sa's Welcome" then
 			player:dialogSeq(
 				{
 					t,
-					"Hello and welcome to the Do Training Arena.",
-					"Here you can learn to fight."
+					"Halo dan selamat datang di Do Training Arena.",
+					"Di sini kau bisa belajar bertarung."
 				},
 				1
 			)
 			return
-		elseif menu == "Join the Do" then
+		elseif menu == "Bergabung dengan Do" then
 			KukSaNpc.joinTheDo(player, npc)
 		elseif menu == "Abandon Trials" then
 			local abandon = player:menuString(
-				"Are you sure you want to abandon your trials?",
-				{"Yes", "No"}
+				"Kau yakin ingin meninggalkan ujianmu?",
+				{"Ya", "Tidak"}
 			)
-			if abandon == "Yes" then
+			if abandon == "Ya" then
 				KukSaNpc.clearQuestLegends(player)
 				player:dialogSeq(
 					{
 						t,
-						"Everything you have learned of the Do, has now been forgotten."
+						"Semua yang pernah kau pelajari tentang Do kini terlupakan."
 					},
 					0
 				)
@@ -74,7 +74,7 @@ KukSaNpc = {
 	action = function(npc)
 		local random = math.random(1, 15)
 		if random == 1 then
-			npc:talk(0, npc.name .. ": Welcome to the Do Training Arena")
+			npc:talk(0, npc.name .. ": Selamat datang di Do Training Arena")
 		end
 	end,
 
@@ -117,13 +117,13 @@ KukSaNpc = {
 		--
 
 		if player.level < 50 then
-			player:dialogSeq({t, "You are too young to join at this time."}, 0)
+			player:dialogSeq({t, "Kau masih terlalu muda untuk bergabung sekarang."}, 0)
 			return
 		end
 
 		if not player:karmaCheck("dog") then
 			player:dialogSeq(
-				{t, "Your soul is too impure. Improve your karma and return."},
+				{t, "Jiwamu terlalu kotor. Perbaiki karmamu lalu kembalilah."},
 				0
 			)
 			return
@@ -133,22 +133,22 @@ KukSaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ah, so you wish to walk amongst the Do? Well, we do not just teach anyone our ways.",
-					"It takes a special warrior to understand our ways and our life.",
-					"I can only show you the door to enlightenment but it is you who must learn to walk the path."
+					"Ah, jadi kau ingin berjalan di antara para Do? Kami tidak mengajarkan jalan kami kepada sembarang orang.",
+					"Butuh prajurit istimewa untuk memahami jalan dan hidup kami.",
+					"Aku hanya bisa menunjukkan pintu menuju pencerahan, tetapi kaulah yang harus belajar menapaki jalannya."
 				},
 				1
 			)
 
 			local join = player:menuString(
-				"Are you sure you want to begin the process of becoming a Do?",
-				{"Yes", "No"}
+				"Kau yakin ingin memulai proses menjadi seorang Do?",
+				{"Ya", "Tidak"}
 			)
 
-			if join == "Yes" then
+			if join == "Ya" then
 				player.quest["subpath_trials"] = 18
 			else
-				player:dialogSeq({t, "Very well."}, 0)
+				player:dialogSeq({t, "Baiklah."}, 0)
 			end
 		end
 
@@ -165,8 +165,8 @@ KukSaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The first step is to learn the meaning of patience and self reflection. It is imperative that one fully understands that we can only teach those who are willing to understand.",
-						"Please return to me in 4 weeks and I will assess that you have learned your first lesson well."
+						"Langkah pertama adalah memahami makna kesabaran dan perenungan diri. Sangat penting bahwa seseorang benar-benar mengerti: kami hanya bisa mengajar mereka yang mau memahami.",
+						"Kembalilah kepadaku dalam 4 pekan dan akan kunilai apakah pelajaran pertamamu sudah kau kuasai."
 					},
 					0
 				)
@@ -176,7 +176,7 @@ KukSaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You have not yet shown that you are willing to be patient. You need to self-reflect and prove you are willing to learn."
+							"Kau belum menunjukkan kesediaanmu bersabar. Kau perlu merenungkan diri dan membuktikan bahwa kau mau belajar."
 						},
 						0
 					)
@@ -184,7 +184,7 @@ KukSaNpc = {
 				end
 
 				player:addLegend(
-					"Passed the Do trial of Patience",
+					"Lulus ujian Do: Kesabaran",
 					"do_trial_of_patience",
 					18,
 					15
@@ -193,7 +193,7 @@ KukSaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, so you have taken your first step towards enlightenment. I can see that you are truly willing to learn our ways and life. You have taken your first step towards becoming one with us."
+						"Ah, jadi kau sudah mengambil langkah pertama menuju pencerahan. Kulihat kau sungguh bersedia mempelajari jalan dan hidup kami. Kau sudah melangkah pertama kali menuju kesatuan dengan kami."
 					},
 					1
 				)

@@ -9,28 +9,28 @@ ElixirShopNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell"}
+		local opts = {"Beli", "Jual"}
 
 		if npc.mapTitle == "Elixir Hall" then
-			table.insert(opts, "Leave")
+			table.insert(opts, "Pergi")
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 
 		local buyItems = {"acorn"}
 		local sellItems = {"acorn"}
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buyItems
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend("What are you willing to sell today?", sellItems)
-		elseif choice == "Leave" then
+		elseif choice == "Pergi" then
 			clone.wipe(player)
 			player.registry["elixirTeam"] = 0
 			player:returnFunc()

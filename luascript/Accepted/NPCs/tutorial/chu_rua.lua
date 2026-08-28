@@ -16,7 +16,7 @@ ChuRuaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Thank you again for your help! I will return you home now."
+					"Sekali lagi terima kasih atas bantuanmu! Sekarang akan kupulangkan kau."
 				},
 				1
 			)
@@ -34,8 +34,8 @@ ChuRuaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ginseng. What an odd looking root.",
-					"The Dragon king shall live. Bless you, kind one."
+					"Ginseng. Akar yang bentuknya ganjil.",
+					"Raja Naga akan hidup. Berkah bagimu, orang baik."
 				},
 				1
 			)
@@ -61,14 +61,14 @@ ChuRuaNpc = {
 			player:dialogSeq(
 				{
 					tring,
-					"Humbly, I offer one of the finest jewels from the sea."
+					"Dengan rendah hati kupersembahkan salah satu permata terindah dari laut."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"Thank you again for your help! I will return you home now."
+					"Sekali lagi terima kasih atas bantuanmu! Sekarang akan kupulangkan kau."
 				},
 				1
 			)
@@ -86,10 +86,10 @@ ChuRuaNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"I have swum as hard as I could. Hey! hey you, honorable human. But a moment! I would that you would hear out an earnest request.",
-				"The Lord, Dragon King, is dying as we speak, beneath the waves in his palace. The finest physician has come and declared that he must have an item we cannot procure from within the sea.",
-				"I entreat you as a humble servant of the Dragon King, and the only servants who know of the land and the sea.",
-				"Please, his highness's health depends upon a root of Young ginseng."
+				"Aku berenang sekuat tenaga. Hei! hei kau, manusia yang terhormat. Sebentar saja! Aku ingin kau mendengar satu permohonan yang sungguh-sungguh.",
+				"Sang Tuan, Raja Naga, sedang sekarat saat kita bicara, di istananya di bawah ombak. Tabib terbaik sudah datang dan menyatakan bahwa ia membutuhkan benda yang tidak bisa kami dapatkan dari dalam laut.",
+				"Aku memohon kepadamu sebagai hamba rendah Raja Naga, satu-satunya hamba yang mengenal daratan dan lautan.",
+				"Kumohon, kesehatan Yang Mulia bergantung pada sebatang akar Young ginseng."
 			},
 			1
 		)
@@ -97,7 +97,7 @@ ChuRuaNpc = {
 		player:dialogSeq(
 			{
 				tring,
-				"Give this to me, and this ring of the Mermaid Princess I would, in return, give to thee."
+				"Berikan itu kepadaku, dan sebagai gantinya cincin Putri Duyung ini akan kuserahkan kepadamu."
 			},
 			1
 		)
@@ -105,10 +105,10 @@ ChuRuaNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"I... I wish I could point you in the way of the ginseng, but I know not where it grows. There is an old verse,",
-				"'Skip north, until rabbits nibbling grass you find, is a path to a king's health and harmony,'",
-				"I can tell you, though, that you may greet some of the magic animals of the land. What is you people say, \"Hello\"?",
-				"Please get young ginseng for his highness's sake!"
+				"Aku... andai aku bisa menunjukkan jalan ke ginseng itu, tetapi aku tidak tahu di mana ia tumbuh. Ada sebuah syair kuno,",
+				"'Melompatlah ke utara, sampai kau temukan kelinci mengunyah rumput; itulah jalan menuju kesehatan dan keselarasan seorang raja,'",
+				"Yang bisa kuberitahu, kau boleh menyapa beberapa binatang bersihir di daratan. Apa kata kaummu, \"Halo\"?",
+				"Tolong ambilkan young ginseng demi Yang Mulia!"
 			},
 			0
 		)
@@ -137,7 +137,7 @@ ChuRuaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have already discovered the secrets of the Lost Legend."
+						"Kau sudah menemukan rahasia Lost Legend."
 					},
 					0
 				)
@@ -146,7 +146,7 @@ ChuRuaNpc = {
 
 			if player.quest["wind_armor"] == 0 or player.quest["min_song_asked"] == 0 then
 				player:dialogSeq(
-					{t, "I really have no idea what you're talking about."},
+					{t, "Aku sungguh tidak paham apa yang kau bicarakan."},
 					0
 				)
 				return
@@ -161,24 +161,24 @@ ChuRuaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The song of the mermaids, where did you hear that?",
-					"Is it not a beautiful song?",
-					"But why do you not sing the words? Do you not know them?",
-					"The words are simple",
-					"Oh the waves upon the sea, the green sea of old,",
-					"They glide and dance to the shore, a shore of gold,"
+					"Lagu para duyung, dari mana kau mendengarnya?",
+					"Bukankah itu lagu yang indah?",
+					"Tetapi kenapa kau tidak menyanyikan liriknya? Kau tidak tahu?",
+					"Liriknya sederhana",
+					"Oh ombak di atas laut, laut hijau nan purba,",
+					"Mereka meluncur dan menari ke pantai, pantai keemasan,"
 				},
 				1
 			)
 
 			if player.quest["chu_rua_song"] == 1 then
 				player:dialogSeq(
-					{t, "The dance of the waves does end, a story been retold,"},
+					{t, "Tarian ombak pun berakhir, kisah yang diceritakan ulang,"},
 					1
 				)
 			elseif player.quest["chu_rua_song"] == 2 then
 				player:dialogSeq(
-					{t, "The dance of the waves does end, a story is retold,"},
+					{t, "Tarian ombak pun berakhir, kisah pun diceritakan ulang,"},
 					1
 				)
 			end
@@ -186,8 +186,8 @@ ChuRuaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Do not fear for the dance, the waves are too bold,",
-					"Far away the tune begins, on the green sea of old."
+					"Jangan cemaskan tariannya, ombak itu terlalu berani,",
+					"Jauh di sana nadanya bermula, di laut hijau nan purba."
 				},
 				0
 			)

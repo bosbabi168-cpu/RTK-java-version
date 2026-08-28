@@ -31,7 +31,7 @@ whirlwind_warrior = {
 		end
 
 		if (currentMagic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -96,7 +96,7 @@ whirlwind_warrior = {
 			)
 
 			if (worked == 2) then
-				targets[1]:sendMinitext(player.name .. " cast " .. spellNames[alignmentIndex] .. " on you.")
+				targets[1]:sendMinitext(player.name .. " merapal " .. spellNames[alignmentIndex] .. " padamu.")
 				landed = 1
 			end
 		end
@@ -112,7 +112,7 @@ whirlwind_warrior = {
 		end
 
 		player:sendStatus()
-		player:sendMinitext("You cast " .. spellNames[alignmentIndex] .. ".")
+		player:sendMinitext("Kau merapal " .. spellNames[alignmentIndex] .. ".")
 	end,
 
 	requirements = function(player)

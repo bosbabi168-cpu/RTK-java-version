@@ -14,7 +14,7 @@ RockNpc = {
 
 			Tools.checkKarma(player)
 
-			player:dialogSeq({t, "\"Quit bugging me will ya?\""}, 0)
+			player:dialogSeq({t, "\"Berhenti mengangguku, ya?\""}, 0)
 		end
 	end)
 }

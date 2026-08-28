@@ -12,7 +12,7 @@ rodent_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -61,7 +61,7 @@ kwisin_disguise_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -103,7 +103,7 @@ mingken_disguise_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -145,7 +145,7 @@ ohaeng_disguise_rogue = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 

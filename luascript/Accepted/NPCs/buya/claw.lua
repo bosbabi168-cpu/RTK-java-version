@@ -15,14 +15,14 @@ ClawNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Oh? So you've lost your tiger mail, huh? I will have to reteach you the ways of the tiger."
+					"Oh? Jadi tiger mail-mu hilang? Aku harus mengajarimu ulang jalan sang harimau."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Are you sure you wish to relearn the ways of the tiger? (this will reset your quest progress)",
-				{"Yes", "No"},
+				"Kau yakin ingin mempelajari ulang jalan sang harimau? (ini akan menolkan kemajuan tugasmu)",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -31,7 +31,7 @@ ClawNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, so we are going to begin again. Please say \"Chongun\" when you are ready to start again."
+						"Ah, jadi kita akan mulai lagi. Ucapkan \"Chongun\" kalau kau siap memulai kembali."
 					},
 					0
 				)
@@ -44,16 +44,16 @@ ClawNpc = {
 			Tools.checkKarma(player)
 
 			if player.baseClass ~= 1 then
-				player:dialogSeq({t, "Sorry I cannot help your kind."}, 0)
+				player:dialogSeq({t, "Maaf, aku tidak bisa menolong kaummu."}, 0)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"In former lives, I was a mighty Chongun, that would put your contemporaries to shame.",
-					"You seek my essence? You wish to become as powerful and invincible as the tiger?",
-					"Then you must use that essence within yourself. Do NOT hand me anything. Just have it on you."
+					"Di kehidupan-kehidupan sebelumnya, aku Chongun yang perkasa, yang akan membuat orang-orang sezamanmu malu.",
+					"Kau mencari sariku? Kau ingin menjadi sekuat dan setangguh sang harimau?",
+					"Kalau begitu kau harus memakai sari yang ada dalam dirimu. JANGAN serahkan apa pun kepadaku. Cukup bawa saja."
 				},
 				1
 			)
@@ -62,7 +62,7 @@ ClawNpc = {
 				-- just starting out
 				if player.level < 5 then
 					player:dialogSeq(
-						{t, "Return when you have reached level 5."},
+						{t, "Kembalilah kalau kau sudah mencapai level 5."},
 						0
 					)
 					return
@@ -85,7 +85,7 @@ ClawNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Fetch an " .. neededItems[1].name .. " and " .. neededItems[
+							"Ambilkan " .. neededItems[1].name .. " dan " .. neededItems[
 								2
 							].name
 						},
@@ -108,7 +108,7 @@ ClawNpc = {
 
 				player.quest["tiger_armor"] = 10
 				player:dialogSeq(
-					{t, "Return when you have reached level 10."},
+					{t, "Kembalilah kalau kau sudah mencapai level 10."},
 					0
 				)
 			end
@@ -117,7 +117,7 @@ ClawNpc = {
 				-- level 10 quest
 				if player.level < 10 then
 					player:dialogSeq(
-						{t, "Return when you have reached level 10."},
+						{t, "Kembalilah kalau kau sudah mencapai level 10."},
 						0
 					)
 					return
@@ -151,9 +151,9 @@ ClawNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"For the next armor, bring a " .. neededItems[1].name .. ", " .. neededItems[
+							"Untuk zirah berikutnya, bawakan " .. neededItems[1].name .. ", " .. neededItems[
 								2
-							].name .. ", and your " .. neededItems[3].name
+							].name .. ", dan " .. neededItems[3].name
 						},
 						0
 					)
@@ -175,7 +175,7 @@ ClawNpc = {
 
 				player.quest["tiger_armor"] = 20
 				player:dialogSeq(
-					{t, "Return when you have reached level 20."},
+					{t, "Kembalilah kalau kau sudah mencapai level 20."},
 					0
 				)
 			end
@@ -184,7 +184,7 @@ ClawNpc = {
 				-- level 20 quest
 				if player.level < 20 then
 					player:dialogSeq(
-						{t, "Return when you have reached level 20."},
+						{t, "Kembalilah kalau kau sudah mencapai level 20."},
 						0
 					)
 					return
@@ -221,9 +221,9 @@ ClawNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"For the next armor, bring a " .. neededItems[1].name .. ", " .. neededItems[
+							"Untuk zirah berikutnya, bawakan " .. neededItems[1].name .. ", " .. neededItems[
 								2
-							].name .. ", and your " .. neededItems[3].name
+							].name .. ", dan " .. neededItems[3].name
 						},
 						0
 					)
@@ -245,7 +245,7 @@ ClawNpc = {
 
 				player.quest["tiger_armor"] = 30
 				player:dialogSeq(
-					{t, "Return when you have reached level 30."},
+					{t, "Kembalilah kalau kau sudah mencapai level 30."},
 					0
 				)
 			end
@@ -254,7 +254,7 @@ ClawNpc = {
 				-- level 30 quest
 				if player.level < 30 then
 					player:dialogSeq(
-						{t, "Return when you have reached level 30."},
+						{t, "Kembalilah kalau kau sudah mencapai level 30."},
 						0
 					)
 					return
@@ -291,9 +291,9 @@ ClawNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"For the next armor, bring a " .. neededItems[1].name .. ", " .. neededItems[
+							"Untuk zirah berikutnya, bawakan " .. neededItems[1].name .. ", " .. neededItems[
 								2
-							].name .. ", and your " .. neededItems[3].name
+							].name .. ", dan " .. neededItems[3].name
 						},
 						0
 					)
@@ -315,7 +315,7 @@ ClawNpc = {
 
 				player.quest["tiger_armor"] = 40
 				player:dialogSeq(
-					{t, "Return when you have reached level 40."},
+					{t, "Kembalilah kalau kau sudah mencapai level 40."},
 					0
 				)
 			end
@@ -324,7 +324,7 @@ ClawNpc = {
 				-- level 40 quest
 				if player.level < 40 then
 					player:dialogSeq(
-						{t, "Return when you have reached level 40."},
+						{t, "Kembalilah kalau kau sudah mencapai level 40."},
 						0
 					)
 					return
@@ -361,9 +361,9 @@ ClawNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"For the next armor, bring a " .. neededItems[1].name .. ", " .. neededItems[
+							"Untuk zirah berikutnya, bawakan " .. neededItems[1].name .. ", " .. neededItems[
 								2
-							].name .. ", and your " .. neededItems[3].name
+							].name .. ", dan " .. neededItems[3].name
 						},
 						0
 					)
@@ -385,7 +385,7 @@ ClawNpc = {
 
 				player.quest["tiger_armor"] = 50
 				player:dialogSeq(
-					{t, "Return when you have reached level 50."},
+					{t, "Kembalilah kalau kau sudah mencapai level 50."},
 					0
 				)
 			end
@@ -394,7 +394,7 @@ ClawNpc = {
 				-- level 50 quest
 				if player.level < 50 then
 					player:dialogSeq(
-						{t, "Return when you have reached level 50."},
+						{t, "Kembalilah kalau kau sudah mencapai level 50."},
 						0
 					)
 					return
@@ -431,9 +431,9 @@ ClawNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"For the next armor, bring a " .. neededItems[1].name .. ", " .. neededItems[
+							"Untuk zirah berikutnya, bawakan " .. neededItems[1].name .. ", " .. neededItems[
 								2
-							].name .. ", and your " .. neededItems[3].name
+							].name .. ", dan " .. neededItems[3].name
 						},
 						0
 					)
@@ -455,7 +455,7 @@ ClawNpc = {
 
 				player.quest["tiger_armor"] = 60
 				player:dialogSeq(
-					{t, "Return when you have reached level 60."},
+					{t, "Kembalilah kalau kau sudah mencapai level 60."},
 					0
 				)
 			end
@@ -464,7 +464,7 @@ ClawNpc = {
 				-- level 60 quest
 				if player.level < 60 then
 					player:dialogSeq(
-						{t, "Return when you have reached level 60."},
+						{t, "Kembalilah kalau kau sudah mencapai level 60."},
 						0
 					)
 					return
@@ -501,9 +501,9 @@ ClawNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"For the next armor, bring a " .. neededItems[1].name .. ", " .. neededItems[
+							"Untuk zirah berikutnya, bawakan " .. neededItems[1].name .. ", " .. neededItems[
 								2
-							].name .. ", and your " .. neededItems[3].name
+							].name .. ", dan " .. neededItems[3].name
 						},
 						0
 					)
@@ -527,7 +527,7 @@ ClawNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have seen what I know for I have only lived on earth. Perhaps a celestial being elsewhere would know more."
+						"Kau sudah melihat semua yang kutahu, sebab aku hanya pernah hidup di bumi. Mungkin makhluk surgawi di tempat lain tahu lebih banyak."
 					},
 					0
 				)
@@ -537,7 +537,7 @@ ClawNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have seen what I know for I have only lived on earth. Perhaps a celestial being elsewhere would know more."
+						"Kau sudah melihat semua yang kutahu, sebab aku hanya pernah hidup di bumi. Mungkin makhluk surgawi di tempat lain tahu lebih banyak."
 					},
 					0
 				)
@@ -551,8 +551,8 @@ ClawNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Dragons you say? I know a little about them, all sorts of dragons.",
-						"There is your regular dragon, like the ones you meet in Mythic, and then there are the special ones."
+						"Naga, katamu? Aku tahu sedikit tentang mereka, segala macam naga.",
+						"Ada naga biasa, seperti yang kau temui di Mythic, lalu ada yang istimewa."
 					},
 					0
 				)
@@ -563,9 +563,9 @@ ClawNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Oh yes, the Earth dragons. Once a very mighty breed, and one of the immortal types of dragon.",
-						"There use to be hundreds of them in the world, and they spread terror wherever they went.",
-						"Eventually we found that we could not vanquish the last ones, as they were too strong, and could only capture them in shards."
+						"Oh ya, naga Bumi. Dulu bangsa yang sangat perkasa, dan salah satu jenis naga yang abadi.",
+						"Dulu ada ratusan ekor di dunia, dan mereka menyebarkan teror ke mana pun mereka pergi.",
+						"Akhirnya kami mendapati kami tidak sanggup memusnahkan yang tersisa karena terlalu kuat, dan hanya bisa mengurung mereka di dalam serpihan."
 					},
 					0
 				)
@@ -576,7 +576,7 @@ ClawNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"A shard was a weapon that Baegi designed. If you want to know mroe you will have to ask him about them."
+						"Serpihan itu senjata rancangan Baegi. Kalau kau ingin tahu lebih banyak, tanyakan kepadanya."
 					},
 					0
 				)

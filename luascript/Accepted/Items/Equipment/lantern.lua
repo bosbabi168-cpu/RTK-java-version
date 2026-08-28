@@ -1,6 +1,6 @@
 lantern = {
 	onEquip = function(player)
-		player:sendMinitext("Your lantern burns brightly.")
+		player:sendMinitext("Lenteramu menyala terang.")
 	end,
 
 	while_equipped = function(player)

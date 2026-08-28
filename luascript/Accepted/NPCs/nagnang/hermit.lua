@@ -16,7 +16,7 @@ HermitNpc = {
 		Tools.configureDialog(player, npc)
 
 		if (player.quest[_leviathan] < 3) then
-			player:dialogSeq({"Who let you in here? Go away! I don't like strangers."}, 1)
+			player:dialogSeq({"Siapa yang membiarkanmu masuk? Pergi! Aku tidak suka orang asing."}, 1)
 			player:warp(2539, 22, 11)
 			return
 		end
@@ -32,10 +32,10 @@ HermitNpc = {
 		if (speech == "dae-whan" and player.quest[_leviathan] < 3) then
 			player:dialogSeq(
 				{
-					"Eh? So you are a friend of those big green guys to the south? Nice, peaceful folk they are. Leave me alone, and I leave them alone as well.",
-					"My own kind has forsaken me. I devised a way to curse weapons with dark arts, corrupting them in exchange for formidable power. My companions feared my work and cast me out.",
-					"They scattered my creations among monsters as deadly as the dark relics they now protect. I do not have the strength to reclaim them. I salvaged only the weakest of my designs, tainted and inferior.",
-					"Still, even those may prove useful to you. The Leviathans took me in when no one else would. You helped them, so I will help you in return. Be wary. Wielding these items comes at a cost.",
+					"Eh? Jadi kau kawan makhluk hijau besar di selatan itu? Mereka kaum yang baik dan damai. Biarkan aku sendiri, dan aku pun membiarkan mereka.",
+					"Kaumku sendiri meninggalkanku. Aku menemukan cara mengutuk senjata dengan ilmu hitam, merusaknya sebagai penukar kekuatan yang dahsyat. Kawan-kawanku takut pada karyaku lalu mengusirku.",
+					"Mereka menyebar ciptaanku di antara monster yang sama mematikannya dengan pusaka gelap yang kini mereka jaga. Aku tidak punya kekuatan untuk mengambilnya kembali. Yang bisa kuselamatkan hanya rancanganku yang paling lemah, tercemar dan rendah mutunya.",
+					"Meski begitu, yang itu pun bisa berguna bagimu. Para Leviathan menampungku saat tidak ada yang mau. Kau menolong mereka, jadi aku menolongmu sebagai balasan. Berhati-hatilah: memakai benda-benda ini ada harganya.",
 				},
 				1
 			)

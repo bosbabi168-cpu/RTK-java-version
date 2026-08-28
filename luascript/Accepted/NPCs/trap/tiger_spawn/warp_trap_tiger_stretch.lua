@@ -32,7 +32,7 @@ WarpTrapTigerStretchNpc = {
 			block:warp(4104, 15, 15)
 		end
 
-		block:sendMinitext("You fall into a steep winding passage.")
+		block:sendMinitext("Kau terjatuh ke lorong curam yang berkelok.")
 		removeTrapItem(npc)
 		npc:delete()
 	end,

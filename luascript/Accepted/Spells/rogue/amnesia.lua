@@ -21,7 +21,7 @@ amnesia_rogue = {
 			player:sendAction(6, 35)
 			target:sendAnimation(39, 5)
 			target:setDuration("amnesia_rogue", duration)
-			player:sendMinitext("You cast Amnesia on " .. target.name)
+			player:sendMinitext("Kau merapal Amnesia on " .. target.name)
 
 			target.amnesia = player.ID
 			target.attacker = player.ID
@@ -94,7 +94,7 @@ forgetfulness_rogue = {
 			player:sendAction(6, 35)
 			target:sendAnimation(39, 5)
 			target:setDuration("forgetfulness_rogue", duration)
-			player:sendMinitext("You cast Forgetfulness on " .. target.name)
+			player:sendMinitext("Kau merapal Forgetfulness on " .. target.name)
 
 			target.amnesia = player.ID
 			target.attacker = player.ID
@@ -167,7 +167,7 @@ free_spirit_rogue = {
 			player:sendAction(6, 35)
 			target:sendAnimation(39, 5)
 			target:setDuration("free_spirit_rogue", duration)
-			player:sendMinitext("You cast Free spirit on " .. target.name)
+			player:sendMinitext("Kau merapal Free spirit on " .. target.name)
 
 			target.amnesia = player.ID
 			target.attacker = player.ID
@@ -240,7 +240,7 @@ mislead_rogue = {
 			player:sendAction(6, 35)
 			target:sendAnimation(39, 5)
 			target:setDuration("mislead_rogue", duration)
-			player:sendMinitext("You cast Mislead on " .. target.name)
+			player:sendMinitext("Kau merapal Mislead on " .. target.name)
 
 			target.amnesia = player.ID
 			target.attacker = player.ID

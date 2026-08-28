@@ -114,11 +114,12 @@ public final class Exchange {
      */
     public static boolean offerItem(User sd, int slot, int amount) {
         User tsd = MapServer.userById(sd.exchange.target);
-        if (tsd == null || slot < 0 || slot >= sd.status.inventory.size() || amount <= 0) {
+        // ⚠️ Slot dari klien adalah POSISI — lihat CharStatus.inventoryAt().
+        if (tsd == null || slot < 0 || slot >= sd.status.maxInv || amount <= 0) {
             return false;
         }
-        Item it = sd.status.inventory.get(slot);
-        if (it.id <= 0 || amount > it.amount) {
+        Item it = sd.status.inventoryAt(slot);
+        if (it == null || it.id <= 0 || amount > it.amount) {
             return false;
         }
         if (MapServer.itemDb.cannotBeExchanged(it.id)) {

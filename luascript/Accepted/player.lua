@@ -291,7 +291,7 @@ function Player.addMagic(player, amount)
 	local magic = player.magic + amount
 
 	if (amount < 0) then
-		player:sendMinitext("This is using the wrong function, please contact a GM.")
+		player:sendMinitext("Ini memakai fungsi yang salah, hubungi GM.")
 		return
 	end
 
@@ -308,7 +308,7 @@ function Player.removeMagic(player, amount)
 	local magic = player.magic - amount
 
 	if (amount < 0) then
-		player:sendMinitext("This is using the wrong function, please contact a GM.")
+		player:sendMinitext("Ini memakai fungsi yang salah, hubungi GM.")
 		return
 	end
 
@@ -578,7 +578,7 @@ function Player.showBankWithdraw(player, npc, bankOwnerName)
 	local amount = 0
 
 	if (#bankItemTable == 0) then
-		player:dialogSeq({bankOwner.name .. "... I don't see anything for that account."})
+		player:dialogSeq({bankOwner.name .. "... aku tidak menemukan apa pun untuk akun itu."})
 		return false
 	end
 
@@ -616,7 +616,7 @@ function Player.showBankWithdraw(player, npc, bankOwnerName)
 	end
 
 	if (Item(bankItemTable[found]).stackAmount > 1) then
-		amount = player:inputNumberCheck(player:input("How many shall you withdraw?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak yang mau kau ambil?"))
 		amount = math.ceil(math.abs(amount))
 
 		if (amount > bankCountTable[found]) then
@@ -645,7 +645,7 @@ function Player.showBankWithdraw(player, npc, bankOwnerName)
 		end
 
 		if hasAmount >= Item(bankItemTable[found]).maxAmount or hasAmount + amount > Item(bankItemTable[found]).maxAmount then
-			player:sendMinitext("(" .. Item(bankItemTable[found]).name .. "). You can't have more than (" .. Item(bankItemTable[found]).maxAmount .. ").")
+			player:sendMinitext("(" .. Item(bankItemTable[found]).name .. "). Kau tidak boleh punya lebih dari (" .. Item(bankItemTable[found]).maxAmount .. ").")
 			return false
 		end
 	end
@@ -657,7 +657,7 @@ function Player.showBankWithdraw(player, npc, bankOwnerName)
 		bankEngraveTable[found]
 	) ~= true) then
 		player:menu(
-			"You don't have enough hands to carry all that, free up some space in your inventory then come back to me.",
+			"Tanganmu tidak cukup untuk membawa semua itu. Kosongkan sedikit ruang di kantongmu lalu temui aku lagi.",
 			{},
 			{}
 		)
@@ -698,7 +698,7 @@ function Player.showBankWithdraw(player, npc, bankOwnerName)
 			bankEngraveTable[found]
 		)
 	else
-		player:sendMinitext("Cannot withdraw " .. amount .. " " .. Item(bankItemTable[found]).name .. "(s).")
+		player:sendMinitext("Tidak bisa mengambil " .. amount .. " " .. Item(bankItemTable[found]).name .. "(s).")
 		return false
 	end
 
@@ -707,12 +707,12 @@ function Player.showBankWithdraw(player, npc, bankOwnerName)
 	if amount == 1 then
 		npc:talk(
 			0,
-			npc.name .. ": Here's your " .. Item(bankItemTable[found]).name .. "."
+			npc.name .. ": Ini dia " .. Item(bankItemTable[found]).name .. "."
 		)
 	elseif amount > 1 then
 		npc:talk(
 			0,
-			npc.name .. ": Here's your " .. Item(bankItemTable[found]).name .. " (" .. amount .. ")."
+			npc.name .. ": Ini dia " .. Item(bankItemTable[found]).name .. " (" .. amount .. ")."
 		)
 	end
 
@@ -774,22 +774,22 @@ function Player.showBankDeposit(player, npc, bankOwnerName)
 	end
 
 	if (dItem.name == "") then
-		player:sendMinitext("You cannot deposit that item.")
+		player:sendMinitext("Barang itu tidak bisa dititipkan.")
 		return false
 	end
 
 	if (dItem.depositable) then
-		player:sendMinitext("You cannot deposit that item.")
+		player:sendMinitext("Barang itu tidak bisa dititipkan.")
 		return false
 	end
 
 	if engrave ~= "" then
-		player:sendMinitext("You cannot deposit engraved items.")
+		player:sendMinitext("Barang berukir tidak bisa dititipkan.")
 		return false
 	end
 
 	if (dItem.stackAmount > 1 and dItem.amount > 1) then
-		amount = player:inputNumberCheck(player:input("How many would you like to deposit?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak yang ingin kau titipkan?"))
 
 		if (player:hasItem(dItem.id, amount) ~= true) then
 			amountCheck = player:hasItem(dItem.id, amount)
@@ -800,7 +800,7 @@ function Player.showBankDeposit(player, npc, bankOwnerName)
 	end
 
 	if (amount == 0) then
-		player:dialogSeq({"You cannot deposit zero of something."})
+		player:dialogSeq({"Kau tidak bisa menitipkan nol barang."})
 		return false
 	end
 
@@ -839,15 +839,15 @@ function Player.showBankDeposit(player, npc, bankOwnerName)
 
 				player:sendStatus()
 			else
-				player:dialogSeq({"You do not have enough money to cover my safe keeping fees."})
+				player:dialogSeq({"Uangmu tidak cukup untuk membayar biaya penyimpananku."})
 				return false
 			end
 		else
-			player:dialogSeq({"You do not have what you asked me to hold for you."})
+			player:dialogSeq({"Kau tidak membawa barang yang kau minta kusimpan."})
 			return false
 		end
 	else
-		player:sendMinitext("I don't want your junk. Ask a smith to fix it.")
+		player:sendMinitext("Aku tidak mau rongsokanmu. Minta pandai besi memperbaikinya.")
 		return false
 	end
 
@@ -855,11 +855,11 @@ function Player.showBankDeposit(player, npc, bankOwnerName)
 
 	npc:talk(
 		0,
-		npc.name .. ": I'll take your " .. itemName .. ". " .. amount .. " of them."
+		npc.name .. ": Aku ambil " .. itemName .. ". " .. amount .. " di antaranya."
 	)
 
 	if moneyAmount > 0 then
-		npc:talk(0, npc.name .. ": The fee is " .. moneyAmount .. " coins.")
+		npc:talk(0, npc.name .. ": Biayanya " .. moneyAmount .. " keping.")
 	end
 
 	return true
@@ -878,7 +878,7 @@ function Player.bankAddMoney(player, npc, bankOwnerName)
 	
 	local maxamount = 100000000
 
-	local amount = player:inputNumberCheck(player:input(bankOwner.name .. "... I show a balance of " .. Tools.formatNumber(bankOwner.bankMoney) .. " coins. How much more will you deposit today?"))
+	local amount = player:inputNumberCheck(player:input(bankOwner.name .. "... catatanku menunjukkan saldo " .. Tools.formatNumber(bankOwner.bankMoney) .. " keping. Berapa lagi yang akan kau titipkan hari ini?"))
 
 	-- Get bankOwner again to ensure he/she has not logged out since the transaction started
 	bankOwner = bank.get_bankOwner(player, bankOwnerName)
@@ -898,7 +898,7 @@ function Player.bankAddMoney(player, npc, bankOwnerName)
 	end
 	if (bankOwner.bankMoney == maxamount) then
 		player:dialogSeq({
-			bankOwner.name .. "... Looks like the account is maxed out. I can't take any more. (Current maximum: " .. Tools.formatNumber(maxamount) .. ")"
+			bankOwner.name .. "... sepertinya rekeningnya sudah penuh. Aku tidak bisa menerima lagi. (Batas saat ini: " .. Tools.formatNumber(maxamount) .. ")"
 		})
 	end
 
@@ -912,7 +912,7 @@ function Player.bankAddMoney(player, npc, bankOwnerName)
 
 	characterLog.depositGoldWrite(bankOwner, amount)
 
-	npc:talk(0, npc.name .. ": You deposit " .. amount .. " coins.")
+	npc:talk(0, npc.name .. ": Kau menitipkan " .. amount .. " keping.")
 
 	return true
 end
@@ -931,11 +931,11 @@ function Player.bankWithdrawMoney(player, npc, bankOwnerName)
 	local inBank = bankOwner.bankMoney
 
 	if (inBank <= 0) then
-		player:dialogSeq({bankOwner.name .. "... Sorry, looks like the account is currently empty."})
+		player:dialogSeq({bankOwner.name .. "... Maaf, sepertinya rekeningnya sedang kosong."})
 		return
 	end
 
-	local amount = player:inputNumberCheck(player:input(bankOwner.name .. "... I show a balance of " .. Tools.formatNumber(inBank) .. " coins.  How much will you be taking out?"))
+	local amount = player:inputNumberCheck(player:input(bankOwner.name .. "... catatanku menunjukkan saldo " .. Tools.formatNumber(inBank) .. " keping. Berapa banyak yang akan kau ambil?"))
 
 	if (amount > inBank) then
 		amount = inBank
@@ -958,7 +958,7 @@ function Player.bankWithdrawMoney(player, npc, bankOwnerName)
 
 	characterLog.withdrawGoldWrite(bankOwner, amount)
 
-	npc:talk(0, npc.name .. ": Here's your " .. amount .. " coins.")
+	npc:talk(0, npc.name .. ": Ini dia " .. amount .. " keping.")
 	player:sendStatus()
 end
 
@@ -984,10 +984,10 @@ function Player.inventorySelect(player, npc, dialog, items, prices)
 		amount = sell.amount
 	}
 	if (sell_item.amount > 1) then
-		amount = player:inputNumberCheck(player:input("How many do you wish to use?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak yang ingin kau pakai?"))
 
 		if (amount > 4000000000 or player:hasItem(sell_item.id, amount) ~= true) then
-			player:sendMinitext("You cannot do that.")
+			player:sendMinitext("Kau tidak bisa melakukan itu.")
 			return
 		end
 	else
@@ -1008,7 +1008,7 @@ function Player.inventorySelect(player, npc, dialog, items, prices)
 	local duracheck = 1
 	if (sell_item.maxDura ~= 0) then
 		if (sell_item.dura ~= sell_item.maxDura) then
-			player:dialogSeq({"Sorry, I don't want to deal with your damaged items."})
+			player:dialogSeq({"Maaf, aku tidak mau berurusan dengan barangmu yang rusak."})
 			return
 		end
 	else
@@ -1017,8 +1017,8 @@ function Player.inventorySelect(player, npc, dialog, items, prices)
 
 	local cost = math.floor(sell_item.sell * amount * duracheck)
 
-	local choice = player:menuString("Confirm item selection", {"Yes", "No"})
-	if (choice == "Yes") then
+	local choice = player:menuString("Pastikan pilihan barang", {"Ya", "Tidak"})
+	if (choice == "Ya") then
 		local selltable = {sell_item.id, amount}
 		return selltable
 	end
@@ -1035,7 +1035,7 @@ function Player.showClanBankWithdraw(player, npc)
 	local next = next
 
 	if (#bankItemTable == 0) then
-		player:dialogSeq({"Your clan bank is currently empty."})
+		player:dialogSeq({"Simpanan klanmu sedang kosong."})
 		return false
 	end
 
@@ -1080,7 +1080,7 @@ function Player.showClanBankWithdraw(player, npc)
 	end
 
 	if (Item(bankItemTable[found]).stackAmount > 1) then
-		amount = player:inputNumberCheck(player:input("How many shall you withdraw?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak yang mau kau ambil?"))
 		amount = math.ceil(math.abs(amount))
 
 		if (amount > bankCountTable[found]) then
@@ -1111,7 +1111,7 @@ function Player.showClanBankWithdraw(player, npc)
 		--if hasAmount == 0 then player:popUp("Bug encountered. Contact TKR staff.") return end
 
 		if hasAmount >= Item(bankItemTable[found]).maxAmount or hasAmount + amount > Item(bankItemTable[found]).maxAmount then
-			player:sendMinitext("(" .. Item(bankItemTable[found]).name .. "). You can't have more than (" .. Item(bankItemTable[found]).maxAmount .. ").")
+			player:sendMinitext("(" .. Item(bankItemTable[found]).name .. "). Kau tidak boleh punya lebih dari (" .. Item(bankItemTable[found]).maxAmount .. ").")
 			return
 		end
 	end
@@ -1123,7 +1123,7 @@ function Player.showClanBankWithdraw(player, npc)
 		bankEngraveTable[found]
 	) ~= true) then
 		player:menu(
-			"You don't have enough hands to carry all that, free up some space in your inventory then come back to me.",
+			"Tanganmu tidak cukup untuk membawa semua itu. Kosongkan sedikit ruang di kantongmu lalu temui aku lagi.",
 			{},
 			{}
 		)
@@ -1152,7 +1152,7 @@ function Player.showClanBankWithdraw(player, npc)
 			bankEngraveTable[found]
 		)
 	else
-		player:sendMinitext("Cannot withdraw " .. amount .. " " .. Item(bankItemTable[found]).name .. "(s).")
+		player:sendMinitext("Tidak bisa mengambil " .. amount .. " " .. Item(bankItemTable[found]).name .. "(s).")
 		return false
 	end
 
@@ -1161,12 +1161,12 @@ function Player.showClanBankWithdraw(player, npc)
 	if amount == 1 then
 		npc:talk(
 			0,
-			npc.name .. ": Here's your " .. Item(bankItemTable[found]).name .. "."
+			npc.name .. ": Ini dia " .. Item(bankItemTable[found]).name .. "."
 		)
 	elseif amount > 1 then
 		npc:talk(
 			0,
-			npc.name .. ": Here's your " .. Item(bankItemTable[found]).name .. " (" .. amount .. ")."
+			npc.name .. ": Ini dia " .. Item(bankItemTable[found]).name .. " (" .. amount .. ")."
 		)
 	end
 
@@ -1218,17 +1218,17 @@ function Player.showClanBankDeposit(player, npc)
 	end
 
 	if (dItem.name == "") then
-		player:sendMinitext("You cannot deposit that item.")
+		player:sendMinitext("Barang itu tidak bisa dititipkan.")
 		return false
 	end
 
 	if (dItem.depositable) then
-		player:sendMinitext("You cannot deposit that item.")
+		player:sendMinitext("Barang itu tidak bisa dititipkan.")
 		return false
 	end
 
 	if (dItem.stackAmount > 1 and dItem.amount > 1) then
-		amount = player:inputNumberCheck(player:input("How many would you like to deposit?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak yang ingin kau titipkan?"))
 
 		if (player:hasItem(dItem.id, amount) ~= true) then
 			amountCheck = player:hasItem(dItem.id, amount)
@@ -1239,7 +1239,7 @@ function Player.showClanBankDeposit(player, npc)
 	end
 
 	if (amount == 0) then
-		player:dialogSeq({"You try to hand nothing, but fail."})
+		player:dialogSeq({"Kau mencoba menyerahkan sesuatu yang tidak ada, dan gagal."})
 		return false
 	end
 
@@ -1267,15 +1267,15 @@ function Player.showClanBankDeposit(player, npc)
 
 				player:sendStatus()
 			else
-				player:dialogSeq({"You do not have enough money to cover my safe keeping fees."})
+				player:dialogSeq({"Uangmu tidak cukup untuk membayar biaya penyimpananku."})
 				return false
 			end
 		else
-			player:dialogSeq({"You do not have what it is you want me to hold for you."})
+			player:dialogSeq({"Kau tidak membawa barang yang ingin kau titipkan padaku."})
 			return false
 		end
 	else
-		player:sendMinitext("I don't want your junk. Ask a smith to fix it.")
+		player:sendMinitext("Aku tidak mau rongsokanmu. Minta pandai besi memperbaikinya.")
 		return false
 	end
 
@@ -1283,11 +1283,11 @@ function Player.showClanBankDeposit(player, npc)
 
 	npc:talk(
 		0,
-		npc.name .. ": I'll take your " .. itemName .. ". " .. amount .. " of them."
+		npc.name .. ": Aku ambil " .. itemName .. ". " .. amount .. " di antaranya."
 	)
 
 	if moneyAmount > 0 then
-		npc:talk(0, npc.name .. ": The fee is " .. moneyAmount .. " coins.")
+		npc:talk(0, npc.name .. ": Biayanya " .. moneyAmount .. " keping.")
 	end
 
 	return true
@@ -1315,10 +1315,10 @@ function Player.sellExtend(player, dialog, items, prices)
 		amount = sell.amount
 	}
 	if (sell_item.amount > 1) then
-		amount = player:inputNumberCheck(player:input("How many do you wish to sell?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak yang ingin kau jual?"))
 
 		if (amount > 4000000000 or player:hasItem(sell_item.id, amount) ~= true) then
-			player:sendMinitext("You cannot do that.")
+			player:sendMinitext("Kau tidak bisa melakukan itu.")
 			return
 		end
 	else
@@ -1344,7 +1344,7 @@ function Player.sellExtend(player, dialog, items, prices)
 	local duracheck = 1
 	if (sell_item.maxDura ~= 0) then
 		if (sell_item.dura ~= sell_item.maxDura) then
-			player:dialogSeq({"Sorry, I don't want to deal with your damaged items."})
+			player:dialogSeq({"Maaf, aku tidak mau berurusan dengan barangmu yang rusak."})
 			return
 		end
 	else
@@ -1354,12 +1354,12 @@ function Player.sellExtend(player, dialog, items, prices)
 	local cost = math.floor(sell_item.sell * amount * duracheck)
 
 	local choice = player:menuString(
-		"I will buy your " .. amount .. " " .. sell_item.name .. " for " .. cost .. " gold.  Deal?",
-		{"Yes", "No"}
+		"Aku akan membeli " .. amount .. " " .. sell_item.name .. " seharga " .. cost .. " emas. Sepakat?",
+		{"Ya", "Tidak"}
 	)
-	if (choice == "Yes") then
+	if (choice == "Ya") then
 		if (amount > 4000000000 or player:hasItem(sell_item.id, amount) ~= true) then
-			player:sendMinitext("You cannot do that.")
+			player:sendMinitext("Kau tidak bisa melakukan itu.")
 			return
 		end
 
@@ -1404,7 +1404,7 @@ function Player.buyExtend(player, dialog, items, prices, maxamounts)
 	end
 
 	if (item.stackAmount > 1) then
-		amount = player:inputNumberCheck(player:input("How many would you like?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak yang kau mau?"))
 	end
 	if (amount < 1) then
 		return
@@ -1415,7 +1415,7 @@ function Player.buyExtend(player, dialog, items, prices, maxamounts)
 			player:dialogSeq(
 				{
 					t,
-					"I can only sell you " .. maxamounts[x] .. " more " .. Item(choice).name .. "."
+					"Aku hanya bisa menjual " .. maxamounts[x] .. " lagi " .. Item(choice).name .. "."
 				},
 				0
 			)
@@ -1424,17 +1424,17 @@ function Player.buyExtend(player, dialog, items, prices, maxamounts)
 	end
 
 	if (player.money < (prices[x] * amount)) then
-		player:dialog("You do not have enough money.", {})
+		player:dialog("Uangmu tidak cukup.", {})
 		return nil
 	end
 	amount = math.abs(amount)
 	local cost = prices[x] * amount
 
 	local newChoice = player:menuString(
-		"I will sell you " .. amount .. " " .. Item(choice).name .. " for " .. cost .. " gold. Deal?",
-		{"Yes", "No"}
+		"Aku akan menjual " .. amount .. " " .. Item(choice).name .. " seharga " .. cost .. " emas. Sepakat?",
+		{"Ya", "Tidak"}
 	)
-	if (newChoice == "Yes") then
+	if (newChoice == "Ya") then
 		if (player:hasSpace(Item(choice).name, amount) and (player.money >= cost)) then
 			local buytable = {Item(choice).id, amount}
 			player:addItem(Item(choice).name, amount)
@@ -1445,7 +1445,7 @@ function Player.buyExtend(player, dialog, items, prices, maxamounts)
 			return buytable
 		else
 			player:menu(
-				"You don't have enough hands to carry all that, free up some space in your inventory then come back to me.",
+				"Tanganmu tidak cukup untuk membawa semua itu. Kosongkan sedikit ruang di kantongmu lalu temui aku lagi.",
 				{},
 				{}
 			)
@@ -1483,7 +1483,7 @@ function Player.kanBuyExtend(player, dialog, items, prices, maxamounts)
 	end
 
 	if (item.stackAmount > 1) then
-		amount = player:inputNumberCheck(player:input("How many would you like?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak yang kau mau?"))
 	end
 	if (amount < 1) then
 		return
@@ -1491,26 +1491,26 @@ function Player.kanBuyExtend(player, dialog, items, prices, maxamounts)
 
 	if (maxamounts ~= nil and maxamounts[x] ~= nil and maxamounts[x] < amount) then
 		player:dialog(
-			"I can only sell you " .. maxamounts[x] .. " more " .. Item(choice).name .. ".",
+			"Aku hanya bisa menjual " .. maxamounts[x] .. " lagi " .. Item(choice).name .. ".",
 			t
 		)
 	end
 
 	if (player.registry["kan"] < (prices[x] * amount)) then
-		player:dialog("You do not have enough Kan.", {})
+		player:dialog("Kan-mu tidak cukup.", {})
 		return nil
 	end
 	amount = math.abs(amount)
 	local cost = prices[x] * amount
 
 	local newChoice = player:menuString(
-		"I will sell you " .. amount .. " " .. Item(choice).name .. " for " .. Tools.formatNumber(cost) .. " Kan. Deal?",
-		{"Yes", "No"}
+		"Aku akan menjual " .. amount .. " " .. Item(choice).name .. " seharga " .. Tools.formatNumber(cost) .. " Kan. Deal?",
+		{"Ya", "Tidak"}
 	)
-	if (newChoice == "Yes") then
+	if (newChoice == "Ya") then
 		if player:hasSpace(Item(choice).name, amount) then
 			if player.registry["kan"] < cost then
-				player:menu("You don't have enough Kan.", {}, {})
+				player:menu("Kan-mu tidak cukup.", {}, {})
 				return
 			end
 
@@ -1523,7 +1523,7 @@ function Player.kanBuyExtend(player, dialog, items, prices, maxamounts)
 			return buytable
 		else
 			player:menu(
-				"You don't have enough hands to carry all that, free up some space in your inventory then come back to me.",
+				"Tanganmu tidak cukup untuk membawa semua itu. Kosongkan sedikit ruang di kantongmu lalu temui aku lagi.",
 				{},
 				{}
 			)
@@ -1550,8 +1550,8 @@ function Player.repairExtend(player)
 
 	if next(list) == nil then
 		player:menuSeq(
-			"I can't make any of your items better than they already are.",
-			{"Go Back"},
+			"Aku tidak bisa membuat barangmu lebih baik daripada sekarang.",
+			{"Kembali"},
 			{}
 		)
 		return
@@ -1564,33 +1564,33 @@ function Player.repairExtend(player)
 	if choice ~= nil and choice.dura < choice.maxDura then
 		icon = {graphic = choice.icon, color = choice.iconC}
 		if choice.repairable == 0 then
-			player:dialogSeq({icon, "Sorry, but this item cannot be repaired!"})
+			player:dialogSeq({icon, "Maaf, barang ini tidak bisa diperbaiki!"})
 			return
 		end
 		cost = math.ceil(((choice.price / choice.maxDura) * (choice.maxDura - choice.dura)) * 0.5)
 		confirm = player:menuString(
-			"I'll need atleast " .. cost .. " gold to fix that, Ok?",
-			{"Yes", "No"}
+			"Aku butuh setidaknya " .. cost .. " emas untuk memperbaikinya, setuju?",
+			{"Ya", "Tidak"}
 		)
-		if confirm == "Yes" then
+		if confirm == "Ya" then
 			if choice.id == chosenItem and choice.dura == chosenItemDura then
 				if player:removeGold(cost) == true or cost == 0 then
 					choice.dura = choice.maxDura
 					player:updateInv()
 					player:menuSeq(
-						"Klank  Klank...\nEverything's done.\n\nTotal Cost: " .. cost .. " Coins",
-						{"Go back"},
+						"Klank  Klank...\nEverything's done.\n\nTotal Cost: " .. cost .. " Keping",
+						{"Kembali"},
 						{}
 					)
 				else
 					player:menuSeq(
-						"This is my job, and it's hard work. I will need to be paid for it. Come back when you have the gold to pay for my services.",
-						{"Go back"},
+						"Ini pekerjaanku, dan tidak ringan. Aku harus dibayar. Kembalilah kalau emasmu cukup untuk membayar jasaku.",
+						{"Kembali"},
 						{}
 					)
 				end
 			else
-				player:dialogSeq({icon, txt .. "Wait, that isn't right. Come back later."})
+				player:dialogSeq({icon, txt .. "Tunggu, ada yang tidak beres. Kembalilah nanti."})
 			end
 		end
 	end
@@ -1641,7 +1641,7 @@ function Player.repairAll(player, npc)
 				playerFaceAccCost = math.ceil(((playerFaceAcc.price / playerFaceAcc.maxDura) * (playerFaceAcc.maxDura - playerFaceAcc.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerFaceAcc.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerFaceAcc.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1651,7 +1651,7 @@ function Player.repairAll(player, npc)
 				playerHelmCost = math.ceil(((playerHelm.price / playerHelm.maxDura) * (playerHelm.maxDura - playerHelm.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerHelm.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerHelm.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1661,7 +1661,7 @@ function Player.repairAll(player, npc)
 				playerCrownCost = math.ceil(((playerCrown.price / playerCrown.maxDura) * (playerCrown.maxDura - playerCrown.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerCrown.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerCrown.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 	if (playerWeapon ~= nil) then
@@ -1670,7 +1670,7 @@ function Player.repairAll(player, npc)
 				playerWeaponCost = math.ceil(((playerWeapon.price / playerWeapon.maxDura) * (playerWeapon.maxDura - playerWeapon.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerWeapon.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerWeapon.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1680,7 +1680,7 @@ function Player.repairAll(player, npc)
 				playerArmorCost = math.ceil(((playerArmor.price / playerArmor.maxDura) * (playerArmor.maxDura - playerArmor.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerArmor.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerArmor.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1690,7 +1690,7 @@ function Player.repairAll(player, npc)
 				playerShieldCost = math.ceil(((playerShield.price / playerShield.maxDura) * (playerShield.maxDura - playerShield.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerShield.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerShield.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1700,7 +1700,7 @@ function Player.repairAll(player, npc)
 				playerLeftCost = math.ceil(((playerLeft.price / playerLeft.maxDura) * (playerLeft.maxDura - playerLeft.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerLeft.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerLeft.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1710,7 +1710,7 @@ function Player.repairAll(player, npc)
 				playerRightCost = math.ceil(((playerRight.price / playerRight.maxDura) * (playerRight.maxDura - playerRight.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerRight.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerRight.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1720,7 +1720,7 @@ function Player.repairAll(player, npc)
 				playerMantleCost = math.ceil(((playerMantle.price / playerMantle.maxDura) * (playerMantle.maxDura - playerMantle.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerMantle.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerMantle.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1730,7 +1730,7 @@ function Player.repairAll(player, npc)
 				playerSubLeftCost = math.ceil(((playerSubLeft.price / playerSubLeft.maxDura) * (playerSubLeft.maxDura - playerSubLeft.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerSubLeft.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerSubLeft.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1740,7 +1740,7 @@ function Player.repairAll(player, npc)
 				playerSubRightCost = math.ceil(((playerSubRight.price / playerSubRight.maxDura) * (playerSubRight.maxDura - playerSubRight.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerSubRight.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerSubRight.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1750,7 +1750,7 @@ function Player.repairAll(player, npc)
 				playerNecklaceCost = math.ceil(((playerNecklace.price / playerNecklace.maxDura) * (playerNecklace.maxDura - playerNecklace.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerNecklace.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerNecklace.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1760,7 +1760,7 @@ function Player.repairAll(player, npc)
 				playerBootsCost = math.ceil(((playerBoots.price / playerBoots.maxDura) * (playerBoots.maxDura - playerBoots.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerBoots.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerBoots.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1770,7 +1770,7 @@ function Player.repairAll(player, npc)
 				playerCoatCost = math.ceil(((playerCoat.price / playerCoat.maxDura) * (playerCoat.maxDura - playerCoat.dura)) * 0.5)
 			end
 		else
-			player:sendMinitext("" .. playerCoat.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerCoat.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -1783,7 +1783,7 @@ function Player.repairAll(player, npc)
 						table.insert(inventoryItems, invItems)
 					end
 				else
-					player:sendMinitext("" .. invItems.name .. " is not a repairable item.")
+					player:sendMinitext("" .. invItems.name .. " bukan barang yang bisa diperbaiki.")
 				end
 			end
 		end
@@ -1799,17 +1799,17 @@ function Player.repairAll(player, npc)
 
 	if totalCost > 0 then
 		menu = player:menuString(
-			"Let's see... That will be about " .. totalCost .. " gold for everything, you willing to pay that?",
-			{"Yes", "No"}
+			"Coba lihat... jadinya sekitar " .. totalCost .. " emas untuk semuanya. Kau bersedia membayar?",
+			{"Ya", "Tidak"}
 		)
 	elseif totalCost == 0 then
 		menu = player:menuString(
-			"Let's see... That will be no charge for everything, continue?",
-			{"Yes", "No"}
+			"Coba lihat... semuanya gratis. Lanjutkan?",
+			{"Ya", "Tidak"}
 		)
 	end
 
-	if menu == "Yes" then
+	if menu == "Ya" then
 		if player:removeGold(totalCost) == true then
 			if playerFaceAcc ~= nil then
 				if playerFaceAcc.repairable == 1 then
@@ -1921,8 +1921,8 @@ function Player.repairAll(player, npc)
 			end
 		else
 			player:menuSeq(
-				"This is my job, and it's hard work. I will need to be paid for it. Come back when you have the gold to pay for my services.",
-				{"Go back"},
+				"Ini pekerjaanku, dan tidak ringan. Aku harus dibayar. Kembalilah kalau emasmu cukup untuk membayar jasaku.",
+				{"Kembali"},
 				{}
 			)
 			return
@@ -1934,14 +1934,14 @@ function Player.repairAll(player, npc)
 
 		if totalCost > 0 then
 			player:menuSeq(
-				"Klank  Klank...\nEverything's done.\n\nTotal Cost: " .. totalCost .. " Coins",
-				{"Go back"},
+				"Klank  Klank...\nEverything's done.\n\nTotal Cost: " .. totalCost .. " Keping",
+				{"Kembali"},
 				{}
 			)
 		elseif totalCost == 0 then
 			player:menuSeq(
-				"Klank  Klank...\nEverything's done.\n\nTotal Cost: free",
-				{"Go back"},
+				"Klang  Klang...\nSemuanya selesai.\n\nTotal Biaya: gratis",
+				{"Kembali"},
 				{}
 			)
 		end
@@ -2001,21 +2001,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerFaceAccCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerFaceAcc.name .. " is pretty worn out, I'll need at least " .. playerFaceAccCost .. " gold to repair it."
+						npc.name .. ": " .. playerFaceAcc.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerFaceAccCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerFaceAcc.dura = playerFaceAcc.maxDura
 					playerFaceAcc.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerFaceAcc.name .. " for " .. playerFaceAccCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerFaceAcc.name .. " seharga " .. playerFaceAccCost .. " emas."
 					)
 					player.money = player.money - playerFaceAccCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerFaceAcc.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerFaceAcc.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2027,21 +2027,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerHelmCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerHelm.name .. " is pretty worn out, I'll need at least " .. playerHelmCost .. " gold to repair it."
+						npc.name .. ": " .. playerHelm.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerHelmCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerHelm.dura = playerHelm.maxDura
 					playerHelm.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerHelm.name .. " for " .. playerHelmCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerHelm.name .. " seharga " .. playerHelmCost .. " emas."
 					)
 					player.money = player.money - playerHelmCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerHelm.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerHelm.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2053,21 +2053,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerCrownCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerCrown.name .. " is pretty worn out, I'll need at least " .. playerCrownCost .. " gold to repair it."
+						npc.name .. ": " .. playerCrown.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerCrownCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerCrown.dura = playerCrown.maxDura
 					playerCrown.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerCrown.name .. " for " .. playerCrownCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerCrown.name .. " seharga " .. playerCrownCost .. " emas."
 					)
 					player.money = player.money - playerCrownCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerCrown.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerCrown.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 	if (playerWeapon ~= nil) then
@@ -2078,21 +2078,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerWeaponCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerWeapon.name .. " is pretty worn out, I'll need at least " .. playerWeaponCost .. " gold to repair it."
+						npc.name .. ": " .. playerWeapon.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerWeaponCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerWeapon.dura = playerWeapon.maxDura
 					playerWeapon.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerWeapon.name .. " for " .. playerWeaponCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerWeapon.name .. " seharga " .. playerWeaponCost .. " emas."
 					)
 					player.money = player.money - playerWeaponCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerWeapon.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerWeapon.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2104,21 +2104,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerArmorCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerArmor.name .. " is pretty worn out, I'll need at least " .. playerArmorCost .. " gold to repair it."
+						npc.name .. ": " .. playerArmor.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerArmorCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerArmor.dura = playerArmor.maxDura
 					playerArmor.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerArmor.name .. " for " .. playerArmorCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerArmor.name .. " seharga " .. playerArmorCost .. " emas."
 					)
 					player.money = player.money - playerArmorCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerArmor.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerArmor.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2130,21 +2130,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerShieldCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerShield.name .. " is pretty worn out, I'll need at least " .. playerShieldCost .. " gold to repair it."
+						npc.name .. ": " .. playerShield.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerShieldCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerShield.dura = playerShield.maxDura
 					playerShield.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerShield.name .. " for " .. playerShieldCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerShield.name .. " seharga " .. playerShieldCost .. " emas."
 					)
 					player.money = player.money - playerShieldCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerShield.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerShield.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2156,21 +2156,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerLeftCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerLeft.name .. " is pretty worn out, I'll need at least " .. playerLeftCost .. " gold to repair it."
+						npc.name .. ": " .. playerLeft.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerLeftCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerLeft.dura = playerLeft.maxDura
 					playerLeft.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerLeft.name .. " for " .. playerLeftCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerLeft.name .. " seharga " .. playerLeftCost .. " emas."
 					)
 					player.money = player.money - playerLeftCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerLeft.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerLeft.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2182,21 +2182,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerRightCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerRight.name .. " is pretty worn out, I'll need at least " .. playerRightCost .. " gold to repair it."
+						npc.name .. ": " .. playerRight.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerRightCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerRight.dura = playerRight.maxDura
 					playerRight.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerRight.name .. " for " .. playerRightCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerRight.name .. " seharga " .. playerRightCost .. " emas."
 					)
 					player.money = player.money - playerRightCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerRight.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerRight.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2208,21 +2208,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerMantleCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerMantle.name .. " is pretty worn out, I'll need at least " .. playerMantleCost .. " gold to repair it."
+						npc.name .. ": " .. playerMantle.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerMantleCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerMantle.dura = playerMantle.maxDura
 					playerMantle.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerMantle.name .. " for " .. playerMantleCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerMantle.name .. " seharga " .. playerMantleCost .. " emas."
 					)
 					player.money = player.money - playerMantleCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerMantle.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerMantle.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2234,21 +2234,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerSubLeftCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerSubLeft.name .. " is pretty worn out, I'll need at least " .. playerSubLeftCost .. " gold to repair it."
+						npc.name .. ": " .. playerSubLeft.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerSubLeftCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerSubLeft.dura = playerSubLeft.maxDura
 					playerSubLeft.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerSubLeft.name .. " for " .. playerSubLeftCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerSubLeft.name .. " seharga " .. playerSubLeftCost .. " emas."
 					)
 					player.money = player.money - playerSubLeftCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerSubLeft.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerSubLeft.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2260,21 +2260,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerSubRightCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerSubRight.name .. " is pretty worn out, I'll need at least " .. playerSubRightCost .. " gold to repair it."
+						npc.name .. ": " .. playerSubRight.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerSubRightCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerSubRight.dura = playerSubRight.maxDura
 					playerSubRight.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerSubRight.name .. " for " .. playerSubRightCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerSubRight.name .. " seharga " .. playerSubRightCost .. " emas."
 					)
 					player.money = player.money - playerSubRightCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerSubRight.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerSubRight.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2286,21 +2286,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerNecklaceCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerNecklace.name .. " is pretty worn out, I'll need at least " .. playerNecklaceCost .. " gold to repair it."
+						npc.name .. ": " .. playerNecklace.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerNecklaceCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerNecklace.dura = playerNecklace.maxDura
 					playerNecklace.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerNecklace.name .. " for " .. playerNecklaceCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerNecklace.name .. " seharga " .. playerNecklaceCost .. " emas."
 					)
 					player.money = player.money - playerNecklaceCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerNecklace.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerNecklace.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2312,21 +2312,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerBootsCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerBoots.name .. " is pretty worn out, I'll need at least " .. playerBootsCost .. " gold to repair it."
+						npc.name .. ": " .. playerBoots.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerBootsCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerBoots.dura = playerBoots.maxDura
 					playerBoots.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerBoots.name .. " for " .. playerBootsCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerBoots.name .. " seharga " .. playerBootsCost .. " emas."
 					)
 					player.money = player.money - playerBootsCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerBoots.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerBoots.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2338,21 +2338,21 @@ function Player.repairAllNoConfirm(player, npc)
 				if player.money < playerCoatCost then
 					npc:talk(
 						0,
-						npc.name .. ": Your " .. playerCoat.name .. " is pretty worn out, I'll need at least " .. playerCoatCost .. " gold to repair it."
+						npc.name .. ": " .. playerCoat.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerCoatCost .. " emas untuk memperbaikinya."
 					)
 				else
 					playerCoat.dura = playerCoat.maxDura
 					playerCoat.repairCheck = 0
 					npc:talk(
 						0,
-						npc.name .. ": I patched up your " .. playerCoat.name .. " for " .. playerCoatCost .. " gold."
+						npc.name .. ": Sudah kuperbaiki " .. playerCoat.name .. " seharga " .. playerCoatCost .. " emas."
 					)
 					player.money = player.money - playerCoatCost
 					player:sendStatus()
 				end
 			end
 		else
-			player:sendMinitext("" .. playerCoat.name .. " is not a repairable item.")
+			player:sendMinitext("" .. playerCoat.name .. " bukan barang yang bisa diperbaiki.")
 		end
 	end
 
@@ -2369,21 +2369,21 @@ function Player.repairAllNoConfirm(player, npc)
 						if player.money < invCost then
 							npc:talk(
 								0,
-								npc.name .. ": Your " .. invItem.name .. " is pretty worn out, I'll need at least " .. invCost .. " gold to repair it."
+								npc.name .. ": " .. invItem.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. invCost .. " emas untuk memperbaikinya."
 							)
 						else
 							invItem.dura = invItem.maxDura
 							invItem.repairCheck = 0
 							npc:talk(
 								0,
-								npc.name .. ": I patched up your " .. invItem.name .. " for " .. invCost .. " gold."
+								npc.name .. ": Sudah kuperbaiki " .. invItem.name .. " seharga " .. invCost .. " emas."
 							)
 							player.money = player.money - invCost
 							player:sendStatus()
 						end
 					end
 				else
-					player:sendMinitext("" .. invItem.name .. " is not a repairable item.")
+					player:sendMinitext("" .. invItem.name .. " bukan barang yang bisa diperbaiki.")
 				end
 			end
 		end
@@ -2402,7 +2402,7 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 	if item == nil then
 		npc:talk(
 			0,
-			npc.name .. ": Well, where is it? I can't see it any place."
+			npc.name .. ": Nah, mana barangnya? Aku tidak melihatnya di mana pun."
 		)
 		return
 	end
@@ -2448,21 +2448,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerFaceAccCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerFaceAcc.name .. " is pretty worn out, I'll need at least " .. playerFaceAccCost .. " gold to repair it."
+							npc.name .. ": " .. playerFaceAcc.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerFaceAccCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerFaceAcc.dura = playerFaceAcc.maxDura
 						playerFaceAcc.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerFaceAcc.name .. " for " .. playerFaceAccCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerFaceAcc.name .. " seharga " .. playerFaceAccCost .. " emas."
 						)
 						player.money = player.money - playerFaceAccCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerFaceAcc.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerFaceAcc.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2476,21 +2476,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerHelmCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerHelm.name .. " is pretty worn out, I'll need at least " .. playerHelmCost .. " gold to repair it."
+							npc.name .. ": " .. playerHelm.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerHelmCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerHelm.dura = playerHelm.maxDura
 						playerHelm.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerHelm.name .. " for " .. playerHelmCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerHelm.name .. " seharga " .. playerHelmCost .. " emas."
 						)
 						player.money = player.money - playerHelmCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerHelm.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerHelm.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2504,21 +2504,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerCrownCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerCrown.name .. " is pretty worn out, I'll need at least " .. playerCrownCost .. " gold to repair it."
+							npc.name .. ": " .. playerCrown.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerCrownCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerCrown.dura = playerCrown.maxDura
 						playerCrown.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerCrown.name .. " for " .. playerCrownCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerCrown.name .. " seharga " .. playerCrownCost .. " emas."
 						)
 						player.money = player.money - playerCrownCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerCrown.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerCrown.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2531,21 +2531,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerWeaponCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerWeapon.name .. " is pretty worn out, I'll need at least " .. playerWeaponCost .. " gold to repair it."
+							npc.name .. ": " .. playerWeapon.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerWeaponCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerWeapon.dura = playerWeapon.maxDura
 						playerWeapon.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerWeapon.name .. " for " .. playerWeaponCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerWeapon.name .. " seharga " .. playerWeaponCost .. " emas."
 						)
 						player.money = player.money - playerWeaponCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerWeapon.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerWeapon.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2559,21 +2559,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerArmorCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerArmor.name .. " is pretty worn out, I'll need at least " .. playerArmorCost .. " gold to repair it."
+							npc.name .. ": " .. playerArmor.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerArmorCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerArmor.dura = playerArmor.maxDura
 						playerArmor.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerArmor.name .. " for " .. playerArmorCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerArmor.name .. " seharga " .. playerArmorCost .. " emas."
 						)
 						player.money = player.money - playerArmorCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerArmor.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerArmor.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2587,21 +2587,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerShieldCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerShield.name .. " is pretty worn out, I'll need at least " .. playerShieldCost .. " gold to repair it."
+							npc.name .. ": " .. playerShield.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerShieldCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerShield.dura = playerShield.maxDura
 						playerShield.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerShield.name .. " for " .. playerShieldCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerShield.name .. " seharga " .. playerShieldCost .. " emas."
 						)
 						player.money = player.money - playerShieldCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerShield.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerShield.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2615,21 +2615,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerLeftCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerLeft.name .. " is pretty worn out, I'll need at least " .. playerLeftCost .. " gold to repair it."
+							npc.name .. ": " .. playerLeft.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerLeftCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerLeft.dura = playerLeft.maxDura
 						playerLeft.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerLeft.name .. " for " .. playerLeftCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerLeft.name .. " seharga " .. playerLeftCost .. " emas."
 						)
 						player.money = player.money - playerLeftCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerLeft.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerLeft.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2643,21 +2643,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerRightCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerRight.name .. " is pretty worn out, I'll need at least " .. playerRightCost .. " gold to repair it."
+							npc.name .. ": " .. playerRight.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerRightCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerRight.dura = playerRight.maxDura
 						playerRight.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerRight.name .. " for " .. playerRightCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerRight.name .. " seharga " .. playerRightCost .. " emas."
 						)
 						player.money = player.money - playerRightCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerRight.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerRight.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2671,21 +2671,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerMantleCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerMantle.name .. " is pretty worn out, I'll need at least " .. playerMantleCost .. " gold to repair it."
+							npc.name .. ": " .. playerMantle.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerMantleCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerMantle.dura = playerMantle.maxDura
 						playerMantle.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerMantle.name .. " for " .. playerMantleCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerMantle.name .. " seharga " .. playerMantleCost .. " emas."
 						)
 						player.money = player.money - playerMantleCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerMantle.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerMantle.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2699,21 +2699,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerSubLeftCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerSubLeft.name .. " is pretty worn out, I'll need at least " .. playerSubLeftCost .. " gold to repair it."
+							npc.name .. ": " .. playerSubLeft.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerSubLeftCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerSubLeft.dura = playerSubLeft.maxDura
 						playerSubLeft.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerSubLeft.name .. " for " .. playerSubLeftCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerSubLeft.name .. " seharga " .. playerSubLeftCost .. " emas."
 						)
 						player.money = player.money - playerSubLeftCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerSubLeft.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerSubLeft.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2727,21 +2727,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerSubRightCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerSubRight.name .. " is pretty worn out, I'll need at least " .. playerSubRightCost .. " gold to repair it."
+							npc.name .. ": " .. playerSubRight.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerSubRightCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerSubRight.dura = playerSubRight.maxDura
 						playerSubRight.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerSubRight.name .. " for " .. playerSubRightCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerSubRight.name .. " seharga " .. playerSubRightCost .. " emas."
 						)
 						player.money = player.money - playerSubRightCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerSubRight.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerSubRight.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2755,21 +2755,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerNecklaceCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerNecklace.name .. " is pretty worn out, I'll need at least " .. playerNecklaceCost .. " gold to repair it."
+							npc.name .. ": " .. playerNecklace.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerNecklaceCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerNecklace.dura = playerNecklace.maxDura
 						playerNecklace.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerNecklace.name .. " for " .. playerNecklaceCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerNecklace.name .. " seharga " .. playerNecklaceCost .. " emas."
 						)
 						player.money = player.money - playerNecklaceCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerNecklace.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerNecklace.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2783,21 +2783,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerBootsCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerBoots.name .. " is pretty worn out, I'll need at least " .. playerBootsCost .. " gold to repair it."
+							npc.name .. ": " .. playerBoots.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerBootsCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerBoots.dura = playerBoots.maxDura
 						playerBoots.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerBoots.name .. " for " .. playerBootsCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerBoots.name .. " seharga " .. playerBootsCost .. " emas."
 						)
 						player.money = player.money - playerBootsCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerBoots.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerBoots.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2811,21 +2811,21 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 					if player.money < playerCoatCost then
 						npc:talk(
 							0,
-							npc.name .. ": Your " .. playerCoat.name .. " is pretty worn out, I'll need at least " .. playerCoatCost .. " gold to repair it."
+							npc.name .. ": " .. playerCoat.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. playerCoatCost .. " emas untuk memperbaikinya."
 						)
 					else
 						playerCoat.dura = playerCoat.maxDura
 						playerCoat.repairCheck = 0
 						npc:talk(
 							0,
-							npc.name .. ": I patched up your " .. playerCoat.name .. " for " .. playerCoatCost .. " gold."
+							npc.name .. ": Sudah kuperbaiki " .. playerCoat.name .. " seharga " .. playerCoatCost .. " emas."
 						)
 						player.money = player.money - playerCoatCost
 						player:sendStatus()
 					end
 				end
 			else
-				player:sendMinitext("" .. playerCoat.name .. " is not a repairable item.")
+				player:sendMinitext("" .. playerCoat.name .. " bukan barang yang bisa diperbaiki.")
 			end
 		end
 	end
@@ -2843,20 +2843,20 @@ function Player.repairItemNoConfirm(player, npc, itemName)
 						if player.money < invCost then
 							npc:talk(
 								0,
-								npc.name .. ": Your " .. invItem.name .. " is pretty worn out, I'll need at least " .. invCost .. " gold to repair it."
+								npc.name .. ": " .. invItem.name .. " milikmu sudah cukup aus. Aku butuh setidaknya " .. invCost .. " emas untuk memperbaikinya."
 							)
 						else
 							invItem.dura = invItem.maxDura
 							invItem.repairCheck = 0
 							npc:talk(
 								0,
-								npc.name .. ": I patched up your " .. invItem.name .. " for " .. invCost .. " gold."
+								npc.name .. ": Sudah kuperbaiki " .. invItem.name .. " seharga " .. invCost .. " emas."
 							)
 							player:removeGold(invCost)
 						end
 					end
 				else
-					player:sendMinitext("" .. invItem.name .. " is not a repairable item.")
+					player:sendMinitext("" .. invItem.name .. " bukan barang yang bisa diperbaiki.")
 				end
 			end
 		end
@@ -2908,7 +2908,7 @@ function Player.buyNoConfirm(player, npc, itemName, amount, items, prices, maxAm
 	if found == false then
 		npc:talk(
 			0,
-			npc.name .. ": I do not sell " .. item.name .. " here, please check elsewhere."
+			npc.name .. ": Aku tidak menjual " .. item.name .. " di sini, coba cari di tempat lain."
 		)
 		return
 	end
@@ -2948,16 +2948,16 @@ function Player.buyNoConfirm(player, npc, itemName, amount, items, prices, maxAm
 	if amount == 0 then
 		npc:talk(
 			0,
-			npc.name .. ": You already have maximum amount of " .. item.name
+			npc.name .. ": Kau sudah punya jumlah maksimum " .. item.name
 		)
-		player:sendMinitext(item.name .. ". You can't have more than (" .. item.maxAmount .. ").")
+		player:sendMinitext(item.name .. ". Kau tidak boleh punya lebih dari (" .. item.maxAmount .. ").")
 		return
 	end
 
 	if amount > maxAmount then
 		npc:talk(
 			0,
-			npc.name .. ": Sorry I can only sell (" .. maxAmount .. ") more of " .. item.name
+			npc.name .. ": Maaf, aku hanya bisa menjual (" .. maxAmount .. ") lagi " .. item.name
 		)
 		return
 	end
@@ -2967,7 +2967,7 @@ function Player.buyNoConfirm(player, npc, itemName, amount, items, prices, maxAm
 			if player.money < price then
 				npc:talk(
 					0,
-					npc.name .. ": You do not have enough coins to buy " .. item.name
+					npc.name .. ": Kepingmu tidak cukup untuk membeli " .. item.name
 				)
 				return
 			end
@@ -2987,7 +2987,7 @@ function Player.buyNoConfirm(player, npc, itemName, amount, items, prices, maxAm
 			characterLog.buyItemWrite(player, item, amount, price)
 			npc:talk(
 				0,
-				npc.name .. ": I sold " .. item.name .. " for " .. price .. " coins."
+				npc.name .. ": Aku menjual " .. item.name .. " seharga " .. price .. " keping."
 			)
 		end
 
@@ -2997,7 +2997,7 @@ function Player.buyNoConfirm(player, npc, itemName, amount, items, prices, maxAm
 			if player.money < totalCost then
 				npc:talk(
 					0,
-					npc.name .. ": You do not have enough coins to buy (" .. amount .. ") " .. item.name
+					npc.name .. ": Kepingmu tidak cukup untuk membeli (" .. amount .. ") " .. item.name
 				)
 				return
 			end
@@ -3017,7 +3017,7 @@ function Player.buyNoConfirm(player, npc, itemName, amount, items, prices, maxAm
 			characterLog.buyItemWrite(player, item, amount, totalCost)
 			npc:talk(
 				0,
-				npc.name .. ": I sold (" .. amount .. ") " .. item.name .. " for " .. totalCost .. " coins."
+				npc.name .. ": Aku menjual (" .. amount .. ") " .. item.name .. " seharga " .. totalCost .. " keping."
 			)
 		end
 	end
@@ -3060,7 +3060,7 @@ function Player.sellNoConfirm(player, npc, itemName, amount, items, prices)
 	if found == false then
 		npc:talk(
 			0,
-			npc.name .. ": I do not buy " .. item.name .. " here, please check elsewhere."
+			npc.name .. ": Aku tidak membeli " .. item.name .. " di sini, coba cari di tempat lain."
 		)
 		return
 	end
@@ -3078,12 +3078,12 @@ function Player.sellNoConfirm(player, npc, itemName, amount, items, prices)
 					if amount == 1 then
 						npc:talk(
 							0,
-							npc.name .. ": You must repair your " .. item.name .. " before I will buy it."
+							npc.name .. ": Kau harus memperbaiki " .. item.name .. " sebelum aku mau membelinya."
 						)
 					elseif amount > 1 then
 						npc:talk(
 							0,
-							npc.name .. ": You must repair your set of " .. item.name .. "s before I will buy them."
+							npc.name .. ": Kau harus memperbaiki set " .. item.name .. " sebelum aku mau membelinya."
 						)
 					end
 					return
@@ -3100,10 +3100,10 @@ function Player.sellNoConfirm(player, npc, itemName, amount, items, prices)
 				characterLog.sellItemWrite(player, item, amount, price)
 				npc:talk(
 					0,
-					npc.name .. ": I bought " .. item.name .. " for " .. price .. " coins."
+					npc.name .. ": Aku membeli " .. item.name .. " seharga " .. price .. " keping."
 				)
 			else
-				npc:talk(0, npc.name .. ": You don't have enough.")
+				npc:talk(0, npc.name .. ": Punyamu tidak cukup.")
 			end
 		end
 
@@ -3116,10 +3116,10 @@ function Player.sellNoConfirm(player, npc, itemName, amount, items, prices)
 				characterLog.sellItemWrite(player, item, amount, totalCost)
 				npc:talk(
 					0,
-					npc.name .. ": I bought (" .. amount .. ") " .. item.name .. " for " .. totalCost .. " coins."
+					npc.name .. ": Aku membeli (" .. amount .. ") " .. item.name .. " seharga " .. totalCost .. " keping."
 				)
 			else
-				npc:talk(0, npc.name .. ": You don't have enough.")
+				npc:talk(0, npc.name .. ": Punyamu tidak cukup.")
 			end
 		end
 	end
@@ -3133,7 +3133,7 @@ function Player.depositNoConfirm(player, npc, itemName, amount)
 
 	if itemName == "coin" or itemName == "coins" then
 		if player.money < amount then
-			npc:talk(0, npc.name .. ": You don't have enough money.")
+			npc:talk(0, npc.name .. ": Uangmu tidak cukup.")
 			player:talkSelf(
 				0,
 				"I'll take your money if you want, but getting it back..."
@@ -3145,7 +3145,7 @@ function Player.depositNoConfirm(player, npc, itemName, amount)
 		player.bankMoney = player.bankMoney + amount
 
 		characterLog.depositGoldWrite(player, amount)
-		npc:talk(0, npc.name .. ": You deposit " .. amount .. " coins.")
+		npc:talk(0, npc.name .. ": Kau menitipkan " .. amount .. " keping.")
 
 		return
 	end
@@ -3177,17 +3177,17 @@ function Player.depositNoConfirm(player, npc, itemName, amount)
 
 	if found == true then
 		if player:hasItem(itemName, amount) ~= true then
-			npc:talk(0, npc.name .. ": You cannot deposit more than you have.")
+			npc:talk(0, npc.name .. ": Kau tidak bisa menitipkan lebih dari yang kau punya.")
 			return
 		end
 
 		if (item.name == "") then
-			npc:talk(0, npc.name .. ": You cannot deposit that item.")
+			npc:talk(0, npc.name .. ": Barang itu tidak bisa dititipkan.")
 			return false
 		end
 
 		if (item.depositable) then
-			npc:talk(0, npc.name .. ": You cannot deposit that item.")
+			npc:talk(0, npc.name .. ": Barang itu tidak bisa dititipkan.")
 			return false
 		end
 
@@ -3198,7 +3198,7 @@ function Player.depositNoConfirm(player, npc, itemName, amount)
 		if (inventoryItem.dura ~= inventoryItem.maxDura) then
 			npc:talk(
 				0,
-				npc.name .. ": Your item has to be at full durability to deposit."
+				npc.name .. ": Barangmu harus utuh sepenuhnya untuk bisa dititipkan."
 			)
 			return
 		end
@@ -3227,21 +3227,21 @@ function Player.depositNoConfirm(player, npc, itemName, amount)
 				else
 					npc:talk(
 						0,
-						npc.name .. ": Excuse me you didn't give me enough. It's " .. moneyAmount .. " coins."
+						npc.name .. ": Maaf, yang kau berikan kurang. Jumlahnya " .. moneyAmount .. " keping."
 					)
 					return
 				end
 			else
 				npc:talk(
 					0,
-					npc.name .. ": You do not have what it is you want me to hold for you."
+					npc.name .. ": Kau tidak membawa barang yang ingin kau titipkan padaku."
 				)
 				return
 			end
 		else
 			npc:talk(
 				0,
-				npc.name .. ": I don't want your junk. Ask a smith to fix it."
+				npc.name .. ": Aku tidak mau rongsokanmu. Minta pandai besi memperbaikinya."
 			)
 			return
 		end
@@ -3256,16 +3256,16 @@ function Player.depositNoConfirm(player, npc, itemName, amount)
 
 		npc:talk(
 			0,
-			npc.name .. ": I'll take your " .. Item(itemName).name .. ". " .. amount .. " of them."
+			npc.name .. ": Aku ambil " .. Item(itemName).name .. ". " .. amount .. " di antaranya."
 		)
 
 		if moneyAmount > 0 then
-			npc:talk(0, npc.name .. ": The fee is " .. moneyAmount .. " coins.")
+			npc:talk(0, npc.name .. ": Biayanya " .. moneyAmount .. " keping.")
 		end
 	end
 
 	if found == false then
-		npc:talk(0, npc.name .. ": Well, where is it?")
+		npc:talk(0, npc.name .. ": Nah, mana barangnya?")
 	end
 end
 
@@ -3274,7 +3274,7 @@ function Player.withdrawNoConfirm(player, npc, itemName, amount)
 		if player.bankMoney < amount then
 			npc:talk(
 				0,
-				npc.name .. ": You never deposited that much in the first place."
+				npc.name .. ": Kau tidak pernah menitipkan sebanyak itu."
 			)
 			player:talkSelf(0, "Hey! You little thief.")
 			return
@@ -3283,7 +3283,7 @@ function Player.withdrawNoConfirm(player, npc, itemName, amount)
 		player:addGold(amount)
 		player.bankMoney = player.bankMoney - amount
 		characterLog.withdrawGoldWrite(player, amount)
-		npc:talk(0, npc.name .. ": Here's your " .. amount .. " coins.")
+		npc:talk(0, npc.name .. ": Ini dia " .. amount .. " keping.")
 
 		return
 	end
@@ -3296,7 +3296,7 @@ function Player.withdrawNoConfirm(player, npc, itemName, amount)
 
 	if item == nil then
 		--newItem = string.gsub(itemName, "_", " ")
-		npc:talk(0, npc.name .. ": You didn't give me any " .. itemName)
+		npc:talk(0, npc.name .. ": Kau tidak memberiku " .. itemName)
 		return
 	end
 
@@ -3307,7 +3307,7 @@ function Player.withdrawNoConfirm(player, npc, itemName, amount)
 	local next = next
 
 	if (#bankItemTable == 0) then
-		npc:talk(0, npc.name .. ": Your bank is currently empty.")
+		npc:talk(0, npc.name .. ": Simpananmu sedang kosong.")
 		return
 	end
 
@@ -3319,7 +3319,7 @@ function Player.withdrawNoConfirm(player, npc, itemName, amount)
 	end
 
 	if (found == 0) then
-		npc:talk(0, npc.name .. ": I could not find that item in your bank.")
+		npc:talk(0, npc.name .. ": Aku tidak menemukan barang itu di simpananmu.")
 		return
 	end
 
@@ -3352,7 +3352,7 @@ function Player.withdrawNoConfirm(player, npc, itemName, amount)
 		--if hasAmount == 0 then player:popUp("Bug encountered. Contact TKR staff.") return end
 
 		if hasAmount >= Item(bankItemTable[found]).maxAmount or hasAmount + amount > Item(bankItemTable[found]).maxAmount then
-			player:sendMinitext("(" .. Item(bankItemTable[found]).name .. "). You can't have more than (" .. Item(bankItemTable[found]).maxAmount .. ").")
+			player:sendMinitext("(" .. Item(bankItemTable[found]).name .. "). Kau tidak boleh punya lebih dari (" .. Item(bankItemTable[found]).maxAmount .. ").")
 			return
 		end
 	end
@@ -3363,7 +3363,7 @@ function Player.withdrawNoConfirm(player, npc, itemName, amount)
 		bankOwnerTable[found],
 		bankEngraveTable[found]
 	) ~= true) then
-		player:sendMinitext("You do not have enough space in your inventory to withdraw that")
+		player:sendMinitext("Ruang di kantongmu tidak cukup untuk mengambil itu")
 		return
 	end
 
@@ -3385,7 +3385,7 @@ function Player.withdrawNoConfirm(player, npc, itemName, amount)
 			bankEngraveTable[found]
 		)
 	else
-		player:sendMinitext("Cannot withdraw " .. amount .. " " .. Item(bankItemTable[found]).name .. "(s).")
+		player:sendMinitext("Tidak bisa mengambil " .. amount .. " " .. Item(bankItemTable[found]).name .. "(s).")
 		return false
 	end
 
@@ -3400,12 +3400,12 @@ function Player.withdrawNoConfirm(player, npc, itemName, amount)
 	if amount == 1 then
 		npc:talk(
 			0,
-			npc.name .. ": Here's your " .. Item(bankItemTable[found]).name .. "."
+			npc.name .. ": Ini dia " .. Item(bankItemTable[found]).name .. "."
 		)
 	elseif amount > 1 then
 		npc:talk(
 			0,
-			npc.name .. ": Here's your " .. Item(bankItemTable[found]).name .. " (" .. amount .. ")."
+			npc.name .. ": Ini dia " .. Item(bankItemTable[found]).name .. " (" .. amount .. ")."
 		)
 	end
 end
@@ -3415,14 +3415,14 @@ function Player.withdrawAllNoConfirm(player, npc, itemName)
 		local amount = player.bankMoney
 
 		if amount == 0 then
-			npc:talk(0, npc.name .. ": You have no coins to withdraw.")
+			npc:talk(0, npc.name .. ": Tidak ada keping yang bisa kau ambil.")
 			return
 		end
 
 		player.bankMoney = 0
 		player:addGold(amount)
 		characterLog.withdrawGoldWrite(player, amount)
-		npc:talk(0, npc.name .. ": Here's your " .. amount .. " coins.")
+		npc:talk(0, npc.name .. ": Ini dia " .. amount .. " keping.")
 
 		return
 	end
@@ -3434,7 +3434,7 @@ function Player.withdrawAllNoConfirm(player, npc, itemName)
 	local item = Item(itemName)
 
 	if item == nil then
-		npc:talk(0, npc.name .. ": You didn't give me any " .. newItem)
+		npc:talk(0, npc.name .. ": Kau tidak memberiku " .. newItem)
 		return
 	end
 
@@ -3444,7 +3444,7 @@ function Player.withdrawAllNoConfirm(player, npc, itemName)
 	local amount = 0
 
 	if (bankItemTable == 0) then
-		npc:talk(0, npc.name .. ": Your bank is currently empty.")
+		npc:talk(0, npc.name .. ": Simpananmu sedang kosong.")
 		return
 	end
 
@@ -3456,7 +3456,7 @@ function Player.withdrawAllNoConfirm(player, npc, itemName)
 	end
 
 	if (found == 0) then
-		npc:talk(0, npc.name .. ": I could not find that item in your bank.")
+		npc:talk(0, npc.name .. ": Aku tidak menemukan barang itu di simpananmu.")
 		return
 	end
 
@@ -3487,7 +3487,7 @@ function Player.withdrawAllNoConfirm(player, npc, itemName)
 		--if hasAmount == 0 then player:popUp("Bug encountered. Contact TKR staff.") return end
 
 		if hasAmount >= Item(bankItemTable[found]).maxAmount then
-			player:sendMinitext("(" .. Item(bankItemTable[found]).name .. "). You can't have more than (" .. Item(bankItemTable[found]).maxAmount .. ").")
+			player:sendMinitext("(" .. Item(bankItemTable[found]).name .. "). Kau tidak boleh punya lebih dari (" .. Item(bankItemTable[found]).maxAmount .. ").")
 			return
 		end
 
@@ -3502,7 +3502,7 @@ function Player.withdrawAllNoConfirm(player, npc, itemName)
 		bankOwnerTable[found],
 		bankEngraveTable[found]
 	) ~= true) then
-		player:sendMinitext("You do not have enough space in your inventory to withdraw that")
+		player:sendMinitext("Ruang di kantongmu tidak cukup untuk mengambil itu")
 		return
 	end
 
@@ -3524,7 +3524,7 @@ function Player.withdrawAllNoConfirm(player, npc, itemName)
 			bankEngraveTable[found]
 		)
 	else
-		player:sendMinitext("Cannot withdraw " .. amount .. " " .. Item(bankItemTable[found]).name .. "(s).")
+		player:sendMinitext("Tidak bisa mengambil " .. amount .. " " .. Item(bankItemTable[found]).name .. "(s).")
 		return false
 	end
 
@@ -3539,12 +3539,12 @@ function Player.withdrawAllNoConfirm(player, npc, itemName)
 	if amount == 1 then
 		npc:talk(
 			0,
-			npc.name .. ": Here's your " .. Item(bankItemTable[found]).name .. "."
+			npc.name .. ": Ini dia " .. Item(bankItemTable[found]).name .. "."
 		)
 	elseif amount > 1 then
 		npc:talk(
 			0,
-			npc.name .. ": Here's your " .. Item(bankItemTable[found]).name .. " (" .. amount .. ")."
+			npc.name .. ": Ini dia " .. Item(bankItemTable[found]).name .. " (" .. amount .. ")."
 		)
 	end
 end
@@ -3554,13 +3554,13 @@ function Player.hasBankItem(player, npc, itemName)
 		local amount = player.bankMoney
 
 		if amount == 0 then
-			npc:talk(0, npc.name .. ": You have no coins.")
+			npc:talk(0, npc.name .. ": Kau tidak punya keping.")
 			return
 		end
 
 		npc:talk(
 			0,
-			npc.name .. ": You've entrusted me with " .. amount .. " coins."
+			npc.name .. ": Kau menitipkan padaku " .. amount .. " keping."
 		)
 
 		return
@@ -3574,7 +3574,7 @@ function Player.hasBankItem(player, npc, itemName)
 
 	if item == nil then
 		--newItem = string.gsub(itemName, "_", " ")
-		npc:talk(0, npc.name .. ": You didn't give me any " .. itemName)
+		npc:talk(0, npc.name .. ": Kau tidak memberiku " .. itemName)
 		return
 	end
 
@@ -3595,7 +3595,7 @@ function Player.hasBankItem(player, npc, itemName)
 	if (found == 0) then
 		npc:talk(
 			0,
-			npc.name .. ": You didn't give me any.." .. Item(itemName).name .. " to hold for you."
+			npc.name .. ": Kau tidak memberiku apa pun.." .. Item(itemName).name .. " untuk kusimpan."
 		)
 		return
 	end
@@ -3608,7 +3608,7 @@ function Player.hasBankItem(player, npc, itemName)
 
 	npc:talk(
 		0,
-		npc.name .. ": Your " .. Item(bankItemTable[found]).name .. " -- I have " .. Tools.formatNumber(amount) .. " of yours."
+		npc.name .. ": " .. Item(bankItemTable[found]).name .. " -- aku punya " .. Tools.formatNumber(amount) .. " milikmu."
 	)
 end
 
@@ -3616,28 +3616,28 @@ function Player.addGold(player, amount)
 	if (amount > 0) then
 		player.money = player.money + amount
 		player:sendStatus()
-		player:sendMinitext(amount .. " gold added.")
+		player:sendMinitext(amount .. " emas ditambahkan.")
 		return true
 	elseif (amount < 0) then
-		player:sendMinitext("This is using the wrong function, please inform a GM.")
+		player:sendMinitext("Ini memakai fungsi yang salah, beri tahu GM.")
 		return false
 	end
 end
 
 function Player.removeGold(player, amount)
 	if (amount > 0 and player.money < amount) then
-		player:sendMinitext("You do not have enough money.")
+		player:sendMinitext("Uangmu tidak cukup.")
 		player:sendStatus()
 		return false
 	elseif (amount > 0 and player.money >= amount) then
 		player.money = player.money - amount
 		player:sendStatus()
-		player:sendMinitext(amount .. " gold removed.")
+		player:sendMinitext(amount .. " emas diambil.")
 		return true
 	elseif amount == 0 then
 		return true
 	elseif (amount < 0) then
-		player:sendMinitext("This is using the wrong function, please inform a GM.")
+		player:sendMinitext("Ini memakai fungsi yang salah, beri tahu GM.")
 		return false
 	end
 end
@@ -3699,25 +3699,25 @@ end
 
 function Player.canAction(player, dead, mount, disguise)
 	if (player.state == -1) then
-		player:sendMinitext("You cannot do that right now.")
+		player:sendMinitext("Kau tidak bisa melakukan itu sekarang.")
 		return false
 	end
 
 	if (dead == 1 and player.state == 1) then
-		player:sendMinitext("You try, but fail because you are dead!")
+		player:sendMinitext("Kau mencoba, tetapi gagal karena kau sudah mati!")
 		return false
 	end
 
 	if (mount == 1 and player.state == 3) then
-		player:sendMinitext("You cannot do that right now.")
+		player:sendMinitext("Kau tidak bisa melakukan itu sekarang.")
 		return false
 	end
 
 	if (disguise == 1 and player.state == 4) then
-		player:sendMinitext("You cannot do that right now.")
+		player:sendMinitext("Kau tidak bisa melakukan itu sekarang.")
 		return false
 	elseif (disguise == 2 and (player.state == 4 or player.gfxClone == 1)) then
-		player:sendMinitext("You cannot do that right now.")
+		player:sendMinitext("Kau tidak bisa melakukan itu sekarang.")
 		return false
 	end
 
@@ -3726,22 +3726,22 @@ end
 
 function Player.canCast(player, dead, mount, disguise)
 	if (player.state == -1) then
-		player:sendMinitext("You cannot cast that now.")
+		player:sendMinitext("Kau tidak bisa merapal itu sekarang.")
 		return false
 	end
 
 	if (dead == 1 and player.state == 1) then
-		player:sendMinitext("Spirits can't do that.")
+		player:sendMinitext("Arwah tidak bisa melakukan itu.")
 		return false
 	end
 
 	if (mount == 1 and player.state == 3) then
-		player:sendMinitext("You can't do that while riding a mount.")
+		player:sendMinitext("Kau tidak bisa melakukan itu sambil menunggang.")
 		return false
 	end
 
 	if (disguise == 1 and player.state == 4) then
-		player:sendMinitext("You can't do that while transformed.")
+		player:sendMinitext("Kau tidak bisa melakukan itu dalam wujud berubah.")
 		return false
 	end
 
@@ -4213,7 +4213,7 @@ function Player.deathPileDrop(player)
 			groundItemsToCurse[i].timer = os.time()
 		end
 
-		player:sendMinitext("Your items are ripped from your body.")
+		player:sendMinitext("Barang-barangmu terenggut dari tubuhmu.")
 		characterLog.deathPileLog(player)
 	end
 end
@@ -4245,7 +4245,7 @@ function Player.deathExpLoss(player, percent)
 	end
 
 	player:calcStat()
-	player:sendMinitext("You've lost " .. Tools.formatNumber(lost) .. " exp!")
+	player:sendMinitext("Kau kehilangan " .. Tools.formatNumber(lost) .. " exp!")
 end
 
 ---------------------------------------------------------------------------------------------
@@ -4275,7 +4275,7 @@ function Player.giveXPStacked(player, amount, bonus)
 
 	if player.state == 1 then
 		player:sendAnimation(246)
-		player:sendMinitext("You cannot gain exp while dead!")
+		player:sendMinitext("Kau tidak bisa memperoleh exp saat mati!")
 		return
 	else
 		if player.level >= 99 then
@@ -4289,19 +4289,19 @@ function Player.giveXPStacked(player, amount, bonus)
 		end
 
 		if (player.level >= 5 and player.registry["basic_tutorial_complete"] == 0) then
-			player:sendMinitext("Finish your tutorial to advance beyond level 5.")
+			player:sendMinitext("Selesaikan tutorialmu untuk melampaui level 5.")
 			return
 		end
 
 		if (player.level >= 5 and player.class == 0) then
-			player:sendMinitext("You cannot increase your level without choosing a path first.")
-			player:sendMinitext("Please visit your Kingdom's tutor or press F1 and select \"Choose a path\" from the list.")
+			player:sendMinitext("Kau tidak bisa menaikkan level tanpa memilih jalur lebih dulu.")
+			player:sendMinitext("Kunjungi tutor Kerajaanmu, atau tekan F1 lalu pilih \"Choose a path\" dari daftar.")
 			return
 		end
 
 		if player.exp + get + bonus >= 4294967295 then
 			player.exp = 4294967295
-			player:sendMinitext("You cannot gain any more experience until you sell some.")
+			player:sendMinitext("Kau tidak bisa memperoleh pengalaman lagi sampai sebagiannya kau jual.")
 			player:sendStatus()
 			return
 		end
@@ -4329,7 +4329,7 @@ function Player.giveXP(player, amount, bonus)
 
 	if (pc ~= nil and #pc > 1) then
 		player:sendAnimation(246)
-		player:sendMinitext("You cannot gain exp while on top of other players!")
+		player:sendMinitext("Kau tidak bisa memperoleh exp saat berdiri di atas pemain lain!")
 		return
 	end
 
@@ -4371,7 +4371,7 @@ function Player.recoverDeathPile(player)
 			end
 		end
 		player:sendAction(6, 20)
-		player:talk(2, "I'll take that.")
+		player:talk(2, "Aku ambil yang itu.")
 	end
 end
 
@@ -4535,20 +4535,20 @@ Player.afkCheckDoorBlock = function(player)
 			if player.registry["door_block_warning"] == 0 then
 				player:playSound(sound)
 				player:sendAnimation(anim)
-				player:sendMinitext("You are blocking a path. Please move or you will be moved in 30 seconds.")
+				player:sendMinitext("Kau menghalangi jalan. Menyingkirlah, atau kau akan dipindahkan dalam 30 detik.")
 				player.registry["door_block_warning"] = 1
 			end
 		elseif player.afkTime == 5 then
 			if player.registry["door_block_warning"] == 1 then
 				player:playSound(sound)
 				player:sendAnimation(anim)
-				player:sendMinitext("You are blocking a path. Please move or you will be moved in 10 seconds.")
+				player:sendMinitext("Kau menghalangi jalan. Menyingkirlah, atau kau akan dipindahkan dalam 10 detik.")
 				player.registry["door_block_warning"] = 2
 			end
 		elseif player.afkTime == 6 then
 			if player.registry["door_block_warning"] == 2 then
 				player:playSound(29)
-				player:sendMinitext("You were too close to a warp and have been moved to the Inn.")
+				player:sendMinitext("Kau terlalu dekat dengan portal dan telah dipindahkan ke Penginapan.")
 				player:sendAnimation(292)
 				player:sendAnimationXY(292, player.x, player.y)
 				player.registry["door_block_warning"] = 0
@@ -4827,7 +4827,7 @@ end
 
 function Player.inputLetterCheck(player, input)
 	if (input:match("[^%a%s%']")) then
-		player:dialog("You can only enter letters and spaces.", {})
+		player:dialog("Kau hanya boleh memasukkan huruf dan spasi.", {})
 		return
 	end
 
@@ -4836,19 +4836,19 @@ end
 
 function Player.inputNumberCheck(player, input)
 	if (input == nil) then
-		player:dialog("You must enter a number.")
+		player:dialog("Kau harus memasukkan angka.")
 		return
 	end
 
 	if (input:match("%D")) then
-		player:dialog("You can only enter numbers, no letters.", {})
+		player:dialog("Kau hanya boleh memasukkan angka, bukan huruf.", {})
 		return
 	end
 
 	local number = tonumber(input)
 
 	if (number < 1) then
-		player:dialog("You must enter a positive number.", {})
+		player:dialog("Kau harus memasukkan angka positif.", {})
 		return
 	end
 
@@ -5096,7 +5096,7 @@ function Player.canLoot(player, item)
 
 	for i = 1, #pc do
 		if pc[i].ID ~= player.ID then
-			player:sendMinitext("You cannot pick up items while stacked.")
+			player:sendMinitext("Kau tidak bisa memungut barang saat bertumpuk.")
 			return false
 		end
 	end
@@ -5124,7 +5124,7 @@ function Player.canLoot(player, item)
 		end
 	end
 
-	player:sendMinitext("That item does not belong to you.")
+	player:sendMinitext("Barang itu bukan milikmu.")
 	return false
 end
 
@@ -5132,7 +5132,7 @@ function Player.isYours(player, item)
 	local pc = player:getObjectsInCell(player.m, player.x, player.y, BL_PC)
 	for i = 1, #pc do
 		if pc[i].ID ~= player.ID then
-			player:sendMinitext("You cannot pick up items while stacked.")
+			player:sendMinitext("Kau tidak bisa memungut barang saat bertumpuk.")
 			return false
 		end
 	end
@@ -5154,7 +5154,7 @@ function Player.isYours(player, item)
 		end
 	end
 
-	player:sendMinitext("That item does not belong to you.")
+	player:sendMinitext("Barang itu bukan milikmu.")
 	return false
 end
 
@@ -5181,7 +5181,7 @@ function Player.regen(player)
 			player.mapTitle,
 			"Tavern"
 		) ~= nil and math.random(1, 20) == 1 then
-			player:sendMinitext("Your wounds heal quickly while you rest in the Inn.")
+			player:sendMinitext("Lukamu sembuh cepat selagi kau beristirahat di Penginapan.")
 		end
 
 		player.health = player.health + health
@@ -5284,16 +5284,16 @@ Player.eventCaveLevelPrompt = function(player, maps, x, y)
 
 	local level, alternateLevel = player:getEventCaveLevel()
 
-	local opts = {"The smoother one."}
+	local opts = {"Yang lebih halus."}
 	if alternateLevel ~= nil then
-		table.insert(opts, "The rougher one.")
+		table.insert(opts, "Yang lebih kasar.")
 	end
 
 	if #opts == 1 then
 		player:warp(maps[level], x, y)
 	else
 		local choice = player:menuSeq(
-			"You see two paths, which do you pick?",
+			"Kau melihat dua jalan, mana yang kau pilih?",
 			opts,
 			{}
 		)

@@ -9,14 +9,14 @@ AuctioneerNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Help", "List Item for Auction", "Bid/Buyout an Item"}
+		local opts = {"Bantuan", "Pasang Barang untuk Dilelang", "Tawar/Beli Langsung Barang"}
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Help" then
-		elseif menu == "List Item for Auction" then
+		if menu == "Bantuan" then
+		elseif menu == "Pasang Barang untuk Dilelang" then
 			AuctioneerNpc.list(player, npc)
-		elseif menu == "Bid/Buyout an Item" then
+		elseif menu == "Tawar/Beli Langsung Barang" then
 			AuctioneerNpc.bid(player, npc)
 		end
 	end),
@@ -65,7 +65,7 @@ AuctioneerNpc = {
 
 		if item.type == 0 then
 			player:menu(
-				"Food would rot, and I would end up with rats everywhere! I'm not willing to send it for you.",
+				"Makanan akan membusuk dan tempatku jadi penuh tikus! Aku tidak mau mengirimkannya untukmu.",
 				{},
 				{}
 			)
@@ -73,7 +73,7 @@ AuctioneerNpc = {
 		end
 
 		if item.amount > 1 then
-			amount = player:inputNumberCheck(player:input("How many " .. item.name .. " do you want to send?"))
+			amount = player:inputNumberCheck(player:input("Berapa banyak " .. item.name .. " yang ingin kau kirim?"))
 		else
 			amount = 1
 		end
@@ -96,10 +96,10 @@ AuctioneerNpc = {
 			return
 		end
 
-		local price = player:inputNumberCheck(player:input("How much gold would you like to list it for?"))
+		local price = player:inputNumberCheck(player:input("Kau ingin memasangnya seharga berapa emas?"))
 
 		if price == 0 then
-			player:dialog("You cannot list items for free.")
+			player:dialog("Kau tidak bisa memasang barang secara cuma-cuma.")
 			return
 		end
 
@@ -112,8 +112,8 @@ AuctioneerNpc = {
 		end
 
 		local confirm = player:menuSeq(
-			"Are you sure you would like to list " .. name .. " for " .. Tools.formatNumber(price) .. " gold?",
-			{"Yes, list it.", "Nevermind."},
+			"Kau yakin ingin memasang " .. name .. " seharga " .. Tools.formatNumber(price) .. " emas?",
+			{"Ya, pasang.", "Nevermind."},
 			{}
 		)
 
@@ -148,7 +148,7 @@ AuctioneerNpc = {
 				0
 			) == 0 then
 				player:dialog(
-					"Error listing auction. Please contact support.",
+					"Gagal memasang lelang. Hubungi dukungan.",
 					{}
 				)
 				return
@@ -161,7 +161,7 @@ AuctioneerNpc = {
 					item.realName
 				)
 				player:dialog(
-					"You have successfully listed your item for auction.",
+					"Barangmu berhasil dipasang untuk dilelang.",
 					{}
 				)
 			end
@@ -182,7 +182,7 @@ AuctioneerNpc = {
 
 		if #auctions == 0 then
 			player:dialogSeq(
-				{t, "Sorry but there are currently no auctions"},
+				{t, "Maaf, saat ini tidak ada lelang"},
 				0
 			)
 			return
@@ -230,15 +230,15 @@ AuctioneerNpc = {
 		end
 
 		local choice = player:menuString(
-			"What type of item would you like to buy?",
-			{"Weapons", "Armors", "Helms/Helmets", "Rings", "Foods", "Other"},
+			"Barang jenis apa yang ingin kau beli?",
+			{"Senjata", "Armors", "Helms/Helmets", "Rings", "Foods", "Lainnya"},
 			{}
 		)
 		local type = 0
 
-		if choice == "Weapons" then
+		if choice == "Senjata" then
 			type = 3
-		elseif choice == "Armor" then
+		elseif choice == "Zirah" then
 			type = 4
 		elseif choice == "Helms/Helmets" then
 			type = 6
@@ -246,7 +246,7 @@ AuctioneerNpc = {
 			type = 7
 		elseif choice == "Food" then
 			type = 2
-		elseif choice == "Other" then
+		elseif choice == "Lainnya" then
 			type = 18
 		end
 
@@ -489,7 +489,7 @@ function Player.auctionBuyExtend(player, dialog, auctionids, chaids, items, amou
 	local chaid = chaids[x]
 
 	if (player.money < price) then
-		player:dialog("You do not have enough money.", {})
+		player:dialog("Uangmu tidak cukup.", {})
 		return nil
 	end
 
@@ -501,10 +501,10 @@ function Player.auctionBuyExtend(player, dialog, auctionids, chaids, items, amou
 	end
 
 	local newChoice = player:menuString(
-		"You are bidding on (" .. amount .. ") " .. name .. " for " .. Tools.formatNumber(price) .. " gold.\n\nAuction posted by: " .. getOfflineID(chaid) .. "\n\nDeal?",
-		{"Yes", "No"}
+		"Kau menawar (" .. amount .. ") " .. name .. " seharga " .. Tools.formatNumber(price) .. " emas.\n\nLelang dipasang oleh: " .. getOfflineID(chaid) .. "\n\nDeal?",
+		{"Ya", "Tidak"}
 	)
-	if (newChoice == "Yes") then
+	if (newChoice == "Ya") then
 		if player.money >= price then
 			local buytable = {
 				auctionid,
@@ -534,7 +534,7 @@ function Player.auctionBuyExtend(player, dialog, auctionids, chaids, items, amou
 			return buytable
 		else
 			player:dialogSeq(
-				{t, "You don't have enough money to purchase that."},
+				{t, "Uangmu tidak cukup untuk membeli itu."},
 				0
 			)
 		end

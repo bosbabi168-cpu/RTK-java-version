@@ -1500,3 +1500,212 @@ ekor daftar dengan nomor lanjutan.
    server melaporkan "6 barang" dengan benar, jadi log server dan tampilan
    klien tidak cocok tanpa satu pun error. Keluarga yang sama dengan
    Peringatan #85: indeks daftar dan nomor slot adalah dua hal berbeda.
+
+103. **Entri tabel panjang paket antar-server yang salah menandai "variabel"
+   MEMUTUS sambungan char server — dan baru terpicu bertahun kemudian.**
+   `Mapif.PACKET_LEN_TABLE` menandai `0x3009` (papan pesan) sebagai `-1`
+   alias variabel, dan pembaca variabel mengambil panjangnya dari
+   `rfifoL(2)` — offset yang di paket itu justru berisi **fd klien**.
+   Aliran antar-server bergeser, paket berikutnya terbaca sebagai opcode
+   `0x0000`, char server menjawab "Unhandled inter-server packet" lalu
+   **menutup sambungan map server**. Sesudah itu tidak ada karakter yang
+   bisa dimuat, sehingga uji-uji berikutnya gagal karena hal yang sama
+   sekali tidak mereka uji. Di C entri ini `sizeof(struct board_show_0)+2`
+   — **tetap**, bukan variabel. Perbaikannya: paket papan berukuran tetap
+   34 byte dengan ladang nama 16 byte.
+   ⚠️ Yang membuatnya bertahan begitu lama: sisi **tampilan** papan sudah
+   lama diport, tapi tidak ada satu pun jalur MASUK yang pernah memintanya.
+   Kode yang tidak pernah dipanggil tidak pernah salah. Ia baru meledak
+   pada menit R1 memberi papan tombolnya yang pertama.
+
+104. **Penghitung peristiwa di `livetest` hanya menghitung yang DIREKAM.**
+   `Dunia.peristiwa` naik di dalam `catat()`, yang hanya dipanggil dari
+   method yang perekamnya override. Peristiwa yang dibongkar `EventDecoder`
+   tetapi tidak di-override — `EV_OBJECT_ACTED`, `EV_BOARD_LIST` — tidak
+   pernah terhitung. Dua uji ditulis dengan pola `peristiwa > sebelum` dan
+   keduanya **merah padahal servernya benar**; satu lagi bisa saja hijau
+   karena peristiwa lain yang kebetulan lewat. Periksa peristiwa yang
+   dimaksud secara langsung (rekam nilainya, lalu uji nilainya), jangan
+   menghitung jumlah.
+
+105. **Uji yang "mengembalikan keadaan" bisa MERUSAKNYA bila yang
+   dikembalikan tidak pernah dibaca.** Blok kalender dunia di `cliftest`
+   menyimpan `WorldTime.hour/day/season/year` sebagai "nilai lama", menik
+   satu jam, lalu menuliskannya kembali ke tabel `Time`. Tetapi `cliftest`
+   tidak pernah memanggil `WorldTime.load()`, jadi yang tersimpan adalah
+   **nilai bawaan** (0/1/1/1) — dan pemulihannya menimpa kalender sungguhan
+   (4/72/2/6) dengan bawaan itu. Gerbangnya tetap hijau; yang hilang adalah
+   data, bukan pemeriksaan.
+   ⚠️ Pola amannya: **baca dulu dari sumbernya**, baru simpan sebagai nilai
+   lama. Keluarga yang sama dengan Peringatan #102 (`livetest` memakan
+   barang karakter uji): uji yang menulis ke data nyata harus memulihkan
+   apa yang BENAR-BENAR ada, bukan apa yang kebetulan ada di memori.
+
+106. **Satu nilai uji tidak cukup untuk membedakan jawaban nyata dari
+   jawaban kebetulan.** Uji `curSeason` mula-mula menyetel musim dunia ke 3
+   lalu menuntut binding menjawab 3. Kontrol negatif — mengembalikan versi
+   lama yang menghitung musim dari **bulan komputer** — tetap **HIJAU**,
+   karena bulan Agustus kebetulan menghasilkan 3 juga. Ujinya diperbaiki
+   dengan menjalankan dua himpunan nilai yang berbeda; jawaban tetap
+   maupun jawaban jam dinding tidak bisa mengikuti keduanya.
+
+107. **Binding pembaca petak MELEMPAR di tepi peta, dan yang mati adalah
+   skripnya.** `getObject`, `getTile`, dan `getPass` mengindeks larik petak
+   langsung seperti C — tetapi Java memeriksa batas dan C tidak. Pemain
+   yang berdiri di tepi peta membuat `onLook` memeriksa petak di
+   koordinat −1, `IndexOutOfBoundsException` naik lewat LuaJ, dan
+   **seluruh kait `onLook` mati** (`scripts.lua:265`) untuk pemain itu.
+   Tidak ada paket yang salah dan tidak ada gerbang luring yang merah;
+   yang terlihat hanyalah "melihat sesuatu tidak melakukan apa-apa" di
+   pinggir peta. Ketiganya kini lewat penjaga `diLuar()` yang mengembalikan
+   0, bukan melempar — jawaban yang sama dengan yang dibaca C dari memori
+   di luar larik, tanpa membaca memori di luar larik.
+
+108. **Pemuat portal MEMBUANG portal lintas map server — di C juga.**
+   `map_readwarp()` melewati portal yang peta TUJUANNYA tidak dimuat, dan
+   peta milik map server lain memang tidak pernah dimuat. Akibatnya cabang
+   lintas-server di `pc_warp()` **tidak pernah bisa dicapai lewat portal**
+   di C: kodenya ada, jalannya tidak. Port ini sengaja MENYIMPANG — hanya
+   peta ASAL yang wajib dimuat — supaya fiturnya benar-benar terpakai.
+   Penyimpangan disengaja, bukan port yang meleset; jangan "diperbaiki"
+   kembali ke perilaku C. Pemeriksaan batas koordinat ikut disyaratkan
+   hanya bila peta tujuan ada di server ini.
+
+109. **C MENGUSIR pemain yang tersimpan di peta milik server lain — badan
+   `intif.c:215` kosong.** Karakter yang tersimpan di peta server lain
+   (mis. karena berpindah lalu server mati) tidak bisa masuk sama sekali:
+   `enterWorld` menolak, dan tidak ada yang mengalihkannya. Port ini
+   mengalihkannya (`transferKeServerLain`) alih-alih mengusirnya.
+   ⚠️ Perpindahannya butuh paket sampai ke klien SEBELUM sesi ditutup:
+   penutupan diberi jeda `TUTUP_SETELAH_ALIH_MS` (500 ms) di `MapIntif`.
+   Menutup langsung tidak melempar apa pun — kliennya hanya terputus
+   tanpa pernah tahu ke mana harus pergi.
+
+110. **Langkah `livetest` yang berjalan harus MENUNGGU langkahnya sampai,
+   bukan tidur sekian milidetik.** Pencari jalur uji C3 memberi jeda tetap
+   220 ms per langkah lalu menyimpulkan "posisi tidak berubah = petak
+   terhalang". Kabar langkah datang lebih lambat dari itu, jadi **setiap
+   petak koridor dicap terhalang**, rutenya habis, dan langkahnya berakhir
+   dengan "LEWATI: portal tidak terpicu" — uji yang melewati dirinya
+   sendiri karena pewaktunya, bukan karena fiturnya. Tunggu akibatnya
+   (`tungguSenyap`), jangan menakar waktu.
+
+111. **Perekam `livetest` tidak memindahkan pemainnya pada langkah yang
+   BERHASIL.** `Dunia.melangkah()` hanya menaikkan penghitung; `x,y` cuma
+   berubah kalau server kebetulan mengirim `posisi` atau `langkahDitolak`.
+   Setiap uji yang berjalan lalu memeriksa "sampai di mana" karena itu
+   buta — varian ketiga dari Peringatan #104. Perekam kini menghitung
+   petak barunya dari arah + petak asal yang dikirim server.
+
+112. **Langkah uji yang bisa MELEWATI DIRINYA SENDIRI bukan gerbang.**
+   Uji C3 butuh map server kedua, jadi versi pertamanya menulis "LEWATI"
+   bila perpindahan tidak terjadi — yang berarti C3 bisa mundur total dan
+   gerbangnya tetap hijau. Kini prasyaratnya diperiksa TERPISAH dari yang
+   diuji: port 2002 dijajaki dulu; kalau tidak ada server kedua langkahnya
+   memang dilewati dengan pesan cara menjalankannya, tetapi kalau ADA,
+   gagal berpindah adalah **MERAH**. Prasyarat yang tidak terpenuhi dan
+   fitur yang rusak harus terlihat berbeda.
+
+113. **Menerjemahkan PROSA bisa memutus quest, bukan hanya kata kuncinya.**
+   Kata kunci `speech` sudah diterjemahkan lebih dulu (26 Agu 2026), jadi
+   yang tersisa "cuma prosa". Tetapi prosa itu memuat kalimat yang
+   MENYURUH pemain mengetik kata kunci — dan terjemahan bebasnya memilih
+   kata lain: `smith.lua` menyuruh mengucapkan 'Acara Istimewa' sementara
+   penjahitnya hanya menerima `"acara khusus"`, dan `woodland_angel.lua`
+   menyuruh mengucapkan 'Finish' sementara kaitnya menunggu
+   `"selesaikan"`. Keduanya membuat quest buntu tanpa satu pun error.
+   ⚠️ Pemeriksanya sekarang otomatis: `tools/terjemahan/petunjuk-ketik.py`
+   membandingkan setiap kata berkutip di kalimat perintah dengan daftar
+   kata kunci `speech` yang benar-benar ada di korpus. Jalankan setiap
+   kali menyentuh dialog.
+
+114. **Opsi menu dibangun dengan TIGA konstruksi, dan alat yang hanya
+   tahu satu akan melapor "nol sisa" dengan percaya diri.** Selain daftar
+   sebaris `menuSeq(topik, {"A","B"}, {})`, konten memakai
+   `local opts = {...}` yang diserahkan lewat NAMA, dan
+   `table.insert(opts, "…")` yang menambah belakangan. Ketiganya tampil
+   di layar pemain. Alat inventaris sempat melapor **0 sisa** tiga kali
+   berturut-turut sementara klien sungguhan menampilkan menu
+   `[Buy, Sell, Banking, …]` — setiap kali yang menemukan adalah
+   `livetest`, bukan alatnya. ⚠️ Angka dari alat statis hanya sejujur
+   konstruksi yang ia kenal; yang memutuskan tetap klien.
+
+115. **Literal di dalam tabel dialog belum tentu teks layar.** Tabel yang
+   diserahkan ke `dialogSeq` memuat `convertGraphic(723, "item")` — dan
+   "item" di situ adalah nama RUANG GRAFIK. Menerjemahkannya membuat
+   gambar dialog hilang tanpa error. Pemindai kini membutakan argumen
+   panggilan identifier (`convertGraphic`, `Item`, `addItem`, …) sebelum
+   mengambil literal dari sebuah tabel.
+
+116. **`next` / `previous` / `quit` BUKAN teks layar — itu nilai
+   protokol.** `player.lua` membangun opsi paging dialog dari string
+   yang sama persis dengan yang DIKIRIM KLIEN (`answerDialog "next"` di
+   `Ui.java`). Menerjemahkannya membuat kedua sisi player.lua tetap
+   konsisten — sehingga tidak ada yang melempar — tetapi klien mengirim
+   "next" dan skrip menunggu "berikutnya": **seluruh dialog NPC berhenti
+   bisa dibalik halamannya.** Ditangkap `scripttest` (6 pemeriksaan
+   merah), bukan oleh alat terjemahan. Kini terdaftar di
+   `tools/terjemahan/dikecualikan.json`.
+
+117. **Skrip penambal yang GAGAL DIAM-DIAM membuat pengukuran berbohong.**
+   Dua kali `str.replace` di alat inventaris tidak menemukan polanya
+   (beda escaping) dan tetap menulis berkas tanpa perubahan; hasilnya
+   "masih Inggris: 0" diukur dengan detektor yang belum ditambal, dan
+   pekerjaan yang belum ada dilaporkan selesai. ⚠️ Setiap penambalan
+   berkas alat sekarang memakai `assert pola in isi` sebelum menulis —
+   penambal yang tidak menemukan sasarannya harus MELEMPAR, bukan
+   melanjutkan.
+
+118. **Nomor slot kantong dari klien adalah POSISI, bukan indeks daftar —
+   dan seluruh jalur perintah masuk salah memakainya.** `CharStatus.inventory`
+   adalah `List` yang RAPAT, sedangkan nomor slot yang dikirim ke klien
+   berasal dari `inventoryAt()` yang berbasis posisi. Kantong nyata
+   BERLUBANG (karakter uji: posisi 0, 2, 3, 5 dalam daftar 4 elemen), jadi
+   `inventory.get(slot)` mengenai barang yang SALAH — atau, bila posisinya
+   melewati ukuran daftar, tidak melakukan apa pun. Tujuh perintah kena:
+   jatuhkan, pakai, kenakan, makan, lempar, serahkan, dan tawarkan-tukar.
+   ⚠️ Yang membuatnya bertahan lama: **tidak ada pesan galat**. Pemain
+   menekan "jatuhkan" dan tidak terjadi apa-apa. Javadoc `inventoryAt()`
+   sudah memperingatkan jebakan ini sejak lama — yang hilang adalah
+   pemakaiannya di jalur masuk.
+
+119. **Mengubah inventaris di server bukan berarti klien tahu.**
+   `FloorItemRegistry.dropFromInventory()` dan `User.addItemById()`
+   mengubah isi kantong tanpa memanggil `playerInventorySlotChanged/Cleared`.
+   Akibatnya barang yang dijatuhkan tetap terlihat di kantong, dan barang
+   yang dipungut tidak pernah muncul — sampai pemain login ulang. Tidak ada
+   yang melempar. Setiap tempat yang menyentuh `status.inventory` wajib
+   mengabarkan slot yang berubah.
+
+120. **`.ID` tidak pernah diimplementasikan — 1.292 pemakaian di 347 berkas
+   diam-diam menerima nil.** Skrip memakai `.ID` untuk **id BENDA di dunia**
+   (`bl->id` di C), berbeda dari `.id` yang berarti id JENIS barang pada
+   benda lantai dan id mob pada mob. Tidak ada satu pun getter Java yang
+   menjawab `"ID"`, sehingga:
+   - `onPickup.lua` memanggil `player:pickUp(groundItems[i].ID)` →
+     `pickUp(nil)` → `pickUp(0)` → id 0 tidak ditemukan → **memungut barang
+     dari tanah tidak pernah berhasil, untuk siapa pun, sejak awal**;
+   - `herb_pipe.lua` menyetel `player.attacker = player.ID` → nil → kait
+     `on_attacked` memakai attacker nil → 12 baris `script error` di
+     `map.log` yang terlihat sama sekali tidak berhubungan.
+   ⚠️ `luaaudit` tidak bisa melihat ini: ia memeriksa nama METHOD, bukan
+   nama ATRIBUT. Satu perbaikan (`idBenda()` di `Bindings`) menyelesaikan
+   keduanya sekaligus — dan itulah tandanya bahwa dua gejala yang tampak
+   terpisah sering punya satu sebab.
+
+121. **Uji yang memegang barang pemain harus mengembalikannya, dan harus
+   MERAH bila gagal.** Versi pertama langkah jatuh-pungut menuntut slot
+   kantong KOSONG setelah menjatuhkan — padahal barang bertumpuk hanya
+   berkurang jumlahnya. Ia merah untuk server yang benar, lalu berhenti
+   sebelum memungut, dan `rabbit_meat` benar-benar tertinggal di lantai.
+   Uji yang menyentuh data nyata wajib: (a) menuntut hal yang benar, dan
+   (b) berteriak dengan nama barangnya bila pemulihan gagal, supaya barang
+   yang tertinggal tidak pernah lolos tanpa diketahui.
+
+122. **Kegagalan yang berbeda harus terlihat berbeda.** "Memungut tidak
+   mengembalikan barang" bisa berarti dua hal yang sangat berbeda:
+   barangnya masih tergeletak (pungutnya tidak jalan), atau barangnya
+   lenyap dari lantai tetapi tidak muncul di kantong (server memungutnya
+   lalu lupa mengabari klien — yang kedua terlihat seperti barang HILANG).
+   Satu pemeriksaan gabungan tidak bisa membedakannya; dua pemeriksaan
+   terpisah langsung menunjuk sebabnya.

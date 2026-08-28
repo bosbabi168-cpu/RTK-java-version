@@ -16,7 +16,7 @@ Sejak 26 Agustus 2026 project ini **tidak lagi mengejar kompatibilitas
 byte-per-byte** dengan klien RetroTK. Yang berlaku:
 
 - **Protokol sendiri (RTK2)** — dua arah, dirancang dari kebutuhan nyata
-  skrip: 29 opcode masuk, 48 peristiwa keluar. Spesifikasi:
+  skrip: 43 opcode masuk, 54 peristiwa keluar. Spesifikasi:
   [`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md).
 - **Klien sendiri (libGDX)** — dikembangkan di repo terpisah
   `../RTK-client`, belum di-commit sampai seluruh aset diganti buatan
@@ -44,8 +44,13 @@ menulis adapter baru, bukan menyentuh logika.
   papan pesan, peta yang bisa diubah saat berjalan.
 - **Scripting**: 906/906 skrip termuat 0 error; celah binding **0**
   (satu-satunya sisa `testPacket`, sengaja tidak diport).
-- **Pengujian**: 8 gerbang regresi luring (824 assertion `cliftest`,
-  234 `dbtest`) + gerbang klien sungguhan `livetest` (89 pemeriksaan).
+- **Pengujian**: 8 gerbang regresi luring (903 assertion `cliftest`,
+  234 `dbtest`) + gerbang klien sungguhan `livetest` (155 pemeriksaan;
+  **167** pada setup dua map server, `./tools/uji-dua-server.sh`).
+  36 dari 43 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.
+- **Terjemahan Indonesia**: SELESAI — 0 dari 9.812 titik dialog masih
+  berbahasa Inggris; `livetest` menuntut dialog yang sampai ke pemain
+  berbahasa Indonesia.
 
 Daftar pekerjaan yang tersisa: lihat **ROADMAP di [CLAUDE.md](CLAUDE.md)**.
 
@@ -149,21 +154,24 @@ sebelum mengimpor ulang. Terbukti terimpor dari format 5.7 ke MySQL 8.0.
 
 Terjemahan nama barang/mob/NPC dikerjakan di kolom `*Description`
 (`database/terjemahan/`) — **bukan** di skrip Lua, karena nama di skrip
-adalah identifier.
+adalah identifier. Teks dialognya sendiri sudah **selesai** diterjemahkan
+(0 dari 9.812 titik tersisa); alat dan katalognya di `tools/terjemahan/`,
+aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Pengujian — sembilan gerbang
 
 | Gerbang | Menguji | Catatan |
 |---|---|---|
-| `scripttest` | 906 skrip Lua + coroutine dialog | |
+| `scripttest` | 906 skrip Lua + coroutine dialog + kalender dunia | |
 | `maptest` | 3.544 berkas peta | |
 | `chartest` | serialisasi karakter | |
 | `worldtest` | dunia peta + penempatan pemain | |
-| `cliftest` | paket, protokol RTK2, seluruh subsistem | 824 assertion |
+| `cliftest` | paket, protokol RTK2, seluruh subsistem | 903 assertion |
 | `dbtest` | lapisan database ke MySQL hidup | 234 assertion; butuh MySQL |
 | `luaaudit` | pemeriksa statis 907 skrip + celah binding | `-Drtk.audit.penuh=true` untuk daftar utuh |
 | `wiresync` | `Wire.java` identik dengan salinan di repo klien | skip bila repo klien tidak ada |
-| `livetest` | **klien RTK2 sungguhan** masuk dunia + 89 pemeriksaan | dijalankan dari `../RTK-client` |
+| `livetest` | **klien RTK2 sungguhan** masuk dunia + 155 pemeriksaan | dijalankan dari `../RTK-client` |
+| `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | 167 pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
 
 Delapan gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
 tidak bisa melihat "sesuatu yang tidak terjadi". Karena itu setiap
@@ -193,7 +201,7 @@ digambar klien.
 Roadmap menuju "server dipakai normal & lancar tanpa bug" — lengkap dengan
 tabel aksi pemain yang belum punya jalur masuk RTK2 — ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#102 di
+Jebakan & pelajaran #1–#122 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder

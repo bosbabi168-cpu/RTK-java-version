@@ -98,6 +98,47 @@ public final class Pc {
     }
 
     /**
+     * Serahkan pemain ke map server yang memuat peta tujuannya (R3/C3) —
+     * port cabang {@code !map_isloaded} di {@code pc_warp}.
+     *
+     * <p>⚠️ Koordinatnya dijepit ke 1..255 <b>di sini</b>, sebelum dikirim.
+     * Server tujuan memuat pemain dari {@code lastPos} dan tidak punya
+     * kesempatan memperbaiki nilai yang mustahil; C melakukan hal yang sama
+     * dengan komentar "Just for Justin".</p>
+     *
+     * @return false bila tabel {@code Maps} tidak mengenal peta itu sama
+     *         sekali — barulah perpindahannya benar-benar gagal
+     */
+    private static boolean transferKeServerLain(User sd, int m, int x, int y) {
+        Integer server = MapServer.sql == null ? null : MapServer.sql.queryInt(
+                "SELECT `MapServer` FROM `Maps` WHERE `MapId` = ?", m);
+        if (server == null) {
+            log.warn("[PC] {} minta pindah ke peta {} yang tidak dikenal tabel Maps",
+                    sd.name(), m);
+            return false;
+        }
+        if (server == MapServer.serverId) {
+            // Petanya milik server ini tapi tidak termuat — berkasnya hilang
+            // atau gagal dibaca. Mengalihkan pemain ke diri sendiri hanya
+            // membuat gelung sambung-putus.
+            log.error("[PC] peta {} milik server ini tapi TIDAK termuat; "
+                    + "{} tidak dipindahkan", m, sd.name());
+            return false;
+        }
+        int tx = x < 1 || x > 255 ? 1 : x;
+        int ty = y < 1 || y > 255 ? 1 : y;
+        sd.destMap = m;
+        sd.destX = tx;
+        sd.destY = ty;
+        String host = MapServer.mapIpS;
+        int port = MapServer.PORT_MAP_DASAR + server;
+        log.info("[PC] {} dialihkan ke map server #{} ({}:{}) untuk peta {} ({},{})",
+                sd.name(), server, host, port, m, tx, ty);
+        MapServer.clientView.playerTransferred(sd, host, port, m, tx, ty);
+        return true;
+    }
+
+    /**
      * pc_warp(): pindahkan pemain ke peta/koordinat lain.
      *
      * Meniru urutan versi C: validasi & jepit koordinat, cabut dari peta
@@ -107,17 +148,20 @@ public final class Pc {
      *
      * Nilai {@code x == -1} berarti tengah peta, sama seperti di C.
      *
-     * @return false bila peta tujuan tidak dimuat di server ini. Versi C
-     *         pada kasus ini memindahkan pemain ke map server lain
-     *         (mencari `MapServer` di tabel `Maps`); perpindahan antar map
-     *         server belum diport — lihat roadmap.
+     * <p>Peta yang <b>tidak dimuat di server ini</b> ditangani sebagai
+     * perpindahan antar map server (R3/C3): server pemiliknya dicari di
+     * kolom {@code Maps.MapServer}, tujuannya dicatat di
+     * {@code destMap/destX/destY}, lalu klien dialihkan. Posisinya sampai
+     * ke server tujuan lewat jalur simpan — {@code MapIntif.saveChar}
+     * menuliskan tujuan itu sebagai {@code lastPos}.</p>
+     *
+     * @return false hanya bila peta tujuan tidak dimuat di sini DAN tidak
+     *         ada map server yang mengakuinya
      */
     public static boolean warp(MapRegistry world, User sd, int m, int x, int y) {
         MapData dest = world.get(m);
         if (dest == null) {
-            log.warn("[PC] {} minta pindah ke peta {} yang tidak dimuat di server ini "
-                    + "(perpindahan antar map server belum diport)", sd.name(), m);
-            return false;
+            return transferKeServerLain(sd, m, x, y);
         }
 
         if (x == -1) {
@@ -171,7 +215,18 @@ public final class Pc {
 
         MapData map = world.get(m);
         if (map == null) {
-            log.warn("[PC] {} tersimpan di peta {} yang tidak dimuat di server ini", sd.name(), m);
+            // R3/C3: posisi tersimpannya milik map server LAIN — serahkan
+            // pemainnya ke sana, jangan usir.
+            // ⚠️ Di C cabang ini KOSONG (`intif.c:215`, isinya dikomentari),
+            // sehingga pemain yang tersimpan di peta server lain lalu masuk
+            // ke server yang salah akan terdampar: tidak bisa masuk dunia,
+            // dan posisinya tidak pernah berubah sehingga percobaan
+            // berikutnya gagal dengan cara yang sama. Menutup sambungan
+            // tanpa memberi tahu ke mana harus pergi adalah jalan buntu.
+            log.warn("[PC] {} tersimpan di peta {} milik map server lain", sd.name(), m);
+            if (transferKeServerLain(sd, m, x, y)) {
+                sd.pindahTertunda = true;
+            }
             return false;
         }
 

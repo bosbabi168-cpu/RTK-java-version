@@ -5,16 +5,16 @@ master_weapon = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(enchants) or player.enchant > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
-		player:sendMinitext("Your weapon shines with holy light.")
+		player:sendMinitext("Senjatamu bersinar oleh cahaya suci.")
 		player.magic = player.magic - magic
 		player.enchant = 20
 		player:sendStatus()

@@ -20,7 +20,7 @@ crafting = {
 
 			if not hasSpecialization and isAccomplished then
 				-- if missing legend mark AND at the level of accomplished or better
-				player:sendMinitext("To advance further, you must specialize in " .. skill)
+				player:sendMinitext("Untuk maju lebih jauh, kau harus mendalami " .. skill)
 				return
 			end
 		end
@@ -28,14 +28,14 @@ crafting = {
 		if skill == "woodworking" or skill == "jewelry making" or skill == "metalworking" or skill == "tailoring" then
 			local hasLegend = crafting.checkSkillLegend(player, skill)
 			if not hasLegend then
-				player:sendMinitext("You do not posses knowledge in " .. skill)
+				player:sendMinitext("Kau tidak menguasai pengetahuan tentang " .. skill)
 				return
 			end
 		end
 
 		if ((skill == "scribing" or skill == "potion making") and player.baseClass ~= 3 and player.baseClass ~= 4) then
 			-- this stops melee class from doing
-			player:sendMinitext("Advancement in this craft requires that you are a Caster.")
+			player:sendMinitext("Kemajuan dalam kerajinan ini menuntutmu menjadi Caster.")
 			return
 		end
 
@@ -433,11 +433,11 @@ crafting = {
 
 		if earnedSkillPoints == 1 then
 			-- this shows up initially as soon as player acquires a point into it either from npc or actually performing (ie. fishing, gathering, other skills that you don't learn at npc)
-			player:sendMinitext("You gained " .. skill .. " skill")
+			player:sendMinitext("Kau memperoleh " .. skill .. " itu")
 		end
 
 		if math.random(1, 10) == 1 then
-			player:sendMinitext("Your " .. skill .. " skill increases.")
+			player:sendMinitext("" .. skill .. " itu meningkat.")
 		end
 
 		crafting.updateSkill(player, skill)
@@ -448,10 +448,10 @@ crafting = {
 			player:dialogSeq(
 				{
 					t,
-					"Your " .. skill .. " skills are growing, you are now of " .. crafting.getSkillLevel(
+					"" .. skill .. " milikmu terus tumbuh, kini kau berada di tingkat " .. crafting.getSkillLevel(
 						player,
 						skill
-					) .. " skill."
+					) .. " itu."
 				},
 				0
 			)
@@ -472,7 +472,7 @@ crafting = {
 			player:dialogSeq(
 				{
 					t,
-					"You are not ready to devote to a craft yet, come back later."
+					"Kau belum siap menekuni satu kerajinan. Kembalilah nanti."
 				},
 				0
 			)
@@ -493,21 +493,21 @@ crafting = {
 		player:dialogSeq(
 			{
 				t,
-				"Know this: you can only know one mental craft at a time. If later you decide to abandon " .. skill .. " for another mental craft all of your " .. skill .. " ability will be lost, even if you return to " .. skill .. "."
+				"Ketahuilah: kau hanya bisa menguasai satu kerajinan batin pada satu waktu. Kalau nanti kau memutuskan meninggalkan " .. skill .. " demi kerajinan batin yang lain, seluruh " .. skill .. " akan hilang, sekalipun kau kembali ke " .. skill .. "."
 			},
 			1
 		)
 
 		local choice = player:menuSeq(
-			"For " .. cost .. " gold, I will teach you the very basics of " .. skill .. ".",
-			{"Teach me.", "I'm not sure I want to be a " .. trade .. "."},
+			"Dengan " .. cost .. " emas, akan kuajarkan dasar-dasar " .. skill .. ".",
+			{"Ajari aku.", "Aku tidak yakin ingin jadi " .. trade .. "."},
 			{}
 		)
 
 		if choice == 1 then
 			if player.money < cost then
 				player:dialogSeq(
-					{t, "You need to get " .. cost .. " gold first."},
+					{t, "Kau harus mendapatkan " .. cost .. " emas dulu."},
 					0
 				)
 				return
@@ -519,7 +519,7 @@ crafting = {
 			crafting.updateSkill(player, skill)
 
 			player:dialogSeq(
-				{t, "It is done, welcome to the world of " .. skill .. "."},
+				{t, "Selesai sudah. Selamat datang di dunia " .. skill .. "."},
 				1
 			)
 		elseif choice == 2 then
@@ -541,27 +541,27 @@ crafting = {
 			player:dialogSeq(
 				{
 					t,
-					"You have already chosen a skill of this type, " .. skill .. ". If you abandon it, you will FOREVER lose ALL skill that craft. Even if you return to it at a later time."
+					"Kau sudah memilih keahlian jenis ini, " .. skill .. ". Kalau kau meninggalkannya, SELURUH keahlian kerajinan itu hilang SELAMANYA, sekalipun kelak kau kembali kepadanya."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Are you absolutely certain you want to abandon your trade?",
-				{"Yes, I'm entirely certain.", "I'm not sure."},
+				"Kau benar-benar yakin ingin meninggalkan keahlianmu?",
+				{"Ya, aku benar-benar yakin.", "Aku tidak yakin."},
 				{}
 			)
 
 			if choice == 1 then
 				local confirm = player:menuSeq(
-					"This is your last chance to turn back! Do you REALLY want to do this?",
-					{"Yes.", "No."},
+					"Ini kesempatan terakhirmu untuk mundur! Kau BENAR-BENAR ingin melakukannya?",
+					{"Ya.", "Tidak."},
 					{}
 				)
 
 				if confirm == 1 then
 					crafting.removeSkill(player, skill)
-					player:dialogSeq({t, "It is done."}, 0)
+					player:dialogSeq({t, "Sudah selesai."}, 0)
 				elseif confirm == 2 then
 					return
 				end
@@ -760,14 +760,14 @@ crafting = {
 			player:dialogSeq(
 				{
 					t,
-					"You have already chosen a skill. If you abandon it, you will FOREVER lose ALL skill that craft. Even if you return to it at a later time."
+					"Kau sudah memilih satu keahlian. Kalau kau meninggalkannya, SELURUH keahlian kerajinan itu hilang SELAMANYA, sekalipun kelak kau kembali kepadanya."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Are you absolutely certain you want to abandon your " .. skill .. " trade?",
-				{"Yes, I'm entirely certain.", "I'm not sure."},
+				"Kau benar-benar yakin ingin meninggalkan " .. skill .. " keahlian ini?",
+				{"Ya, aku benar-benar yakin.", "Aku tidak yakin."},
 				{}
 			)
 
@@ -775,21 +775,21 @@ crafting = {
 				player:dialogSeq(
 					{
 						t,
-						"If you continue, you will loose your " .. skill .. " skill."
+						"Kalau kau lanjutkan, kau akan kehilangan " .. skill .. " itu."
 					},
 					1
 				)
 
 				local confirm = player:menuSeq(
-					"This is your last chance to turn back! Do you REALLY want to do this, and remove your " .. skill .. " skill?",
-					{"Yes.", "No."},
+					"Ini kesempatan terakhirmu untuk mundur! Kau BENAR-BENAR ingin melakukannya dan menghapus " .. skill .. " itu?",
+					{"Ya.", "Tidak."},
 					{}
 				)
 
 				if confirm == 1 then
 					crafting.removeSkill(player, skill)
 					player:dialogSeq(
-						{t, "You no longer have the skill of " .. skill},
+						{t, "Kau tidak lagi memiliki keahlian " .. skill},
 						0
 					)
 				elseif confirm == 2 then
@@ -816,7 +816,7 @@ crafting = {
 			player:dialogSeq(
 				{
 					t,
-					"You are not ready to devote to a craft yet, come back later."
+					"Kau belum siap menekuni satu kerajinan. Kembalilah nanti."
 				},
 				0
 			)
@@ -865,21 +865,21 @@ crafting = {
 		player:dialogSeq(
 			{
 				t,
-				"Know this: you can only know one advanced craft at a time. If later you decide to abandon " .. skill .. " for another advanced craft all of your " .. skill .. " ability will be lost, even if you return to " .. skill .. "."
+				"Ketahuilah: kau hanya bisa menguasai satu kerajinan tingkat lanjut pada satu waktu. Kalau nanti kau memutuskan meninggalkan " .. skill .. " demi kerajinan tingkat lanjut yang lain, seluruh " .. skill .. " akan hilang, sekalipun kau kembali ke " .. skill .. "."
 			},
 			1
 		)
 
 		local choice = player:menuSeq(
-			"For " .. cost .. " gold, I will teach you the very basics of " .. skill .. ".",
-			{"Teach me.", "I'm not sure I want to be a " .. trade .. "."},
+			"Dengan " .. cost .. " emas, akan kuajarkan dasar-dasar " .. skill .. ".",
+			{"Ajari aku.", "Aku tidak yakin ingin jadi " .. trade .. "."},
 			{}
 		)
 
 		if choice == 1 then
 			if player.money < cost then
 				player:dialogSeq(
-					{t, "You need to get " .. cost .. " gold first."},
+					{t, "Kau harus mendapatkan " .. cost .. " emas dulu."},
 					0
 				)
 				return
@@ -891,7 +891,7 @@ crafting = {
 			crafting.updateSkill(player, skill)
 
 			player:dialogSeq(
-				{t, "It is done, welcome to the world of " .. skill .. "."},
+				{t, "Selesai sudah. Selamat datang di dunia " .. skill .. "."},
 				1
 			)
 		elseif choice == 2 then
@@ -997,14 +997,14 @@ crafting = {
 			player:dialogSeq(
 				{
 					t,
-					"You have already specialized in " .. skill .. ", another manufacturing skill. If you abandon it, you will lose ALL skill in that craft. Even if you return to it at a later time, you will have to begin anew."
+					"Kau sudah mendalami " .. skill .. ", keahlian pembuatan yang lain. Kalau kau meninggalkannya, SELURUH keahlian kerajinan itu hilang. Sekalipun kelak kau kembali, kau harus memulai dari awal."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Are you absolutely certain you want to abandon your " .. skill .. " trade?",
-				{"Yes, I'm entirely certain.", "I'm not sure."},
+				"Kau benar-benar yakin ingin meninggalkan " .. skill .. " keahlian ini?",
+				{"Ya, aku benar-benar yakin.", "Aku tidak yakin."},
 				{}
 			)
 
@@ -1012,20 +1012,20 @@ crafting = {
 				player:dialogSeq(
 					{
 						t,
-						"If you continue, you will loose your " .. skill .. " skill."
+						"Kalau kau lanjutkan, kau akan kehilangan " .. skill .. " itu."
 					},
 					1
 				)
 
 				local confirm = player:menuSeq(
-					"This is your last chance to turn back! Do you REALLY want to do this?",
-					{"Yes.", "No."},
+					"Ini kesempatan terakhirmu untuk mundur! Kau BENAR-BENAR ingin melakukannya?",
+					{"Ya.", "Tidak."},
 					{}
 				)
 
 				if confirm == 1 then
 					crafting.removeSpecialization(player, skill)
-					player:dialogSeq({t, "It is done."}, 0)
+					player:dialogSeq({t, "Sudah selesai."}, 0)
 				elseif confirm == 2 then
 					return
 				end
@@ -1050,7 +1050,7 @@ crafting = {
 			player:dialogSeq(
 				{
 					t,
-					"You are not ready to specialize in a craft yet, come back later."
+					"Kau belum siap mendalami satu kerajinan. Kembalilah nanti."
 				},
 				0
 			)
@@ -1081,22 +1081,22 @@ crafting = {
 		player:dialogSeq(
 			{
 				t,
-				"You can only specialize in one manufacturing craft at a time. If you change your mind later, you will lose all of the skill you worked for in that craft.",
-				"For a mere " .. cost .. " gold, I will help you specialize in " .. skillName .. "."
+				"Kau hanya bisa mendalami satu kerajinan pembuatan pada satu waktu. Kalau nanti kau berubah pikiran, seluruh keahlian yang kau bangun di kerajinan itu akan hilang.",
+				"Hanya dengan " .. cost .. " emas, akan kubantu kau mendalami " .. skillName .. "."
 			},
 			1
 		)
 
 		local choice = player:menuSeq(
-			"Are you willing to pay " .. cost .. " gold?",
-			{"Yes, I wish to become a " .. trade .. ".", "No thanks."},
+			"Bersediakah kau membayar " .. cost .. " emas?",
+			{"Ya, aku ingin menjadi " .. trade .. ".", "Tidak, terima kasih."},
 			{}
 		)
 
 		if choice == 1 then
 			if player.money < cost then
 				player:dialogSeq(
-					{t, "You need to get " .. cost .. " gold first."},
+					{t, "Kau harus mendapatkan " .. cost .. " emas dulu."},
 					0
 				)
 				return
@@ -1105,7 +1105,7 @@ crafting = {
 			player:removeGold(cost)
 
 			player:addLegend(
-				"Specialized in " .. skillName,
+				"Mendalami " .. skillName,
 				"specialized_in_" .. skill,
 				icon,
 				128
@@ -1118,7 +1118,7 @@ crafting = {
 			)
 
 			player:dialogSeq(
-				{t, "It is done, welcome to the world of " .. skillName .. "."},
+				{t, "Selesai sudah. Selamat datang di dunia " .. skillName .. "."},
 				1
 			)
 		elseif choice == 2 then

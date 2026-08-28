@@ -8,7 +8,7 @@ flip_coin = {
 		end
 
 		if (player.magic < player.maxMagic *.025) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		player.magic = player.magic - magic
@@ -19,12 +19,12 @@ flip_coin = {
 			player:setAether("afterlifes_embrace_rogue", 0)
 			player:setAether("mingkens_judgement_rogue", 0)
 			player:setAether("calculating_blow_rogue", 0)
-			player:sendMinitext("Your lucky day! :)")
-			player:talk(2, "It's my lucky day!")
+			player:sendMinitext("Hari keberuntunganmu! :)")
+			player:talk(2, "Ini hari keberuntunganku!")
 			player:playSound(85)
 			player:sendAnimation(11)
 		else
-			player:sendMinitext("No luck :{")
+			player:sendMinitext("Sial :{")
 		end
 		player:setAether("flip_coin", 45000)
 		player:sendStatus()

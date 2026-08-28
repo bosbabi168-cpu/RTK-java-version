@@ -9,16 +9,16 @@ BaekNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell"}
+		local opts = {"Beli", "Jual"}
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				BaekNpc.buyItems()
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				BaekNpc.sellItems()
@@ -63,7 +63,7 @@ BaekNpc = {
 				player:dialogSeq(
 					{
 						baekDialog,
-						"You are too young to be changing your mind on such matters. Return later, and we can talk again."
+						"Kau terlalu muda untuk berubah pikiran soal hal semacam ini. Kembalilah nanti dan kita bisa bicara lagi."
 					},
 					0
 				)
@@ -74,7 +74,7 @@ BaekNpc = {
 				player:dialogSeq(
 					{
 						baekDialog,
-						"You cannot join an NPC subpath while you belong to a PC subpath."
+						"Kau tidak bisa bergabung dengan subjalur NPC selagi kau bagian dari subjalur PC."
 					},
 					0
 				)
@@ -82,13 +82,13 @@ BaekNpc = {
 			end
 
 			if (not player:karmaCheck("ox") and not Config.freeNpcSubpathsEnabled) then
-				player:dialogSeq({baekDialog, "Come back when your karma is higher."}, 0)
+				player:dialogSeq({baekDialog, "Kembalilah kalau karmamu sudah lebih tinggi."}, 0)
 				return
 			end
 
 			if (player.quest["blessed_by_watcher"] == 0 and not Config.freeNpcSubpathsEnabled) then
 				-- not blessed
-				player:dialogSeq({baekDialog, "You have not been blessed."}, 0)
+				player:dialogSeq({baekDialog, "Kau belum diberkati."}, 0)
 				return
 			end
 
@@ -98,7 +98,7 @@ BaekNpc = {
 
 			if player.class > 4 then
 				player:dialogSeq(
-					{baekDialog, "You have already committed to a subpath."},
+					{baekDialog, "Kau sudah terikat pada satu subjalur."},
 					0
 				)
 				return
@@ -122,11 +122,11 @@ BaekNpc = {
 			player:dialogSeq(
 				{
 					baekDialog,
-					"Hmm... yes, I have studied the ways of the four totem animals. Do you wish to attain knowledge and power few mortals will know?",
-					"You must be committed to serve the totem animals. Should you choose this arduous path, you will NEVER be able to join a subpath.",
-					"To prove your devotion, you must make many sacrifices. First, you must bring to me a Favor from one of the Mythic animals.",
-					"Then you must bring me ten hides from the most dreaded of caves, where the exits are not easily found and the enemies hide in shadows.",
-					"Finally, you must sacrifice 1,000,000,000 experience to complete the most difficult studying involved."
+					"Hmm... ya, aku sudah mempelajari jalan keempat hewan totem. Kau ingin memperoleh pengetahuan dan kekuatan yang hanya diketahui segelintir manusia?",
+					"Kau harus berkomitmen melayani hewan-hewan totem. Kalau memilih jalan berat ini, kau TIDAK AKAN PERNAH bisa bergabung dengan subjalur.",
+					"Untuk membuktikan pengabdianmu, kau harus banyak berkorban. Pertama, bawakan aku satu Favor dari salah satu hewan Mythic.",
+					"Lalu bawakan aku sepuluh kulit dari gua yang paling ditakuti, tempat jalan keluarnya sulit ditemukan dan musuh bersembunyi dalam bayang-bayang.",
+					"Terakhir, kau harus mengorbankan 1.000.000.000 pengalaman untuk menuntaskan bagian pelajaran yang paling sulit."
 				},
 				1
 			)
@@ -158,7 +158,7 @@ BaekNpc = {
 				player:dialogSeq(
 					{
 						baekDialog,
-						"If you ally with a Mythic animal, they will give you Favor."
+						"Kalau kau bersekutu dengan hewan Mythic, ia akan memberimu Favor."
 					},
 					0
 				)
@@ -173,7 +173,7 @@ BaekNpc = {
 				player:dialogSeq(
 					{
 						baekDialog,
-						"You have forgotten the hides! As punishment for failing to follow my instructions, you must now bring me another Favor as well."
+						"Kau melupakan kulitnya! Sebagai hukuman karena tidak mengikuti petunjukku, sekarang kau juga harus membawakan satu Favor lagi."
 					},
 					0
 				)
@@ -188,7 +188,7 @@ BaekNpc = {
 				player:dialogSeq(
 					{
 						baekDialog,
-						"You must have forgotten the experience needed! As punishment for failing to follow my instructions, you must now bring me another Favor as well as more hides."
+						"Kau pasti melupakan pengalaman yang diperlukan! Sebagai hukuman karena tidak mengikuti petunjukku, sekarang kau harus membawakan satu Favor lagi beserta lebih banyak kulit."
 					},
 					0
 				)
@@ -232,14 +232,14 @@ BaekNpc = {
 			player:dialogSeq(
 				{
 					tbook,
-					"You study for many days under the tutelage of Baek. You learn many rituals and legends."
+					"Kau belajar berhari-hari di bawah bimbingan Baek. Kau mempelajari banyak ritual dan legenda."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					baekDialog,
-					"You are ready. You will now be able to learn new rituals from your Guildmaster. Go well, my friend!"
+					"Kau sudah siap. Sekarang kau bisa mempelajari ritual baru dari Guildmaster-mu. Selamat jalan, kawan!"
 				},
 				0
 			)
@@ -251,13 +251,13 @@ BaekNpc = {
 			player:dialogSeq(
 				{
 					baekDialog,
-					"Hello there, you're looking for a compass, huh?",
-					"Well, I don't have the normal compasses, they are so dull.",
-					"Seriously, who really needs a compass that only points one way?",
-					"Everybody knows which way north is, it's to the north!",
-					"No, no... my compasses have a real use. They show you how to get to some place.",
-					"I don't bother with just the basic places, if you can't find Buya or Koguryo, then you just don't deserve to have eyes.",
-					"Anyways, if there is some place you need to go tell me, and I can make a compass to get you there."
+					"Halo, kau mencari kompas, ya?",
+					"Aku tidak menjual kompas biasa; membosankan sekali.",
+					"Sungguh, siapa yang butuh kompas yang cuma menunjuk satu arah?",
+					"Semua orang tahu utara itu di mana; ya di utara!",
+					"Tidak, tidak... kompasku benar-benar berguna. Ia menunjukkan cara mencapai suatu tempat.",
+					"Aku tidak repot dengan tempat-tempat sepele; kalau kau tidak bisa menemukan Buya atau Koguryo, kau memang tidak pantas punya mata.",
+					"Pokoknya, kalau ada tempat yang perlu kau tuju, katakan, dan aku bisa membuatkan kompas untuk ke sana."
 				},
 				0
 			)
@@ -271,12 +271,12 @@ BaekNpc = {
 				player:dialogSeq(
 					{
 						baekDialog,
-						"A compass to Nagnag's palace? They seem to be in high demand these days.",
-						"Unfortunately, it is in such high demand that I have run out of parts for it.",
-						"If you were to get the parts I need, I could show you what you need to do.",
-						"Bring me a soup bowl, to hold the water in.",
-						"A bit of fine metal, for the needle.",
-						"Get that, and then come back to me."
+						"Kompas ke istana Nagnag? Belakangan ini banyak yang mencarinya.",
+						"Sayangnya permintaannya begitu tinggi sampai bahanku habis.",
+						"Kalau kau mau mengambilkan bahan yang kubutuhkan, akan kutunjukkan apa yang harus kau lakukan.",
+						"Bawakan aku mangkuk sup untuk menampung airnya.",
+						"Sedikit fine metal untuk jarumnya.",
+						"Ambil itu, lalu kembalilah kepadaku."
 					},
 					0
 				)
@@ -288,7 +288,7 @@ BaekNpc = {
 					player:dialogSeq(
 						{
 							baekDialog,
-							"Where is the soup bowl? Can't do anything without it, you know."
+							"Mana mangkuk supnya? Tanpa itu tidak ada yang bisa kukerjakan."
 						},
 						0
 					)
@@ -298,7 +298,7 @@ BaekNpc = {
 					player:dialogSeq(
 						{
 							baekDialog,
-							"I also need the Fine metal, my shipment hasn't arrived. Come back when you get some."
+							"Aku juga butuh Fine metal; kirimanku belum datang. Kembalilah kalau kau sudah punya."
 						},
 						0
 					)
@@ -311,10 +311,10 @@ BaekNpc = {
 				player:dialogSeq(
 					{
 						baekDialog,
-						"Ahhh, now let me see, what were the directions again... 192... 284... 82... 76...",
-						"A little water for the bowl, and we are done! There are a couple of them",
-						"Good luck using it, the parts were not top of the line, so you can only use each one once.",
-						"If you need another just tell me."
+						"Ahhh, coba kulihat, arahnya tadi apa saja... 192... 284... 82... 76...",
+						"Sedikit air untuk mangkuknya, dan selesai! Ini ada beberapa",
+						"Semoga berhasil memakainya; bahannya bukan yang terbaik, jadi tiap kompas hanya bisa dipakai sekali.",
+						"Kalau kau butuh lagi, bilang saja."
 					},
 					0
 				)

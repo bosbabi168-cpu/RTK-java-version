@@ -17,10 +17,10 @@ SmithNpc = {
 		Tools.configureDialog(player, npc)
 
 		local options = {
-			"Buy",
-			"Sell",
-			"Fix Item",
-			"Fix All Items"
+			"Beli",
+			"Jual",
+			"Perbaiki Barang",
+			"Perbaiki Semua Barang"
 		}
 
 		if npc.mapTitle == "Beard Smith" or npc.mapTitle == "Dok Smith" then
@@ -30,7 +30,7 @@ SmithNpc = {
 		end
 
 		if npc.mapTitle == "Gruff Smith" then
-			table.insert(options, "Crafting Skills")
+			table.insert(options, "Keahlian Kerajinan")
 			table.insert(options, "I'm Smelting!")
 			table.insert(options, "Smelting Specialization")
 
@@ -40,7 +40,7 @@ SmithNpc = {
 		end
 
 		if npc.mapTitle == "Thane's Cave" then
-			table.insert(options, "Crafting Skills")
+			table.insert(options, "Keahlian Kerajinan")
 			table.insert(options, "Mine, Mine, Mine")
 		end
 
@@ -51,19 +51,19 @@ SmithNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			options
 		)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			SmithNpc.buy(player, npc)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			SmithNpc.sell(player, npc)
-		elseif choice == "Fix Item" then
+		elseif choice == "Perbaiki Barang" then
 			player:repairExtend()
-		elseif choice == "Fix All Items" then
+		elseif choice == "Perbaiki Semua Barang" then
 			player:repairAll(npc)
-		elseif choice == "Crafting Skills" then
+		elseif choice == "Keahlian Kerajinan" then
 			generalNPC.crafting_skills(player, npc)
 		elseif choice == "I'm Smelting!" then
 			SmithNpc.imsmelting(player, npc)
@@ -98,7 +98,7 @@ SmithNpc = {
 
 		local buyopts = {
 			"Projectiles",
-			"Other items",
+			"Barang lainnya",
 			"Peasant clothes",
 			"Male helms",
 			"Female helmets",
@@ -197,7 +197,7 @@ SmithNpc = {
 		}
 
 		local subchoice = player:menuString(
-			"What do you want to buy today?",
+			"Apa yang ingin kau beli hari ini?",
 			buyopts
 		)
 
@@ -205,7 +205,7 @@ SmithNpc = {
 			player:buyExtend(str, pclothes)
 		elseif subchoice == "Projectiles" then
 			player:buyExtend(str, projectiles)
-		elseif subchoice == "Other items" then
+		elseif subchoice == "Barang lainnya" then
 			player:buyExtend(str, others)
 		elseif subchoice == "Male helms" then
 			player:buyExtend(str, mhelms)
@@ -230,14 +230,14 @@ SmithNpc = {
 
 		player:dialogSeq(
 			{
-				"A somewhat maniacal looking ragged man gleefully greets you. Well, hello! Sure, I can tell ya about mining.",
-				"First, the best place to mine is in rocky areas, obviously. The mountains north and east of here are the best place.",
-				"You need one thing to mine: a mining pick. Say, I happen to have that doo-hickey for sale. What luck!",
-				"Mining is pretty simple. Swing your mining pick at ore.",
-				"If you don't find anything, move around and try a different spot.",
-				"Use your pick to free whatever you came across.",
-				"There are a couple little tricks to the trade, so to speak, but I'll let you discover those yourself.",
-				"Oh, one last thing. Sometimes your pick might break. Don't fear! Just come back here and buy a new one from me!"
+				"Seorang lelaki compang-camping berwajah agak sinting menyambutmu riang. Wah, halo! Tentu, aku bisa bercerita soal menambang.",
+				"Pertama, tempat terbaik menambang jelas daerah berbatu. Pegunungan di utara dan timur sini paling bagus.",
+				"Untuk menambang kau cuma butuh satu benda: beliung tambang. Kebetulan aku menjual barang itu. Untung sekali!",
+				"Menambang itu sederhana. Ayunkan beliungmu ke bijih.",
+				"Kalau tidak menemukan apa-apa, berpindahlah dan coba tempat lain.",
+				"Pakai beliungmu untuk melepaskan apa pun yang kau temukan.",
+				"Ada beberapa kiat kecil dalam pekerjaan ini, tetapi biar kau temukan sendiri.",
+				"Oh, satu lagi. Kadang beliungmu bisa patah. Jangan khawatir! Kembali saja ke sini dan beli yang baru dariku!"
 			},
 			0
 		)
@@ -250,9 +250,9 @@ SmithNpc = {
 
 		player:dialogSeq(
 			{
-				"You're interested in smelting, eh? Yeah, I can spare a couple minutes. Smelting isn't no wimpy craft. It's no coincidence that smelt and welt rhyme.",
-				"But I'm not gonna be held responsible if you hurt youself, you hear? You'll need a smelting agreement before any smart smith will let you near the coals.",
-				"Smithing turns ore or spent metal into useful metal bars. The higher the quality of ore, the better your luck will be.",
+				"Kau tertarik pada peleburan, ya? Boleh, aku punya waktu sebentar. Melebur bukan kerajinan untuk orang lembek.",
+				"Tapi aku tidak mau disalahkan kalau kau melukai diri sendiri, paham? Kau butuh perjanjian peleburan sebelum pandai besi waras mana pun mengizinkanmu mendekati bara.",
+				"Menempa mengubah bijih atau logam bekas menjadi batangan logam yang berguna. Makin baik mutu bijihnya, makin baik pula hasilnya.",
 				"Kalau kau punya lebih banyak untuk dilebur, katakan 'lebur' padaku dan kita mulai."
 			},
 			0
@@ -265,14 +265,14 @@ SmithNpc = {
 		Tools.configureDialog(player, npc)
 
 		if crafting.checkSpecializationLegend(player, "smelting") then
-			player:dialogSeq({"You have already specialized in Smelting."}, 0)
+			player:dialogSeq({"Kau sudah mendalami Smelting."}, 0)
 			return
 		end
 
 		crafting.checkSpecialization(player, npc, "weaving")
 		crafting.checkSpecialization(player, npc, "gemcutting")
 
-		player:dialogSeq({"Smelters make metal from ore. Do you want to specialize in smelting? ((You need to be specialized to become better than 'Accomplished'.))"}, 1)
+		player:dialogSeq({"Peleburan membuat logam dari bijih. Kau mau mendalami peleburan? ((Kau harus mendalaminya untuk bisa melampaui tingkat 'Accomplished'.))"}, 1)
 
 		crafting.addSpecialization(player, npc, "smelting")
 	end,
@@ -283,7 +283,7 @@ SmithNpc = {
 		player:dialogSeq(
 			{
 				"Pengerjaan logam itu sangat berguna. Dengan keahlian ini kau bisa membuat senjata logam bernilai tinggi. Kalau kau membawa logam, katakan 'logam' padaku dan akan kubantu.",
-				"Get together with a tailor and you'll be able to make armor as well. First you'll have to prepare the metal, and the tailor has to prepare the cloth."
+				"Bekerjalah bersama penjahit, dan kau juga bisa membuat zirah. Kau menyiapkan logamnya lebih dulu, penjahit menyiapkan kainnya."
 			},
 			1
 		)
@@ -295,12 +295,12 @@ SmithNpc = {
 		Tools.configureDialog(player, npc)
 
 		if (player.level < 25) then
-			player:dialogSeq({"You are not ready to devote to a craft yet, come back later."}, 0)
+			player:dialogSeq({"Kau belum siap menekuni satu kerajinan. Kembalilah nanti."}, 0)
 			return
 		end
 
 		if crafting.checkSkillLegend(player, "metalworking") then
-			player:dialogSeq({"You have already devoted yourself to the study of Metalworking."}, 0)
+			player:dialogSeq({"Kau sudah menekuni ilmu Metalworking."}, 0)
 			return
 		end
 
@@ -308,7 +308,7 @@ SmithNpc = {
 		crafting.checkSkill(player, npc, "jewelry making")
 		crafting.checkSkill(player, npc, "tailoring")
 
-		player:dialogSeq({"Metalworkers can make metal weapons, and, with help from a tailor, can make armor. Do you wish to become a metalworker?"}, 1)
+		player:dialogSeq({"Ahli logam bisa membuat senjata logam, dan dengan bantuan penjahit bisa membuat zirah. Kau ingin menjadi ahli logam?"}, 1)
 
 		crafting.addSkill(player, npc, "metalworking")
 	end,
@@ -464,41 +464,41 @@ SmithNpc = {
 
 		if player.quest["gruff_ring"] == 0 then
 			player.quest["gruff_ring"] = 1
-			player:dialogSeq({"Hello, gruff one. I'm Gruff. I can make you a ring if you're gruff enough."}, 1)
+			player:dialogSeq({"Halo, orang kasar. Aku Gruff. Aku bisa membuatkanmu cincin kalau kau cukup kasar."}, 1)
 			player:flushKills("trapdoor_spider")
-			player:dialogSeq({"Find the Trapdoor spider. Slay it and bring me Hunang's axe."}, 1)
+			player:dialogSeq({"Temukan Trapdoor spider. Bunuh dan bawakan aku kapak Hunang."}, 1)
 		end
 
 		if player.quest["gruff_ring"] == 1 then
 			if player:killCount("trapdoor_spider") == 0 or player:hasItem("hunangs_axe", 1) ~= true then
-				player:dialogSeq({"Let me know when you've got that Hunang's axe and killed the Trapdoor spider."}, 0)
+				player:dialogSeq({"Beri tahu aku kalau kapak Hunang sudah kau dapat dan Trapdoor spider sudah kau bunuh."}, 0)
 				return
 			end
 
 			player:removeItem("hunangs_axe", 1)
 			player.quest["gruff_ring"] = 2
-			player:dialogSeq({"Thank you! Now find the Monkey that holds onto an Ambrosia. Bring me the Ambrosia, but spare me the gruff details."}, 1)
+			player:dialogSeq({"Terima kasih! Sekarang cari Monkey yang menggenggam Ambrosia. Bawakan Ambrosia itu, tak usah cerita rincian kasarnya."}, 1)
 		end
 
 		if player.quest["gruff_ring"] == 2 then
 			if player:hasItem("ambrosia", 1) ~= true then
-				player:dialogSeq({"Return to me when you've found the Ambrosia."}, 0)
+				player:dialogSeq({"Temui aku lagi kalau Ambrosia-nya sudah kau temukan."}, 0)
 				return
 			end
 
 			player:removeItem("ambrosia", 1)
 			player.quest["gruff_ring"] = 3
-			player:dialogSeq({"Thank you! Now find Lan and spend some money in his shop. He's having a gruff of a month. Bring back two of his most spiritual rings."}, 1)
+			player:dialogSeq({"Terima kasih! Sekarang cari Lan dan belanjakan uang di tokonya. Bulan ini berat baginya. Bawa pulang dua cincin paling rohaninya."}, 1)
 		end
 
 		if player.quest["gruff_ring"] == 3 then
 			if player:hasItem("exorcist_ring", 2) ~= true then
-				player:dialogSeq({"Return to me when you've got the two rings from Lan."}, 0)
+				player:dialogSeq({"Temui aku lagi kalau dua cincin dari Lan sudah kau dapat."}, 0)
 				return
 			end
 
 			player:removeItem("exorcist_ring", 2)
-			player:dialogSeq({"Thank you. You're a gruff one, alright! Here's the ring I promised."}, 1)
+			player:dialogSeq({"Terima kasih. Kau memang orang kasar! Ini cincin yang kujanjikan."}, 1)
 			player:addItem("gruff_ring", 1)
 			player.quest["gruff_ring"] = 0
 		end
@@ -509,13 +509,13 @@ SmithNpc = {
 		local metalDialog = {graphic = convertGraphic(291, "item"), color = 0}
 
 		if not crafting.checkSkillLegend(player, "metalworking") then
-			player:dialogSeq({smithDialog, "You are not a smith."}, 0)
+			player:dialogSeq({smithDialog, "Kau bukan pandai besi."}, 0)
 			return
 		end
 
 		if os.time() > player.quest["smith_metal_prepared"] then
 			if player:hasItem("metal", 3) ~= true then
-				player:dialogSeq({metalDialog, "You need three units of metal."}, 0)
+				player:dialogSeq({metalDialog, "Kau butuh tiga unit logam."}, 0)
 				return
 			end
 
@@ -523,11 +523,11 @@ SmithNpc = {
 			player.quest["smith_metal_prepared"] = os.time() + 3600
 
 			-- 1 hr
-			player:dialogSeq({metalDialog, "You have finished all of the necessary preparations. You still need to finish the task within the next hour."}, 0)
+			player:dialogSeq({metalDialog, "Seluruh persiapan yang diperlukan sudah selesai. Kau masih harus menuntaskan tugasnya dalam satu jam ke depan."}, 0)
 		end
 
 		if os.time() < player.quest["smith_metal_prepared"] then
-			player:dialogSeq({smithDialog, "You have already prepared some metal, you should use it first."}, 0)
+			player:dialogSeq({smithDialog, "Kau sudah menyiapkan logam; pakai dulu yang itu."}, 0)
 			return
 		end
 	end,
@@ -541,34 +541,34 @@ SmithNpc = {
 			Tools.checkKarma(player)
 
 			if player.class >= 10 or player.class < 5 then
-				player:dialogSeq({angelDialog, "You must be a member of an NPC subpath to forge a weapon."}, 0)
+				player:dialogSeq({angelDialog, "Kau harus jadi anggota subjalur NPC untuk menempa senjata."}, 0)
 				return
 			end
 
 			local choice = player:menuSeq(
-				"To forge a weapon requires many sacrifices. Are you prepared?",
-				{"It is my honor to sacrifice.", "I have made a mistake."},
+				"Menempa senjata menuntut banyak pengorbanan. Kau siap?",
+				{"Berkorban adalah kehormatan bagiku.", "Aku telah berbuat salah."},
 				{}
 			)
 
 			if choice == 1 then
 				if player.level < 99 then
-					player:dialogSeq({smithDialog, "Return when you have reached the 99th insight."}, 0)
+					player:dialogSeq({smithDialog, "Kembalilah kalau kau sudah mencapai pencerahan ke-99."}, 0)
 					return
 				end
 
 				if player.baseHealth < 100 or player.baseMagic < 100 then
-					player:dialogSeq({smithDialog, "You need to increase your Vita and Mana to over 100 each."}, 0)
+					player:dialogSeq({smithDialog, "Kau harus menaikkan Vita dan Mana-mu masing-masing di atas 100."}, 0)
 					return
 				end
 
 				if player.baseWill < 50 or player.baseMight < 50 or player.baseGrace < 50 then
-					player:dialogSeq({smithDialog, "Come back when your base might, will, and grace stats are all at least 50 points each."}, 0)
+					player:dialogSeq({smithDialog, "Kembalilah kalau might, will, dan grace dasarmu masing-masing sudah minimal 50 angka."}, 0)
 					return
 				end
 
 				if player.exp < 200000000 then
-					player:dialogSeq({angelDialog, "You do not have the experience to do this."}, 0)
+					player:dialogSeq({angelDialog, "Pengalamanmu tidak cukup untuk ini."}, 0)
 					return
 				end
 
@@ -648,10 +648,10 @@ SmithNpc = {
 				player:sendStatus()
 				player:calcStat()
 
-				player:dialogSeq({angelDialog, "The sacrifice has been made. A weapon is forged."}, 0)
+				player:dialogSeq({angelDialog, "Pengorbanan telah dilakukan. Sebuah senjata pun ditempa."}, 0)
 			elseif choice == 2 then
 				player:dialogSeq(
-					{angelDialog, "Call on me any time you need my help."}, 0)
+					{angelDialog, "Panggil aku kapan saja kalau kau butuh bantuanku."}, 0)
 			end
 		end
 
@@ -661,9 +661,9 @@ SmithNpc = {
 			player:dialogSeq(
 				{
 					smithDialog,
-					"** Gruff continues working, not looking up at you **",
-					"Yeah, yeah, you can leave the 10 high ore right there on the counter.",
-					" ** He returns his attention to his work **"
+					"** Gruff terus bekerja, tanpa mengangkat wajah ke arahmu **",
+					"Ya, ya, taruh saja 10 bijih bermutu tinggi itu di meja.",
+					" ** Ia kembali menekuni pekerjaannya **"
 				},
 				0
 			)
@@ -676,9 +676,9 @@ SmithNpc = {
 				player:dialogSeq(
 					{
 						smithDialog,
-						"** You place the ore on the counter along with the raven token **",
-						"** Gruff quickly pockets the token, and looks nervously at the door and windows **",
-						"Alright, so you might have found this token, but you still need the Guild's Sanhae branch codeword? You got that?"
+						"** Kau meletakkan bijih itu di meja bersama tanda gagak **",
+						"** Gruff cepat-cepat menyakukan tanda itu dan melirik gugup ke pintu dan jendela **",
+						"Baik, tanda ini mungkin sudah kau dapat, tetapi kau masih butuh kata sandi cabang Sanhae Guild. Kau punya?"
 					},
 					0
 				)
@@ -686,9 +686,9 @@ SmithNpc = {
 				player:dialogSeq(
 					{
 						smithDialog,
-						"** Gruff continues working, not looking up at you **",
-						"Yeah, yeah, you can leave the 10 high ore right there on the counter.",
-						" ** He returns his attention to his work **"
+						"** Gruff terus bekerja, tanpa mengangkat wajah ke arahmu **",
+						"Ya, ya, taruh saja 10 bijih bermutu tinggi itu di meja.",
+						" ** Ia kembali menekuni pekerjaannya **"
 					},
 					0
 				)
@@ -697,8 +697,8 @@ SmithNpc = {
 			player:dialogSeq(
 				{
 					smithDialog,
-					"So kid, what's the good word?",
-					"** Gruff places one finger on his cheek **"
+					"Jadi, Nak, apa kata sandinya?",
+					"** Gruff menempelkan satu jari di pipinya **"
 				},
 				0
 			)
@@ -724,13 +724,13 @@ SmithNpc = {
 				player:dialogSeq(
 					{
 						smithDialog,
-						"Good, then you're indeed an affiliate of our guild, unlike that other guy who showed up recently. I don't know what his deal was.",
-						"** The smith again shuts the door and locks, he peers out the windows before returning to the counter **",
-						"This smith work is my cover, what I do by day so that I can do... other things in secrecy.",
-						"Everyone in our guild has established a cover - I would imagine you have too.",
-						"Covers help our other work stay in the shadow. My real name isn't even Gruff...",
-						"No one suspects the simple farmer of being an assassin, or the aged librarian for being a smuggler.",
-						"Our covers keep us safe and are the masks we wear to deflect attention. You will need a temporary one for what you are about to do."
+						"Bagus, berarti kau memang bagian dari guild kami, tidak seperti orang lain yang muncul belakangan ini. Entah apa maunya dia.",
+						"** Si pandai besi menutup dan mengunci pintu lagi, mengintip ke luar jendela sebelum kembali ke meja **",
+						"Pekerjaan pandai besi ini kedokku, yang kulakukan siang hari supaya aku bisa melakukan... hal lain secara diam-diam.",
+						"Semua orang di guild kami punya kedok - kurasa kau juga.",
+						"Kedok menjaga pekerjaan kami yang lain tetap dalam bayang-bayang. Nama asliku pun bukan Gruff...",
+						"Tidak ada yang mencurigai petani sederhana sebagai pembunuh bayaran, atau pustakawan tua sebagai penyelundup.",
+						"Kedok menjaga kami tetap aman; itulah topeng yang kami pakai untuk mengalihkan perhatian. Kau butuh satu kedok sementara untuk tugas yang akan kau jalani."
 					},
 					0
 				)
@@ -739,7 +739,7 @@ SmithNpc = {
 				player:removeLegendbyName("spy_subterfuge")
 
 				player:addLegend(
-					"Deceived " .. player.registry["spy_subterfuge"] .. " times with subterfuge",
+					"Deceived " .. player.registry["spy_subterfuge"] .. " kali dengan tipu muslihat",
 					"spy_subterfuge",
 					22,
 					128
@@ -750,8 +750,8 @@ SmithNpc = {
 				player:dialogSeq(
 					{
 						poisonedBraceletDialog,
-						"** Gruff hands you a small bracelet with a slightly protruding pointed end **",
-						"Be careful with this and do not let the point pierce your skin."
+						"** Gruff menyerahkan gelang kecil dengan ujung runcing yang sedikit menonjol **",
+						"Hati-hati dengan benda ini, jangan sampai ujungnya menusuk kulitmu."
 					},
 					0
 				)
@@ -759,14 +759,14 @@ SmithNpc = {
 				player:dialogSeq(
 					{
 						smithDialog,
-						"Our potion store associate Pitch did well in creating the deadly poison that is inside the bracelet.",
-						"As soon as the tip enters the flesh, the poison will drain from the bracelet through the pointed tip.",
-						"You are to deliver the bracelet, rather, its contents to a member of the Imperial Court who is a frequent gambler at the underground casino.",
-						"He has crossed the Guild, threatening to blow covers of some of our associates here in Sanhae.",
-						"This threat must be neutralized and would be a great start in proving yourself in the Guild.",
-						"Head to our Guild's seamstress, Lin, dowm the path here and get measured for some clothes appropriate for this assignment.",
-						"Tell her you need clothes for a 'Special Ocassion', and she will fill you in on the rest.",
-						"If you need another bracelet, come back here and ask for one but it may take a bit of time and ore to make."
+						"Rekan kami pemilik toko ramuan, Pitch, berhasil membuat racun mematikan yang ada di dalam gelang itu.",
+						"Begitu ujungnya masuk ke daging, racunnya akan mengalir keluar dari gelang lewat ujung runcing itu.",
+						"Tugasmu mengantarkan gelang itu, atau tepatnya isinya, kepada seorang anggota Istana Kekaisaran yang sering berjudi di kasino bawah tanah.",
+						"Ia menentang Guild dan mengancam membongkar kedok beberapa rekan kami di Sanhae.",
+						"Ancaman ini harus dilumpuhkan, dan itu awal yang bagus untuk membuktikan dirimu di Guild.",
+						"Pergilah ke penjahit Guild kami, Lin, di ujung jalan ini, dan mintalah diukur untuk pakaian yang sesuai dengan tugas ini.",
+						"Katakan padanya kau butuh pakaian untuk 'Acara Khusus', dan ia akan menjelaskan selebihnya.",
+						"Kalau kau butuh gelang lagi, kembalilah ke sini dan minta, tetapi membuatnya perlu waktu dan bijih."
 					},
 					0
 				)
@@ -774,10 +774,10 @@ SmithNpc = {
 				if player.quest["spy_trial_note"] == 0 then
 					player.quest["spy_trial_note"] = 1
 					player:addItem("suspicious_note", 1)
-					player:sendMinitext("A plain-looking messenger brushes past your shoulder as you feel something slip into your pocket.")
+					player:sendMinitext("Seorang kurir berpenampilan biasa menyerempet bahumu, dan kau merasakan sesuatu terselip ke sakumu.")
 				end
 
-				player:dialogSeq({smithDialog, "Just like I thought, I didn't think we had any business! Go back to the streets, kid..."}, 0)
+				player:dialogSeq({smithDialog, "Sudah kuduga, kita memang tidak ada urusan! Kembalilah ke jalanan, Nak..."}, 0)
 			end
 		end
 
@@ -787,21 +787,21 @@ SmithNpc = {
 			player:dialogSeq(
 				{
 					smithDialog,
-					"You're looking for some coal?",
-					"Sure, I got a ton of the stuff, need it to keep my furnace going."
+					"Kau mencari batu bara?",
+					"Tentu, aku punya banyak, perlu untuk menjaga tungkuku tetap menyala."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Would you like to buy a piece for 20 gold?",
-				{"Yes, please.", "No, thanks."},
+				"Mau beli sekeping seharga 20 emas?",
+				{"Ya, silakan.", "Tidak, terima kasih."},
 				{}
 			)
 
 			if choice == 1 then
 				if player.money < 20 then
-					player:dialogSeq({smithDialog, "Try to rob me, will ya? Get your poor carcass out of here before I give you a hot poker in the eye!"}, 0)
+					player:dialogSeq({smithDialog, "Berani-beraninya kau merampokku? Bawa bangkaimu keluar dari sini sebelum kutusuk matamu dengan besi panas!"}, 0)
 					return
 				end
 
@@ -810,23 +810,23 @@ SmithNpc = {
 				player:addItem("coal", 1)
 
 				local choice2 = player:menuSeq(
-					"There you go... bet you need to know how to light it now, right?",
-					{"Uhh.. yeah", "No, I already know!"},
+					"Ini dia... pasti sekarang kau perlu tahu cara menyalakannya, kan?",
+					{"Uhh.. yeah", "Tidak, aku sudah tahu!"},
 					{}
 				)
 
 				if choice2 == 1 then
-					player:dialogSeq({smithDialog, "Well, coal may be cheap, but knowledge isn't. It will cost you 5,000 for that secret."}, 1)
+					player:dialogSeq({smithDialog, "Batu bara memang murah, tetapi pengetahuan tidak. Rahasia itu harganya 5.000."}, 1)
 
 					local choice3 = player:menuSeq(
-						"Do you want to buy the knowledge for 5,000 gold?",
-						{"Fine, yes.", "No way!"},
+						"Kau mau membeli pengetahuan itu seharga 5.000 emas?",
+						{"Baiklah, ya.", "Tidak sudi!"},
 						{}
 					)
 
 					if choice3 == 1 then
 						if player.money < 5000 then
-							player:dialogSeq({smithDialog, "Well, I have the knowledge, but you don't have the cash. Come back when you do."}, 0)
+							player:dialogSeq({smithDialog, "Pengetahuannya ada padaku, tetapi uangmu tidak ada. Kembalilah kalau sudah punya."}, 0)
 							return
 						end
 
@@ -836,20 +836,20 @@ SmithNpc = {
 						player:dialogSeq(
 							{
 								smithDialog,
-								"Thanks for the gold, now for the secret... just mix the coal with some flash dust, that will light it right away!",
-								"Good luck to ya, come back any time you need some coal."
+								"Terima kasih emasnya, sekarang rahasianya... campur saja batu baranya dengan flash dust, itu akan langsung menyalakannya!",
+								"Semoga berhasil, kembalilah kapan saja kalau butuh batu bara."
 							},
 							0
 						)
 					elseif choice3 == 2 then
-						player:dialogSeq({smithDialog, "Well, if you ever want to learn, come back to me."}, 0)
+						player:dialogSeq({smithDialog, "Nah, kalau suatu saat kau ingin belajar, kembalilah kepadaku."}, 0)
 						return
 					end
 				elseif choice2 == 2 then
 					player:dialogSeq({smithDialog, "Bah!"}, 0)
 				end
 			elseif choice == 2 then
-				player:dialogSeq({smithDialog, "OK, don't need your stinking money anyways."}, 0)
+				player:dialogSeq({smithDialog, "Ya sudah, aku juga tidak butuh uang busukmu."}, 0)
 			end
 		end
 
@@ -870,16 +870,16 @@ SmithNpc = {
 				player:dialogSeq(
 					{
 						smithDialog,
-						"So Min sent you to me, I see she even told you to bring the Stardrop. You must be on the path to virtue.",
-						"You look confused... I can imagine, Min and I, friends. You only know half the legend my friend, but you are on the path to learn the rest.",
-						"In time you will understand.",
-						"So, you need a sword of the stars. I see our old friend is still keeping guard after all this time.",
-						"It has been so long, I never imagined the day would come that I would be in this situation.",
-						"So let me have that Stardrop, and I will forge you one.",
-						"Be warned! This sword is more of a sign, and not a weapon. It will not last long in battle, and is very fragile!",
-						"Take care of it, if you make it through to the guard, you will have proven yourself careful, and trustworthy to have the secret that awaits you.",
-						"I know the challenge is great, and I will make three such swords for you, but no more.",
-						"I recommend you only take one at a time, until you get what you seek."
+						"Jadi Min mengirimmu kepadaku, bahkan ia menyuruhmu membawa Stardrop. Kau pasti sedang menempuh jalan kebajikan.",
+						"Kau tampak bingung... bisa kubayangkan, Min dan aku, berkawan. Kau baru tahu separuh legendanya, kawan, tetapi kau sedang menempuh jalan untuk mengetahui sisanya.",
+						"Pada waktunya kau akan mengerti.",
+						"Jadi kau butuh pedang bintang. Rupanya kawan lama kita masih berjaga sampai sekarang.",
+						"Sudah begitu lama; tidak pernah kubayangkan akan tiba hari aku berada dalam keadaan seperti ini.",
+						"Jadi serahkan Stardrop itu, dan akan kutempakan satu untukmu.",
+						"Ingat baik-baik! Pedang ini lebih merupakan tanda, bukan senjata. Ia tidak bertahan lama dalam pertempuran dan sangat rapuh!",
+						"Jagalah baik-baik. Kalau kau berhasil sampai ke penjaga, kau membuktikan dirimu cermat dan layak dipercaya memegang rahasia yang menantimu.",
+						"Aku tahu tantangannya besar, dan akan kubuatkan tiga pedang semacam itu untukmu, tidak lebih.",
+						"Sebaiknya kau bawa satu saja setiap kali, sampai kau mendapat yang kau cari."
 					},
 					1
 				)
@@ -889,21 +889,21 @@ SmithNpc = {
 				if player.quest["star_swords"] <= 1 then
 					player:addItem("star_sword", 1, 0, player.ID)
 					player.quest["star_swords"] = player.quest["star_swords"] + 1
-					player:dialogSeq({smithDialog, "There you go, isn't she beautiful? Take care now."}, 0)
+					player:dialogSeq({smithDialog, "Ini dia, cantik bukan? Hati-hati sekarang."}, 0)
 					return
 				elseif player.quest["star_swords"] == 2 then
 					player:addItem("star_sword", 1, 0, player.ID)
 					player.quest["star_swords"] = player.quest["star_swords"] + 1
-					player:dialogSeq({smithDialog, "There you go, isn't she beautiful? Take care as this is the final sword I am going to make for you."}, 0)
+					player:dialogSeq({smithDialog, "Ini dia, cantik bukan? Hati-hati, sebab ini pedang terakhir yang kubuat untukmu."}, 0)
 					return
 				elseif player.quest["star_swords"] >= 3 then
-					player:dialogSeq({smithDialog, "I have made the sword for you three times now as I said I would. I am unable to make any more."}, 0)
+					player:dialogSeq({smithDialog, "Aku sudah membuatkanmu pedang tiga kali seperti yang kujanjikan. Aku tidak bisa membuat lagi."}, 0)
 					return
 				end
 
 				return
 			else
-				npc:talk(0, npc.name .. ": I have no idea what you're talking about.")
+				npc:talk(0, npc.name .. ": Aku tidak paham apa yang kau bicarakan.")
 			end
 		end
 
@@ -920,30 +920,30 @@ SmithNpc = {
 			local shieldQuest = legends[baseClass]
 
 			if not player:hasLegend(shieldQuest) then
-				player:dialogSeq({smithDialog, "You know nothing of shields. When you learn, perhaps I will help you."}, 1)
+				player:dialogSeq({smithDialog, "Kau tidak tahu apa-apa soal perisai. Kalau kau sudah belajar, mungkin aku akan membantumu."}, 1)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					smithDialog,
-					"Greetings, I see you have come to get a new shield.",
-					"These shields are special as only the Nagnang people know how to make them.",
-					"However, the materials we need to make them are not available in these parts.",
-					"If you would bring me a supply of the items I will use some to make a new shield for you."
+					"Salam, kulihat kau datang untuk mendapatkan perisai baru.",
+					"Perisai ini istimewa karena hanya orang Nagnang yang tahu cara membuatnya.",
+					"Sayangnya bahan yang kami butuhkan tidak tersedia di daerah ini.",
+					"Kalau kau mau membawakan persediaan bahannya, sebagian akan kupakai untuk membuat perisai baru untukmu."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Will you give me 10 Ginko wood and one Metal?",
-				{"Yes, I have it right here.", "Sorry, not now."},
+				"Maukah kau memberiku 10 Ginko wood dan satu Metal?",
+				{"Ya, ada padaku sekarang.", "Maaf, tidak sekarang."},
 				{}
 			)
 
 			if choice == 1 then
 				if player:hasItem("ginko_wood", 10) ~= true or player:hasItem("metal", 1) ~= true then
-					player:dialogSeq({smithDialog, "You do not have the items I need. Oh well."}, 0)
+					player:dialogSeq({smithDialog, "Kau tidak punya bahan yang kubutuhkan. Ya sudah."}, 0)
 					return
 				end
 
@@ -953,9 +953,9 @@ SmithNpc = {
 				local shields = {"tall_shield", "round_buckler", "magicians_ward", "essence_charm"}
 				local shield = shields[baseClass]
 				player:addItem(shield, 1, 0, player.ID)
-				player:dialogSeq({smithDialog, "Good luck to you, and thanks for the materials."}, 0)
+				player:dialogSeq({smithDialog, "Semoga berhasil, dan terima kasih bahannya."}, 0)
 			elseif choice == 2 then
-				player:dialogSeq({smithDialog, "Perhaps another time then. Farewell."}, 0)
+				player:dialogSeq({smithDialog, "Kalau begitu mungkin lain kali. Selamat jalan."}, 0)
 				return
 			end
 		end
@@ -966,14 +966,14 @@ SmithNpc = {
 			player:dialogSeq(
 				{
 					smithDialog,
-					"Shhh! Not so loud, my friend. Yeah, I got some rare merchandise. The magic in 'em is a bit frail, like the ice where they're found.",
-					"They'll bind to your soul, only permitting you to wield them. And after you've thrown your last snowball, if you catch my drift, they'll join you in the everafter."
+					"Ssst! Jangan keras-keras, kawan. Ya, aku punya barang langka. Sihir di dalamnya agak rapuh, seperti es tempat benda itu ditemukan.",
+					"Benda itu akan terikat pada jiwamu dan hanya kau yang bisa memakainya. Dan setelah kau melempar bola salju terakhirmu, kalau kau paham maksudku, benda itu akan menyertaimu ke alam baka."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"What can I offer you?",
+				"Apa yang bisa kutawarkan padamu?",
 				{"Giasomo stick (20,000 gold)", "Frozen spear (400,000 gold)"},
 				{}
 			)
@@ -981,12 +981,12 @@ SmithNpc = {
 			if choice == 1 then
 				-- giasomo stick
 				if os.time() < player.registry["othotsk_timer"] then
-					player:dialogSeq({smithDialog, "Sorry, faithful customer. I don't have anything else for you right now. Mayhbe in a week or two."}, 0)
+					player:dialogSeq({smithDialog, "Maaf, pelanggan setia. Aku tidak punya apa-apa lagi untukmu saat ini. Mungkin seminggu dua minggu lagi."}, 0)
 					return
 				end
 
 				if player.money < 20000 then
-					player:dialogSeq({smithDialog, "Please come back when you have the money."}, 0)
+					player:dialogSeq({smithDialog, "Silakan kembali kalau uangnya sudah ada."}, 0)
 					return
 				end
 
@@ -995,16 +995,16 @@ SmithNpc = {
 				player:addItem("giasomo_stick", 1, 0, player.ID)
 				player.registry["othotsk_timer"] = os.time() + 604800
 
-				player:dialogSeq({smithDialog, "Quite a bizarre little item, isn't it? There you go, your own Giasomo stick."}, 0)
+				player:dialogSeq({smithDialog, "Barang kecil yang aneh, bukan? Ini dia, Giasomo stick milikmu sendiri."}, 0)
 			elseif choice == 2 then
 				-- frozen spear
 				if os.time() < player.registry["othotsk_timer"] then
-					player:dialogSeq({smithDialog, "Sorry, faithful customer. I don't have anything else for you right now. Maybe in a week or two."}, 0)
+					player:dialogSeq({smithDialog, "Maaf, pelanggan setia. Aku tidak punya apa-apa lagi untukmu saat ini. Mungkin seminggu dua minggu lagi."}, 0)
 					return
 				end
 
 				if player.money < 400000 then
-					player:dialogSeq({smithDialog, "Please come back when you have the money."}, 0)
+					player:dialogSeq({smithDialog, "Silakan kembali kalau uangnya sudah ada."}, 0)
 					return
 				end
 
@@ -1013,7 +1013,7 @@ SmithNpc = {
 				player:addItem("frozen_spear", 1, 0, player.ID)
 				player.registry["othotsk_timer"] = os.time() + 604800 * 2
 
-				player:dialogSeq({smithDialog, "I've never seen such a wacky weapon... Those ogres sure are strange ones. There is your Frozen spear. I hope you like it."}, 0)
+				player:dialogSeq({smithDialog, "Belum pernah kulihat senjata seaneh ini... Ogre memang makhluk ganjil. Ini Frozen spear-mu. Semoga kau suka."}, 0)
 			end
 		end
 
@@ -1023,9 +1023,9 @@ SmithNpc = {
 				player:dialogSeq(
 					{
 						smithDialog,
-						"Yes, I can forge metal.\n\nFor what do you need forged metal?",
-						"An orb you say, what kind of orb?",
-						"You need some special metal for a magic orb, go talk to my friend Thane in the wilderness, maybe he can help you."
+						"Ya, aku bisa menempa logam.\n\nUntuk apa kau butuh logam tempa?",
+						"Bola katamu, bola macam apa?",
+						"Kau butuh logam khusus untuk bola sihir; bicaralah dengan kawanku Thane di belantara, mungkin ia bisa membantu."
 					},
 					1
 				)
@@ -1041,9 +1041,9 @@ SmithNpc = {
 				player:dialogSeq(
 					{
 						smithDialog,
-						"You need special metal?",
-						"Well... I have this strange metal that I sometimes come across deep in the ground.",
-						"It glows this odd blue color.\n\nWhat do you need it for?"
+						"Kau butuh logam khusus?",
+						"Yah... aku punya logam aneh yang kadang kutemukan jauh di dalam tanah.",
+						"Warnanya biru ganjil dan bercahaya.\n\nUntuk apa kau membutuhkannya?"
 					},
 					1
 				)
@@ -1057,9 +1057,9 @@ SmithNpc = {
 					player:dialogSeq(
 						{
 							smithDialog,
-							"Well, I will make you a deal.",
-							"If you can gather me 5 poor, medium, and high ore, I'll give you this here strange metal.",
-							"Sound like a deal?\n\nLet me know when you have all the ore."
+							"Baiklah, aku tawarkan kesepakatan.",
+							"Kalau kau bisa mengumpulkan 5 bijih bermutu rendah, sedang, dan tinggi untukku, logam aneh ini kuberikan padamu.",
+							"Setuju?\n\nBeri tahu aku kalau seluruh bijihnya sudah kau punya."
 						},
 						1
 					)
@@ -1072,11 +1072,11 @@ SmithNpc = {
 						player:removeItem("ore_high", 5)
 						player.quest["forgotten_path"] = 10
 
-						player:dialogSeq({smithDialog, "Thanks, here you can have this strange metal. Good luck!"}, 0)
+						player:dialogSeq({smithDialog, "Terima kasih, ambil logam aneh ini. Semoga berhasil!"}, 0)
 
 						return
 					else
-						player:dialogSeq({smithDialog, "Well... where is it?"}, 0)
+						player:dialogSeq({smithDialog, "Nah... mana barangnya?"}, 0)
 						return
 					end
 				end

@@ -9,7 +9,7 @@ TailorNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell", "Unengrave cashshop item"}
+		local opts = {"Beli", "Jual", "Hapus ukiran barang cashshop"}
 		local buyopts = {
 			"Peasant clothes",
 			"Mage's short garb",
@@ -17,7 +17,7 @@ TailorNpc = {
 			"Poet's robes",
 			"Poet's mantles",
 			"Rogue's clothes",
-			"Other items"
+			"Barang lainnya"
 		}
 
 		local choice
@@ -72,13 +72,13 @@ TailorNpc = {
 		local oitems = {Item("green_cloak").id, Item("wedding_cloak").id}
 
 		local menu = player:menuString(
-			"Hello! What would you like to do today?",
+			"Halo! Apa yang ingin kau lakukan hari ini?",
 			opts
 		)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			choice = player:menuString(
-				"What do you want to buy today?",
+				"Apa yang ingin kau beli hari ini?",
 				buyopts,
 				{}
 			)
@@ -99,7 +99,7 @@ TailorNpc = {
 				choice2 = rclothes
 			elseif choice == "Spiritual mantles" then
 				choice2 = pmantles
-			elseif choice == "Other items" then
+			elseif choice == "Barang lainnya" then
 				choice2 = oitems
 			end
 
@@ -107,7 +107,7 @@ TailorNpc = {
 				"I think I can accomodate some of the things you need. What would you like?",
 				choice2
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				TailorNpc.sellItems()

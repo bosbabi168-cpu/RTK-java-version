@@ -6,7 +6,7 @@ vigor_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 280, 180, 0)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -32,7 +32,7 @@ touch_of_health_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 280, 180, 1)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -58,7 +58,7 @@ balm_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 280, 180, 2)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -84,7 +84,7 @@ restoration_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 280, 180, 3)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 

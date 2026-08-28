@@ -8,7 +8,7 @@ control_flames = {
 			return
 		end
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -36,7 +36,7 @@ control_flames = {
 				-- cast
 
 				if player.magic < magicCost then
-					player:sendMinitext("Your will is too weak.")
+					player:sendMinitext("Kehendakmu terlalu lemah.")
 					return
 				end
 
@@ -53,7 +53,7 @@ control_flames = {
 					player:sendStatus()
 					player:playSound(708)
 					player:playSound(1)
-					player:sendMinitext("You cast Wall of flames.")
+					player:sendMinitext("Kau merapal Wall of flames.")
 				end
 			end
 		else

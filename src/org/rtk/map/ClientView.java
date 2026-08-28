@@ -94,6 +94,44 @@ public interface ClientView {
     void playerSpellRemoved(User sd, int slot);
 
     /**
+     * Satu slot buku mantra terisi/berubah (K3.2) — pasangan
+     * {@link #playerSpellRemoved}. Dikirim untuk tiap slot terisi saat
+     * masuk dunia (cermin {@code pc_loadmagic}) dan saat skrip menambah
+     * mantra ({@code pcl_addspell} → {@code clif_sendmagic} di C).
+     */
+    void playerSpellSlotChanged(User sd, int slot);
+
+    /**
+     * Profil pemain sendiri (R1) — pengganti {@code sendMyStatus} TAHAP 1.
+     * Isinya yang TIDAK bisa dihitung klien: nama kelas, gelar, klan,
+     * pasangan, sisa pengalaman ke tingkat berikutnya, dan persen bilah XP.
+     */
+    void playerProfile(User sd);
+
+    /**
+     * Pemain dialihkan ke map server lain (R3/C3) — {@code clif_transfer}.
+     *
+     * <p>Server ini tidak memuat peta tujuannya; klien diberi alamat server
+     * yang memuatnya lalu menyambung ke sana. Posisi tujuannya sendiri ikut
+     * lewat jalur simpan ({@code destMap/destX/destY} → {@code lastPos}),
+     * bukan lewat paket ini.</p>
+     */
+    void playerTransferred(User sd, String host, int port, int m, int x, int y);
+
+    /** Kalender dunia berubah (R2) — {@code clif_sendtime}. */
+    void worldTimeChanged(User sd);
+
+    /** Daftar kota (R1); namanya saja, seperti {@code clif_sendtowns}. */
+    void townListToPlayer(User sd, java.util.List<String> kota);
+
+    /**
+     * Papan peringkat (R1).
+     *
+     * @param baris tiap baris {@code {int peringkat, String nama, long nilai}}
+     */
+    void rankingToPlayer(User sd, String judul, java.util.List<Object[]> baris);
+
+    /**
      * Satu baris obrolan yang <b>hanya pemain ini</b> yang melihatnya,
      * seolah diucapkan oleh benda tertentu.
      *

@@ -8,7 +8,7 @@ wine = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("Spirits can't do that.")
+			player:sendMinitext("Arwah tidak bisa melakukan itu.")
 			return
 		end
 
@@ -31,7 +31,7 @@ thick_wine = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("Spirits can't do that.")
+			player:sendMinitext("Arwah tidak bisa melakukan itu.")
 			return
 		end
 
@@ -53,7 +53,7 @@ rice_wine = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("Spirits can't do that.")
+			player:sendMinitext("Arwah tidak bisa melakukan itu.")
 			return
 		end
 

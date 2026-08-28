@@ -76,19 +76,19 @@ BeachWarNpc = {
 		local diff
 
 		---------------Table Inserts-----------------------------
-		table.insert(opts, "How To Play?")
+		table.insert(opts, "Cara Bermain?")
 
 		if core.gameRegistry["beach_war_open"] == 1 then
 			if player.registry["beach_war_team"] == 0 and core.gameRegistry[
 				"beach_war_open"
 			] == 1 then
-				table.insert(opts, "Register For Beach War")
+				table.insert(opts, "Daftar untuk Beach War")
 			end
 			if player.registry["beach_war_team"] > 0 then
-				table.insert(opts, "I can't register!")
+				table.insert(opts, "Aku tidak bisa mendaftar!")
 			end
 		end
-		table.insert(opts, "Exit")
+		table.insert(opts, "Keluar")
 
 		if core.gameRegistry["beach_war_start_time"] > os.time() then
 			--if the game is open, get timer string
@@ -98,27 +98,27 @@ BeachWarNpc = {
 		----------------------------------------------------------
 
 		local menu = player:menuString(
-			n .. "Hello, the game will start in few minutes.\n" .. str .. "\nIn the waiting room: " .. #pc,
+			n .. "Halo, permainan akan dimulai beberapa menit lagi.\n" .. str .. "\nDi ruang tunggu: " .. #pc,
 			opts
 		)
 
 		--Display the menu
 
 		-----------------Menu Options-------------------------
-		if menu == "How To Play?" then
+		if menu == "Cara Bermain?" then
 			player:dialogSeq(
 				{
 					t,
-					n .. "Beach War is a game where you use your water gun to soak members of the opposing team.",
-					n .. "A player can get soaked once and stay in the game, but a second shot will send you to the sidelines for a short time.",
-					n .. "Your gun can only hold 10 shots worth of water, but it will be slowly refilled if you stand by the pool at the center of the map.",
-					n .. "The game ends when one team reaches a target score, based on the number of players."
+					n .. "Beach War adalah permainan tempat kau memakai pistol air untuk membasahi anggota regu lawan.",
+					n .. "Pemain boleh terkena sekali dan tetap bermain, tetapi tembakan kedua akan mengeluarkanmu ke pinggir lapangan untuk sesaat.",
+					n .. "Pistolmu hanya menampung air untuk 10 tembakan, tetapi ia terisi perlahan kalau kau berdiri di dekat kolam di tengah peta.",
+					n .. "Permainan berakhir ketika satu regu mencapai angka sasaran, yang dihitung dari jumlah pemain."
 				},
 				1
 			)
 			player:freeAsync()
 			BeachWarNpc.click(player, npc)
-		elseif menu == "Register For Beach War" then
+		elseif menu == "Daftar untuk Beach War" then
 			if os.time() < player.registry["minigameBan"] then
 				--Check if player is banned from minigames
 				player:popUp("You are currently banned from minigames! Try again later maybe.")
@@ -126,15 +126,15 @@ BeachWarNpc = {
 			end
 
 			local confirm = player:menuSeq(
-				"It will cost 5,000 gold to play. Do you agree?",
-				{"Yes, pay 5,000 gold.", "Nevermind."},
+				"Biaya bermainnya 5.000 emas. Kau setuju?",
+				{"Ya, bayar 5.000 emas.", "Nevermind."},
 				{}
 			)
 
 			if confirm == 1 then
 				if player.money < 5000 then
 					player:dialogSeq(
-						{t, "You don't have enough gold to play."},
+						{t, "Emasmu tidak cukup untuk bermain."},
 						0
 					)
 					return
@@ -147,12 +147,12 @@ BeachWarNpc = {
 				player:dialogSeq(
 					{
 						t,
-						n .. "Alright, your character is registered for Beach War.\nPlease wait until the game starts!"
+						n .. "Baik, karaktermu terdaftar untuk Beach War.\nTunggu sampai permainannya dimulai!"
 					},
 					1
 				)
 			end
-		elseif menu == "I can't register!" then
+		elseif menu == "Aku tidak bisa mendaftar!" then
 			player.registry["beach_war_times_hit"] = 0
 			player.registry["beach_war_gun_pct"] = 0
 			player.registry["beach_war_flag"] = 0
@@ -161,7 +161,7 @@ BeachWarNpc = {
 			player:dialogSeq(
 				{
 					t,
-					n .. "Looks like a simple paperwork mixup. You should be all set to register now, have fun at the game!"
+					n .. "Sepertinya cuma berkas yang tertukar. Sekarang kau sudah bisa mendaftar. Selamat bermain!"
 				},
 				1
 			)
@@ -640,7 +640,7 @@ BeachWarNpc = {
 						"beach_war_gun_pct"
 					] - 10
 					player:playSound(709)
-					player:sendMinitext("Your water tank is at " .. player.registry["beach_war_gun_pct"] .. "%")
+					player:sendMinitext("Tangki airmu terisi " .. player.registry["beach_war_gun_pct"] .. "%")
 					for i = 1, 8 do
 						pc = getTargetFacing(player, BL_PC, 0, i)
 
@@ -678,7 +678,7 @@ BeachWarNpc = {
 						end
 					end
 				else
-					player:sendMinitext("Your gun is out of water!")
+					player:sendMinitext("Pistolmu kehabisan air!")
 				end
 			end
 		end
@@ -754,7 +754,7 @@ BeachWarNpc = {
 
 				--permanent registry for stat tracking
 
-				target:sendMinitext("You got shot by " .. player.name .. "! Don't get hit again!")
+				target:sendMinitext("Kau ditembak oleh " .. player.name .. "! Jangan sampai kena lagi!")
 				target.registry["beach_war_times_hit"] = target.registry[
 					"beach_war_times_hit"
 				] + 1
@@ -843,9 +843,9 @@ BeachWarNpc = {
 						player.registry["beach_war_gun_pct"] = player.registry[
 							"beach_war_gun_pct"
 						] + 5
-						player:sendMinitext("Refilling: Your water tank is at " .. player.registry["beach_war_gun_pct"] .. "%")
+						player:sendMinitext("Mengisi ulang: tangki airmu terisi " .. player.registry["beach_war_gun_pct"] .. "%")
 					else
-						player:sendMinitext("Your gun's water tank is full!")
+						player:sendMinitext("Tangki air pistolmu penuh!")
 					end
 				end
 			end
@@ -1042,7 +1042,7 @@ BeachWarNpc = {
 				"beach_war_entries"
 			] + 1
 			player:addLegend(
-				"Played in " .. player.registry["beach_war_entries"] .. " Beach Wars",
+				"Bermain di " .. player.registry["beach_war_entries"] .. " Beach Wars",
 				"beach_war_entries",
 				198,
 				16
@@ -1050,7 +1050,7 @@ BeachWarNpc = {
 		else
 			player.registry["beach_war_entries"] = 1
 			player:addLegend(
-				"Played in 1 Beach War",
+				"Bermain dalam 1 Beach War",
 				"beach_war_entries",
 				198,
 				16

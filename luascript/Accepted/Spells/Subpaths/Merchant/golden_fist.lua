@@ -6,18 +6,18 @@ golden_fist = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(lesserFuries) or player.rage > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player.magic = player.magic - magic
 		player:playSound(4)
-		player:sendMinitext("You cast Golden fist.")
+		player:sendMinitext("Kau merapal Golden fist.")
 		player:setDuration("golden_fist", 625000)
 		player:sendAnimation(11)
 		player:sendAction(6, 35)

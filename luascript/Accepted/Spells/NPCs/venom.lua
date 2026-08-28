@@ -9,13 +9,13 @@ venom = {
 		if player.blType == BL_PC then
 			local magicCost = 60
 			if (player.magic < magicCost) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
 			if (target.blType == BL_MOB) then
 				if target:checkIfCast(venoms) then
-					player:sendMinitext("Another spell of this type is already cast.")
+					player:sendMinitext("Mantra lain sejenis ini sudah dirapal.")
 					return
 				end
 				target:setDuration("venom", duration)
@@ -23,7 +23,7 @@ venom = {
 				target.attacker = player.ID
 			elseif (target.blType == BL_PC and player:canPK(target)) then
 				if target:checkIfCast(venoms) then
-					player:sendMinitext("Another spell of this type is already cast.")
+					player:sendMinitext("Mantra lain sejenis ini sudah dirapal.")
 					return
 				end
 				target:setDuration("venom", duration)
@@ -33,7 +33,7 @@ venom = {
 			player:sendAction(6, 35)
 			player:playSound(24)
 			player.magic = player.magic - magicCost
-			player:sendMinitext("You cast Venom.")
+			player:sendMinitext("Kau merapal Venom.")
 			player:sendStatus()
 		elseif player.blType == BL_MOB then
 			if target:checkIfCast(venoms) then
@@ -64,7 +64,7 @@ venom = {
 			end
 
 			if os.time() % 2 == 0 then
-				target:sendMinitext("Poison is spreading through your veins.")
+				target:sendMinitext("Racun menjalar di pembuluh darahmu.")
 			end
 			target:sendAnimation(1, 5)
 		elseif target.blType == BL_MOB then

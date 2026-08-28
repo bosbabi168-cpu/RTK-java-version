@@ -8,10 +8,10 @@ kawlana_potion = {
 			player:addHealthExtend(health, 0, 0, 0, 0, 0)
 			player:removeItem("kawlana_potion", 1, 1)
 
-			player:sendMinitext("The life force in your kawlana potion has dissipated.")
+			player:sendMinitext("Daya hidup dalam ramuan kawlana-mu sudah menguap.")
 
 			if player.health == player.maxHealth then
-				player:sendMinitext("You feel satiated.")
+				player:sendMinitext("Kau merasa kenyang.")
 			end
 		end
 
@@ -24,7 +24,7 @@ kawlana_potion = {
 			player:dialogSeq(
 				{
 					t,
-					"You quickly drink the Kawlana, and your body strengthens against the wind. Now is your chance!"
+					"Kau cepat meminum Kawlana, dan tubuhmu menguat melawan angin. Inilah kesempatanmu!"
 				},
 				0
 			)
@@ -41,8 +41,8 @@ kawlana_potion = {
 			player:dialogSeq(
 				{
 					t,
-					"You drop the kawlana on the ground, and you feel the winds grow stronger as they approach.",
-					"They grow stronger, and the winds start to lash at your skin. Without protection you will not survive."
+					"Kau menjatuhkan kawlana ke tanah, dan kau merasakan angin makin kuat saat mendekat.",
+					"Mereka menguat, dan angin mulai mencambuk kulitmu. Tanpa perlindungan kau tidak akan selamat."
 				},
 				0
 			)

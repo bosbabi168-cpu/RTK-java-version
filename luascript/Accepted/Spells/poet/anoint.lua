@@ -10,7 +10,7 @@ anoint_poet = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -27,12 +27,12 @@ anoint_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 200, 0, 0)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -57,7 +57,7 @@ brothers_of_spirit_poet = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -74,12 +74,12 @@ brothers_of_spirit_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 200, 0, 1)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -103,7 +103,7 @@ gathering_of_power_poet = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -120,12 +120,12 @@ gathering_of_power_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 200, 0, 2)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -149,7 +149,7 @@ natures_family_poet = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -166,12 +166,12 @@ natures_family_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 200, 0, 3)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 

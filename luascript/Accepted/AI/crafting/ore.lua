@@ -69,7 +69,7 @@ ore = {
 
 						if math.random(1, 33) == 1 then
 							damage = damage * 5
-							attacker:sendMinitext("You wind up and take a large chunk!  *CRACK*")
+							attacker:sendMinitext("Kau mengayun dan mengambil bongkahan besar!  *KRAK*")
 						end
 
 						mob:removeHealth(damage)
@@ -77,7 +77,7 @@ ore = {
 					end
 				end
 			else
-				attacker:sendMinitext("You cannot mine with an empty hand.")
+				attacker:sendMinitext("Kau tidak bisa menambang dengan tangan kosong.")
 			end
 		end
 	end,
@@ -93,7 +93,7 @@ ore = {
 				crafting.skillChanceIncrease(attacker, NPC("Thane"), "mining")
 			end
 		end
-		attacker:sendMinitext("You have gathered some Ore.")
+		attacker:sendMinitext("Kau mengumpulkan beberapa Ore.")
 	end,
 	getOre = function(skill)
 		if skill == "novice" then

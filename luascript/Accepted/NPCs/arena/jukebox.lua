@@ -18,28 +18,28 @@ JukeboxNpc = {
 		local playTime = 45
 
 		table.insert(options, "Play a song")
-		table.insert(options, "No thanks")
+		table.insert(options, "Tidak, terima kasih")
 
 		if npc.registry["timer"] > os.time() then
 			player:popUp("Someone else just started a song!\n\nIt would be rude to interrupt.\n\n(NOW PLAYING): Track #" .. player.bgm - 100)
 		else
 			if player.bgm > 100 then
 				menu = player:menuString(
-					"It's a jukebox. Would you like to play a song for " .. goldCost .. " coins?\n\n(NOW PLAYING): Track #" .. player.bgm - 100,
+					"Ini kotak musik. Mau memutar sebuah lagu seharga " .. goldCost .. " keping?\n\n(SEDANG DIPUTAR): Trek #" .. player.bgm - 100,
 					options
 				)
 			else
 				menu = player:menuString(
-					"It's a jukebox. Would you like to play a song for " .. goldCost .. " coins?\n\n(NOW PLAYING): Track #" .. player.bgm + 60,
+					"Ini kotak musik. Mau memutar sebuah lagu seharga " .. goldCost .. " keping?\n\n(SEDANG DIPUTAR): Trek #" .. player.bgm + 60,
 					options
 				)
 			end
 			if menu == "Play a song" then
-				song = player:inputNumberCheck(player:input("Please Enter a BGM number from 1-68:"))
+				song = player:inputNumberCheck(player:input("Masukkan nomor BGM dari 1-68:"))
 				if song >= 1 and song <= 60 then
 					if player.money < goldCost then
 						player:dialogSeq(
-							{t, "Yea, you don't have enough money."},
+							{t, "Yah, uangmu tidak cukup."},
 							0
 						)
 						return
@@ -63,7 +63,7 @@ JukeboxNpc = {
 				elseif song >= 61 and song <= 67 then
 					if player.money < goldCost then
 						player:dialogSeq(
-							{t, "Yea, you don't have enough money."},
+							{t, "Yah, uangmu tidak cukup."},
 							0
 						)
 						return
@@ -85,7 +85,7 @@ JukeboxNpc = {
 				elseif song == 68 then
 					if player.money < goldCost then
 						player:dialogSeq(
-							{t, "Yea, you don't have enough money."},
+							{t, "Yah, uangmu tidak cukup."},
 							0
 						)
 						return
@@ -124,14 +124,14 @@ JukeboxNpc = {
 				"jukebox_songs_purchased"
 			] + 1
 			player:addLegend(
-				"Played " .. player.registry["jukebox_songs_purchased"] .. " songs on the jukebox",
+				"Played " .. player.registry["jukebox_songs_purchased"] .. " lagu di kotak musik",
 				"jukebox",
 				192,
 				16
 			)
 		else
 			player.registry["jukebox_songs_purchased"] = 1
-			player:addLegend("Played 1 song on the jukebox", "jukebox", 192, 16)
+			player:addLegend("Memutar 1 lagu di kotak musik", "jukebox", 192, 16)
 		end
 		if player.registry["jukebox_songs_purchased"] == 100 then
 			broadcast(

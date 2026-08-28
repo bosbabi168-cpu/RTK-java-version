@@ -13,12 +13,12 @@ chongun_uniform = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(invis) or player.state == 2 then
-			player:sendMinitext("You cannot cast Chongun Uniform while invisible.")
+			player:sendMinitext("Kau tidak bisa merapal Chongun Uniform saat tak terlihat.")
 			return
 		end
 

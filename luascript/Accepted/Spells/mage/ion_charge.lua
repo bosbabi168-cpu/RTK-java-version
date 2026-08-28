@@ -9,7 +9,7 @@ ion_charge_mage = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 120) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -36,12 +36,12 @@ ion_charge_mage = {
 			if #target > 0 then
 				local worked = global_zap.cast(player, target[1], damage, 0, 0)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -70,7 +70,7 @@ crescendo_mage = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 120) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -97,12 +97,12 @@ crescendo_mage = {
 			if #target > 0 then
 				local worked = global_zap.cast(player, target[1], damage, 0, 1)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -131,7 +131,7 @@ flight_of_arrows_mage = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 120) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -158,12 +158,12 @@ flight_of_arrows_mage = {
 			if #target > 0 then
 				local worked = global_zap.cast(player, target[1], damage, 0, 2)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -192,7 +192,7 @@ blazing_sands_mage = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 120) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -219,12 +219,12 @@ blazing_sands_mage = {
 			if #target > 0 then
 				local worked = global_zap.cast(player, target[1], damage, 0, 3)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 

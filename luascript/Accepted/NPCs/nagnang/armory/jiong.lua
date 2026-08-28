@@ -10,13 +10,13 @@ JiongNpc = {
 		player.lastClick = npc.ID
 
 		if player.baseClass ~= 4 then
-			player:dialogSeq({t, "Sorry I cannot help your kind."}, 0)
+			player:dialogSeq({t, "Maaf, aku tidak bisa menolong kaummu."}, 0)
 			return
 		end
 
 		if not player:hasLegend("destroyed_nagnang_evil") then
 			player:dialogSeq(
-				{t, "You must finish your path's Nagnang quest."},
+				{t, "Kau harus menyelesaikan tugas Nagnang jalurmu dulu."},
 				0
 			)
 			return
@@ -25,9 +25,9 @@ JiongNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Thank the totems you're here! I hope you will drive out the evil army from here. Nagnag's evil henchmen captured me from my home, and forced me to work for them here.",
-				"I have been enslaved by an evil spell which keeps me bound here. I can never escape. They have been forcing me to create special armor and weapons for them to use in a mission they are on,",
-				"I want you to get revenge for me from Nagnag for what he has done to me, the only thing I can do to help is create the items for you that I made for his poets."
+				"Syukurlah kau datang! Kuharap kau mengusir pasukan jahat itu dari sini. Antek-antek Nagnag menculikku dari rumahku dan memaksaku bekerja untuk mereka di tempat ini.",
+				"Aku diperbudak oleh mantra jahat yang mengikatku di sini. Aku tidak akan pernah bisa kabur. Mereka memaksaku membuat zirah dan senjata khusus untuk misi yang sedang mereka jalankan,",
+				"Aku ingin kau membalaskan dendamku pada Nagnag atas apa yang ia lakukan padaku. Satu-satunya yang bisa kubantu adalah membuatkanmu barang-barang yang dulu kubuat untuk para poets-nya."
 			},
 			1
 		)
@@ -60,7 +60,7 @@ JiongNpc = {
 		end
 
 		local choice = player:menuString(
-			"What would you like me to help you make?",
+			"Apa yang ingin kubantu buatkan?",
 			items
 		)
 
@@ -68,9 +68,9 @@ JiongNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Love amulet is an amazing amulet, it's powerful.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need Earth robes, 10 bear's livers, a herb pipe, and 1,000 gold."
+					"Love amulet adalah amulet yang luar biasa, sangat berkuasa.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh Earth robe, 10 bear's liver, satu herb pipe, dan 1,000 emas."
 				},
 				1
 			)
@@ -80,15 +80,15 @@ JiongNpc = {
 				1
 			) ~= true or player.money < 1000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -112,14 +112,14 @@ JiongNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Love amulet. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Love amulet milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -127,24 +127,24 @@ JiongNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Love rune is an amazing rune, it's powerful.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Death's head, a Fine metal, and 4,000 gold."
+					"Love rune adalah rune yang luar biasa, sangat berkuasa.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Death's head, satu Fine metal, dan 4,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("deaths_head", 1) ~= true or player:hasItem("fine_metal", 1) ~= true or player.money < 4000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -164,14 +164,14 @@ JiongNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Love rune. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Love rune milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -179,24 +179,24 @@ JiongNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Nature charm is an amazing ward, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Sen glove, a Lantern, and 12,000 gold."
+					"Nature charm adalah ward yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Sen glove, satu Lantern, dan 12,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("sen_glove", 1) ~= true or player:hasItem("lantern", 1) ~= true or player.money < 12000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -216,14 +216,14 @@ JiongNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Nature charm. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Nature charm milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -231,24 +231,24 @@ JiongNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Soul charm is an amazing charm, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Lantern for a mold, a Charm to hold the power forged into it, and 24,000 gold."
+					"Soul charm adalah charm yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Lantern sebagai cetakan, satu Charm untuk menampung kekuatan yang ditempa ke dalamnya, dan 24,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("lantern", 1) ~= true or player:hasItem("charm", 1) ~= true or player.money < 24000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -268,14 +268,14 @@ JiongNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Soul charm. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Soul charm milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -283,24 +283,24 @@ JiongNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Spirit charm is an amazing charm, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Lantern for a mold, a Il san Charm to hold the power forged into it, and 48,000 gold."
+					"Spirit charm adalah charm yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Lantern sebagai cetakan, satu Il san Charm untuk menampung kekuatan yang ditempa ke dalamnya, dan 48,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("lantern", 1) ~= true or player:hasItem("il_san_charm", 1) ~= true or player.money < 48000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -320,14 +320,14 @@ JiongNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Spirit charm. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Spirit charm milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -335,24 +335,24 @@ JiongNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Love charm is an amazing charm, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Lantern for a mold, a Ee san Charm to hold the power forged into it, and 96,000 gold."
+					"Love charm adalah charm yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Lantern sebagai cetakan, satu Ee san Charm untuk menampung kekuatan yang ditempa ke dalamnya, dan 96,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("lantern", 1) ~= true or player:hasItem("ee_san_charm", 1) ~= true or player.money < 96000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -372,14 +372,14 @@ JiongNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Love charm. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Love charm milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -387,24 +387,24 @@ JiongNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Life charm is an amazing charm, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Lantern for a mold, a Sam san Charm to hold the power forged into it, and 192,000 gold."
+					"Life charm adalah charm yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Lantern sebagai cetakan, satu Sam san Charm untuk menampung kekuatan yang ditempa ke dalamnya, dan 192,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("lantern", 1) ~= true or player:hasItem("sam_san_charm", 1) ~= true or player.money < 192000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -424,14 +424,14 @@ JiongNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Life charm. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Life charm milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -439,9 +439,9 @@ JiongNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Immortality charm is an amazing charm, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Lantern for a mold, a Sa san Charm to hold the power forged into it, 500 Ri shards, 250 Xi shards, 100 Zen shards, and 384,000 gold."
+					"Immortality charm adalah charm yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Lantern sebagai cetakan, satu Sa san Charm untuk menampung kekuatan yang ditempa ke dalamnya, 500 Ri shard, 250 Xi shard, 100 Zen shard, dan 384,000 emas."
 				},
 				1
 			)
@@ -454,15 +454,15 @@ JiongNpc = {
 				100
 			) ~= true or player.money < 384000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -491,14 +491,14 @@ JiongNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Immortality charm. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Immortality charm milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end

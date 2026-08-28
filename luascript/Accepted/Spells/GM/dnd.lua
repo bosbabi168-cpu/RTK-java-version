@@ -31,7 +31,7 @@ dnd = {
 				clone.gfx(player, player)
 			end
 			player.gfxArmor = armor[math.random(#armor)]
-			player:sendMinitext("Armor used: " .. armor[math.random(#armor)])
+			player:sendMinitext("Zirah yang dipakai: " .. armor[math.random(#armor)])
 			player.gfxArmorC = 0
 			player.gfxClone = 1
 			player:updateState()

@@ -1,12 +1,12 @@
 kawlanas_guard = {
 	cast = function(player)
-		player:sendMinitext("You are protected by a great force.")
-		player:sendMinitext("You cast Kawlana's guard.")
-		player:sendMinitext("You cast Kawlana's secret.")
+		player:sendMinitext("Kau dilindungi kekuatan besar.")
+		player:sendMinitext("Kau merapal Kawlana's guard.")
+		player:sendMinitext("Kau merapal Kawlana's secret.")
 	end,
 
 	uncast = function(player)
-		player:sendMinitext("Your protection fades.")
+		player:sendMinitext("Perlindunganmu memudar.")
 	end,
 
 	requirements = function(player)

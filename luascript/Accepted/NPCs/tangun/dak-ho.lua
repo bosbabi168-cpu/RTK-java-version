@@ -11,25 +11,25 @@ DakHoNpc = {
 		player.lastClick = npc.ID
 
 		local opts = {
-			"Chu Rua Quest",
-			"Where am I!?",
+			"Tugas Chu Rua",
+			"Aku di mana!?",
 			"Yellow scroll",
-			"Raise and Lower your voice!"
+			"Tinggikan dan rendahkan suaramu!"
 		}
 		local txt = ""
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Chu Rua Quest" then
+		if menu == "Tugas Chu Rua" then
 			if (player:hasLegend("aided_chu_rua")) then
-				player:dialogSeq({t, "Thank you for helping Chu Rua!"}, 0)
+				player:dialogSeq({t, "Terima kasih sudah menolong Chu Rua!"}, 0)
 			end
-		elseif menu == "Where am I!?" then
+		elseif menu == "Aku di mana!?" then
 			player:dialogSeq(
 				{
 					t,
-					"You are at Tangun.\n\nTangun is a town for the young ones. There are caves and quests suited for the inexperienced players, and you can learn about things, such as subpath, crafting, food preparation.",
-					"Bored with IronHeart or JadeSpear?\n\nYou can obtain more things and knowledge here in Tangun. But, don't forget to go back to see your tutor later on."
+					"Kau berada di Tangun.\n\nTangun adalah kota untuk yang muda. Ada gua dan tugas yang cocok bagi pemain yang belum berpengalaman, dan kau bisa belajar banyak hal seperti subjalur, kerajinan, dan penyiapan makanan.",
+					"Bosan dengan IronHeart atau JadeSpear?\n\nDi Tangun kau bisa memperoleh lebih banyak barang dan pengetahuan. Tapi jangan lupa kembali menemui tutormu nanti."
 				},
 				0
 			)
@@ -37,24 +37,24 @@ DakHoNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Using a yellow scroll will take you to the inn of the nation that you belong to.\n\nYou may purchase these at the inn at a very reasonable price.",
-					"Here are a few yellow scrolls you can try."
+					"Memakai gulungan kuning akan membawamu ke penginapan negeri asalmu.\n\nKau bisa membelinya di penginapan dengan harga yang sangat pantas.",
+					"Ini beberapa gulungan kuning untuk kau coba."
 				},
 				1
 			)
 			player:addItem("yellow_scroll", 5)
-		elseif menu == "Raise and Lower your voice!" then
+		elseif menu == "Tinggikan dan rendahkan suaramu!" then
 			player:dialogSeq(
 				{
 					t,
-					"Hey you! Oh my don't jump like that! I am only shouting at you. You see here in thee Kingdom of the Winds you can raise or lower the tone of your voice.",
-					"You don't remember how? Oh let me help you with that. You already know how to speak in normal tones so that is a good start.",
-					"Now lets practice a shout shall we. ((Press ! or shift 1 and then type what you want to say.)) If you shout something out players will be able to hear you from further away.",
-					"On the opposite end you can whisper something on the Winds of the Kingdoms! These magical winds will carry your voice to a specific person or specific group of people. Only they will be able to hear what you say.",
-					"((Press shift ' (aphostrophe) then type in the person's name you want to speak to and press enter. Now you can just type your message.))",
-					"If you want to talk with only the members of a group you have formed this is easy to do too! ((Type !! then enter, now type the message you wish the group to hear.))",
-					"Once you are in a Clan or Subpath you will also be able to talk to your fellow friends. You can learn about this from Sshijok right inside the Clan hall. *Points to door*",
-					"Now if only I can remember what I wanted to call you over here for in the first place... hmmm... *he forgets you are standing there as he wanders through his thoughts*."
+					"Hei kau! Astaga, jangan kaget begitu! Aku cuma berteriak kepadamu. Di Kingdom of the Winds ini kau bisa meninggikan atau merendahkan nada suaramu.",
+					"Kau tidak ingat caranya? Oh, biar kubantu. Kau sudah tahu cara bicara dengan nada biasa, jadi itu awal yang bagus.",
+					"Sekarang mari berlatih berteriak. ((Tekan ! atau shift 1 lalu ketik yang ingin kau katakan.)) Kalau kau berteriak, pemain lain bisa mendengarmu dari jarak lebih jauh.",
+					"Sebaliknya, kau juga bisa membisikkan sesuatu lewat Angin Kerajaan! Angin bersihir itu membawa suaramu kepada satu orang atau sekelompok orang tertentu. Hanya mereka yang bisa mendengar ucapanmu.",
+					"((Tekan shift ' (apostrof) lalu ketik nama orang yang ingin kau ajak bicara dan tekan enter. Setelah itu kau tinggal mengetik pesanmu.))",
+					"Kalau kau ingin bicara hanya dengan anggota grup yang kau bentuk, itu juga mudah! ((Ketik !! lalu enter, kemudian ketik pesan yang ingin didengar grupmu.))",
+					"Begitu kau masuk Klan atau Subjalur, kau juga bisa berbicara dengan kawan-kawanmu. Kau bisa mempelajarinya dari Sshijok, tepat di dalam balai Klan. *Menunjuk ke pintu*",
+					"Nah, andai aku ingat kenapa tadi aku memanggilmu ke sini... hmmm... *ia lupa kau masih berdiri di situ selagi pikirannya mengembara*."
 				},
 				0
 			)

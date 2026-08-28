@@ -8,17 +8,17 @@ lullaby = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if target:checkIfCast(sleeps) or target.sleep > 1 then
-			player:sendMinitext("This spell is already in effect.")
+			player:sendMinitext("Mantra ini sedang bekerja.")
 			return
 		end
 
@@ -30,7 +30,7 @@ lullaby = {
 			if (target.isBoss ~= 0) then
 				duration = 4000
 			end
-			player:sendMinitext("You cast Lullaby.")
+			player:sendMinitext("Kau merapal Lullaby.")
 			player.magic = player.magic - magicCost
 			target:setDuration("lullaby", duration)
 			target:sendAnimation(426)

@@ -95,11 +95,13 @@ public final class Items {
      * tetapi badannya satu.</p>
      */
     public static void useItem(User sd, int slot) {
-        if (sd == null || slot < 0 || slot >= sd.status.inventory.size()) {
+        // ⚠️ Slot dari klien adalah POSISI, bukan indeks daftar — lihat
+        // catatan di CharStatus.inventoryAt(). Kantong nyata berlubang.
+        if (sd == null || slot < 0 || slot >= sd.status.maxInv) {
             return;
         }
-        Item it = sd.status.inventory.get(slot);
-        if (it.id <= 0) {
+        Item it = sd.status.inventoryAt(slot);
+        if (it == null || it.id <= 0) {
             return;
         }
         if (it.owner != 0 && it.owner != sd.status.id) {

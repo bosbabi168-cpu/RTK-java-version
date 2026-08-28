@@ -4,23 +4,23 @@ poisoned_bracelet = {
 		local targetFacing = getTargetFacing(player, BL_MOB)
 		if targetFacing ~= nil then
 			if targetFacing.yname == "spy_mob_1" then
-				player:sendMinitext("You deliver a swift poke as you glide past the courtier, who slumps to the ground and begings foaming at the mouth.")
-				targetFacing:talk(0, "Imperial Courtier: Guards! Guards! Help!")
+				player:sendMinitext("Kau menusuk cepat sambil melintas di samping punggawa itu, yang lalu ambruk ke tanah dan mulutnya berbusa.")
+				targetFacing:talk(0, "Punggawa Kekaisaran: Pengawal! Pengawal! Tolong!")
 				targetFacing:removeHealth(500000)
 				player:sendAnimationXY(84, targetFacing.x, targetFacing.y, 1)
 				poisoned_bracelet_spell.cast(player)
 				player.registry["poisoned_bracelet"] = 1
 			end
 			if targetFacing.yname == "spy_mob_2" then
-				player:sendMinitext("You deliver a swift poke with the bracelet as you glide past the courtier, he turns to and looks at your bracelet.")
-				targetFacing:talk(0, "Imperial Courtier: I-I knew iiiit....")
+				player:sendMinitext("Kau menusuk cepat dengan gelang itu sambil melintas di samping punggawa itu; ia menoleh dan menatap gelangmu.")
+				targetFacing:talk(0, "Punggawa Kekaisaran: A-aku sudah tahuuuu....")
 				targetFacing:removeHealth(500000)
 				player:sendAnimationXY(84, targetFacing.x, targetFacing.y, 1)
 				poisoned_bracelet_spell.cast(player)
 				player.registry["poisoned_bracelet"] = 2
 			end
 		else
-			player:sendMinitext("The bracelet slips out of your hand and breaks.")
+			player:sendMinitext("Gelang itu terlepas dari tanganmu dan pecah.")
 			player.registry["poisoned_bracelet"] = 3
 			poisoned_bracelet_spell.cast(player)
 		end
@@ -40,18 +40,18 @@ poisoned_bracelet_spell = {
 				for z = 1, #mobs do
 					local rand = math.random(1, 3)
 					if rand == 1 then
-						mobs[z]:talk(0, "Imperial Courtier: What was that?!")
+						mobs[z]:talk(0, "Punggawa Kekaisaran: Apa itu tadi?!")
 					end
 					if rand == 2 then
 						mobs[z]:talk(
 							0,
-							"Imperial Courtier: Did you see what that was?"
+							"Punggawa Kekaisaran: Kau lihat apa itu tadi?"
 						)
 					end
 					if rand == 3 then
 						mobs[z]:talk(
 							0,
-							"Imperial Courtier: I think someone just died!"
+							"Punggawa Kekaisaran: Kurasa barusan ada yang mati!"
 						)
 					end
 				end
@@ -71,14 +71,14 @@ poisoned_bracelet_spell = {
 		] == 2 then
 			player:talk(
 				0,
-				"" .. player.name .. ": Poor guy must have had too much to drink, I shall fetch more water."
+				"" .. player.name .. ": Kasihan, pasti kebanyakan minum. Akan kuambilkan air lagi."
 			)
 		end
 	end,
 	uncast = function(player)
 		player:warp(2534, 40, 70)
 		if player.registry["poisoned_bracelet"] == 1 then
-			player:sendMinitext("You quickly make your escape without being seen.")
+			player:sendMinitext("Kau cepat-cepat melarikan diri tanpa terlihat.")
 		end
 		if player.registry["poisoned_bracelet"] == 2 then
 			local handwritten_note = {
@@ -100,7 +100,7 @@ poisoned_bracelet_spell = {
 			player:dialogSeq(
 				{
 					handwritten_note,
-					"** A handwritten-note appears in your pocket **"
+					"** Secarik catatan tulisan tangan muncul di sakumu **"
 				},
 				0
 			)

@@ -19,15 +19,15 @@ spy_kit = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
-		player:sendMinitext("You cast Spy Kit.")
+		player:sendMinitext("Kau merapal Spy Kit.")
 		player:setAether("spy_kit", aethers)
 
 		local choice = player:menuString(
-			"Which trap would you like to use?",
+			"Jebakan mana yang ingin kau pakai?",
 			{"Toxic spray", "Tripwire", "Smoke screen"},
 			{}
 		)
@@ -44,7 +44,7 @@ spy_kit = {
 				player.ID,
 				"Toxic spray trap"
 			)
-			player:sendMinitext("You make a toxic spray.")
+			player:sendMinitext("Kau membuat semprotan beracun.")
 		elseif choice == "Tripwire" then
 			player:addNPC(
 				"tripwire_trap",
@@ -57,7 +57,7 @@ spy_kit = {
 				player.ID,
 				"Tripwire trap"
 			)
-			player:sendMinitext("The tripwire has been set.")
+			player:sendMinitext("Kawat sandungnya sudah dipasang.")
 		elseif choice == "Smoke screen" then
 			player:addNPC(
 				"smoke_screen_trap",
@@ -70,7 +70,7 @@ spy_kit = {
 				player.ID,
 				"Smoke screen trap"
 			)
-			player:sendMinitext("The smoke screen is set.")
+			player:sendMinitext("Tabir asapnya sudah dipasang.")
 		end
 	end)
 }

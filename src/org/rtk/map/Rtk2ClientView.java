@@ -52,14 +52,12 @@ import org.rtk.map.proto.Wire;
  */
 public final class Rtk2ClientView implements ClientView {
 
-    /** Jenis benda di blok benda. */
-    private static final int KIND_PC = 1;
-    private static final int KIND_MOB = 2;
-    private static final int KIND_NPC = 3;
-    private static final int KIND_ITEM = 4;
-
-    /** Bit 0 blok benda: digambar sebagai karakter, bukan sebagai gambar tunggal. */
-    private static final int FLAG_AS_CHAR = 1;
+    /** Jenis benda di blok benda — satu sumber: {@link Wire.Blok}. */
+    private static final int KIND_PC = Wire.Blok.KIND_PC;
+    private static final int KIND_MOB = Wire.Blok.KIND_MOB;
+    private static final int KIND_NPC = Wire.Blok.KIND_NPC;
+    private static final int KIND_ITEM = Wire.Blok.KIND_ITEM;
+    private static final int FLAG_AS_CHAR = Wire.Blok.FLAG_AS_CHAR;
 
     /** Ragam dialog pada {@code EV_DIALOG}. */
     private static final int DLG_TEXT = 0;
@@ -174,8 +172,10 @@ public final class Rtk2ClientView implements ClientView {
      * Menyamakannya membuat barang berukir kehilangan gambarnya.</p>
      */
     private static void blokBarang(Wire.Writer w, Item it) {
+        // K3.3: tata letaknya milik Wire.Blok (dijaga wiresync); di sini
+        // hanya pemetaan domain -> primitif.
         if (it == null || it.id <= 0) {
-            w.u64(0).u32(0).str("").str("").u16(0).u8(0).u32(0).u32(0);
+            Wire.Blok.tulisBarang(w, Wire.Blok.Barang.KOSONG);
             return;
         }
         ItemDb.Info info = MapServer.itemDb.info(it.id);
@@ -184,14 +184,9 @@ public final class Rtk2ClientView implements ClientView {
         int ikon = it.customIcon != 0 ? (int) it.customIcon : info.look().icon();
         int warna = it.customIcon != 0
                 ? (int) it.customIconColor : info.look().iconColor();
-        w.u64(it.id)
-         .u32(it.amount)
-         .str(tampil)
-         .str(info.name())
-         .u16(ikon)
-         .u8(warna)
-         .u32(it.dura)
-         .u32(Math.max(it.protectedFlag, info.protectedValue()));
+        Wire.Blok.tulisBarang(w, new Wire.Blok.Barang(it.id, it.amount,
+                tampil, info.name(), ikon, warna, it.dura,
+                Math.max(it.protectedFlag, info.protectedValue())));
     }
 
     /**
@@ -217,15 +212,55 @@ public final class Rtk2ClientView implements ClientView {
             }
             dasar(w, mb.id, KIND_MOB, mb.x, mb.y, mb.side, mb.look, mb.lookColor,
                     mb.data.isNpc ? FLAG_AS_CHAR : 0, mb.data.name);
+            if (mb.data.isNpc) {
+                // K1.2: benda ber-FLAG_AS_CHAR SELALU membawa blok wujud
+                // karakter — cermin sendMobLook (0x33) RetroTK, yang mengirim
+                // wujud penuh untuk mob ber-MobIsNpc.
+                wujud(w, mb.data.sex, mb.charState, mb.look, mb.lookColor, 0,
+                        mb.data.face, mb.data.hair, mb.data.hairColor,
+                        mb.data.faceColor, mb.data.skinColor, List.of());
+            }
             return true;
         }
         if (bl instanceof Npc nd) {
-            if (nd.subtype != 0 || nd.npcType == 1) {
+            if (nd.subtype != 0) {
                 return false;
             }
-            dasar(w, nd.id, KIND_NPC, nd.x, nd.y, nd.side,
-                    (int) nd.graphicId, (int) nd.graphicColor, FLAG_AS_CHAR,
+            // K1.2: dua wajah NPC, cermin RetroTK.
+            // - npcType == 1 (NpcIsChar): karakter berlapis lewat 0x33 —
+            //   FLAG_AS_CHAR + blok wujud + perlengkapan NPCEquipment.
+            //   Dulu RTK2 justru TIDAK PERNAH mengirim NPC jenis ini.
+            // - npcType != 1: GAMBAR TUNGGAL lewat 0x07 dengan
+            //   "32768 + graphicId" — grafiknya dari ruang look mob, jadi
+            //   TANPA FLAG_AS_CHAR. Dulu benderanya keliru dinyalakan dan
+            //   klien menggambar badan telanjang dari `sex`.
+            if (nd.npcType != 1) {
+                dasar(w, nd.id, KIND_NPC, nd.x, nd.y, nd.side,
+                        (int) nd.graphicId, (int) nd.graphicColor, 0,
+                        nd.displayName);
+                return true;
+            }
+            dasar(w, nd.id, KIND_NPC, nd.x, nd.y, nd.side, 0, 0, FLAG_AS_CHAR,
                     nd.displayName);
+            // Perlengkapan dari NPCEquipment; kolom NeqLook SUDAH nomor
+            // grafik, bukan id barang, jadi tidak lewat ItemDb.
+            java.util.List<Wire.Blok.Slot> slotNpc = new java.util.ArrayList<>();
+            slotNpcTambah(slotNpc, nd, Equip.COAT, 0);
+            if (slotNpc.isEmpty()) {
+                slotNpcTambah(slotNpc, nd, Equip.ARMOR, nd.armorColor);
+            }
+            slotNpcTambah(slotNpc, nd, Equip.WEAP, 0);
+            slotNpcTambah(slotNpc, nd, Equip.SHIELD, 0);
+            slotNpcTambah(slotNpc, nd, Equip.HELM, 0);
+            slotNpcTambah(slotNpc, nd, Equip.FACEACC, 0);
+            slotNpcTambah(slotNpc, nd, Equip.CROWN, 0);
+            slotNpcTambah(slotNpc, nd, Equip.FACEACCTWO, 0);
+            slotNpcTambah(slotNpc, nd, Equip.MANTLE, 0);
+            slotNpcTambah(slotNpc, nd, Equip.NECKLACE, 0);
+            slotNpcTambah(slotNpc, nd, Equip.BOOTS, 0);
+            wujud(w, nd.sex, nd.state, (int) nd.graphicId, (int) nd.graphicColor,
+                    0, nd.face, nd.hair, nd.hairColor, nd.faceColor,
+                    nd.skinColor, slotNpc);
             return true;
         }
         if (bl instanceof FloorItem fl) {
@@ -252,8 +287,8 @@ public final class Rtk2ClientView implements ClientView {
     private static void dasar(Wire.Writer w, long id, int kind, int x, int y,
                               int side, int grafik, int warna, int bendera,
                               String nama) {
-        w.u64(id).u8(kind).u16(x).u16(y).u8(side)
-         .u16(grafik).u8(warna).u8(bendera).str(nama);
+        Wire.Blok.tulisDasar(w, id, kind, x, y, side, grafik, warna,
+                bendera, nama);
     }
 
     /**
@@ -281,16 +316,9 @@ public final class Rtk2ClientView implements ClientView {
         String nama = state != 2 && state != 5 && st.name != null ? st.name : "";
         dasar(w, who.id, KIND_PC, who.x, who.y, st.side, 0, 0, FLAG_AS_CHAR, nama);
 
-        w.u8(st.sex).u8(state)
-         .u16(state == 3 || state == 4 ? st.disguise : 0)
-         .u8(state == 4 ? st.disguiseColor : 0)
-         .u8(who.speed)
-         .u8(st.face).u8(st.hair).u8(st.hairColor)
-         .u8(st.faceColor).u8(st.skinColor);
-
         // Daftar slot yang benar-benar tergambar. Panjangnya ditulis lebih
         // dulu, jadi tidak perlu sentinel "kosong" seperti 0xFFFF di RetroTK.
-        java.util.List<int[]> slot = new java.util.ArrayList<>();
+        java.util.List<Wire.Blok.Slot> slot = new java.util.ArrayList<>();
         tambahSlot(slot, st, Equip.COAT, st.armorColor);
         if (slot.isEmpty()) {
             tambahSlot(slot, st, Equip.ARMOR, st.armorColor);
@@ -309,11 +337,6 @@ public final class Rtk2ClientView implements ClientView {
         }
         tambahSlot(slot, st, Equip.BOOTS, 0);
 
-        w.u8(slot.size());
-        for (int[] e : slot) {
-            w.u8(e[0]).u16(e[1]).u8(e[2]);
-        }
-
         // Penanda nama: 0 biasa, 1 PK, 3 seklan.
         int tanda = 0;
         if (penonton.status.clan == st.clan && st.clan > 0
@@ -323,13 +346,17 @@ public final class Rtk2ClientView implements ClientView {
         if (st.pk > 0) {
             tanda = 1;
         }
-        w.u8(tanda);
+        Wire.Blok.tulisWujud(w, new Wire.Blok.Wujud(st.sex, state,
+                state == 3 || state == 4 ? st.disguise : 0,
+                state == 4 ? st.disguiseColor : 0,
+                who.speed, st.face, st.hair, st.hairColor,
+                st.faceColor, st.skinColor, slot, tanda));
         return true;
     }
 
     /** Satu slot perlengkapan, hanya bila ada dan memang bergambar. */
-    private static void tambahSlot(List<int[]> keluar, CharStatus st, int slotEq,
-                                   int warnaPaksa) {
+    private static void tambahSlot(List<Wire.Blok.Slot> keluar, CharStatus st,
+                                   int slotEq, int warnaPaksa) {
         Item it = st.equipAt(slotEq);
         if (it == null || it.id <= 0) {
             return;
@@ -342,7 +369,39 @@ public final class Rtk2ClientView implements ClientView {
         int warna = warnaPaksa > 0 ? warnaPaksa
                 : (it.customLook != 0 ? (int) it.customLookColor
                                       : MapServer.itemDb.lookColorOf(it.id));
-        keluar.add(new int[] {slotEq, look, warna});
+        keluar.add(new Wire.Blok.Slot(slotEq, look, warna));
+    }
+
+    /**
+     * Blok wujud karakter untuk benda BUKAN pemain (K1.2). Tata letaknya
+     * milik {@link Wire.Blok} (K3.3) — satu penulis untuk semua benda
+     * ber-FLAG_AS_CHAR, dijaga {@code wiresync}.
+     */
+    private static void wujud(Wire.Writer w, int sex, int state, int samaran,
+                              int warnaSamaran, int kecepatan, int face,
+                              int hair, int hairColor, int faceColor,
+                              int skinColor, List<Wire.Blok.Slot> slot) {
+        Wire.Blok.tulisWujud(w, new Wire.Blok.Wujud(sex, state,
+                state == 3 || state == 4 ? samaran : 0,
+                state == 4 ? warnaSamaran : 0,
+                kecepatan, face, hair, hairColor, faceColor, skinColor,
+                slot, 0));   // tanda: NPC/mob tidak pernah PK atau seklan
+    }
+
+    /**
+     * Slot perlengkapan NPC. ⚠️ Berbeda dari pemain: kolom {@code NeqLook}
+     * pada {@code NPCEquipment} SUDAH nomor grafik (cermin
+     * {@code sendNpcLook}, yang menulis {@code equip[x].id} langsung ke
+     * ladang grafik) — jangan dilewatkan ke ItemDb.
+     */
+    private static void slotNpcTambah(List<Wire.Blok.Slot> keluar, Npc nd,
+                                      int slotEq, int warnaPaksa) {
+        if (!nd.hasEquip(slotEq)) {
+            return;
+        }
+        int warna = warnaPaksa > 0 ? warnaPaksa
+                : (int) nd.equip[slotEq].customLookColor;
+        keluar.add(new Wire.Blok.Slot(slotEq, (int) nd.equip[slotEq].id, warna));
     }
 
     // ==================================================================
@@ -361,6 +420,13 @@ public final class Rtk2ClientView implements ClientView {
         identitas(sd);
         petaSendiri(sd);
         playerStatusChanged(sd, Clif.SFLAG_ALL);
+        // K2: kata setelan ikut saat masuk dunia. EV_SELF_SETTINGS tadinya
+        // hanya terbit saat setelan BERUBAH, jadi jendela setelan klien
+        // buta ("?") sampai pemain membalik sesuatu — di RetroTK nilainya
+        // menumpang paket status, di RTK2 ia berdiri sendiri dan karena itu
+        // harus dikirim sekali di sini.
+        playerSettingsChanged(sd);
+        worldTimeChanged(sd);   // R2: kalender dunia ikut saat masuk
         bawaan(sd);
         kirim(sd, new Wire.Writer(Wire.EV_SELF_POSITION)
                 .u16(sd.x).u16(sd.y).u8(sd.status.side));
@@ -382,6 +448,14 @@ public final class Rtk2ClientView implements ClientView {
      * pertiga bingkai pada kantong yang biasa.</p>
      */
     private void bawaan(User sd) {
+        // K3.2: buku mantra ikut saat masuk dunia (cermin pc_loadmagic).
+        // Tanpa ini klien tidak pernah tahu mantra apa yang bisa dirapal —
+        // hanya penghapusannya (EV_SPELL_REMOVED) yang pernah dikirim.
+        for (int slot = 0; slot < sd.status.spells.length; slot++) {
+            if (sd.status.spells[slot] > 0) {
+                playerSpellSlotChanged(sd, slot);
+            }
+        }
         for (int slot = 0; slot < sd.status.maxInv; slot++) {
             Item it = sd.status.inventoryAt(slot);
             if (it != null && it.id > 0) {
@@ -436,11 +510,13 @@ public final class Rtk2ClientView implements ClientView {
         // Tidak ada Type.ALL: indeks blok memisahkan pemain dari benda lain
         // (di C pun `block[]` dan `block_mob[]` terpisah), jadi keempat
         // jenisnya disapu satu per satu.
+        // Pemain SENDIRI ikut dalam sapuan (K1.1): ia benda di dunia seperti
+        // yang lain, dan klien mengenalinya lewat id dari EV_SELF_IDENTITY.
+        // Posisinya di layar tetap dari EV_SELF_STEPPED/POSITION — blok ini
+        // hanya membawa wujudnya. Perubahan wujud selanjutnya sudah sampai
+        // lewat objectAppearanceChanged (termasukDiri=true).
         for (BlockList.Type t : BlockList.Type.values()) {
             map.foreachInArea(sd.x, sd.y, t, bl -> {
-                if (bl.id == sd.id) {
-                    return;
-                }
                 Wire.Writer w = new Wire.Writer(Wire.EV_OBJECT_APPEARED);
                 if (blokBenda(w, sd, bl)) {
                     kirim(sd, w);
@@ -585,6 +661,106 @@ public final class Rtk2ClientView implements ClientView {
     @Override
     public void playerEquipmentCleared(User sd, int slot) {
         kirim(sd, new Wire.Writer(Wire.EV_EQUIP_SLOT_CLEARED).u8(slot));
+    }
+
+    @Override
+    public void playerSpellSlotChanged(User sd, int slot) {
+        int id = slot >= 0 && slot < sd.status.spells.length
+                ? sd.status.spells[slot] : 0;
+        if (id <= 0) {
+            return;
+        }
+        var db = MapServer.spellDb;
+        // Tipe ikut dikirim supaya klien tahu BENTUK muatan OP_CAST untuk
+        // slot ini (1 bertanya, 2 bersasaran, selainnya tanpa muatan) —
+        // aturan yang sama dengan pembaca OP_CAST di Inbound.
+        kirim(sd, new Wire.Writer(Wire.EV_SPELL_SLOT)
+                .u8(slot).u32(id).u8(db.typeOf(id))
+                .str(db.displayNameOf(id)).str(db.questionOf(id)));
+    }
+
+    @Override
+    public void playerProfile(User sd) {
+        if (sesi(sd) == null) {
+            return;
+        }
+        CharStatus st = sd.status;
+        // ⚠️ Yang dikirim hanya yang TIDAK bisa dihitung klien. Level, exp,
+        // dan atribut sudah ada di EV_SELF_STATUS — mengirimnya lagi di sini
+        // berarti dua kebenaran yang bisa berbeda.
+        long tnl = st.level < 99
+                ? Math.max(0, MapServer.classDb.level(st.charClass, st.level) - st.exp)
+                : 0;
+        Wire.Writer w = new Wire.Writer(Wire.EV_SELF_PROFILE)
+                .str(MapServer.classDb.pathName(st.charClass, st.mark))
+                .str(st.title == null ? "" : st.title)
+                .str(st.clanTitle == null ? "" : st.clanTitle)
+                .str(pasangan(st))
+                .u32(tnl)
+                .u16(Math.round(Clif.xpBarPercent(sd) * 100f))
+                .str(sd.profileText == null ? "" : sd.profileText);
+        java.util.List<org.rtk.common.mmo.Legend> leg = st.legends;
+        w.u16(leg.size());
+        for (org.rtk.common.mmo.Legend l : leg) {
+            w.str(l.text == null ? "" : l.text).u8(l.color).u8(l.icon);
+        }
+        kirim(sd, w);
+    }
+
+    /** Nama pasangan; kosong bila belum menikah. */
+    private static String pasangan(CharStatus st) {
+        if (st.partner == 0) {
+            return "";
+        }
+        String nama = MapServer.charName(st.partner);
+        return nama == null ? "" : nama;
+    }
+
+    @Override
+    public void playerTransferred(User sd, String host, int port,
+                                  int m, int x, int y) {
+        if (sesi(sd) == null) {
+            return;
+        }
+        kirim(sd, new Wire.Writer(Wire.EV_TRANSFER)
+                .str(host).u16(port).u16(m).u16(x).u16(y));
+    }
+
+    @Override
+    public void worldTimeChanged(User sd) {
+        if (sesi(sd) == null) {
+            return;
+        }
+        kirim(sd, new Wire.Writer(Wire.EV_WORLD_TIME)
+                .u8(WorldTime.hour).u8(WorldTime.day)
+                .u8(WorldTime.season).u16(WorldTime.year));
+    }
+
+    @Override
+    public void townListToPlayer(User sd, java.util.List<String> kota) {
+        if (sesi(sd) == null) {
+            return;
+        }
+        Wire.Writer w = new Wire.Writer(Wire.EV_TOWNS).u16(kota.size());
+        for (String k : kota) {
+            w.str(k);
+        }
+        kirim(sd, w);
+    }
+
+    @Override
+    public void rankingToPlayer(User sd, String judul, java.util.List<Object[]> baris) {
+        if (sesi(sd) == null) {
+            return;
+        }
+        Wire.Writer w = new Wire.Writer(Wire.EV_RANKING)
+                .str(judul == null ? "" : judul).u16(baris.size());
+        for (Object[] b : baris) {
+            w.u16(((Number) b[0]).intValue())
+             .str(b[1] == null ? "" : String.valueOf(b[1]))
+             .u32(((Number) b[2]).longValue());
+        }
+        kirim(sd, w);
     }
 
     @Override
@@ -990,7 +1166,7 @@ public final class Rtk2ClientView implements ClientView {
             // Cukup untuk menggambar potret di jendela grup. Perlengkapan
             // badan sengaja tidak ikut: anggota di peta lain tidak tergambar
             // di dunia, jadi kliennya memang belum pernah melihatnya.
-            java.util.List<int[]> slot = new java.util.ArrayList<>();
+            java.util.List<Wire.Blok.Slot> slot = new java.util.ArrayList<>();
             if ((t.status.settingFlags & SettingFlags.HELM) != 0) {
                 tambahSlot(slot, t.status, Equip.HELM, 0);
             }
@@ -998,8 +1174,8 @@ public final class Rtk2ClientView implements ClientView {
             tambahSlot(slot, t.status, Equip.CROWN, 0);
             tambahSlot(slot, t.status, Equip.FACEACCTWO, 0);
             w.u8(slot.size());
-            for (int[] e : slot) {
-                w.u8(e[0]).u16(e[1]).u8(e[2]);
+            for (Wire.Blok.Slot e : slot) {
+                w.u8(e.slot()).u16(e.grafik()).u8(e.warna());
             }
 
             w.u32(t.maxHp).u32(t.status.hp).u32(t.maxMp).u32(t.status.mp);

@@ -114,17 +114,17 @@ function Player.learnSpell(player, npc, additionalSpells)
 	end
 
 	local choice = player:menuSeq(
-		"You have unravelled your mind, and expanded your potential. Your destiny is waiting now, is it not? Which secret do you wish to learn?",
+		"Kau telah mengurai pikiranmu dan memperluas potensimu. Takdirmu sedang menunggu, bukan? Rahasia mana yang ingin kau pelajari?",
 		sortedSpellName,
 		{}
 	)
 
 	--player:talk(0,spellDesc[choice])
 	local choice2 = player:menuSeq(
-		"You are ready to learn " .. sortedSpellName[choice] .. ": " .. sortedSpellDesc[
+		"Kau siap mempelajari " .. sortedSpellName[choice] .. ": " .. sortedSpellDesc[
 			choice
-		] .. " Do you swear you will use this secret only for good causes?",
-		{"Yes", "No"},
+		] .. " Bersumpahkah kau memakai rahasia ini hanya untuk kebaikan?",
+		{"Ya", "Tidak"},
 		{}
 	)
 
@@ -155,9 +155,9 @@ function Player.learnSpell(player, npc, additionalSpells)
 		txt = "The fee to learn " .. sortedSpellName[choice] .. " is: FREE\n"
 	end
 
-	local choice3 = player:menuString(txt, {"Yes", "No"}, {})
+	local choice3 = player:menuString(txt, {"Ya", "Tidak"}, {})
 
-	if choice3 == "Yes" then
+	if choice3 == "Ya" then
 		if sortedSpellItemReq[choice] ~= nil and #sortedSpellItemReq[choice] ~= 0 then
 			for i = 1, #sortedSpellItemReq[choice] do
 				id = sortedSpellItemReq[choice][i]
@@ -166,7 +166,7 @@ function Player.learnSpell(player, npc, additionalSpells)
 				if (id > 0) then
 					if player:hasItem(id, amount) ~= true then
 						player:menuString(
-							"Paying for what you want is a sign of devotion. Return when you have what is required for this.",
+							"Membayar apa yang kau inginkan adalah tanda pengabdian. Kembalilah kalau syaratnya sudah kau penuhi.",
 							{}
 						)
 						return
@@ -174,7 +174,7 @@ function Player.learnSpell(player, npc, additionalSpells)
 				else
 					if player.money < amount then
 						player:menuString(
-							"Paying for what you want is a sign of devotion. Return when you have what is required for this.",
+							"Membayar apa yang kau inginkan adalah tanda pengabdian. Kembalilah kalau syaratnya sudah kau penuhi.",
 							{}
 						)
 						return
@@ -199,12 +199,12 @@ function Player.learnSpell(player, npc, additionalSpells)
 		end
 
 		player:addSpell(sortedSpellYName[choice])
-		player:sendMinitext("Your mind expands as you learn " .. sortedSpellName[choice])
-	elseif choice3 == "No" then
+		player:sendMinitext("Pikiranmu meluas saat kau mempelajari " .. sortedSpellName[choice])
+	elseif choice3 == "Tidak" then
 		player:dialogSeq(
 			{
 				t,
-				"The potential for learning is endless, be always humble and ready to learn."
+				"Kemungkinan untuk belajar tidak ada habisnya; tetaplah rendah hati dan siap belajar."
 			},
 			1
 		)
@@ -294,17 +294,17 @@ function Player.learnSpecificSpells(player, npc, spells)
 	end
 
 	local choice = player:menuSeq(
-		"You have unravelled your mind, and expanded your potential. Your destiny is waiting now, is it not? Which secret do you wish to learn?",
+		"Kau telah mengurai pikiranmu dan memperluas potensimu. Takdirmu sedang menunggu, bukan? Rahasia mana yang ingin kau pelajari?",
 		sortedSpellName,
 		{}
 	)
 
 	--player:talk(0,spellDesc[choice])
 	local choice2 = player:menuSeq(
-		"You are ready to learn " .. sortedSpellName[choice] .. ": " .. sortedSpellDesc[
+		"Kau siap mempelajari " .. sortedSpellName[choice] .. ": " .. sortedSpellDesc[
 			choice
-		] .. " Do you swear you will use this secret only for good causes?",
-		{"Yes", "No"},
+		] .. " Bersumpahkah kau memakai rahasia ini hanya untuk kebaikan?",
+		{"Ya", "Tidak"},
 		{}
 	)
 
@@ -333,9 +333,9 @@ function Player.learnSpecificSpells(player, npc, spells)
 		txt = "The fee to learn " .. sortedSpellName[choice] .. " is: FREE\n"
 	end
 
-	local choice3 = player:menuString(txt, {"Yes", "No"}, {})
+	local choice3 = player:menuString(txt, {"Ya", "Tidak"}, {})
 
-	if choice3 == "Yes" then
+	if choice3 == "Ya" then
 		if sortedSpellItemReq[choice] ~= nil and #sortedSpellItemReq[choice] ~= 0 then
 			for i = 1, #sortedSpellItemReq[choice] do
 				id = sortedSpellItemReq[choice][i]
@@ -344,7 +344,7 @@ function Player.learnSpecificSpells(player, npc, spells)
 				if (id > 0) then
 					if player:hasItem(id, amount) ~= true then
 						player:menuString(
-							"Paying for what you want is a sign of devotion. Return when you have what is required for this.",
+							"Membayar apa yang kau inginkan adalah tanda pengabdian. Kembalilah kalau syaratnya sudah kau penuhi.",
 							{}
 						)
 						return
@@ -352,7 +352,7 @@ function Player.learnSpecificSpells(player, npc, spells)
 				else
 					if player.money < amount then
 						player:menuString(
-							"Paying for what you want is a sign of devotion. Return when you have what is required for this.",
+							"Membayar apa yang kau inginkan adalah tanda pengabdian. Kembalilah kalau syaratnya sudah kau penuhi.",
 							{}
 						)
 						return
@@ -377,12 +377,12 @@ function Player.learnSpecificSpells(player, npc, spells)
 		end
 
 		player:addSpell(sortedSpellYName[choice])
-		player:sendMinitext("Your mind expands as you learn " .. sortedSpellName[choice])
-	elseif choice3 == "No" then
+		player:sendMinitext("Pikiranmu meluas saat kau mempelajari " .. sortedSpellName[choice])
+	elseif choice3 == "Tidak" then
 		player:dialogSeq(
 			{
 				t,
-				"The potential for learning is endless, be always humble and ready to learn."
+				"Kemungkinan untuk belajar tidak ada habisnya; tetaplah rendah hati dan siap belajar."
 			},
 			1
 		)
@@ -472,17 +472,17 @@ function Player.learnWisdomSpells(player, npc, spells)
 	end
 
 	local choice = player:menuSeq(
-		"You have unravelled your mind, and expanded your potential. Your destiny is waiting now, is it not? Which secret do you wish to learn?",
+		"Kau telah mengurai pikiranmu dan memperluas potensimu. Takdirmu sedang menunggu, bukan? Rahasia mana yang ingin kau pelajari?",
 		sortedSpellName,
 		{}
 	)
 
 	--player:talk(0,spellDesc[choice])
 	local choice2 = player:menuSeq(
-		"You are ready to learn " .. sortedSpellName[choice] .. ": " .. sortedSpellDesc[
+		"Kau siap mempelajari " .. sortedSpellName[choice] .. ": " .. sortedSpellDesc[
 			choice
-		] .. " Do you swear you will use this secret only for good causes?",
-		{"Yes", "No"},
+		] .. " Bersumpahkah kau memakai rahasia ini hanya untuk kebaikan?",
+		{"Ya", "Tidak"},
 		{}
 	)
 
@@ -511,9 +511,9 @@ function Player.learnWisdomSpells(player, npc, spells)
 		txt = "The fee to learn " .. sortedSpellName[choice] .. " is: FREE\n"
 	end
 
-	local choice3 = player:menuString(txt, {"Yes", "No"}, {})
+	local choice3 = player:menuString(txt, {"Ya", "Tidak"}, {})
 
-	if choice3 == "Yes" then
+	if choice3 == "Ya" then
 		if sortedSpellItemReq[choice] ~= nil and #sortedSpellItemReq[choice] ~= 0 then
 			for i = 1, #sortedSpellItemReq[choice] do
 				id = sortedSpellItemReq[choice][i]
@@ -522,7 +522,7 @@ function Player.learnWisdomSpells(player, npc, spells)
 				if (id > 0) then
 					if player:hasItem(id, amount) ~= true then
 						player:menuString(
-							"Paying for what you want is a sign of devotion. Return when you have what is required for this.",
+							"Membayar apa yang kau inginkan adalah tanda pengabdian. Kembalilah kalau syaratnya sudah kau penuhi.",
 							{}
 						)
 						return
@@ -530,7 +530,7 @@ function Player.learnWisdomSpells(player, npc, spells)
 				else
 					if player.money < amount then
 						player:menuString(
-							"Paying for what you want is a sign of devotion. Return when you have what is required for this.",
+							"Membayar apa yang kau inginkan adalah tanda pengabdian. Kembalilah kalau syaratnya sudah kau penuhi.",
 							{}
 						)
 						return
@@ -545,7 +545,7 @@ function Player.learnWisdomSpells(player, npc, spells)
 			player:dialogSeq(
 				{
 					t,
-					"Not enough time has passed since you last learned a wisdom spell."
+					"Waktunya belum cukup sejak terakhir kau mempelajari mantra wisdom."
 				},
 				0
 			)
@@ -568,12 +568,12 @@ function Player.learnWisdomSpells(player, npc, spells)
 
 		-- 30 days
 		player:addSpell(sortedSpellYName[choice])
-		player:sendMinitext("Your mind expands as you learn " .. sortedSpellName[choice])
-	elseif choice3 == "No" then
+		player:sendMinitext("Pikiranmu meluas saat kau mempelajari " .. sortedSpellName[choice])
+	elseif choice3 == "Tidak" then
 		player:dialogSeq(
 			{
 				t,
-				"The potential for learning is endless, be always humble and ready to learn."
+				"Kemungkinan untuk belajar tidak ada habisnya; tetaplah rendah hati dan siap belajar."
 			},
 			1
 		)
@@ -596,19 +596,19 @@ function Player.forgetSpell(player, npc)
 	local selection
 
 	selection = player:menuSeq(
-		"Which secret do you wish to remove from your mind?",
+		"Rahasia mana yang ingin kau hapus dari pikiranmu?",
 		spellNames,
 		{}
 	)
 
 	choice = player:menuString(
-		"Are you sure you wish to forget " .. spellNames[selection] .. "?",
-		{"Yes", "No"}
+		"Kau yakin ingin melupakan " .. spellNames[selection] .. "?",
+		{"Ya", "Tidak"}
 	)
 
-	if (choice == "Yes") then
+	if (choice == "Ya") then
 		player:removeSpell(spellYNames[selection])
-		player:sendMinitext("You have forgotten the spell " .. spellNames[selection])
+		player:sendMinitext("Kau melupakan mantra " .. spellNames[selection])
 	end
 end
 
@@ -707,7 +707,7 @@ function Player.currentFutureSpells(player, npc)
 	end
 
 	local choice = player:menuSeq(
-		"Which spell would you like to learn more about?",
+		"Mantra mana yang ingin kau ketahui lebih lanjut?",
 		sortedSpellName,
 		{}
 	)
@@ -717,7 +717,7 @@ function Player.currentFutureSpells(player, npc)
 			t,
 			"<b>" .. sortedSpellName[choice] .. "\n\n" .. sortedSpellDesc[
 				choice
-			] .. " Can be learned at Level " .. sortedSpellLevelReq[choice]
+			] .. " Bisa dipelajari pada Level " .. sortedSpellLevelReq[choice]
 		},
 		1
 	)
@@ -850,7 +850,7 @@ function Player.futureSpells(player, npc, additionalSpells)
 	end
 
 	local choice = player:menuSeq(
-		"Which spell would you like to learn more about?",
+		"Mantra mana yang ingin kau ketahui lebih lanjut?",
 		sortedSpellName,
 		{}
 	)
@@ -860,7 +860,7 @@ function Player.futureSpells(player, npc, additionalSpells)
 			t,
 			"<b>" .. sortedSpellName[choice] .. "\n\n" .. sortedSpellDesc[
 				choice
-			] .. " Can be learned at Level " .. sortedSpellLevelReq[choice]
+			] .. " Bisa dipelajari pada Level " .. sortedSpellLevelReq[choice]
 		},
 		1
 	)

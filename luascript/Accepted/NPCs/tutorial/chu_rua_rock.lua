@@ -17,11 +17,11 @@ ChuRuaRockNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"O, it must be good to have feet.",
-					"You've been to the sea I'll bet from the smell of you.",
-					"That is where I have lived for so long until now; by the sea.",
-					"Thank you for spending a moment with this old soul. Be careful of the tiger to the north.",
-					"He only thinks of food, though you might distract him if you allude to one of the rabbits that tricked him"
+					"Oh, pasti enak punya kaki.",
+					"Kau pasti baru dari laut, tercium dari baumu.",
+					"Di situlah aku hidup begitu lama sampai sekarang; di tepi laut.",
+					"Terima kasih sudah menyempatkan diri bersama jiwa tua ini. Hati-hati dengan harimau di utara.",
+					"Yang ia pikirkan hanya makanan, meski mungkin kau bisa mengalihkan perhatiannya kalau kau menyinggung salah satu kelinci yang mengelabuinya"
 				},
 				1
 			)

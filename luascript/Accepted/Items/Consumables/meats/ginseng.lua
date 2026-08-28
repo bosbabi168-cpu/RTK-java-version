@@ -7,7 +7,7 @@ ginseng = {
 		player:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 		if player.health == player.maxHealth then
-			player:sendMinitext("You feel satiated.")
+			player:sendMinitext("Kau merasa kenyang.")
 		end
 	end
 }
@@ -21,7 +21,7 @@ young_ginseng = {
 		player:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 		if player.health == player.maxHealth then
-			player:sendMinitext("You feel satiated.")
+			player:sendMinitext("Kau merasa kenyang.")
 		end
 	end
 }
@@ -35,7 +35,7 @@ ginseng_piece = {
 		player:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 		if player.health == player.maxHealth then
-			player:sendMinitext("You feel satiated.")
+			player:sendMinitext("Kau merasa kenyang.")
 		end
 	end
 }
@@ -49,7 +49,7 @@ mountain_ginseng = {
 		player:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 		if player.health == player.maxHealth then
-			player:sendMinitext("You feel satiated.")
+			player:sendMinitext("Kau merasa kenyang.")
 		end
 	end
 }

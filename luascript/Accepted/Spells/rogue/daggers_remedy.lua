@@ -6,7 +6,7 @@ daggers_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 4500, 3000, 0)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -27,7 +27,7 @@ kwisin_daggers_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 4500, 3000, 1)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -48,7 +48,7 @@ mingken_daggers_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 4500, 3000, 2)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -69,7 +69,7 @@ ohaeng_daggers_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 4500, 3000, 3)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 

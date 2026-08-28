@@ -23,9 +23,9 @@ MessengerNpc = {
 			table.insert(opts, "Mailbox")
 		end
 
-		table.insert(opts, "Buy")
-		table.insert(opts, "Sell")
-		table.insert(opts, "Send Parcel")
+		table.insert(opts, "Beli")
+		table.insert(opts, "Jual")
+		table.insert(opts, "Kirim Paket")
 		table.insert(opts, "Checks")
 
 		local waypointId = _getWaypointId(player, npc)
@@ -40,36 +40,36 @@ MessengerNpc = {
 		local sellopts = MessengerNpc.sellItems(npc)
 
 		local menu = player:menuString(
-			"Hello " .. player.name .. ", What would you like to do today?",
+			"Halo " .. player.name .. ", apa yang ingin kau lakukan hari ini?",
 			opts
 		)
 
 		if menu == "Mailbox" then
 			local txt = ""
 			local item = player:getParcel()
-			local optsPO = {"Send Parcel"}
+			local optsPO = {"Kirim Paket"}
 			if item ~= false then
 				txt = "What would you like to do?\n\nYou have a new parcel!"
-				table.insert(optsPO, "Receive Parcel")
+				table.insert(optsPO, "Terima Paket")
 			else
 				txt = "What would you like to do?\n\nYou have no new parcels"
 			end
 			choice = player:menuString(txt .. "", optsPO)
-			if choice == "Send Parcel" then
+			if choice == "Kirim Paket" then
 				player:sendParcelTo(npc)
-			elseif choice == "Receive Parcel" then
+			elseif choice == "Terima Paket" then
 				player:receiveParcelFrom(npc)
 			end
-		elseif menu == "Buy" then
+		elseif menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buyopts
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend("What are you willing to sell today?", sellopts)
 		elseif menu == "Checks" then
 			general_npc_funcs.checks(player, npc)
-		elseif menu == "Send Parcel" then
+		elseif menu == "Kirim Paket" then
 			player:sendParcelTo(npc)
 		elseif menu == "Wrap gift" then
 			MessengerNpc.wrapGift(player, npc)
@@ -93,27 +93,27 @@ MessengerNpc = {
 
 		player:dialogSeq(
 			{
-				"A gift for a special someone? How sweet.",
-				"You may add up to 3 items to your gift box. The items must be non-bonded and fully repaired.",
-				"You'll need some ribbon and gift paper to make a nice present."
+				"Hadiah untuk orang istimewa? Manis sekali.",
+				"Kau boleh memasukkan sampai 3 barang ke kotak hadiahmu. Barangnya harus tidak terikat dan dalam keadaan utuh.",
+				"Kau butuh pita dan kertas kado untuk membuat hadiah yang bagus."
 			},
 			1
 		)
 
 		local choice = player:menuSeq(
-			"Are you ready to continue?",
-			{"Yes", "No"},
+			"Kau siap melanjutkan?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
 		if choice == 1 then
 			if player:hasItem("ribbon", 1) ~= true then
-				player:dialogSeq({"You need to bring some ribbon to wrap the present with!"}, 0)
+				player:dialogSeq({"Kau harus membawa pita untuk membungkus hadiahnya!"}, 0)
 				return
 			end
 
 			if player:hasItem("brown_gift_paper", 1) ~= true then
-				player:dialogSeq({"You need to bring some gift paper to wrap the present with!"}, 0)
+				player:dialogSeq({"Kau harus membawa kertas kado untuk membungkus hadiahnya!"}, 0)
 				return
 			end
 
@@ -163,22 +163,22 @@ MessengerNpc = {
 				end
 
 				if (dItem.depositable) then
-					player:sendMinitext("You cannot deposit that item.")
+					player:sendMinitext("Barang itu tidak bisa dititipkan.")
 					return false
 				end
 
 				if (dItem.dura ~= dItem.maxDura) then
-					player:sendMinitext("You cannot gift damaged items.")
+					player:sendMinitext("Kau tidak bisa menghadiahkan barang yang rusak.")
 					return false
 				end
 
 				if (dItem.owner ~= 0) then
-					player:sendMinitext("You may only gift non-bonded items.")
+					player:sendMinitext("Kau hanya boleh menghadiahkan barang yang tidak terikat.")
 					return false
 				end
 
 				if (dItem.stackAmount > 1 and dItem.amount > 1) then
-					amount = math.abs(tonumber(math.floor(player:input("How many would you like to send?"))))
+					amount = math.abs(tonumber(math.floor(player:input("Berapa banyak yang ingin kau kirim?"))))
 
 					if (player:hasItem(dItem.id, amount) ~= true) then
 						amountCheck = player:hasItem(dItem.id, amount)
@@ -205,8 +205,8 @@ MessengerNpc = {
 				end
 
 				local addMore = player:menuSeq(
-					"Would you like to add any more items?",
-					{"Yes", "No"},
+					"Kau ingin menambahkan barang lagi?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
@@ -229,11 +229,11 @@ MessengerNpc = {
 				end
 			end
 
-			player:dialogSeq({"Your gift box's contents are below.\n\n" .. text}, 1)
+			player:dialogSeq({"Isi kotak hadiahmu ada di bawah ini.\n\n" .. text}, 1)
 
 			local confirm = player:menuSeq(
-				"Are these the correct items?",
-				{"Yes", "No"},
+				"Apakah barang-barang ini sudah benar?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -245,7 +245,7 @@ MessengerNpc = {
 				if giftid ~= nil then
 					for i = 1, #items do
 						if player:hasItem(items[i], itemAmounts[i]) ~= true then
-							player:dialogSeq({"You no longer have " .. itemAmounts[i] .. " " .. items[i] .. " in your posession."}, 0)
+							player:dialogSeq({"Kau sudah tidak punya " .. itemAmounts[i] .. " " .. items[i] .. " lagi."}, 0)
 							return
 						end
 					end
@@ -260,14 +260,14 @@ MessengerNpc = {
 					player:addItem("brown_present", 1, 0, 0, 0, "", 0, 0, 0, 0, 0, "", giftid)
 
 					-- giftid from gifts table
-					player:dialogSeq({"There you go, I hope whoever gets the gift enjoys it!"}, 0)
+					player:dialogSeq({"Nah, semoga siapa pun yang menerima hadiah ini menyukainya!"}, 0)
 				else
-					player:dialogSeq({"There was an error wrapping your gift. Please contact support."}, 0)
+					player:dialogSeq({"Terjadi kesalahan saat membungkus hadiahmu. Hubungi dukungan."}, 0)
 					return
 				end
 			end
 		elseif choice == 2 then
-			player:dialogSeq({"Come back when you are ready."}, 0)
+			player:dialogSeq({"Kembalilah kalau kau sudah siap."}, 0)
 			return
 		end
 	end,

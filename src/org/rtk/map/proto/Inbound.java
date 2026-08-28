@@ -38,7 +38,8 @@ public final class Inbound {
      */
     public interface Handshake {
         /** @return false bila perkenalannya ditolak dan sesinya harus ditutup */
-        boolean playerIntroduces(int fd, Session s, String characterName);
+        boolean playerIntroduces(int fd, Session s, String characterName,
+                                 String password);
     }
 
     /**
@@ -166,6 +167,40 @@ public final class Inbound {
             }
 
             case Wire.OP_RIDE -> cmd.playerRides(sd);
+            case Wire.OP_TURN -> cmd.playerTurns(sd, r.u8());
+            case Wire.OP_EMOTE -> cmd.playerEmotes(sd, r.u8());
+            case Wire.OP_REFRESH -> cmd.playerRequestsRefresh(sd);
+            case Wire.OP_LOOK_AT -> cmd.playerLooksAt(sd, r.u64());
+            case Wire.OP_PROFILE -> cmd.playerOpensProfile(sd, r.u8());
+            case Wire.OP_PROFILE_EDIT -> cmd.playerEditsProfile(sd, r.str());
+            case Wire.OP_TOWNS -> cmd.playerRequestsTowns(sd);
+            case Wire.OP_RANKING -> cmd.playerRequestsRanking(sd);
+            case Wire.OP_PARCEL -> cmd.playerCollectsParcel(sd);
+            case Wire.OP_HUNTER -> {
+                boolean nyala = r.u8() != 0;
+                cmd.playerSetsHunter(sd, nyala, r.str());
+            }
+            case Wire.OP_FRIENDS -> {
+                int n = r.u8();
+                java.util.List<String> teman = new java.util.ArrayList<>(n);
+                for (int i = 0; i < n; i++) {
+                    teman.add(r.str());
+                }
+                cmd.playerSavesFriends(sd, teman);
+            }
+            case Wire.OP_BOARD -> {
+                int aksi = r.u8();
+                int papan = r.u16();
+                cmd.playerUsesBoard(sd, aksi, papan, r.u16());
+            }
+            case Wire.OP_SWAP_ITEM -> {
+                int dari = r.u8();
+                cmd.playerSwapsItems(sd, dari, r.u8());
+            }
+            case Wire.OP_SWAP_SPELL -> {
+                int dari = r.u8();
+                cmd.playerSwapsSpells(sd, dari, r.u8());
+            }
 
             case Wire.OP_ANSWER_MENU -> cmd.playerAnswersMenu(sd, jawaban(r));
             case Wire.OP_ANSWER_DIALOG -> cmd.playerAnswersDialog(sd, jawaban(r));
@@ -238,7 +273,12 @@ public final class Inbound {
         if (nama.isEmpty() || nama.length() > 16) {
             throw new Wire.Malformed("nama karakter '" + nama + "' tidak masuk akal");
         }
-        if (!handshake.playerIntroduces(fd, s, nama)) {
+        // K3.4: sandi ikut di OP_HELLO. Dulu tidak ada — siapa pun yang tahu
+        // nama karakter bisa masuk sebagai dia (kotak sandi klien sempat ada
+        // tapi bytenya dibuang server tanpa dibaca). Sandi kosong tetap
+        // diteruskan: penolakannya milik verifikator, bukan pembingkai.
+        String sandi = r.str();
+        if (!handshake.playerIntroduces(fd, s, nama, sandi)) {
             s.eof = true;
         }
     }

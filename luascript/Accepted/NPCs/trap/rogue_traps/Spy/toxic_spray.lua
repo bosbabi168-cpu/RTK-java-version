@@ -67,7 +67,7 @@ toxic_spray = {
 			end
 
 			if os.time() % 2 == 0 then
-				target:sendMinitext("Poison is spreading through your veins.")
+				target:sendMinitext("Racun menjalar di pembuluh darahmu.")
 			end
 			target:sendAnimation(1, 5)
 		elseif target.blType == BL_MOB then

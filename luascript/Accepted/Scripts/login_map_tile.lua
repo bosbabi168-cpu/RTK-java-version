@@ -36,7 +36,7 @@ login = function(player)
 	-- this stores the time when the char first logged on (used for getting Wisdom clothes)
 
 	if (not player:hasLegend("born")) then
-		player:addLegend("Born in " .. curT(), "born", 0, 80)
+		player:addLegend("Lahir di " .. curT(), "born", 0, 80)
 
 		welcomeNmail.send(player)
 	end

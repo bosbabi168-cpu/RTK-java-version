@@ -10,6 +10,6 @@ curse_protection = {
 	end,
 
 	uncast = function(player)
-		player:sendMinitext("End of protection")
+		player:sendMinitext("Perlindungan berakhir")
 	end
 }

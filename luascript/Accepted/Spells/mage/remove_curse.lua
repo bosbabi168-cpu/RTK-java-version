@@ -7,12 +7,12 @@ remove_curse_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(minorcurses)
-		player:sendMinitext("You cast Remove curse.")
+		player:sendMinitext("Kau merapal Remove curse.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -39,12 +39,12 @@ release_curse_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(minorcurses)
-		player:sendMinitext("You cast Release curse.")
+		player:sendMinitext("Kau merapal Release curse.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -71,12 +71,12 @@ undo_evil_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(minorcurses)
-		player:sendMinitext("You cast Undo evil.")
+		player:sendMinitext("Kau merapal Undo evil.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -103,12 +103,12 @@ restore_armor_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(minorcurses)
-		player:sendMinitext("You cast Restore armor.")
+		player:sendMinitext("Kau merapal Restore armor.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic

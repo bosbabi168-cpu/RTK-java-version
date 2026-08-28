@@ -12,17 +12,17 @@ harden_body_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (player.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if player:checkIfCast(hardBodies) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -52,7 +52,7 @@ harden_body_poet = {
 		end
 
 		player:playSound(5)
-		player:sendMinitext("You cast Harden Body.")
+		player:sendMinitext("Kau merapal Harden Body.")
 		player:setDuration("harden_body_poet", duration)
 		player:sendAnimation(11, 3)
 	end,
@@ -82,17 +82,17 @@ deaths_guard_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (player.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if player:checkIfCast(hardBodies) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -123,7 +123,7 @@ deaths_guard_poet = {
 		end
 
 		player:playSound(50)
-		player:sendMinitext("You cast Death's Guard.")
+		player:sendMinitext("Kau merapal Death's Guard.")
 		player:setDuration("deaths_guard_poet", duration)
 		player:sendAnimation(74, 3)
 	end,
@@ -153,17 +153,17 @@ lifes_protection_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (player.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if player:checkIfCast(hardBodies) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -194,7 +194,7 @@ lifes_protection_poet = {
 		end
 
 		player:playSound(108)
-		player:sendMinitext("You cast Life's Protection.")
+		player:sendMinitext("Kau merapal Life's Protection.")
 		player:setDuration("lifes_protection_poet", duration)
 		player:sendAnimation(72, 3)
 	end,
@@ -224,17 +224,17 @@ body_of_alignment_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (player.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if player:checkIfCast(hardBodies) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -265,7 +265,7 @@ body_of_alignment_poet = {
 		end
 
 		player:playSound(5)
-		player:sendMinitext("You cast Body of Alignment.")
+		player:sendMinitext("Kau merapal Body of Alignment.")
 		player:setDuration("body_of_alignment_poet", duration)
 		player:sendAnimation(87, 3)
 	end,

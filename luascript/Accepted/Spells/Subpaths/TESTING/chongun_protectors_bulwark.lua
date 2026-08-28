@@ -8,7 +8,7 @@ protectors_bulwark = {
 			local magic = player.baseMagic *.20
 
 			if player.magic < magic then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 			player.magic = player.magic - magic
@@ -18,7 +18,7 @@ protectors_bulwark = {
 		end
 	end,
 	uncast = function(player)
-		player:sendMinitext("Your return to a normal state.")
+		player:sendMinitext("Kau kembali ke keadaan normal.")
 	end
 }
 

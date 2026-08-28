@@ -13,7 +13,7 @@ awe = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -22,7 +22,7 @@ awe = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(70)
-		player:sendMinitext("You cast Awe.")
+		player:sendMinitext("Kau merapal Awe.")
 
 		local mobs = player:getObjectsInSameMap(BL_MOB)
 

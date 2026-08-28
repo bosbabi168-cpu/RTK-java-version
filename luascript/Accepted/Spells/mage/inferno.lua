@@ -9,7 +9,7 @@ inferno_mage = {
 		local y = {0, 0, -1, 0, 1}
 
 		if (player.magic < 600) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -32,7 +32,7 @@ inferno_mage = {
 			if #hits > 0 then
 				local worked = global_zap.cast(player, hits[1], damage, 0, 30)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
@@ -40,7 +40,7 @@ inferno_mage = {
 		player:setAether("inferno_mage", 70000)
 		player.magic = 0
 		player:sendStatus()
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -64,7 +64,7 @@ deaths_door_mage = {
 		local y = {0, 0, -1, 0, 1}
 
 		if (player.magic < 600) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -87,7 +87,7 @@ deaths_door_mage = {
 			if #hits > 0 then
 				local worked = global_zap.cast(player, hits[1], damage, 0, 31)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
@@ -95,7 +95,7 @@ deaths_door_mage = {
 		player:setAether("deaths_door_mage", 70000)
 		player.magic = 0
 		player:sendStatus()
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -119,7 +119,7 @@ natures_denial_mage = {
 		local y = {0, 0, -1, 0, 1}
 
 		if (player.magic < 600) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -142,7 +142,7 @@ natures_denial_mage = {
 			if #hits > 0 then
 				local worked = global_zap.cast(player, hits[1], damage, 0, 32)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
@@ -150,7 +150,7 @@ natures_denial_mage = {
 		player:setAether("natures_denial_mage", 70000)
 		player.magic = 0
 		player:sendStatus()
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -174,7 +174,7 @@ steel_storm_mage = {
 		local y = {0, 0, -1, 0, 1}
 
 		if (player.magic < 600) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -197,7 +197,7 @@ steel_storm_mage = {
 			if #hits > 0 then
 				local worked = global_zap.cast(player, hits[1], damage, 0, 33)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
@@ -205,7 +205,7 @@ steel_storm_mage = {
 		player:setAether("steel_storm_mage", 70000)
 		player.magic = 0
 		player:sendStatus()
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 

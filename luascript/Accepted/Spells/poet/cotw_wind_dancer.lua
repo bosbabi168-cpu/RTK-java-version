@@ -11,7 +11,7 @@ cotw_wind_dancer_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -55,7 +55,7 @@ kwisin_champion_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -99,7 +99,7 @@ mingken_champion_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -143,7 +143,7 @@ ohaeng_champion_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 

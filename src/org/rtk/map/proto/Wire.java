@@ -79,7 +79,7 @@ public final class Wire {
     public static final int MAGIC = 0x52544B32;
 
     /** Versi protokol. Naikkan bila tata letak bingkai mana pun berubah. */
-    public static final int VERSION = 1;
+    public static final int VERSION = 8;   // 8: EV_TRANSFER (R3/C3); 7: EV_WORLD_TIME; 6: R1 batch 2; 5: ekspresi & susun ulang; 4: sandi; 3: EV_SPELL_SLOT; 2: blok wujud
 
     /** {@code u16 panjang} + {@code u16 opcode}. */
     public static final int HEADER = 4;
@@ -128,6 +128,57 @@ public final class Wire {
      */
     public static final int OP_RIDE = 0x0120;
 
+    /**
+     * Berputar di tempat tanpa melangkah: {@code u8 arah} (R1/K4).
+     * Cermin {@code clif_parseside} (0x11) — menyetel arah, menyiarkannya,
+     * lalu memicu kait skrip {@code onTurn}.
+     */
+    public static final int OP_TURN = 0x0121;
+
+    /**
+     * Emosi: {@code u8 emosi} (R1/K4). Cermin {@code clif_parseemotion}
+     * (0x1D) — hanya berlaku pada keadaan normal, dan nomor aksinya
+     * <b>emosi + 11</b> di sisi server.
+     */
+    public static final int OP_EMOTE = 0x0122;
+
+    /**
+     * Minta sapuan ulang sekeliling (R1/K4). Cermin {@code case 0x38} yang
+     * memanggil {@code clif_refresh}; arah keluarnya sudah ada sejak awal
+     * ({@link #EV_SELF_REFRESH}).
+     */
+    public static final int OP_REFRESH = 0x0123;
+
+    /**
+     * Melihat benda: {@code u64 id} (R1/K4). Cermin {@code clif_parselookat}
+     * — yang di C mengirim petak lalu menyapu isinya; di sini klien sudah
+     * memegang id tiap benda, jadi ia menyebut yang dimaksud. Efeknya sama:
+     * kait skrip {@code onLook} dipicu untuk pasangan (penonton, benda).
+     */
+    public static final int OP_LOOK_AT = 0x0124;
+
+    /**
+     * Minta profil diri sendiri (R1). Cermin {@code case 0x2D} —
+     * {@code clif_mystaytus} bila ladang [5] nol, {@code clif_groupstatus}
+     * bila tidak. Di RTK2 keduanya jadi satu permintaan: {@code u8 ragam}
+     * (0 diri, 1 grup), dan jawabannya {@link #EV_SELF_PROFILE} /
+     * {@link #EV_GROUP} yang sudah ada.
+     */
+    public static final int OP_PROFILE = 0x0125;
+
+    /**
+     * Ubah teks profil sendiri: {@code str teks} (R1).
+     * Cermin {@code clif_changeprofile} (0x4F), tanpa gambarnya — gambar
+     * profil RetroTK adalah blob berformat klien lama.
+     */
+    public static final int OP_PROFILE_EDIT = 0x0126;
+
+    /** Minta daftar kota (R1). Cermin {@code clif_sendtowns} (0x66). */
+    public static final int OP_TOWNS = 0x0127;
+
+    /** Minta papan peringkat (R1). Cermin {@code clif_parseranking} (0x7D). */
+    public static final int OP_RANKING = 0x0128;
+
     // ------------------------------------------------------------------
     // 0x02xx — barang
     // ------------------------------------------------------------------
@@ -168,6 +219,20 @@ public final class Wire {
     /** {@code u8 slot, u8 konfirmasi} — lempar isi slot ke arah hadap. */
     public static final int OP_THROW = 0x0224;
 
+    /**
+     * Tukar posisi dua barang di kantong: {@code u8 dari, u8 ke} (R1/K4).
+     * Cermin {@code clif_parsechangepos} → {@code pc_changeitem}.
+     * ⚠️ Slot 0-BASIS di kabel; C memakai 1-basis dan menguranginya sendiri.
+     */
+    public static final int OP_SWAP_ITEM = 0x0225;
+
+    /**
+     * Tukar posisi dua mantra di buku: {@code u8 dari, u8 ke} (R1/K4).
+     * Cermin {@code clif_parsechangespell}, yang menghapus kedua slot di
+     * klien lalu mengirim ulang seluruh buku.
+     */
+    public static final int OP_SWAP_SPELL = 0x0226;
+
     // ------------------------------------------------------------------
     // 0x03xx — bicara
     // ------------------------------------------------------------------
@@ -187,6 +252,31 @@ public final class Wire {
      * {@code Friends} adalah hal yang berbeda meski namanya mirip.</p>
      */
     public static final int OP_IGNORE = 0x0302;
+
+    /**
+     * Simpan daftar teman: {@code u8 jumlah, jumlah × str nama} (R1).
+     * Cermin {@code clif_parsefriends} (0x77) — C menyimpan 20 slot tetap
+     * di tabel {@code Friends}; nama yang tidak dikirim dikosongkan.
+     */
+    public static final int OP_FRIENDS = 0x0303;
+
+    /**
+     * Setel penanda pemburu: {@code u8 nyala, str catatan} (R1).
+     * Cermin {@code clif_huntertoggle} (0x84) → kolom {@code ChaHunter}
+     * dan {@code ChaHunterNote}.
+     */
+    public static final int OP_HUNTER = 0x0304;
+
+    /**
+     * Papan pesan & pos (R1): {@code u8 aksi, u16 papan, u16 pos}.
+     * Cermin {@code clif_handle_boards} (0x3B) — aksi 1 tampilkan daftar
+     * papan, 2 tampilkan pos sebuah papan, 3 baca pos, 5 hapus pos,
+     * 9 nmail. Sisi tampilannya ({@link #EV_BOARD_LIST} dkk.) sudah ada.
+     */
+    public static final int OP_BOARD = 0x0305;
+
+    /** Ambil kiriman (R1). Cermin {@code clif_parseparcel} (0x41). */
+    public static final int OP_PARCEL = 0x0306;
 
     // ------------------------------------------------------------------
     // 0x07xx — setelan pemain
@@ -527,6 +617,29 @@ public final class Wire {
     public static final int EV_SELF_AETHER = EV | 0x010C;
     /** {@code u8 cuaca} — pemain yang mematikan setelannya tidak menerimanya. */
     public static final int EV_WEATHER = EV | 0x010D;
+
+    /**
+     * Kalender dunia (R2): {@code u8 jam, u8 hari, u8 musim, u16 tahun}.
+     * Cermin {@code clif_sendtime}, yang di RetroTK hanya membawa jam dan
+     * tahun; hari dan musim ikut di sini karena skrip memakainya dan klien
+     * tidak bisa menghitungnya sendiri.
+     */
+    public static final int EV_WORLD_TIME = EV | 0x0110;
+
+    /**
+     * Pindah ke map server lain (R3/C3): {@code str host, u16 port,
+     * u16 peta, u16 x, u16 y}.
+     *
+     * <p>Klien menutup sambungan ini lalu menyambung ke alamat itu dengan
+     * nama dan sandi yang sama. Petak tujuannya ikut dikirim supaya klien
+     * bisa memuat petanya lebih dulu; kebenarannya tetap milik server
+     * tujuan, yang menempatkan pemain dari {@code lastPos}.</p>
+     *
+     * <p>⚠️ Berbeda dari RetroTK (paket 0x03) yang juga mengirim kunci
+     * handshake {@code "KruIn7inc"} — RTK2 tidak memakai kunci itu sama
+     * sekali; yang membuktikan identitas adalah sandi di {@code OP_HELLO}.</p>
+     */
+    public static final int EV_TRANSFER = EV | 0x0111;
     /**
      * {@code u32 setelan, u8 obrolanKlan} — seluruh kata setelan pemain.
      *
@@ -541,6 +654,19 @@ public final class Wire {
      */
     public static final int EV_SELF_SETTINGS = EV | 0x010E;
 
+    /**
+     * Profil pemain sendiri (R1) — yang TIDAK bisa dihitung klien:
+     * {@code str namaKelas, str gelar, str klan, str pasangan,
+     * u32 tnl, u16 persenXpKali100, str profil, u16 jumlahLegenda,
+     * jumlahLegenda × {str teks, u8 warna, u8 ikon}}.
+     *
+     * <p>Inilah pengganti {@code Clif.sendMyStatus()} yang sejak awal
+     * sengaja dibiarkan TAHAP 1: di RetroTK ladang-ladang ini menumpang
+     * paket 0x39; di RTK2 ia berdiri sendiri dan hanya dikirim saat
+     * diminta.</p>
+     */
+    public static final int EV_SELF_PROFILE = EV | 0x010F;
+
     // 0x82xx — barang & perlengkapan
     /** {@code u8 slot} + blok barang */
     public static final int EV_INV_SLOT = EV | 0x0200;
@@ -552,6 +678,14 @@ public final class Wire {
     public static final int EV_EQUIP_SLOT_CLEARED = EV | 0x0203;
     /** {@code u8 slot} */
     public static final int EV_SPELL_REMOVED = EV | 0x0204;
+
+    /**
+     * Satu slot buku mantra terisi (K3.2): {@code u8 slot, u32 id, u8 tipe,
+     * str nama, str pertanyaan}. Tipe = {@code SplType}: menentukan bentuk
+     * muatan {@code OP_CAST} untuk slot itu (1 bertanya, 2 bersasaran,
+     * selainnya tanpa muatan). Pasangan {@link #EV_SPELL_REMOVED}.
+     */
+    public static final int EV_SPELL_SLOT = EV | 0x0205;
 
     // 0x83xx — teks
     /** {@code u8 ragam, u64 idPembicara, str teks} */
@@ -618,6 +752,20 @@ public final class Wire {
     public static final int EV_BOARD_QUESTIONS = EV | 0x0603;
     /** {@code u16 n, (str nama, u32 kekuatan)[]} */
     public static final int EV_POWER_BOARD = EV | 0x0604;
+
+    /**
+     * Daftar kota (R1): {@code u16 jumlah, jumlah × str nama}.
+     * Cermin {@code clif_sendtowns}, yang juga hanya mengirim NAMA —
+     * daftarnya datang dari baris {@code town:} di {@code conf/map.conf}
+     * ({@code map_town_add}), tanpa koordinat.
+     */
+    public static final int EV_TOWNS = EV | 0x0605;
+
+    /**
+     * Papan peringkat (R1): {@code str judul, u16 jumlah,
+     * jumlah × {u16 peringkat, str nama, u32 nilai}}.
+     */
+    public static final int EV_RANKING = EV | 0x0606;
 
     // 0x87xx — grup
     /**
@@ -739,6 +887,129 @@ public final class Wire {
         /** Panjang total bingkai yang akan dihasilkan. */
         public int length() {
             return pos;
+        }
+    }
+
+    // ==================================================================
+    // blok muatan bersama (K3.3)
+    // ==================================================================
+
+    /**
+     * Blok yang dipakai beberapa peristiwa: <b>blok barang</b> dan <b>blok
+     * benda</b> (dasar + wujud karakter).
+     *
+     * <p>⚠️ Dulu penyusunnya di {@code Rtk2ClientView} (server) dan
+     * pembacanya di {@code Blocks} (klien) — dua berkas berbeda yang tidak
+     * dijaga alat mana pun; ladang yang ditambah sebelah baru ketahuan
+     * saat runtime. Sejak K3.3 KEDUA arah tinggal di sini, jadi
+     * {@code wiresync} ikut menjaganya: menyunting satu sisi membuat
+     * gerbangnya merah pada menit itu juga.</p>
+     *
+     * <p>Kelas ini hanya primitif — tidak boleh mengimpor apa pun yang
+     * khusus satu sisi (aturan yang sama dengan {@link Bytes}).</p>
+     */
+    public static final class Blok {
+
+        private Blok() {
+        }
+
+        /** Nilai {@code kind} pada blok benda. */
+        public static final int KIND_PC = 1;
+        public static final int KIND_MOB = 2;
+        public static final int KIND_NPC = 3;
+        public static final int KIND_ITEM = 4;
+
+        /** Bit 0 bendera blok benda: digambar sebagai karakter berlapis. */
+        public static final int FLAG_AS_CHAR = 1;
+
+        /**
+         * Satu barang di kantong, perlengkapan, atau pertukaran. Barang
+         * kosong = id 0 dengan seluruh ladang nol (bukan ketiadaan blok).
+         */
+        public record Barang(long id, long jumlah, String tampilan, String nama,
+                             int ikon, int warna, long dura, long dilindungi) {
+            public static final Barang KOSONG =
+                    new Barang(0, 0, "", "", 0, 0, 0, 0);
+        }
+
+        public static void tulisBarang(Writer w, Barang b) {
+            w.u64(b.id()).u32(b.jumlah()).str(b.tampilan()).str(b.nama())
+             .u16(b.ikon()).u8(b.warna()).u32(b.dura()).u32(b.dilindungi());
+        }
+
+        public static Barang bacaBarang(Reader r) {
+            return new Barang(r.u64(), r.u32(), r.str(), r.str(),
+                    r.u16(), r.u8(), r.u32(), r.u32());
+        }
+
+        /** Satu slot perlengkapan yang benar-benar tergambar di badan. */
+        public record Slot(int slot, int grafik, int warna) {
+        }
+
+        /**
+         * Wujud karakter berlapis — menempel pada blok dasar SETIAP benda
+         * ber-{@link #FLAG_AS_CHAR}: pemain, NPC {@code npcType==1}, dan
+         * mob ber-{@code MobIsNpc}.
+         */
+        public record Wujud(int sex, int state, int samaran, int warnaSamaran,
+                            int kecepatan, int wajah, int rambut,
+                            int warnaRambut, int warnaWajah, int warnaKulit,
+                            java.util.List<Slot> slot, int tanda) {
+        }
+
+        public static void tulisDasar(Writer w, long id, int kind, int x,
+                                      int y, int side, int grafik, int warna,
+                                      int bendera, String nama) {
+            w.u64(id).u8(kind).u16(x).u16(y).u8(side)
+             .u16(grafik).u8(warna).u8(bendera).str(nama);
+        }
+
+        public static void tulisWujud(Writer w, Wujud u) {
+            w.u8(u.sex()).u8(u.state())
+             .u16(u.samaran()).u8(u.warnaSamaran())
+             .u8(u.kecepatan())
+             .u8(u.wajah()).u8(u.rambut()).u8(u.warnaRambut())
+             .u8(u.warnaWajah()).u8(u.warnaKulit());
+            w.u8(u.slot().size());
+            for (Slot e : u.slot()) {
+                w.u8(e.slot()).u16(e.grafik()).u8(e.warna());
+            }
+            w.u8(u.tanda());
+        }
+
+        /**
+         * Benda apa pun di dunia. {@code wujud} null bila tidak
+         * ber-FLAG_AS_CHAR; {@code jumlah} hanya berarti untuk KIND_ITEM.
+         */
+        public record Benda(long id, int kind, int x, int y, int side,
+                            int grafik, int warnaGrafik, int bendera,
+                            String nama, Wujud wujud, long jumlah) {
+        }
+
+        public static Benda bacaBenda(Reader r) {
+            long id = r.u64();
+            int kind = r.u8();
+            int x = r.u16(), y = r.u16(), side = r.u8();
+            int grafik = r.u16(), warna = r.u8(), bendera = r.u8();
+            String nama = r.str();
+            Wujud wujud = null;
+            if ((bendera & FLAG_AS_CHAR) != 0) {
+                int sex = r.u8(), state = r.u8();
+                int samaran = r.u16(), warnaSamaran = r.u8(), kecepatan = r.u8();
+                int wajah = r.u8(), rambut = r.u8(), warnaRambut = r.u8();
+                int warnaWajah = r.u8(), warnaKulit = r.u8();
+                int n = r.u8();
+                java.util.List<Slot> slot = new java.util.ArrayList<>(n);
+                for (int i = 0; i < n; i++) {
+                    slot.add(new Slot(r.u8(), r.u16(), r.u8()));
+                }
+                wujud = new Wujud(sex, state, samaran, warnaSamaran, kecepatan,
+                        wajah, rambut, warnaRambut, warnaWajah, warnaKulit,
+                        java.util.List.copyOf(slot), r.u8());
+            }
+            long jumlah = kind == KIND_ITEM ? r.u32() : 0;
+            return new Benda(id, kind, x, y, side, grafik, warna, bendera,
+                    nama, wujud, jumlah);
         }
     }
 }

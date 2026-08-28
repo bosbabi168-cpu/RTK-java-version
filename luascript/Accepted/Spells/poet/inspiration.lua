@@ -7,7 +7,7 @@ inspiration_poet = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That cannot save them now.")
+			player:sendMinitext("Itu tidak bisa menyelamatkannya lagi.")
 			return
 		end
 
@@ -22,12 +22,12 @@ inspiration_poet = {
 			local mana = target.magic
 			target.magic = 0
 			target:sendStatus()
-			target:sendMinitext(player.name .. " casts Inspiration on you.")
+			target:sendMinitext(player.name .. " merapal Inspiration padamu.")
 
 			player.magic = player.magic + mana
 			player:sendAction(6, 20)
 			player:playSound(22)
-			player:sendMinitext("You cast Inspiration.")
+			player:sendMinitext("Kau merapal Inspiration.")
 			player:sendStatus()
 		end
 	end,
@@ -49,7 +49,7 @@ draw_energy_poet = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That cannot save them now.")
+			player:sendMinitext("Itu tidak bisa menyelamatkannya lagi.")
 			return
 		end
 
@@ -64,12 +64,12 @@ draw_energy_poet = {
 			local mana = target.magic
 			target.magic = 0
 			target:sendStatus()
-			target:sendMinitext(player.name .. " casts Draw Energy on you.")
+			target:sendMinitext(player.name .. " merapal Draw Energy padamu.")
 
 			player.magic = player.magic + mana
 			player:sendAction(6, 20)
 			player:playSound(22)
-			player:sendMinitext("You cast Draw Energy.")
+			player:sendMinitext("Kau merapal Draw Energy.")
 			player:sendStatus()
 		end
 	end,
@@ -91,7 +91,7 @@ harness_power_poet = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That cannot save them now.")
+			player:sendMinitext("Itu tidak bisa menyelamatkannya lagi.")
 			return
 		end
 
@@ -106,12 +106,12 @@ harness_power_poet = {
 			local mana = target.magic
 			target.magic = 0
 			target:sendStatus()
-			target:sendMinitext(player.name .. " casts Harness Power on you.")
+			target:sendMinitext(player.name .. " merapal Harness Power padamu.")
 
 			player.magic = player.magic + mana
 			player:sendAction(6, 20)
 			player:playSound(22)
-			player:sendMinitext("You cast Harness Power.")
+			player:sendMinitext("Kau merapal Harness Power.")
 			player:sendStatus()
 		end
 	end,
@@ -133,7 +133,7 @@ combine_focus_poet = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That cannot save them now.")
+			player:sendMinitext("Itu tidak bisa menyelamatkannya lagi.")
 			return
 		end
 
@@ -148,12 +148,12 @@ combine_focus_poet = {
 			local mana = target.magic
 			target.magic = 0
 			target:sendStatus()
-			target:sendMinitext(player.name .. " casts Combine Focus on you.")
+			target:sendMinitext(player.name .. " merapal Combine Focus padamu.")
 
 			player.magic = player.magic + mana
 			player:sendAction(6, 20)
 			player:playSound(22)
-			player:sendMinitext("You cast Combine Focus.")
+			player:sendMinitext("Kau merapal Combine Focus.")
 			player:sendStatus()
 		end
 	end,

@@ -8,7 +8,7 @@ set_bladestorm_trap = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 		player.registry["bladestorm"] = 1
@@ -27,7 +27,7 @@ set_bladestorm_trap = {
 		player:playSound(0)
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:sendMinitext("You set a trap!")
+		player:sendMinitext("Kau memasang jebakan!")
 	end,
 
 	requirements = function(player)
@@ -49,7 +49,7 @@ set_swords_dance_trap = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 		player.registry["bladestorm"] = 1
@@ -68,7 +68,7 @@ set_swords_dance_trap = {
 		player:playSound(0)
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:sendMinitext("You set a trap!")
+		player:sendMinitext("Kau memasang jebakan!")
 	end,
 
 	requirements = function(player)
@@ -90,7 +90,7 @@ set_tigers_ambush_trap = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 		player.registry["bladestorm"] = 1
@@ -109,7 +109,7 @@ set_tigers_ambush_trap = {
 		player:playSound(0)
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:sendMinitext("You set a trap!")
+		player:sendMinitext("Kau memasang jebakan!")
 	end,
 
 	requirements = function(player)
@@ -131,7 +131,7 @@ set_cutting_edge_trap = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 		player.registry["bladestorm"] = 1
@@ -150,7 +150,7 @@ set_cutting_edge_trap = {
 		player:playSound(0)
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:sendMinitext("You set a trap!")
+		player:sendMinitext("Kau memasang jebakan!")
 	end,
 
 	requirements = function(player)

@@ -17,7 +17,7 @@ BonHwaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"It was foolhardy of you to venture here, one so weak as yourself. There is nothing I can do for you."
+					"Nekat sekali kau datang ke sini, selemah dirimu. Tidak ada yang bisa kulakukan untukmu."
 				},
 				0
 			)
@@ -43,7 +43,7 @@ BonHwaNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			options
 		)
 
@@ -54,14 +54,14 @@ BonHwaNpc = {
 				return
 			end
 
-			local options2 = {"My Weapon"}
+			local options2 = {"Senjataku"}
 
 			local choice2 = player:menuString(
-				"What would you like to enchant?",
+				"Apa yang ingin kau jampi?",
 				options2
 			)
 
-			if choice2 == "My Weapon" then
+			if choice2 == "Senjataku" then
 				local availableItems = {}
 				local pathItems = {}
 				local subpathItems = {}
@@ -169,7 +169,7 @@ BonHwaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Your " .. selected_item.name .. " is already upgraded to its max level and cannot be upgraded further."
+							"" .. selected_item.name .. " milikmu sudah pada tingkat tertinggi dan tidak bisa ditingkatkan lagi."
 						},
 						0
 					)
@@ -177,8 +177,8 @@ BonHwaNpc = {
 				end
 
 				local choice3 = player:menuSeq(
-					"It will cost " .. Tools.formatNumber(200000000) .. " experience to enchant the " .. selected_item.name .. " to your current mark.\n\nWould you like to upgrade this item?",
-					{"Okay", "No"},
+					"Biayanya " .. Tools.formatNumber(200000000) .. " pengalaman untuk menyihir " .. selected_item.name .. " sampai tandamu sekarang.\n\nMau kau tingkatkan barang ini?",
+					{"Okay", "Tidak"},
 					{}
 				)
 
@@ -186,7 +186,7 @@ BonHwaNpc = {
 					-- accept
 					if player.exp < 200000000 then
 						player:dialogSeq(
-							{t, "You do not have enough experience."},
+							{t, "Pengalamanmu tidak cukup."},
 							0
 						)
 						return
@@ -201,11 +201,11 @@ BonHwaNpc = {
 						0,
 						player.ID
 					)
-					player:dialogSeq({t, "Use this weapon well and wisely."}, 0)
+					player:dialogSeq({t, "Pakailah senjata ini dengan baik dan bijak."}, 0)
 				elseif choice3 == 1 then
 					-- no
 					player:dialogSeq(
-						{t, "Please return to me if you change your mind."},
+						{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 						0
 					)
 				end
@@ -247,21 +247,21 @@ BonHwaNpc = {
 			end
 
 			if not player:hasLegend("passed_first_trial_of_knowledge") then
-				table.insert(options, "First Trial of Knowledge")
+				table.insert(options, "Ujian Pertama Pengetahuan")
 			end
 			if not player:hasLegend("passed_first_trial_of_strength") then
-				table.insert(options, "First Trial of Strength")
+				table.insert(options, "Ujian Pertama Kekuatan")
 			end
 			if not player:hasLegend("passed_first_trial_of_wealth") then
-				table.insert(options, "First Trial of Wealth")
+				table.insert(options, "Ujian Pertama Kekayaan")
 			end
 
-			local choice2 = player:menuString("Please select a trial.", options)
+			local choice2 = player:menuString("Pilih satu ujian.", options)
 
-			if choice2 == "First Trial of Knowledge" then
+			if choice2 == "Ujian Pertama Pengetahuan" then
 				local choice3 = player:menuSeq(
-					"To complete this trial, you must sacrifice to me 1,200,000,000 (1.2 Billion) experience. Do you wish to do so?",
-					{"Yes", "No"},
+					"Untuk menuntaskan ujian ini, kau harus mengorbankan 1.200.000.000 (1,2 miliar) pengalaman kepadaku. Kau bersedia?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
@@ -269,7 +269,7 @@ BonHwaNpc = {
 					-- yes
 					if player.exp < 1200000000 then
 						player:dialogSeq(
-							{t, "Come back when you have enough experience."},
+							{t, "Kembalilah kalau pengalamanmu sudah cukup."},
 							0
 						)
 						return
@@ -279,7 +279,7 @@ BonHwaNpc = {
 					player:sendStatus()
 
 					player:addLegend(
-						"Passed First Trial of Knowledge (" .. curT() .. ")",
+						"Lulus Ujian Pertama Pengetahuan (" .. curT() .. ")",
 						"passed_first_trial_of_knowledge",
 						3,
 						15
@@ -288,19 +288,19 @@ BonHwaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Congratulations! You have completed the First Trial of Knowledge."
+							"Selamat! Kau telah menuntaskan Ujian Pertama Pengetahuan."
 						},
 						0
 					)
 				elseif choice3 == 2 then
 					-- no
-					player:dialogSeq({t, "Come back when you are serious."}, 0)
+					player:dialogSeq({t, "Kembalilah kalau kau sudah serius."}, 0)
 				end
-			elseif choice2 == "First Trial of Strength" then
+			elseif choice2 == "Ujian Pertama Kekuatan" then
 				player:dialogSeq(
 					{
 						t,
-						"For this trial, I will need you to kill the pesky Spirit Rat who lurks in the Rat Cave. Return to me when you have done so."
+						"Untuk ujian ini kau harus membunuh Spirit Rat menyebalkan yang berkeliaran di Rat Cave. Kembalilah kepadaku setelah selesai."
 					},
 					1
 				)
@@ -308,7 +308,7 @@ BonHwaNpc = {
 				if player:killCount("spirit_rat") >= 1 then
 					-- killed spirit rat
 					player:addLegend(
-						"Passed First Trial of Strength (" .. curT() .. ")",
+						"Lulus Ujian Pertama Kekuatan (" .. curT() .. ")",
 						"passed_first_trial_of_strength",
 						1,
 						15
@@ -316,21 +316,21 @@ BonHwaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Congratulations! You have completed the First Trial of Strength."
+							"Selamat! Kau telah menuntaskan Ujian Pertama Kekuatan."
 						},
 						0
 					)
 				else
 					player:dialogSeq(
-						{t, "You still need to slay the Spirit Rat."},
+						{t, "Kau masih harus membunuh Spirit Rat."},
 						0
 					)
 					return
 				end
-			elseif choice2 == "First Trial of Wealth" then
+			elseif choice2 == "Ujian Pertama Kekayaan" then
 				local choice3 = player:menuSeq(
-					"To complete this trial, you must sacrifice to me 600,000 coins and 5 Well Crafted White ambers. Do you wish to do so?",
-					{"Yes", "No"},
+					"Untuk menuntaskan ujian ini, kau harus mengorbankan 600.000 keping dan 5 Well Crafted White amber kepadaku. Kau bersedia?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
@@ -338,7 +338,7 @@ BonHwaNpc = {
 					--yes
 					if player.money < 600000 then
 						player:dialogSeq(
-							{t, "Return to me when you have the gold."},
+							{t, "Temui aku lagi kalau emasnya sudah kau punya."},
 							0
 						)
 						return
@@ -348,7 +348,7 @@ BonHwaNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Return to me when you have the 5 well crafted white ambers."
+								"Kembalilah kepadaku kalau 5 well crafted white amber-nya sudah kau punya."
 							},
 							0
 						)
@@ -358,14 +358,14 @@ BonHwaNpc = {
 					player:removeGold(600000)
 					player:removeItem("well_crafted_white_amber", 5)
 					player:addLegend(
-						"Passed First Trial of Wealth (" .. curT() .. ")",
+						"Lulus Ujian Pertama Kekayaan (" .. curT() .. ")",
 						"passed_first_trial_of_wealth",
 						1,
 						15
 					)
 				elseif choice3 == 2 then
 					--no
-					player:dialogSeq({t, "Come back when you are serious."}, 0)
+					player:dialogSeq({t, "Kembalilah kalau kau sudah serius."}, 0)
 					return
 				end
 			end
@@ -409,30 +409,30 @@ BonHwaNpc = {
 			end
 
 			if not player:hasLegend("passed_second_trial_of_knowledge") then
-				table.insert(options, "Second Trial of Knowledge")
+				table.insert(options, "Ujian Kedua Pengetahuan")
 			end
 			if not player:hasLegend("passed_second_trial_of_strength") then
-				table.insert(options, "Second Trial of Strength")
+				table.insert(options, "Ujian Kedua Kekuatan")
 			end
 			if not player:hasLegend("passed_second_trial_of_wealth") then
-				table.insert(options, "Second Trial of Wealth")
+				table.insert(options, "Ujian Kedua Kekayaan")
 			end
 			if not player:hasLegend("passed_second_trial_of_skill") then
-				table.insert(options, "Second Trial of Skill")
+				table.insert(options, "Ujian Kedua Keahlian")
 			end
 			if not player:hasLegend("passed_second_trial_of_culture") then
-				table.insert(options, "Second Trial of Culture")
+				table.insert(options, "Ujian Kedua Kebudayaan")
 			end
 			if not player:hasLegend("passed_second_trial_of_spirit") then
-				table.insert(options, "Second Trial of Spirit")
+				table.insert(options, "Ujian Kedua Jiwa")
 			end
 
-			local choice2 = player:menuString("Please select a trial.", options)
+			local choice2 = player:menuString("Pilih satu ujian.", options)
 
-			if choice2 == "Second Trial of Knowledge" then
+			if choice2 == "Ujian Kedua Pengetahuan" then
 				local choice3 = player:menuSeq(
-					"To complete this trial, you must sacrifice to me 1,200,000,000 (1.2 Billion) experience. Do you wish to do so?",
-					{"Yes", "No"},
+					"Untuk menuntaskan ujian ini, kau harus mengorbankan 1.200.000.000 (1,2 miliar) pengalaman kepadaku. Kau bersedia?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
@@ -440,7 +440,7 @@ BonHwaNpc = {
 					-- yes
 					if player.exp < 1200000000 then
 						player:dialogSeq(
-							{t, "Come back when you have enough experience."},
+							{t, "Kembalilah kalau pengalamanmu sudah cukup."},
 							0
 						)
 						return
@@ -450,7 +450,7 @@ BonHwaNpc = {
 					player:sendStatus()
 
 					player:addLegend(
-						"Passed Second Trial of Knowledge (" .. curT() .. ")",
+						"Lulus Ujian Kedua Pengetahuan (" .. curT() .. ")",
 						"passed_second_trial_of_knowledge",
 						3,
 						15
@@ -459,19 +459,19 @@ BonHwaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Congratulations! You have completed the Second Trial of Knowledge."
+							"Selamat! Kau telah menuntaskan Ujian Kedua Pengetahuan."
 						},
 						0
 					)
 				elseif choice3 == 2 then
 					-- no
-					player:dialogSeq({t, "Come back when you are serious."}, 0)
+					player:dialogSeq({t, "Kembalilah kalau kau sudah serius."}, 0)
 				end
-			elseif choice2 == "Second Trial of Culture" then
+			elseif choice2 == "Ujian Kedua Kebudayaan" then
 				player:dialogSeq(
 					{
 						t,
-						"For this trial, I will need you to attain Skilled level or better in either Tailoring, Metalworking, Jewelcrafting, or Carpentry"
+						"Untuk ujian ini kau harus mencapai tingkat Skilled atau lebih tinggi pada salah satu dari Tailoring, Metalworking, Jewelcrafting, atau Carpentry"
 					},
 					1
 				)
@@ -486,7 +486,7 @@ BonHwaNpc = {
 					"skilled"
 				) then
 					player:addLegend(
-						"Passed Second Trial of Culture (" .. curT() .. ")",
+						"Lulus Ujian Kedua Kebudayaan (" .. curT() .. ")",
 						"passed_second_trial_of_culture",
 						3,
 						15
@@ -494,7 +494,7 @@ BonHwaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Congratulations! You have completed the Second Trial of Culture."
+							"Selamat! Kau telah menuntaskan Ujian Kedua Kebudayaan."
 						},
 						0
 					)
@@ -503,18 +503,18 @@ BonHwaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You are not yet Skilled level in either Tailoring, Metalworking, Jewelcrafting, or Carpentry. Return to me when you are."
+							"Kau belum mencapai tingkat Skilled pada Tailoring, Metalworking, Jewelcrafting, maupun Carpentry. Kembalilah kepadaku kalau sudah."
 						},
 						0
 					)
 					return
 				end
-			elseif choice2 == "Second Trial of Spirit" then
+			elseif choice2 == "Ujian Kedua Jiwa" then
 				if not player:karmaCheck("tiger") then
 					player:dialogSeq(
 						{
 							t,
-							"You must have at least Tiger karma or better to pass the Second Trial of Spirit"
+							"Kau harus punya karma Tiger atau lebih baik untuk lulus Ujian Kedua Jiwa"
 						},
 						0
 					)
@@ -522,7 +522,7 @@ BonHwaNpc = {
 				end
 
 				player:addLegend(
-					"Passed Second Trial of Spirit (" .. curT() .. ")",
+					"Lulus Ujian Kedua Jiwa (" .. curT() .. ")",
 					"passed_second_trial_of_spirit",
 					3,
 					15
@@ -530,16 +530,16 @@ BonHwaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Congratulations! You have completed the Second Trial of Spirit."
+						"Selamat! Kau telah menuntaskan Ujian Kedua Jiwa."
 					},
 					0
 				)
-			elseif choice2 == "Second Trial of Skill" then
+			elseif choice2 == "Ujian Kedua Keahlian" then
 				local passed = false
 				player:dialogSeq(
 					{
 						t,
-						"For this trial, I will need you to attain at least 6 carnage victories or 12 combined minigame victories. Return to me when you have done so."
+						"Untuk ujian ini kau harus meraih sedikitnya 6 kemenangan carnage atau 12 kemenangan minigame secara keseluruhan. Kembalilah kepadaku setelah selesai."
 					},
 					1
 				)
@@ -560,7 +560,7 @@ BonHwaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You have not achieved enough victories to satisfy my desire for blood shed. Return to me when you have."
+							"Kemenanganmu belum cukup untuk memuaskan hasrat darahku. Kembalilah kalau sudah."
 						},
 						0
 					)
@@ -568,7 +568,7 @@ BonHwaNpc = {
 				end
 
 				player:addLegend(
-					"Passed Second Trial of Skill (" .. curT() .. ")",
+					"Lulus Ujian Kedua Keahlian (" .. curT() .. ")",
 					"passed_second_trial_of_skill",
 					1,
 					15
@@ -576,11 +576,11 @@ BonHwaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Congratulations! You have completed the Second Trial of Skill."
+						"Selamat! Kau telah menuntaskan Ujian Kedua Keahlian."
 					},
 					0
 				)
-			elseif choice2 == "Second Trial of Strength" then
+			elseif choice2 == "Ujian Kedua Kekuatan" then
 				local mobs1 = player:allMythicCaveBosses("rabbit")
 				local mobs2 = player:allMythicCaveBosses("monkey")
 				local mobs3 = player:allMythicCaveBosses("dog")
@@ -596,7 +596,7 @@ BonHwaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"For this trial, I will need you to kill the Spirit and Avenger bosses in the Mythic caves, except Tiger, Dragon, Sheep and Snake. Return to me when you have done so."
+							"Untuk ujian ini kau harus membunuh bos Spirit dan Avenger di gua Mythic, kecuali Tiger, Dragon, Sheep, dan Snake. Kembalilah kepadaku setelah selesai."
 						},
 						1
 					)
@@ -645,7 +645,7 @@ BonHwaNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"You did not heed my words and kill enough to fill my vengeance!"
+								"Kau tidak mengindahkan kata-kataku dan tidak cukup banyak membunuh untuk memenuhi dendamku!"
 							},
 							0
 						)
@@ -663,7 +663,7 @@ BonHwaNpc = {
 					player:clearQuestKillCounts(quest, mobs8)
 
 					player:addLegend(
-						"Passed Second Trial of Strength (" .. curT() .. ")",
+						"Lulus Ujian Kedua Kekuatan (" .. curT() .. ")",
 						"passed_second_trial_of_strength",
 						1,
 						15
@@ -671,15 +671,15 @@ BonHwaNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Congratulations! You have completed the Second Trial of Strength."
+							"Selamat! Kau telah menuntaskan Ujian Kedua Kekuatan."
 						},
 						0
 					)
 				end
-			elseif choice2 == "Second Trial of Wealth" then
+			elseif choice2 == "Ujian Kedua Kekayaan" then
 				local choice3 = player:menuSeq(
-					"To complete this trial, you must sacrifice to me 2,000,000 gold. Do you wish to do so?",
-					{"Yes", "No"},
+					"Untuk menuntaskan ujian ini, kau harus mengorbankan 2.000.000 emas kepadaku. Kau bersedia?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
@@ -687,7 +687,7 @@ BonHwaNpc = {
 					--yes
 					if player.money < 2000000 then
 						player:dialogSeq(
-							{t, "Return to me when you have the gold."},
+							{t, "Temui aku lagi kalau emasnya sudah kau punya."},
 							0
 						)
 						return
@@ -696,14 +696,14 @@ BonHwaNpc = {
 					player:removeGold(2000000)
 
 					player:addLegend(
-						"Passed Second Trial of Wealth (" .. curT() .. ")",
+						"Lulus Ujian Kedua Kekayaan (" .. curT() .. ")",
 						"passed_second_trial_of_wealth",
 						7,
 						15
 					)
 				elseif choice3 == 2 then
 					--no
-					player:dialogSeq({t, "Come back when you are serious."}, 0)
+					player:dialogSeq({t, "Kembalilah kalau kau sudah serius."}, 0)
 					return
 				end
 			end

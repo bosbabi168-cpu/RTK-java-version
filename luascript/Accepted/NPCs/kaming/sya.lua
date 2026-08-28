@@ -9,7 +9,7 @@ SyaNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local options = {"Buy", "Sell"}
+		local options = {"Beli", "Jual"}
 		local buyItems = {"sonhi_cloak", "sonhi_dress", "magic_mirror"}
 		local sellItems = {
 			"sonhi_cloak",
@@ -30,16 +30,16 @@ SyaNpc = {
 		}
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			options
 		)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buyItems
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend("What are you willing to sell today?", sellItems)
 		end
 	end),
@@ -91,7 +91,7 @@ SyaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Uhh... I really have no idea what you are talking about."
+						"Ehh... aku sungguh tidak paham apa yang kau bicarakan."
 					},
 					0
 				)
@@ -103,14 +103,14 @@ SyaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Are you mad? You want the seal of KaMing himself?",
-						"Do you think he left his seal in his shirt pocket the last time he was in my store?",
-						"Or perhaps he left it with me as a sign of respect like ...oh...hmmmm...",
-						"How badly do you really want this seal?",
-						"I might know something about somebody, who knows something about somebody else, who knows something about the seal.",
-						"But I am not about to give out such accurate information so easily... let me think here...",
-						"I am trying to mend some old clothes; but my Weaving tools are wearing out.",
-						"If you would get me another pair, I might be grateful enough to help you."
+						"Kau gila? Kau mau segel KaMing sendiri?",
+						"Kau pikir ia meninggalkan segelnya di saku baju waktu terakhir mampir ke tokoku?",
+						"Atau mungkin ia menitipkannya padaku sebagai tanda hormat, seperti ...oh...hmmmm...",
+						"Seberapa besar sebenarnya kau menginginkan segel ini?",
+						"Mungkin aku tahu sesuatu tentang seseorang, yang tahu sesuatu tentang orang lain, yang tahu sesuatu tentang segel itu.",
+						"Tapi aku tidak akan membocorkan keterangan seakurat itu semudah ini... biar kupikir dulu...",
+						"Aku sedang menambal beberapa pakaian tua, tetapi alat tenunku sudah aus.",
+						"Kalau kau mau mengambilkan sepasang lagi, mungkin rasa terima kasihku cukup untuk menolongmu."
 					},
 					0
 				)
@@ -123,8 +123,8 @@ SyaNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"I am trying to mend some old clothes; but my Weaving tools are wearing out.",
-								"If you would get me another pair, I might be grateful enough to help you."
+								"Aku sedang menambal beberapa pakaian tua, tetapi alat tenunku sudah aus.",
+								"Kalau kau mau mengambilkan sepasang lagi, mungkin rasa terima kasihku cukup untuk menolongmu."
 							},
 							0
 						)
@@ -138,10 +138,10 @@ SyaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Oh, these are nice! These should improve the quality of my work greatly.",
+						"Oh, ini bagus! Ini akan sangat meningkatkan mutu kerjaku.",
 						"Hmmm...well, as promised...",
-						"Blood, the warrior who has a shop just south of here, was muttering something about somebody else seeing the seal.",
-						"I don't know much more about it, other than that. But I set you on the right track, now you know who to ask"
+						"Blood, prajurit yang punya toko tepat di selatan sini, sempat menggumamkan sesuatu tentang orang lain yang pernah melihat segel itu.",
+						"Selain itu aku tidak tahu lebih banyak. Tapi aku sudah menaruhmu di jalur yang benar; sekarang kau tahu harus bertanya kepada siapa"
 					},
 					0
 				)
@@ -153,8 +153,8 @@ SyaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Oh please don't remind me of them!",
-					"While growing up with my parents as we moved all over the desert all we had to drink was water from a wolf skin flask."
+					"Oh, tolong jangan ingatkan aku pada mereka!",
+					"Waktu tumbuh besar bersama orang tuaku, berpindah-pindah di seluruh gurun, yang bisa kami minum hanya air dari kantong kulit serigala."
 				},
 				1
 			)
@@ -163,7 +163,7 @@ SyaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"That is one of the reasons why I decided to settle here when the opportunity came, I couldn't take it any more."
+						"Itu salah satu alasan aku memutuskan menetap di sini ketika kesempatannya datang; aku sudah tidak tahan."
 					},
 					0
 				)
@@ -173,7 +173,7 @@ SyaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"I see you have a wolf pelt there, and from what I have been hearing around you need me to help you make a water skin."
+					"Kulihat kau membawa kulit serigala, dan dari kabar yang kudengar kau butuh bantuanku membuat kantong air."
 				},
 				1
 			)
@@ -182,7 +182,7 @@ SyaNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"It will take some of my thread and time to make one so I will need to ask for at least 500 gold."
+						"Membuatnya menghabiskan benang dan waktuku, jadi aku harus meminta setidaknya 500 emas."
 					},
 					0
 				)
@@ -190,8 +190,8 @@ SyaNpc = {
 			end
 
 			local choice = player:menuSeq(
-				"It will take some of my thread and time to make one, are you willing to pay 500 gold?",
-				{"Yes", "No"},
+				"Membuatnya menghabiskan benang dan waktuku; bersediakah kau membayar 500 emas?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -200,7 +200,7 @@ SyaNpc = {
 				player:removeItem("wolf_pelt", 1, 9)
 				player:addItem("empty_water_skin", 1)
 
-				player:dialogSeq({t, "Thanks!"}, 0)
+				player:dialogSeq({t, "Terima kasih!"}, 0)
 			end
 		end
 	end)

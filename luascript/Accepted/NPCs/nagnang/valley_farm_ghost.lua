@@ -14,13 +14,13 @@ ValleyFarmGhostNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Hello?",
-					"Can you hear me?",
-					"Oh my! Finally somebody who can understand me, do you know how hard it is to find somebody to talk to while you're a ghost?",
-					"I have been stuck here ever since that horrible army attacked, and killed everything in sight.",
-					"Now I am stuck here, unwilling to leave my post given to me by King Yuri himself.",
-					"Why are you here? You don't look like you're part of a large army.",
-					"Besides, they blocked off the bridge, and laid traps all over it! Only way across would be to use another bridge, or make your own."
+					"Halo?",
+					"Kau bisa mendengarku?",
+					"Astaga! Akhirnya ada yang bisa memahamiku. Tahukah kau betapa sulitnya mencari teman bicara saat kau jadi hantu?",
+					"Aku terjebak di sini sejak pasukan mengerikan itu menyerang dan membunuh segala yang terlihat.",
+					"Sekarang aku terjebak di sini, tidak sudi meninggalkan pos yang diberikan Raja Yuri sendiri kepadaku.",
+					"Kenapa kau di sini? Kau tidak kelihatan seperti bagian dari pasukan besar.",
+					"Lagi pula mereka menutup jembatannya dan memasang jebakan di seluruh badannya! Satu-satunya cara menyeberang adalah lewat jembatan lain, atau membuatnya sendiri."
 				},
 				0
 			)
@@ -35,7 +35,7 @@ ValleyFarmGhostNpc = {
 				"",
 				"",
 				"",
-				"((The ghost seems to be trying to talk, but you can't hear anything.))"
+				"((Hantu itu tampak berusaha bicara, tetapi kau tidak mendengar apa-apa.))"
 			},
 			0
 		)
@@ -61,7 +61,7 @@ ValleyFarmGhostNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"I need the wood, without it you can't make any stilts."
+							"Aku butuh kayunya; tanpa itu kau tidak bisa membuat egrang."
 						},
 						0
 					)
@@ -72,7 +72,7 @@ ValleyFarmGhostNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"I need the twine as well, without it I can't tell you how to make stilts."
+							"Aku juga butuh talinya; tanpa itu aku tidak bisa mengajarimu membuat egrang."
 						},
 						0
 					)
@@ -82,7 +82,7 @@ ValleyFarmGhostNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, you have everything you need. Great! Now take the twine and bind the sticks together like this..."
+						"Ah, semua yang kau butuhkan sudah ada. Bagus! Sekarang ambil talinya dan ikat kayunya seperti ini..."
 					},
 					1
 				)
@@ -94,8 +94,8 @@ ValleyFarmGhostNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"There you go, you got it!",
-						"Now just try them on, and go for the water there, the best part is just to left of the house."
+						"Nah, kau berhasil!",
+						"Sekarang coba pakai, lalu masuklah ke air di sana; bagian terbaiknya persis di kiri rumah."
 					},
 					0
 				)
@@ -108,13 +108,13 @@ ValleyFarmGhostNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Make a new bridge? I don't think you could by yourself, it takes months of work.",
-						"The first thing you need to do is get over the other side, and start with ropes, then place the beams, and...",
-						"Hmmm, if you just need to get across yourself, then you could use a bridge builder's trick.",
-						"This river is pretty deep, and getting a boat through the forest and mountains is impossible.",
-						"We had to use stilts to get across, if you were to make some yourself then you could get over.",
-						"Stilts are pretty easy to make, just need a couple pieces of wood, and some twine to bind them together.",
-						"Bring me 10 ginko wood, and some strong wool twine. Wool twine is the best if you're gonna get it wet, real strong stuff."
+						"Membuat jembatan baru? Kurasa kau tidak bisa sendirian; itu makan waktu berbulan-bulan.",
+						"Yang pertama harus kau lakukan adalah menyeberang ke sisi lain, mulai dengan tali, lalu memasang balok, lalu...",
+						"Hmmm, kalau kau hanya perlu menyeberang sendiri, kau bisa memakai kiat tukang jembatan.",
+						"Sungai ini cukup dalam, dan membawa perahu menembus hutan serta pegunungan itu mustahil.",
+						"Kami harus memakai egrang untuk menyeberang; kalau kau membuatnya sendiri, kau bisa lewat.",
+						"Egrang cukup mudah dibuat: hanya perlu beberapa potong kayu dan tali untuk mengikatnya.",
+						"Bawakan aku 10 ginko wood dan tali wol yang kuat. Tali wol paling bagus kalau bakal basah; benar-benar kuat."
 					},
 					0
 				)
@@ -128,13 +128,13 @@ ValleyFarmGhostNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Oh my, how nice of you to pass on the message, thank you."
+						"Astaga, baik sekali kau menyampaikan pesannya, terima kasih."
 					},
 					0
 				)
 			else
 				player:dialogSeq(
-					{t, "Thank you again, for giving me the message."},
+					{t, "Sekali lagi terima kasih sudah menyampaikan pesan itu."},
 					0
 				)
 			end

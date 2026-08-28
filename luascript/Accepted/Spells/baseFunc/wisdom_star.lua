@@ -39,7 +39,7 @@ wisdom_star = {
 							if pc[i].state ~= 1 then
 								pc[i]:sendAnimation(348)
 								pc[i]:playSound(106)
-								pc[i]:sendMinitext("You are filled with Divine Wisdom ((" .. mult .. "x EXP))          " .. getTimerValues("wisdom_star_timer") .. " remaining")
+								pc[i]:sendMinitext("Kau dipenuhi Kebijaksanaan Ilahi ((" .. mult .. "x EXP))          " .. getTimerValues("wisdom_star_timer") .. " remaining")
 								pc[i]:setDuration("wisdom_star", 100000000)
 							end
 						end
@@ -62,7 +62,7 @@ wisdom_star = {
 	end,
 
 	uncast = function(player)
-		player:sendMinitext("Wisdom Star has faded.")
+		player:sendMinitext("Wisdom Star sudah memudar.")
 	end,
 
 	cronTimer1 = function()
@@ -90,7 +90,7 @@ wisdom_star = {
 		local oldWSMult = getWisdomStarMultiplier()
 
 		-- remove premium currency
-		player:sendMinitext("You spent " .. amount .. " Kan on Wisdom Star")
+		player:sendMinitext("Kau menghabiskan " .. amount .. " Kan untuk Wisdom Star")
 		gmbroadcast(
 			-1,
 			"" .. player.name .. " has contributed " .. Tools.formatNumber(amount) .. " Kan toward Wisdom Star!"

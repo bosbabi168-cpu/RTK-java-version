@@ -6,24 +6,24 @@ WoodlandGuardNpc = {
 
 		player:dialogSeq(
 			{
-				"The citizens of this community are expected to abide its laws. If you choose to persue an illegal alley, do not act mazed when you are jailed or banned.",
-				"Be conscientious. Do not harass or steal from other players. Report bugs, and do not exploit them. Do not share your password with anyone, including RTK staff."
+				"Warga masyarakat ini diharapkan menaati hukumnya. Kalau kau memilih menempuh jalan haram, jangan berlagak heran saat kau dipenjara atau dicekal.",
+				"Bersikaplah tahu diri. Jangan mengganggu atau mencuri dari pemain lain. Laporkan cacat program dan jangan menyalahgunakannya. Jangan bagikan sandimu kepada siapa pun, termasuk staf RTK."
 			}, 1)
 
 		local menu = player:menuString(
-			"The stability of this community is your responsibility. Will you swear to obey our laws, including those not explicitly stated here?",
-			{"Yes", "No"}
+			"Kestabilan masyarakat ini tanggung jawabmu. Bersumpahkah kau menaati hukum kami, termasuk yang tidak disebutkan tersurat di sini?",
+			{"Ya", "Tidak"}
 		)
 
-		if (menu == "No") then
+		if (menu == "Tidak") then
 			player:dialogSeq({_declineDialog}, 1)
 			return
 		end
 
 		player:dialogSeq(
 			{
-				"You have done well. I can now permit you to enter the city. Go on your way, and keep on the right side of the law.",
-				"To help you defend against the lawless and some of those tougher critters, here's a sword that will hit a little harder than that stick you're carrying."
+				"Kerjamu bagus. Sekarang kau kuizinkan memasuki kota. Lanjutkan perjalananmu, dan tetaplah di sisi hukum yang benar.",
+				"Untuk membantumu melawan para pelanggar hukum dan makhluk yang lebih tangguh, ini pedang yang memukul sedikit lebih keras daripada tongkat yang kau bawa itu."
 			},
 			1
 		)

@@ -9,22 +9,22 @@ blind = {
 			end
 
 			if (player.magic < magicCost) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
 			if (target.state == 1) then
-				player:sendMinitext("That is no longer useful.")
+				player:sendMinitext("Itu sudah tidak berguna lagi.")
 				return
 			end
 
 			if (target.blType == BL_PC and not player:canPK(target)) then
-				player:sendMinitext("You cannot attack that target.")
+				player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 				return
 			end
 
 			if target:checkIfCast(blinds) then
-				player:sendMinitext("Another spell of this type is in effect.")
+				player:sendMinitext("Mantra lain sejenis ini sedang bekerja.")
 				return
 			end
 
@@ -32,7 +32,7 @@ blind = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(43)
-			player:sendMinitext("You cast Blind.")
+			player:sendMinitext("Kau merapal Blind.")
 			player:sendMinitext("Calling Blind.")
 		elseif player.blType == BL_MOB then
 			if target:checkIfCast(blinds) then
@@ -41,7 +41,7 @@ blind = {
 		end
 
 		if target.blType == BL_PC then
-			target:sendMinitext(player.name .. " attacks you with Blind spell.")
+			target:sendMinitext(player.name .. " menyerangmu dengan mantra Blind.")
 		end
 
 		target:setDuration("blind", duration)

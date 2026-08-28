@@ -45,10 +45,10 @@ IronLabTreasureChestNpc = {
 		end
 
 		if foundItem then
-			player:sendMinitext("You manage to open the treasure box!")
+			player:sendMinitext("Kau berhasil membuka peti harta itu!")
 		end
 		if not foundItem then
-			player:sendMinitext("The chest was empty.")
+			player:sendMinitext("Petinya kosong.")
 		end
 	end
 }

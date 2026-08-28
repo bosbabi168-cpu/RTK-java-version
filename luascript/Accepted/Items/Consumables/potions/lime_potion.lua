@@ -1,7 +1,7 @@
 lime_potion = {
 	use = function(player)
 		if player:checkIfCast(sanctuaries) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 

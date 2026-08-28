@@ -5,7 +5,7 @@ scroll_of_protection = {
 		end
 
 		if player:checkIfCast(protections) then
-			player:sendMinitext("You are already protected.")
+			player:sendMinitext("Kau sudah terlindungi.")
 			return
 		end
 

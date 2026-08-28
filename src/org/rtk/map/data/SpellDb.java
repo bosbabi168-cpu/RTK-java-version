@@ -97,6 +97,14 @@ public final class SpellDb {
         return muteById.getOrDefault(id, 0);
     }
 
+    /**
+     * {@code magicdb_question()}: teks pertanyaan mantra ragam 1
+     * ({@code SplQuestion}); "" bila tidak bertanya.
+     */
+    public String questionOf(int id) {
+        return questionById.getOrDefault(id, "");
+    }
+
     /** {@code magicdb_canfail()}: mantra ini bisa ditangkis sasarannya. */
     public boolean canFail(int id) {
         return canFailById.getOrDefault(id, 0) != 0;
@@ -187,6 +195,7 @@ public final class SpellDb {
      */
     private final java.util.Map<Integer, Integer> typeById = new java.util.HashMap<>();
     private final java.util.Map<Integer, Integer> muteById = new java.util.HashMap<>();
+    private final java.util.Map<Integer, String> questionById = new java.util.HashMap<>();
     private final java.util.Map<Integer, Integer> canFailById = new java.util.HashMap<>();
     private final java.util.Map<Integer, Integer> aetherById = new java.util.HashMap<>();
     private final java.util.Map<Integer, Integer> activeById = new java.util.HashMap<>();
@@ -218,7 +227,7 @@ public final class SpellDb {
         int rows = sql.forEachRow(
                 "SELECT `SplId`,`SplIdentifier`,`SplDescription`,`SplTicker`,"
                 + "`SplDispel`,`SplLevel`,`SplType`,`SplMute`,`SplCanFail`,"
-                + "`SplAether`,`SplActive` FROM `Spells`",
+                + "`SplAether`,`SplActive`,`SplQuestion` FROM `Spells`",
                 rs -> {
                     int id = rs.getInt("SplId");
                     register(id, rs.getString("SplIdentifier"),
@@ -230,6 +239,8 @@ public final class SpellDb {
                     canFailById.put(id, rs.getInt("SplCanFail"));
                     aetherById.put(id, rs.getInt("SplAether"));
                     activeById.put(id, rs.getInt("SplActive"));
+                    String tanya = rs.getString("SplQuestion");
+                    questionById.put(id, tanya == null ? "" : tanya);
                 });
         if (rows < 0) {
             log.error("[SPELL] gagal membaca tabel Spells");

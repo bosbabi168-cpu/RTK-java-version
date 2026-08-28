@@ -14,7 +14,7 @@ valor = {
 			return
 		end
 
-		player:sendMinitext("Your muscles develop.")
+		player:sendMinitext("Ototmu berkembang.")
 		player:sendAction(6, 35)
 		player:setDuration("valor", duration)
 		player:playSound(12)

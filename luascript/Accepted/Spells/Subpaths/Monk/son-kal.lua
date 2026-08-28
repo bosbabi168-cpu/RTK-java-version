@@ -18,7 +18,7 @@ son_kal = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -57,8 +57,8 @@ son_kal = {
 		end
 
 		player:sendStatus()
-		player:sendMinitext("You cast Son-Kal.")
-		player:sendMinitext("You can not touch the spirit world.")
+		player:sendMinitext("Kau merapal Son-Kal.")
+		player:sendMinitext("Kau tidak bisa menyentuh dunia arwah.")
 	end,
 	requirements = function(player)
 		local l = 99

@@ -3,25 +3,25 @@ function Player.sendParcelTo(player, npc)
 	local found = 0
 
 	local fchoice = player:menuSeq(
-		"What would you like to send?",
-		{"Gold", "Item"},
+		"Apa yang ingin kau kirim?",
+		{"Emas", "Barang"},
 		{}
 	)
 
 	if fchoice == 1 then
 		-- gold
-		local amount = player:inputNumberCheck(player:input("How much gold would you like to send?"))
+		local amount = player:inputNumberCheck(player:input("Berapa emas yang ingin kau kirim?"))
 
 		if player.money < amount then
-			player:dialog("You don't have that much gold.", {})
+			player:dialog("Emasmu tidak sebanyak itu.", {})
 			return
 		end
 
-		local receiver = player:inputLetterCheck(player:input("Who do you want to send this " .. Tools.formatNumber(amount) .. " gold to?"))
+		local receiver = player:inputLetterCheck(player:input("Kepada siapa kau ingin mengirim " .. Tools.formatNumber(amount) .. " emas kepada siapa?"))
 		receiver = getOfflineID(receiver)
 
 		if not receiver then
-			player:dialog("Character does not exist.")
+			player:dialog("Karakter itu tidak ada.")
 			return
 		end
 
@@ -31,7 +31,7 @@ function Player.sendParcelTo(player, npc)
 
 		if player:sendParcel(receiver, player.ID, 0, amount, 0, 0, 0) == true then
 			player:removeGold(amount)
-			player:sendMinitext("Your " .. Tools.formatNumber(amount) .. " gold has been sent in a parcel to " .. getOfflineID(receiver))
+			player:sendMinitext("" .. Tools.formatNumber(amount) .. " emas telah dikirim sebagai paket kepada " .. getOfflineID(receiver))
 
 			if Player(receiver) ~= nil then
 				player:msg(
@@ -77,7 +77,7 @@ function Player.sendParcelTo(player, npc)
 
 	if item.type == 0 then
 		player:menu(
-			"Food would rot, and I would end up with rats everywhere! I'm not willing to send it for you.",
+			"Makanan akan membusuk dan tempatku jadi penuh tikus! Aku tidak mau mengirimkannya untukmu.",
 			{},
 			{}
 		)
@@ -85,7 +85,7 @@ function Player.sendParcelTo(player, npc)
 	end
 
 	if item.amount > 1 then
-		amount = player:inputNumberCheck(player:input("How many " .. item.name .. " do you want to send?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak " .. item.name .. " yang ingin kau kirim?"))
 	else
 		amount = 1
 	end
@@ -95,7 +95,7 @@ function Player.sendParcelTo(player, npc)
 	end
 
 	--local receiver = player:input("Who do you want to send this "..amount.." "..item.name.." to?")
-	local receiver = player:inputLetterCheck(player:input("Who do you want to send this " .. amount .. " " .. item.name .. " to?"))
+	local receiver = player:inputLetterCheck(player:input("Kepada siapa kau ingin mengirim " .. amount .. " " .. item.name .. " kepada siapa?"))
 
 	receiver = getOfflineID(receiver)
 
@@ -105,31 +105,31 @@ function Player.sendParcelTo(player, npc)
 
 	if receiver ~= false then
 		if item.exchangeable then
-			player:dialogSeq({"You can not send a non-exchangeable item"})
+			player:dialogSeq({"Kau tidak bisa mengirim barang yang tidak bisa ditukar"})
 			return
 		end
 
 		if item.droppable and player.gmLevel == 0 then
-			player:dialogSeq({"You can not send a non-droppable item"})
+			player:dialogSeq({"Kau tidak bisa mengirim barang yang tidak bisa dijatuhkan"})
 			return
 		end
 
 		if item.dura ~= item.maxDura then
-			player:dialogSeq({"Item must be in perfect condition to send. Go and repair it first!"})
+			player:dialogSeq({"Barang harus dalam keadaan sempurna untuk dikirim. Perbaiki dulu!"})
 			return
 		end
 
 		if player:hasItem(item.id, amount) ~= true then
-			player:dialogSeq({"You only have " .. player:hasItem(item.id, amount) .. " " .. item.name "."})
+			player:dialogSeq({"Kau hanya punya " .. player:hasItem(item.id, amount) .. " " .. item.name "."})
 			return
 		elseif (player:hasItemDura(item.id, amount) ~= true) then
-			player:dialogSeq({"Item must be in perfect condition to send. Go and repair it first!"})
+			player:dialogSeq({"Barang harus dalam keadaan sempurna untuk dikirim. Perbaiki dulu!"})
 			return
 		else
 			cost = cost + math.ceil((item.price *.05) * amount)
 			if player.money < cost then
 				player:menu(
-					"I need " .. Tools.formatNumber(cost) .. " for a seal; " .. Tools.formatNumber(cost) .. " you understand. You could use the Black Box on the Communing Stone.",
+					"Aku butuh " .. Tools.formatNumber(cost) .. " untuk segelnya; " .. Tools.formatNumber(cost) .. " kau paham. Kau bisa memakai Black Box pada Communing Stone.",
 					{}
 				)
 				return
@@ -160,7 +160,7 @@ function Player.sendParcelTo(player, npc)
 				else
 					player:removeItemSlot(choice - 1, amount, 2)
 				end
-				player:sendMinitext("Your parcel has been sent.")
+				player:sendMinitext("Kirimanmu sudah dikirim.")
 				if Player(receiver) ~= nil then
 					player:msg(
 						12,
@@ -171,7 +171,7 @@ function Player.sendParcelTo(player, npc)
 			end
 		end
 	else
-		player:sendMinitext("User not found!")
+		player:sendMinitext("Pengguna tidak ditemukan!")
 	end
 end
 
@@ -211,9 +211,9 @@ function Player.receiveParcelFrom(player, npc)
 		else
 			local sender = getOfflineID(item.sender)
 			if sender ~= false then
-				player:sendMinitext("You receive " .. Tools.formatNumber(item.amount) .. " gold from " .. sender)
+				player:sendMinitext("Kau menerima " .. Tools.formatNumber(item.amount) .. " emas dari " .. sender)
 			else
-				player:sendMinitext("No senders!")
+				player:sendMinitext("Tidak ada pengirim!")
 			end
 		end
 		return
@@ -253,15 +253,15 @@ function Player.receiveParcelFrom(player, npc)
 		else
 			local sender = getOfflineID(item.sender)
 			if sender ~= false then
-				player:sendMinitext("You receive a parcel from " .. sender)
+				player:sendMinitext("Kau menerima kiriman dari " .. sender)
 			else
-				player:sendMinitext("No senders!")
+				player:sendMinitext("Tidak ada pengirim!")
 			end
 		end
 	else
 		local choice = player:menuSeq(
-			"You don't have enough space in your inventory for " .. Tools.formatNumber(item.amount) .. " " .. item.name .. ", bank instead?",
-			{"Yes, deposit in my bank.", "Nevermind."},
+			"Ruang di kantongmu tidak cukup untuk " .. Tools.formatNumber(item.amount) .. " " .. item.name .. ", titipkan ke simpanan saja?",
+			{"Ya, titipkan ke simpananku.", "Nevermind."},
 			{}
 		)
 
@@ -293,9 +293,9 @@ function Player.receiveParcelFrom(player, npc)
 			else
 				local sender = getOfflineID(item.sender)
 				if sender ~= false then
-					player:sendMinitext("You receive a parcel from " .. sender)
+					player:sendMinitext("Kau menerima kiriman dari " .. sender)
 				else
-					player:sendMinitext("No senders!")
+					player:sendMinitext("Tidak ada pengirim!")
 				end
 			end
 

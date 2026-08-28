@@ -62,7 +62,7 @@ instance_boss = {
 				rand = math.random(1, #players)
 				scourge.cast(mob, players[rand])
 				players[rand]:playSound(43)
-				players[rand]:sendMinitext(mob.name .. " casts Scourge on you!")
+				players[rand]:sendMinitext(mob.name .. " merapal Scourge padamu!")
 				mob.registry["scourge"] = 0
 			end
 		end
@@ -74,7 +74,7 @@ instance_boss = {
 				players[rand]:sendAnimation(108)
 				players[rand]:playSound(95)
 				players[rand]:flushDuration()
-				players[rand]:sendMinitext(mob.name .. " dispelled your buffs!")
+				players[rand]:sendMinitext(mob.name .. " melenyapkan penguatanmu!")
 			end
 		end
 
@@ -87,13 +87,13 @@ instance_boss = {
 			mob.paralyzed = false
 			mob:sendAnimation(297)
 			mob:playSound(112)
-			mob:talk(1, "[Baekdu Guardian]: Fools! You cannot bind me!")
+			mob:talk(1, "[Baekdu Guardian]: Bodoh! Kalian tidak bisa mengikatku!")
 			players = mob:getObjectsInArea(BL_PC)
 			if #players > 0 then
 				rand = math.random(1, #players)
 				mob:talk(
 					1,
-					"[Baekdu Guardian]: " .. players[rand].name .. " BEHOLD, MY TRUE POWER! FINAL FLASH!"
+					"[Baekdu Guardian]: " .. players[rand].name .. " SAKSIKANLAH KEKUATANKU YANG SEBENARNYA! FINAL FLASH!"
 				)
 				if players[rand].state == 0 then
 					mob.registry["devattack"] = 0
@@ -104,7 +104,7 @@ instance_boss = {
 					mob:playSound(510)
 					players[rand].attacker = mob.ID
 					players[rand]:removeHealthExtend(finaldamage, 1, 1, 1, 1, 0)
-					players[rand]:sendMinitext(mob.name .. " casts Final Flash on you.")
+					players[rand]:sendMinitext(mob.name .. " merapal Final Flash padamu.")
 				end
 			end
 		end
@@ -113,13 +113,13 @@ instance_boss = {
 			mob:flushDuration()
 			mob:sendAnimation(297)
 			mob:playSound(708)
-			mob:talk(1, "[Baekdu Guardian]: Peek-a-boo... I see you...")
+			mob:talk(1, "[Baekdu Guardian]: Ciluk... ba... aku melihatmu...")
 			players = mob:getObjectsInArea(BL_PC)
 			if #players > 0 then
 				rand = math.random(1, #players)
 				mob:talk(
 					1,
-					"[Baekdu Guardian]: " .. players[rand].name .. " BEHOLD, MY TRUE POWER! FINAL FLASH!"
+					"[Baekdu Guardian]: " .. players[rand].name .. " SAKSIKANLAH KEKUATANKU YANG SEBENARNYA! FINAL FLASH!"
 				)
 				if players[rand].state == 0 then
 					mob.registry["devattack"] = 0
@@ -130,7 +130,7 @@ instance_boss = {
 					mob:playSound(510)
 					players[rand].attacker = mob.ID
 					players[rand]:removeHealthExtend(finaldamage, 1, 1, 1, 1, 0)
-					players[rand]:sendMinitext(mob.name .. " casts Final Flash on you.")
+					players[rand]:sendMinitext(mob.name .. " merapal Final Flash padamu.")
 				end
 			end
 		end
@@ -216,7 +216,7 @@ instance_boss = {
 						1,
 						0
 					)
-					fronttarget[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					fronttarget[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 
@@ -232,7 +232,7 @@ instance_boss = {
 						1,
 						0
 					)
-					diag1targets[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					diag1targets[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 
@@ -248,7 +248,7 @@ instance_boss = {
 						1,
 						0
 					)
-					diag2targets[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					diag2targets[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 
@@ -264,7 +264,7 @@ instance_boss = {
 						1,
 						0
 					)
-					diag3targets[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					diag3targets[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 
@@ -280,13 +280,13 @@ instance_boss = {
 						1,
 						0
 					)
-					diag4targets[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					diag4targets[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 			target:sendAnimation(202)
 			target:playSound(48)
 			target:removeHealthExtend(rockdamage, 1, 1, 1, 1, 0)
-			target:sendMinitext(mob.name .. " casts Rockslide on you.")
+			target:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 			if #targets > 1 then
 				for i = 1, #targets do
 					if targets[i].blType == BL_PC then
@@ -302,7 +302,7 @@ instance_boss = {
 								1,
 								0
 							)
-							targets[i]:sendMinitext(mob.name .. " casts Rockslide on you.")
+							targets[i]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 						end
 					end
 				end
@@ -315,7 +315,7 @@ instance_boss = {
 			if math.random(1, 50) == 1 then
 				mob:talk(
 					1,
-					"[Baekdu Guardian]: I will tear the flesh from your bones!"
+					"[Baekdu Guardian]: Akan kucabik daging dari tulangmu!"
 				)
 			end
 		end
@@ -324,13 +324,13 @@ instance_boss = {
 			mob.paralyzed = false
 			mob:sendAnimation(297)
 			mob:playSound(112)
-			mob:talk(1, "[Baekdu Guardian]: Fools! You cannot bind me!")
+			mob:talk(1, "[Baekdu Guardian]: Bodoh! Kalian tidak bisa mengikatku!")
 			players = mob:getObjectsInArea(BL_PC)
 			if #players > 0 then
 				rand = math.random(1, #players)
 				mob:talk(
 					1,
-					"[Baekdu Guardian]: " .. players[rand].name .. " BEHOLD, MY TRUE POWER! FINAL FLASH!"
+					"[Baekdu Guardian]: " .. players[rand].name .. " SAKSIKANLAH KEKUATANKU YANG SEBENARNYA! FINAL FLASH!"
 				)
 				if players[rand].state == 0 then
 					mob.registry["devattack"] = 0
@@ -341,7 +341,7 @@ instance_boss = {
 					mob:playSound(510)
 					players[rand].attacker = mob.ID
 					players[rand]:removeHealthExtend(finaldamage, 1, 1, 1, 1, 0)
-					players[rand]:sendMinitext(mob.name .. " casts Final Flash on you.")
+					players[rand]:sendMinitext(mob.name .. " merapal Final Flash padamu.")
 				end
 			end
 		end
@@ -351,7 +351,7 @@ instance_boss = {
 		mob:playSound(116)
 		mob:talk(
 			1,
-			"[Baekdu Guardian]: This is not possible! Defeated by MORTALS?"
+			"[Baekdu Guardian]: Ini mustahil! Dikalahkan MANUSIA FANA?"
 		)
 		mob:addNPC(
 			"BaekduChestNpc",
@@ -371,7 +371,7 @@ instance_boss = {
 				"baekdu_boss_kills"
 			] + 1
 			players[i].quest["baekdu_boss_killed"] = 1
-			players[i]:sendMinitext("You are eligible for loot!")
+			players[i]:sendMinitext("Kau berhak atas jarahan!")
 		end
 
 		local index = instance_boss.getMobInstanceIndex(mob)
@@ -403,7 +403,7 @@ instance_boss = {
 				rand = math.random(1, #players)
 				players[rand]:playSound(43)
 				scourge.cast(mob, players[rand])
-				players[rand]:sendMinitext(mob.name .. " casts Scourge on you!")
+				players[rand]:sendMinitext(mob.name .. " merapal Scourge padamu!")
 				mob.registry["scourge"] = 0
 			end
 		end
@@ -415,7 +415,7 @@ instance_boss = {
 				players[rand]:sendAnimation(108)
 				players[rand]:playSound(95)
 				players[rand]:flushDuration()
-				players[rand]:sendMinitext(mob.name .. " dispelled your buffs!")
+				players[rand]:sendMinitext(mob.name .. " melenyapkan penguatanmu!")
 				mob.registry["dispel"] = 0
 			end
 		end
@@ -424,7 +424,7 @@ instance_boss = {
 			if mob.registry["devattack"] == 50 then
 				mob:talk(
 					1,
-					"[Baekdu Guardian]: Enough child's play! Time to unleash my TRUE power!"
+					"[Baekdu Guardian]: Cukup main-mainnya! Saatnya melepaskan kekuatanku YANG SEBENARNYA!"
 				)
 				mob:sendAnimation(344)
 				mob:playSound(509)
@@ -438,7 +438,7 @@ instance_boss = {
 					rand = math.random(1, #players)
 					mob:talk(
 						1,
-						"[Baekdu Guardian]: " .. players[rand].name .. " BEHOLD, MY TRUE POWER! FINAL FLASH!"
+						"[Baekdu Guardian]: " .. players[rand].name .. " SAKSIKANLAH KEKUATANKU YANG SEBENARNYA! FINAL FLASH!"
 					)
 					if players[rand].state == 0 then
 						mob.registry["devattack"] = 0
@@ -456,7 +456,7 @@ instance_boss = {
 							1,
 							0
 						)
-						players[rand]:sendMinitext(mob.name .. " casts Final Flash on you.")
+						players[rand]:sendMinitext(mob.name .. " merapal Final Flash padamu.")
 					end
 				end
 			end
@@ -466,13 +466,13 @@ instance_boss = {
 			mob.paralyzed = false
 			mob:sendAnimation(297)
 			mob:playSound(112)
-			mob:talk(1, "[Baekdu Guardian]: Fools! You cannot bind me!")
+			mob:talk(1, "[Baekdu Guardian]: Bodoh! Kalian tidak bisa mengikatku!")
 			players = mob:getObjectsInArea(BL_PC)
 			if #players > 0 then
 				rand = math.random(1, #players)
 				mob:talk(
 					1,
-					"[Baekdu Guardian]: " .. players[rand].name .. " BEHOLD, MY TRUE POWER! FINAL FLASH!"
+					"[Baekdu Guardian]: " .. players[rand].name .. " SAKSIKANLAH KEKUATANKU YANG SEBENARNYA! FINAL FLASH!"
 				)
 				if players[rand].state == 0 then
 					mob.registry["devattack"] = 0
@@ -483,7 +483,7 @@ instance_boss = {
 					mob:playSound(510)
 					players[rand].attacker = mob.ID
 					players[rand]:removeHealthExtend(finaldamage, 1, 1, 1, 1, 0)
-					players[rand]:sendMinitext(mob.name .. " casts Final Flash on you.")
+					players[rand]:sendMinitext(mob.name .. " merapal Final Flash padamu.")
 				end
 			end
 		end
@@ -492,13 +492,13 @@ instance_boss = {
 			mob:flushDuration()
 			mob:sendAnimation(297)
 			mob:playSound(708)
-			mob:talk(1, "[Baekdu Guardian]: Peek-a-boo... I see you...")
+			mob:talk(1, "[Baekdu Guardian]: Ciluk... ba... aku melihatmu...")
 			players = mob:getObjectsInArea(BL_PC)
 			if #players > 0 then
 				rand = math.random(1, #players)
 				mob:talk(
 					1,
-					"[Baekdu Guardian]: " .. players[rand].name .. " BEHOLD, MY TRUE POWER! FINAL FLASH!"
+					"[Baekdu Guardian]: " .. players[rand].name .. " SAKSIKANLAH KEKUATANKU YANG SEBENARNYA! FINAL FLASH!"
 				)
 				if players[rand].state == 0 then
 					mob.registry["devattack"] = 0
@@ -509,7 +509,7 @@ instance_boss = {
 					mob:playSound(510)
 					players[rand].attacker = mob.ID
 					players[rand]:removeHealthExtend(finaldamage, 1, 1, 1, 1, 0)
-					players[rand]:sendMinitext(mob.name .. " casts Final Flash on you.")
+					players[rand]:sendMinitext(mob.name .. " merapal Final Flash padamu.")
 				end
 			end
 		end
@@ -570,12 +570,12 @@ instance_boss = {
 					target:warp(targetM, targetX, targetY)
 					target:warp(targetM, targetX, targetY)
 					target:sendAnimation(255, 25)
-					target:sendMinitext(mob.name .. " sent you flying!")
+					target:sendMinitext(mob.name .. " membuatmu terpelanting!")
 					target:removeHealthExtend(gustdamage, 1, 1, 1, 1, 0)
 					if math.random(1, 50) == 1 then
 						mob:talk(1, "[Baekdu Guardian]: Haha, pitiful fool!")
 					end
-					target:sendMinitext(mob.name .. " charges you with intent to kill!")
+					target:sendMinitext(mob.name .. " menerjangmu dengan niat membunuh!")
 					return
 				else
 					if mob.side == 0 then
@@ -606,7 +606,7 @@ instance_boss = {
 					if passCheck == 0 and not warpCheck and #mobblockCheck == 0 and #pcblockCheck == 0 and targetX >= 0 and targetX < maxX and targetY >= 0 and targetY < maxY then
 						target:warp(targetM, targetX, targetY)
 						target:sendAnimation(255, 25)
-						target:sendMinitext(mob.name .. " sent you flying!")
+						target:sendMinitext(mob.name .. " membuatmu terpelanting!")
 						target:removeHealthExtend(gustdamage, 1, 1, 1, 1, 0)
 						if math.random(1, 50) == 1 then
 							mob:talk(
@@ -614,7 +614,7 @@ instance_boss = {
 								"[Baekdu Guardian]: Haha, pitiful fool!"
 							)
 						end
-						target:sendMinitext(mob.name .. " charges you with intent to kill!")
+						target:sendMinitext(mob.name .. " menerjangmu dengan niat membunuh!")
 						return
 					end
 				end
@@ -640,7 +640,7 @@ instance_boss = {
 							1,
 							0
 						)
-						players[i]:sendMinitext(mob.name .. " casts Rockslide on you.")
+						players[i]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 					end
 				end
 			end
@@ -693,7 +693,7 @@ instance_boss = {
 						1,
 						0
 					)
-					fronttarget[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					fronttarget[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 
@@ -709,7 +709,7 @@ instance_boss = {
 						1,
 						0
 					)
-					diag1targets[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					diag1targets[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 
@@ -725,7 +725,7 @@ instance_boss = {
 						1,
 						0
 					)
-					diag2targets[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					diag2targets[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 
@@ -741,7 +741,7 @@ instance_boss = {
 						1,
 						0
 					)
-					diag3targets[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					diag3targets[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 
@@ -757,13 +757,13 @@ instance_boss = {
 						1,
 						0
 					)
-					diag4targets[1]:sendMinitext(mob.name .. " casts Rockslide on you.")
+					diag4targets[1]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 				end
 			end
 			target:sendAnimation(202)
 			target:playSound(48)
 			target:removeHealthExtend(rockdamage, 1, 1, 1, 1, 0)
-			target:sendMinitext(mob.name .. " casts Rockslide on you.")
+			target:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 			if #targets > 1 then
 				for i = 1, #targets do
 					if targets[i].blType == BL_PC then
@@ -779,7 +779,7 @@ instance_boss = {
 								1,
 								0
 							)
-							targets[i]:sendMinitext(mob.name .. " casts Rockslide on you.")
+							targets[i]:sendMinitext(mob.name .. " merapal Rockslide padamu.")
 						end
 					end
 				end
@@ -795,7 +795,7 @@ instance_boss = {
 		if math.random(1, 500) == 1 then
 			mob:talk(
 				1,
-				"[Mount Baekdu]: You? Attacking me? I'll show you the way!"
+				"[Mount Baekdu]: Kau? Menyerangku? Akan kutunjukkan jalannya!"
 			)
 		end
 
@@ -803,13 +803,13 @@ instance_boss = {
 			mob.paralyzed = false
 			mob:sendAnimation(297)
 			mob:playSound(112)
-			mob:talk(1, "[Baekdu Guardian]: Fools! You cannot bind me!")
+			mob:talk(1, "[Baekdu Guardian]: Bodoh! Kalian tidak bisa mengikatku!")
 			players = mob:getObjectsInArea(BL_PC)
 			if #players > 0 then
 				rand = math.random(1, #players)
 				mob:talk(
 					1,
-					"[Baekdu Guardian]: " .. players[rand].name .. " BEHOLD, MY TRUE POWER! FINAL FLASH!"
+					"[Baekdu Guardian]: " .. players[rand].name .. " SAKSIKANLAH KEKUATANKU YANG SEBENARNYA! FINAL FLASH!"
 				)
 				if players[rand].state == 0 then
 					mob.registry["devattack"] = 0
@@ -820,7 +820,7 @@ instance_boss = {
 					mob:playSound(510)
 					players[rand].attacker = mob.ID
 					players[rand]:removeHealthExtend(finaldamage, 1, 1, 1, 1, 0)
-					players[rand]:sendMinitext(mob.name .. " casts Final Flash on you.")
+					players[rand]:sendMinitext(mob.name .. " merapal Final Flash padamu.")
 				end
 			end
 		end

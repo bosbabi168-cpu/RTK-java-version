@@ -19,8 +19,8 @@ NamelessHermitNpc = {
 
 		if player:hasItem("aged_wine", 1) == true then
 			local choice = player:menuSeq(
-				"Are you willing to part with that Aged wine?",
-				{"Of course!", "I kind of need it."},
+				"Bersediakah kau melepas Aged wine itu?",
+				{"Tentu saja!", "Aku agak membutuhkannya."},
 				{}
 			)
 
@@ -30,13 +30,13 @@ NamelessHermitNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"\"Why thank you! Here.\" The hermit rumaged through a dusty chest. \"Take these shoes if you'd like.\""
+						"\"Wah, terima kasih! Ini.\" Si pertapa mengaduk-aduk peti berdebu. \"Ambil sepatu ini kalau kau mau.\""
 					},
 					1
 				)
 			elseif choice == 2 then
 				player:dialogSeq(
-					{t, "The hermit sighs. \"That's too bad.\""},
+					{t, "Si pertapa mengembuskan napas. \"Sayang sekali.\""},
 					1
 				)
 			end
@@ -45,17 +45,17 @@ NamelessHermitNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Well, hello! Not too many visitors out in these parts.",
-				"You're from " .. country .. ", aren't you? I could tell by your urban mannerisms."
+				"Wah, halo! Tidak banyak tamu di daerah sini.",
+				"Kau dari " .. country .. ", kan? Kelihatan dari lagakmu yang kekotaan."
 			},
 			1
 		)
 
 		local choice = player:menuSeq(
-			"So, traveler. What brings you by?",
+			"Jadi, pengembara. Apa yang membawamu ke sini?",
 			{
-				"What do you know about the dreaded Ice Beast?",
-				"I'm just looking around."
+				"Apa yang kau tahu tentang Ice Beast yang ditakuti itu?",
+				"Aku cuma melihat-lihat."
 			},
 			{}
 		)
@@ -64,17 +64,17 @@ NamelessHermitNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You're here for the Ice Beast?!? I hope you're not serious. That Beast has been in this area for as long as I can remember.",
-					"They say that it's semi-immortal. It can be defeated, but it will later reform! I don't know if that's true. I'm not sure anyone has defeated it!",
-					"\"Thank goodness there's that lava between us. It stays on its side, I stay on mine.\" The haggard man laughs. \"Well, except when I dash over there to hunt rabbits. I'm real quick about it though.\"",
-					"When you see how big it is, you'll want to stand clear, too. One good 'SMACK' and you'll be done for, I reckon.",
-					"If you want some advice, leave that vile beast alone. The world is better off with you alive."
+					"Kau ke sini untuk Ice Beast?!? Semoga kau tidak serius. Makhluk itu sudah ada di daerah ini sejauh yang bisa kuingat.",
+					"Katanya ia setengah abadi. Ia bisa dikalahkan, tetapi kemudian terbentuk lagi! Entah benar atau tidak. Aku tidak yakin ada yang pernah mengalahkannya!",
+					"\"Syukurlah ada lava di antara kami. Ia di sisinya, aku di sisiku.\" Lelaki kuyu itu tertawa. \"Yah, kecuali saat aku menyelinap ke sana berburu kelinci. Tapi aku cepat sekali.\"",
+					"Kalau kau melihat betapa besarnya, kau pun ingin menjauh. Sekali 'GEBUK' yang telak, tamatlah kau, kurasa.",
+					"Kalau mau nasihatku, jangan usik makhluk keji itu. Dunia lebih baik dengan kau tetap hidup."
 				},
 				1
 			)
 		elseif choice == 2 then
 			player:dialogSeq(
-				{t, "Okay. Say, I'd stay on this side of the lava were I you."},
+				{t, "Baiklah. Omong-omong, kalau aku jadi kau, aku tetap di sisi lava yang ini."},
 				0
 			)
 		end

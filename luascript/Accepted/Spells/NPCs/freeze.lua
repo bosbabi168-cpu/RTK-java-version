@@ -9,12 +9,12 @@ freeze = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if (target.blType == BL_PC and not player:canPK(target)) or target.blType == BL_NPC then
-			player:sendMinitext("You cannot attack that target.")
+			player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 			return
 		end
 
@@ -22,7 +22,7 @@ freeze = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(1)
-		player:sendMinitext("You cast Freeze.")
+		player:sendMinitext("Kau merapal Freeze.")
 		player:sendMinitext("Calling Freeze.")
 		target:sendAnimation(52)
 		target.attacker = player.ID

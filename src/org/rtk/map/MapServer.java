@@ -169,6 +169,20 @@ public final class MapServer {
                 | ((Integer.parseInt(p[3]) & 0xFF) << 24);
     }
 
+    /**
+     * Port map server pertama; server ke-N memakai {@code PORT_MAP_DASAR + N}
+     * (R3/C3).
+     *
+     * <p>⚠️ Aturan ini diambil apa adanya dari {@code clif_transfer}, yang
+     * memetakan id server 0/1/2 ke port 2001/2002/2003 secara <b>hardcode</b>.
+     * Selama itu belum ada di konfigurasi, dua map server hanya bisa
+     * bertetangga di host yang sama dengan port berurutan.</p>
+     */
+    public static final int PORT_MAP_DASAR = 2001;
+
+    /** Nama kota dari baris {@code town:} di map.conf ({@code towns[]} di C). */
+    public static final java.util.List<String> towns = new java.util.ArrayList<>();
+
     static void configRead(String cfgFile) {
         Config.read(cfgFile, (key, value) -> {
             switch (key.toLowerCase()) {
@@ -183,6 +197,8 @@ public final class MapServer {
                 case "db_path": dbPath = value; break;
                 case "lua_enable": luaEnable = Integer.parseInt(value); break;
                 case "lua_path": luaPath = value; break;
+                // map_town_add(): daftar kota, urut sesuai berkas (R1).
+                case "town": towns.add(value.trim()); break;
                 case "map_log": ServerLog.setLogfile(value); break;
                 case "dump_log": ServerLog.setDmpfile(value); break;
                 case "sql_ip": sqlIp = value; break;
@@ -441,8 +457,27 @@ public final class MapServer {
         return 0;
     }
 
-    /** Perkenalan RTK2: sama jalurnya dengan 0x10 RetroTK, tanpa byte-nya. */
-    private static boolean rtk2Introduce(int fd, Session s, String name) {
+    /**
+     * Perkenalan RTK2: sama jalurnya dengan 0x10 RetroTK, tanpa byte-nya —
+     * plus verifikasi sandi (K3.4). RetroTK memercayai login server untuk
+     * itu; RTK2 belum punya login server sendiri, jadi map server yang
+     * memeriksa sandi terhadap {@code ChaPassword} sebelum meminta data
+     * karakter. Sandi salah = penolakan sambungan, bukan karakter hantu.
+     */
+    private static boolean rtk2Introduce(int fd, Session s, String name,
+                                         String password) {
+        String md5 = sql.queryString(
+                "SELECT `ChaPassword` FROM `Character` WHERE `ChaName` = ?", name);
+        if (md5 == null) {
+            log.warn("[MAP] RTK2 '{}' dari {} ditolak: nama tidak ada",
+                    name, s.clientIpString());
+            return false;
+        }
+        if (!org.rtk.charserver.CharDb.isPass(name, password, md5)) {
+            log.warn("[MAP] RTK2 '{}' dari {} ditolak: sandi salah",
+                    name, s.clientIpString());
+            return false;
+        }
         rtk2Fds.add(fd);
         return authByName(fd, s, name);
     }
@@ -661,6 +696,10 @@ public final class MapServer {
         net.setDefaultParse(MapServer::clientParse);
         mapFd = net.makeListenPort(mapPort);
 
+        // R2: kalender dunia — dibaca dari tabel Time lalu berjalan sendiri.
+        WorldTime.load(sql);
+        timers.insert(WorldTime.TICK_MS, WorldTime.TICK_MS,
+                (a, b) -> WorldTime.tick(), 0, 0);
         timers.insert(1000, RECONNECT_MS, (a, b) -> checkConnectChar(), 0, 0);
         // npc_runtimers(): tik 100 ms untuk kait `move` dan `action` milik NPC
         timers.insert(NpcRegistry.TICK_MS, NpcRegistry.TICK_MS,

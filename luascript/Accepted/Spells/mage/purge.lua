@@ -7,12 +7,12 @@ purge_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(venoms)
-		player:sendMinitext("You cast Purge.")
+		player:sendMinitext("Kau merapal Purge.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -43,12 +43,12 @@ cure_illness_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(venoms)
-		player:sendMinitext("You cast Cure illness.")
+		player:sendMinitext("Kau merapal Cure illness.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -80,12 +80,12 @@ restore_health_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(venoms)
-		player:sendMinitext("You cast Restore health.")
+		player:sendMinitext("Kau merapal Restore health.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -117,12 +117,12 @@ remove_poison_mage = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(venoms)
-		player:sendMinitext("You cast Remove poison.")
+		player:sendMinitext("Kau merapal Remove poison.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic

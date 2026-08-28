@@ -20,10 +20,10 @@ DogLinguistNpc = {
 					-- level 70 spell: Fissure    Level 99 spell: lava surge
 					if player.quest["dog_linguist_subpath"] == 0 then
 						local choice = player:menuSeq(
-							"Indeed, I could teach you much, but first, you would have to commit to NEVER join a subpath.  Do you commit?",
+							"Memang banyak yang bisa kuajarkan kepadamu, tetapi lebih dulu kau harus berjanji TIDAK AKAN PERNAH bergabung dengan subjalur. Kau berjanji?",
 							{
-								"Yes, the subpaths hold nothing for me.",
-								"No, I have not yet chosen my destiny."
+								"Ya, subjalur tidak berarti apa-apa bagiku.",
+								"Belum, aku belum memilih takdirku."
 							},
 							{}
 						)
@@ -43,7 +43,7 @@ DogLinguistNpc = {
 							player:removeItem("quartz", 1)
 							player:removeItem("topaz", 1)
 							player:addSpell("fissure")
-							player:sendMinitext("Your mind expands as you learn Fissure")
+							player:sendMinitext("Pikiranmu meluas saat kau mempelajari Fissure")
 							player.quest["dog_linguist"] = 2
 							return
 						end
@@ -51,8 +51,8 @@ DogLinguistNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Ah yes, I believe I can help you. Bring me (1) Amber, (1) Amethyst, (1) Quartz, and (1) Topaz and I will teach you.",
-								"Return when you have acquired what I have asked."
+								"Ah ya, kurasa aku bisa membantumu. Bawakan aku (1) Amber, (1) Amethyst, (1) Quartz, dan (1) Topaz, lalu akan kuajari kau.",
+								"Kembalilah kalau yang kuminta sudah kau dapatkan."
 							},
 							0
 						)
@@ -66,7 +66,7 @@ DogLinguistNpc = {
 							player:removeItem("star_staff", 1)
 							player:removeItem("tao_stone", 1)
 							player:addSpell("lava_surge")
-							player:sendMinitext("Your mind expands as you learn Lava Surge")
+							player:sendMinitext("Pikiranmu meluas saat kau mempelajari Lava Surge")
 							player.quest["dog_linguist"] = 3
 
 							return
@@ -75,18 +75,18 @@ DogLinguistNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Ah yes, I believe I can help you. Slay the most valuable Lobster and bring me a Star-staff and a Tao stone and I will teach you.",
-								"Return when you have done what I have asked."
+								"Ah ya, kurasa aku bisa membantumu. Bunuh Lobster paling berharga lalu bawakan aku Star-staff dan Tao stone, dan akan kuajari kau.",
+								"Kembalilah kalau yang kuminta sudah kau kerjakan."
 							},
 							0
 						)
 
 						return
 					elseif player.quest["dog_linguist"] == 3 then
-						player:dialog("I have taught you all that I can.", {})
+						player:dialog("Semua yang bisa kuajarkan sudah kuajarkan.", {})
 					else
 						player:dialog(
-							"Come back to me when you have gained some insight.",
+							"Temui aku lagi kalau kau sudah memperoleh sedikit pencerahan.",
 							{}
 						)
 						return
@@ -97,10 +97,10 @@ DogLinguistNpc = {
 					-- level 70 spell: spot traps    Level 99 spell: Serpent's Fury
 					if player.quest["dog_linguist_subpath"] == 0 then
 						local choice = player:menuSeq(
-							"Indeed, I could teach you much, but first, you would have to commit to NEVER join a subpath.  Do you commit?",
+							"Memang banyak yang bisa kuajarkan kepadamu, tetapi lebih dulu kau harus berjanji TIDAK AKAN PERNAH bergabung dengan subjalur. Kau berjanji?",
 							{
-								"Yes, the subpaths hold nothing for me.",
-								"No, I have not yet chosen my destiny."
+								"Ya, subjalur tidak berarti apa-apa bagiku.",
+								"Belum, aku belum memilih takdirku."
 							},
 							{}
 						)
@@ -113,7 +113,7 @@ DogLinguistNpc = {
 					if (player.level >= 60 and player.quest["dog_linguist"] == 1) then
 						if player:killCount("trapdoor_spider") >= 3 then
 							player:addSpell("spot_traps")
-							player:sendMinitext("Your mind expands as you learn Spot Traps")
+							player:sendMinitext("Pikiranmu meluas saat kau mempelajari Spot Traps")
 							player.quest["dog_linguist"] = 2
 							return
 						end
@@ -122,8 +122,8 @@ DogLinguistNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Ah yes, I believe I can help you. Kill Three (3) Trapdoor Spiders (Ambushing Spiders in Kugnae Spider Cave) and I will teach you.",
-								"Return when you have acquired what I have asked."
+								"Ah ya, kurasa aku bisa membantumu. Bunuh tiga (3) Trapdoor Spider (Ambushing Spider di Kugnae Spider Cave) dan akan kuajari kau.",
+								"Kembalilah kalau yang kuminta sudah kau dapatkan."
 							},
 							0
 						)
@@ -133,7 +133,7 @@ DogLinguistNpc = {
 						if (player:killCount("golden_lobster") >= 1 and player:hasItem("whisper_bracelet", 1) == true) then
 							player:removeItem("whisper_bracelet", 1)
 							player:addSpell("serpents_fury")
-							player:sendMinitext("Your mind expands as you learn Serpent's Fury")
+							player:sendMinitext("Pikiranmu meluas saat kau mempelajari Serpent's Fury")
 							player.quest["dog_linguist"] = 3
 
 							return
@@ -143,18 +143,18 @@ DogLinguistNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Ah yes, I believe I can help you. Kill the Golden Lobster, then bring me the following item:\n\n(1) Whisper bracelet",
-								"Return when you have done what I have asked."
+								"Ah ya, kurasa aku bisa membantumu. Bunuh Golden Lobster, lalu bawakan aku barang berikut:\n\n(1) Whisper bracelet",
+								"Kembalilah kalau yang kuminta sudah kau kerjakan."
 							},
 							0
 						)
 
 						return
 					elseif player.quest["dog_linguist"] == 3 then
-						player:dialog("I have taught you all that I can.", {})
+						player:dialog("Semua yang bisa kuajarkan sudah kuajarkan.", {})
 					else
 						player:dialog(
-							"Come back to me when you have gained some insight.",
+							"Temui aku lagi kalau kau sudah memperoleh sedikit pencerahan.",
 							{}
 						)
 						return
@@ -165,10 +165,10 @@ DogLinguistNpc = {
 					-- level 70 spell: Greater Blessing    Level 99 spell: Spirit Fury
 					if player.quest["dog_linguist_subpath"] == 0 then
 						local choice = player:menuSeq(
-							"Indeed, I could teach you much, but first, you would have to commit to NEVER join a subpath.  Do you commit?",
+							"Memang banyak yang bisa kuajarkan kepadamu, tetapi lebih dulu kau harus berjanji TIDAK AKAN PERNAH bergabung dengan subjalur. Kau berjanji?",
 							{
-								"Yes, the subpaths hold nothing for me.",
-								"No, I have not yet chosen my destiny."
+								"Ya, subjalur tidak berarti apa-apa bagiku.",
+								"Belum, aku belum memilih takdirku."
 							},
 							{}
 						)
@@ -181,7 +181,7 @@ DogLinguistNpc = {
 					if (player.level >= 60 and player.quest["dog_linguist"] == 1) then
 						if player:killCount("trapdoor_spider") >= 3 then
 							player:addSpell("greater_blessing")
-							player:sendMinitext("Your mind expands as you learn Greater Blessing")
+							player:sendMinitext("Pikiranmu meluas saat kau mempelajari Greater Blessing")
 							player.quest["dog_linguist"] = 2
 							return
 						end
@@ -190,8 +190,8 @@ DogLinguistNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Ah yes, I believe I can help you. Kill Three (3) Trapdoor Spiders (Ambushing Spiders in Kugnae Spider Cave) and I will teach you.",
-								"Return when you have acquired what I have asked."
+								"Ah ya, kurasa aku bisa membantumu. Bunuh tiga (3) Trapdoor Spider (Ambushing Spider di Kugnae Spider Cave) dan akan kuajari kau.",
+								"Kembalilah kalau yang kuminta sudah kau dapatkan."
 							},
 							0
 						)
@@ -203,7 +203,7 @@ DogLinguistNpc = {
 							player:removeGold(10000)
 							player:addSpell("spirit_fury")
 							player.quest["dog_linguist"] = 3
-							player:sendMinitext("Your mind expands as you learn Spirit Fury")
+							player:sendMinitext("Pikiranmu meluas saat kau mempelajari Spirit Fury")
 
 							return
 						end
@@ -212,18 +212,18 @@ DogLinguistNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Ah yes, I believe I can help you. Kill a Golden Lobster then bring me the following items:\n\n(1) Titanium glove\n10,000 gold",
-								"Return when you have done what I have asked."
+								"Ah ya, kurasa aku bisa membantumu. Bunuh satu Golden Lobster lalu bawakan aku barang berikut:\n\n(1) Titanium glove\n10.000 emas",
+								"Kembalilah kalau yang kuminta sudah kau kerjakan."
 							},
 							0
 						)
 
 						return
 					elseif player.quest["dog_linguist"] == 3 then
-						player:dialog("I have taught you all that I can.", {})
+						player:dialog("Semua yang bisa kuajarkan sudah kuajarkan.", {})
 					else
 						player:dialog(
-							"Come back to me when you have gained some insight.",
+							"Temui aku lagi kalau kau sudah memperoleh sedikit pencerahan.",
 							{}
 						)
 						return
@@ -234,10 +234,10 @@ DogLinguistNpc = {
 					-- level 70 spell: Survive    Level 99 spell: Fascinate
 					if player.quest["dog_linguist_subpath"] == 0 then
 						local choice = player:menuSeq(
-							"Indeed, I could teach you much, but first, you would have to commit to NEVER join a subpath.  Do you commit?",
+							"Memang banyak yang bisa kuajarkan kepadamu, tetapi lebih dulu kau harus berjanji TIDAK AKAN PERNAH bergabung dengan subjalur. Kau berjanji?",
 							{
-								"Yes, the subpaths hold nothing for me.",
-								"No, I have not yet chosen my destiny."
+								"Ya, subjalur tidak berarti apa-apa bagiku.",
+								"Belum, aku belum memilih takdirku."
 							},
 							{}
 						)
@@ -255,7 +255,7 @@ DogLinguistNpc = {
 							player:removeItem("mountain_ginseng", 10)
 							player:removeItem("pearl_charm", 1)
 							player:addSpell("survive")
-							player:sendMinitext("Your mind expands as you learn Survive")
+							player:sendMinitext("Pikiranmu meluas saat kau mempelajari Survive")
 							player.quest["dog_linguist"] = 2
 							return
 						end
@@ -263,8 +263,8 @@ DogLinguistNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Ah yes, I believe I can help you. Bring me (10) Mountain ginseng and (1) Pearl charm and I will teach you.",
-								"Return when you have acquired what I have asked."
+								"Ah ya, kurasa aku bisa membantumu. Bawakan aku (10) Mountain ginseng dan (1) Pearl charm, lalu akan kuajari kau.",
+								"Kembalilah kalau yang kuminta sudah kau dapatkan."
 							},
 							0
 						)
@@ -278,7 +278,7 @@ DogLinguistNpc = {
 							player:removeItem("titanium_lance", 1)
 							player:removeItem("sen_glove", 1)
 							player:addSpell("fascinate")
-							player:sendMinitext("Your mind expands as you learn Fascinate")
+							player:sendMinitext("Pikiranmu meluas saat kau mempelajari Fascinate")
 							player.quest["dog_linguist"] = 3
 
 							return
@@ -288,18 +288,18 @@ DogLinguistNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Ah yes, I believe I can help you. Slay the Golden Lobster, then bring me the following items:\n\n(1) Titanium lance\n(1) Sen glove",
-								"Return when you have done what I have asked."
+								"Ah ya, kurasa aku bisa membantumu. Bunuh Golden Lobster, lalu bawakan aku barang berikut:\n\n(1) Titanium lance\n(1) Sen glove",
+								"Kembalilah kalau yang kuminta sudah kau kerjakan."
 							},
 							0
 						)
 
 						return
 					elseif player.quest["dog_linguist"] == 3 then
-						player:dialog("I have taught you all that I can.", {})
+						player:dialog("Semua yang bisa kuajarkan sudah kuajarkan.", {})
 					else
 						player:dialog(
-							"Come back to me when you have gained some insight.",
+							"Temui aku lagi kalau kau sudah memperoleh sedikit pencerahan.",
 							{}
 						)
 						return
@@ -371,7 +371,7 @@ DogLinguistNpc = {
 					player:addKarma(1.0)
 				end
 				player:dialog(
-					"You think you could now hold a simple conversation in their language.",
+					"Kau merasa sekarang bisa bercakap sederhana dalam bahasa mereka.",
 					{}
 				)
 			end
@@ -397,8 +397,8 @@ DogLinguistNpc = {
 		--
 
 		local confirm = player:menuSeq(
-			"Do you wish to clear your mind, opening the possibility of one of the subpaths? It will cost much karma to do so.",
-			{"I wish to join a player subpath.", "Nevermind."},
+			"Kau ingin mengosongkan pikiranmu, membuka kemungkinan salah satu subjalur? Itu akan memakan banyak karma.",
+			{"Aku ingin bergabung dengan subjalur pemain.", "Nevermind."},
 			{}
 		)
 
@@ -435,7 +435,7 @@ DogLinguistNpc = {
 			player.quest["dog_linguist_subpath"] = 0
 			player:updatePath(player.baseClass, player.mark)
 
-			player:dialogSeq({t, "It is done."}, 0)
+			player:dialogSeq({t, "Sudah selesai."}, 0)
 		end
 	end,
 

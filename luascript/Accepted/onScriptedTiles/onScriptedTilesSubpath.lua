@@ -110,24 +110,24 @@ complete_spy = async(function(player)
 	player:dialogSeq(
 		{
 			mistress,
-			"We heard the explosion from here! It seems you have the skillset our organization needs. Will you pledge yourself to our Guild?"
+			"Ledakannya terdengar sampai sini! Sepertinya kau punya keahlian yang dibutuhkan organisasi kami. Maukah kau bersumpah setia kepada Guild kami?"
 		},
 		1
 	)
 	local choices = {
-		"Sign the contract with your name.",
-		"Sign the contract with a false name.",
+		"Tanda tangani kontraknya dengan namamu.",
+		"Tanda tangani kontraknya dengan nama palsu.",
 		"Draw a symbol.",
-		"Do not sign the contract just yet."
+		"Jangan tanda tangani kontraknya dulu."
 	}
 	local choice = player:menuSeq(
-		"The Guild Mistress produces a small contract and holds out a pen: ",
+		"Nyonya Guild mengeluarkan kontrak kecil dan menyodorkan pena: ",
 		choices,
 		{}
 	)
 	if choice == 1 then
 		player:addLegend(
-			"Associate of the KSG (" .. curT() .. ")",
+			"Rekan KSG (" .. curT() .. ")",
 			"spy_rank",
 			22,
 			1
@@ -135,7 +135,7 @@ complete_spy = async(function(player)
 		player:dialogSeq(
 			{
 				mistress,
-				"Excellent, let me show you into our Guild Hall and make sure you check the Guild board..."
+				"Bagus, mari kuantar masuk ke Balai Guild kami, dan jangan lupa periksa papan Guild..."
 			},
 			1
 		)
@@ -143,7 +143,7 @@ complete_spy = async(function(player)
 		player:dialogSeq(
 			{
 				mistress,
-				"Interesting alias... let me show you into our Guild hall and make sure you check the Guild board..."
+				"Nama samaran yang menarik... mari kuantar masuk ke balai Guild kami, dan jangan lupa periksa papan Guild..."
 			},
 			1
 		)
@@ -151,14 +151,14 @@ complete_spy = async(function(player)
 		player:dialogSeq(
 			{
 				mistress,
-				"Yup, I knew you were clever... let me show you into our Guild hall and make sure you check the Guild board..."
+				"Ya, sudah kuduga kau cerdik... mari kuantar masuk ke balai Guild kami, dan jangan lupa periksa papan Guild..."
 			},
 			1
 		)
 	elseif choice == 4 then
 		player.quest["spy_trials"] = 14
 		player:dialogSeq(
-			{mistress, "No problem. Come back here anytime you want to join."},
+			{mistress, "Tidak masalah. Kembalilah ke sini kapan saja kalau kau ingin bergabung."},
 			1
 		)
 	end
@@ -171,20 +171,20 @@ caravan = async(function(player)
 	local item1 = {graphic = convertGraphic(5271, "item"), color = 0}
 	local item2 = {graphic = convertGraphic(3745, "item"), color = 0}
 	player:dialogSeq(
-		{envoy, "** You spot the Imperial Envoy coming down the passage! **"},
+		{envoy, "** Kau melihat Utusan Kekaisaran menyusuri lorong! **"},
 		1
 	)
 	player:dialogSeq(
 		{
 			explosives,
-			"** Quickly, you camoflauge the eplxosives under a pile of rocks, extend the fuse, and hide a safe distance under the bridge. **"
+			"** Cepat-cepat kau menyamarkan bahan peledak di bawah tumpukan batu, memanjangkan sumbunya, lalu bersembunyi pada jarak aman di bawah jembatan. **"
 		},
 		1
 	)
 	player:dialogSeq(
 		{
 			spy,
-			"** Just as the envoy reaches the passage, you notice a shadowed figure descend from a tree and sneak up on the envoy. **"
+			"** Tepat ketika utusan itu mencapai lorong, kau melihat sesosok bayangan turun dari pohon dan mengendap mendekatinya. **"
 		},
 		1
 	)
@@ -197,7 +197,7 @@ caravan = async(function(player)
 	player:dialogSeq(
 		{
 			item1,
-			"** The explosives detonate amind the envoy and the shadowed figure, toppling the wall so the passage is blocked. **"
+			"** Bahan peledak itu meletus di tengah utusan dan sosok bayangan itu, merobohkan dinding sehingga lorongnya tertutup. **"
 		},
 		1
 	)
@@ -205,7 +205,7 @@ caravan = async(function(player)
 	player.registry["spy_sabotage"] = player.registry["spy_sabotage"] + 1
 	player:removeLegendbyName("spy_sabotage")
 	player:addLegend(
-		"Performed " .. player.registry["spy_sabotage"] .. " acts of sabotage",
+		"Performed " .. player.registry["spy_sabotage"] .. " tindakan sabotase",
 		"spy_sabotage",
 		22,
 		128
@@ -213,8 +213,8 @@ caravan = async(function(player)
 	player:dialogSeq(
 		{
 			item2,
-			"** You emerge from your vantage point and notice there are no signs of the envoy or the shadowed figure. **",
-			"** Only the shattered hilt of a dagger and burnt pieces of Imperial uniforms lay scattered behind. **"
+			"** Kau keluar dari tempat pengintaianmu dan mendapati tidak ada jejak utusan maupun sosok bayangan itu. **",
+			"** Hanya gagang belati yang hancur dan potongan seragam Kekaisaran yang hangus berserakan di sana. **"
 		},
 		1
 	)
@@ -226,8 +226,8 @@ gravekeeper = async(function(player)
 	player:dialogSeq(
 		{
 			gravekeeper,
-			"** You spot a gravekeeper tending a fresh grave. **",
-			" ** He hobbles over and looks you up and down."
+			"** Kau melihat seorang penjaga makam merawat kuburan yang masih baru. **",
+			" ** Ia terpincang mendekat dan memandangimu dari atas ke bawah."
 		},
 		0
 	)
@@ -235,8 +235,8 @@ gravekeeper = async(function(player)
 		player:dialogSeq(
 			{
 				gravekeeper,
-				"You don't look the type that could send anyone to their grave.",
-				"Come back when you have at least two riches wins."
+				"Kau tidak kelihatan seperti orang yang bisa mengirim siapa pun ke liang kubur.",
+				"Kembalilah kalau kau sudah punya sedikitnya dua kemenangan riches."
 			},
 			0
 		)
@@ -254,18 +254,18 @@ gravekeeper = async(function(player)
 		player:dialogSeq(
 			{
 				gravekeeper,
-				"** The gravekeeper ambles to the crypt's door, shuts it with a loud thud, and smooths his voice back to his natural tone. **",
-				"Then I guess good work sealing those loose lips at the casino. The Guild said you might be an asset to have in our network...or was the other one who came through here today...",
-				"No matter, there's something that needs to be taken care of.",
-				"Someone knows something we need to know.",
-				"You could say it's of kingdom-wide importance. Go speak with one of our intelligence specialists, Pond, at his library.",
-				"Ask him to see the Special Collections, and he will give you details."
+				"** Penjaga makam itu berjalan ke pintu ruang kubur, menutupnya dengan bunyi berdebum, lalu mengembalikan suaranya ke nada aslinya. **",
+				"Kalau begitu kerja bagus membungkam mulut ember di kasino itu. Guild bilang kau mungkin aset yang berharga bagi jaringan kami... atau jangan-jangan yang satunya yang lewat sini hari ini...",
+				"Tidak penting; ada urusan yang harus dibereskan.",
+				"Ada orang yang tahu sesuatu yang perlu kami ketahui.",
+				"Boleh dibilang ini menyangkut seluruh kerajaan. Bicaralah dengan salah satu ahli intelijen kami, Pond, di perpustakaannya.",
+				"Mintalah melihat Koleksi Khusus, dan ia akan memberimu rinciannya."
 			},
 			0
 		)
 	else
 		player:dialogSeq(
-			{gravekeeper, "Meh, I'll stay here until the weather changes then."},
+			{gravekeeper, "Yah, kalau begitu aku di sini saja sampai cuacanya berubah."},
 			0
 		)
 	end

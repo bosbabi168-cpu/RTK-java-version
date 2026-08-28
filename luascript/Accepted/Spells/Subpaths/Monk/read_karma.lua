@@ -13,7 +13,7 @@ read_karma_monk = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -27,7 +27,7 @@ read_karma_monk = {
 		local target = Player(input)
 
 		if target == nil then
-			player:dialogSeq({t, "Player is not online or unavailable."}, 0)
+			player:dialogSeq({t, "Pemain tidak daring atau tidak tersedia."}, 0)
 			return
 		end
 

@@ -9,10 +9,10 @@ GhengisKhanNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell", "Ghengis Khan's Welcome"}
+		local opts = {"Beli", "Jual", "Ghengis Khan's Welcome"}
 
 		if player.class == 1 and (player.quest["subpath_trials"] == 0 or player.quest["subpath_trials"] == 10) and (player.gameRegistry["subpaths_released"] == 0 or player.gmLevel == 99) then
-			table.insert(opts, "Join the Barbarians")
+			table.insert(opts, "Bergabung dengan Barbarian")
 		end
 
 		if player.quest["subpath_trials"] == 10 then
@@ -22,31 +22,31 @@ GhengisKhanNpc = {
 		local buyitems = GhengisKhanNpc.buyItems()
 		local sellitems = GhengisKhanNpc.sellItems()
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accommodate some of the things you need. What would you like?",
 				buyitems
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend("What are you willing to sell today?", sellitems)
 		elseif menu == "Ghengis Khan's Welcome" then
-			player:dialogSeq({t, "Hello and welcome to the Barbarian Cave."}, 0)
+			player:dialogSeq({t, "Halo dan selamat datang di Barbarian Cave."}, 0)
 			return
-		elseif menu == "Join the Barbarians" then
+		elseif menu == "Bergabung dengan Barbarian" then
 			GhengisKhanNpc.joinTheBarbarians(player, npc)
 		elseif menu == "Abandon Trials" then
 			local abandon = player:menuString(
-				"Are you sure you want to abandon your trials?",
-				{"Yes", "No"}
+				"Kau yakin ingin meninggalkan ujianmu?",
+				{"Ya", "Tidak"}
 			)
-			if abandon == "Yes" then
+			if abandon == "Ya" then
 				GhengisKhanNpc.clearQuestLegends(player)
 				player:dialogSeq(
 					{
 						t,
-						"Everything you have learned of the Barbarian, has now been forgotten."
+						"Semua yang pernah kau pelajari tentang Barbarian kini terlupakan."
 					},
 					0
 				)
@@ -77,7 +77,7 @@ GhengisKhanNpc = {
 	action = function(npc)
 		local random = math.random(1, 15)
 		if random == 1 then
-			npc:talk(0, npc.name .. ": Welcome to the Cave of the Barbarians")
+			npc:talk(0, npc.name .. ": Selamat datang di Gua para Barbarian")
 		end
 	end,
 
@@ -120,13 +120,13 @@ GhengisKhanNpc = {
 		--
 
 		if player.level < 50 then
-			player:dialogSeq({t, "You are too young to join at this time."}, 0)
+			player:dialogSeq({t, "Kau masih terlalu muda untuk bergabung sekarang."}, 0)
 			return
 		end
 
 		if not player:karmaCheck("dog") then
 			player:dialogSeq(
-				{t, "Your soul is too impure. Improve your karma and return."},
+				{t, "Jiwamu terlalu kotor. Perbaiki karmamu lalu kembalilah."},
 				0
 			)
 			return
@@ -136,22 +136,22 @@ GhengisKhanNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ah, so you wish to join the ranks of the Barbarian horde? Well, I'll tell you right now, it won't be easy.",
-					"Be prepared to be tested more than you have ever been in your life. We Barbarians are a proud bunch, and we don't accept just anyone into our family without knowing they're worth first."
+					"Ah, jadi kau ingin bergabung dengan barisan gerombolan Barbarian? Kuberitahu sekarang juga, itu tidak akan mudah.",
+					"Bersiaplah diuji lebih berat daripada seumur hidupmu. Kami Barbarian kaum yang berbangga diri, dan kami tidak menerima sembarang orang ke dalam keluarga tanpa mengetahui kelayakannya lebih dulu."
 				},
 				1
 			)
 
 			local join = player:menuString(
-				"Are you sure you want to begin the process?",
-				{"Yes", "No"}
+				"Kau yakin ingin memulai prosesnya?",
+				{"Ya", "Tidak"}
 			)
 
-			if join == "Yes" then
+			if join == "Ya" then
 				player.quest["subpath_trials"] = 10
 			else
 				player:dialogSeq(
-					{t, "Very well, begone with you, Townie scum!"},
+					{t, "Baiklah, pergi sana, sampah kota!"},
 					0
 				)
 			end
@@ -166,8 +166,8 @@ GhengisKhanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The first step is to leave your worldly possessions behind. We Barbarians are a simple folk, and we don't much care for the rotten excesses of the city dwellers, or \"Townies\". You must leave the comforts of your home behind, and abandon your family; for if you are to become one of us, we will become your family.",
-						"Return to me once you have abandoned your home and renounced the city life."
+						"Langkah pertama adalah meninggalkan seluruh harta duniawimu. Kami Barbarian kaum yang sederhana, dan kami tidak peduli pada kemewahan busuk penghuni kota, atau \"orang kota\". Kau harus meninggalkan kenyamanan rumahmu dan melepas keluargamu; sebab kalau kau menjadi bagian dari kami, kamilah yang menjadi keluargamu.",
+						"Kembalilah kepadaku setelah kau meninggalkan rumahmu dan menanggalkan hidup kota."
 					},
 					1
 				)
@@ -177,14 +177,14 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You must still leave your worldly possessions behind and renounce the city life."
+							"Kau masih harus meninggalkan harta duniawimu dan menanggalkan hidup kota."
 						},
 						0
 					)
 					return
 				else
 					player:addLegend(
-						"Passed the Barbarian trial of Willingness",
+						"Lulus ujian Barbarian: Kerelaan",
 						"barbarian_trial_of_willingness",
 						16,
 						15
@@ -193,7 +193,7 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"So, you have taken your first step and forsaken your past life. I must say, I'm pleasantly surprised. Many cannot bear to leave the comforts of city life behind. I can see you are willing to learn our ways. But believe me, the trials have only just begun."
+							"Jadi kau sudah mengambil langkah pertama dan meninggalkan hidupmu yang lama. Harus kuakui, aku terkejut senang. Banyak yang tidak sanggup melepas kenyamanan hidup kota. Kulihat kau bersedia mempelajari jalan kami. Tapi percayalah, ujiannya baru saja mulai."
 						},
 						1
 					)
@@ -211,9 +211,9 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"It's not enough simply to reside in the wild. You must become one with the wild. You must become intimately familiar with its strength, its weaknesses, its desires. Only then can you be considered as one of the Barbarian horde.",
-							"We Barbarians pride ourselves in our ability to survive on our own. Go now, to the Wild! Go with only the clothes on your back and the axe in your hand. Live in the wild, amongst the flora and fauna, and survive using only your wits and brute strength.",
-							"Seek no help from others, you must do this alone. If you can survive this treacherous task for 6 weeks, then you may return to me and continue your training."
+							"Tidak cukup sekadar tinggal di alam liar. Kau harus menyatu dengannya. Kau harus benar-benar akrab dengan kekuatannya, kelemahannya, hasratnya. Hanya dengan begitu kau bisa dianggap bagian dari gerombolan Barbarian.",
+							"Kami Barbarian berbangga pada kemampuan kami bertahan hidup sendiri. Pergilah sekarang ke Alam Liar! Pergilah hanya dengan pakaian di badan dan kapak di tangan. Hiduplah di alam liar, di antara tumbuhan dan binatang, dan bertahanlah hanya dengan akal serta kekuatan kasarmu.",
+							"Jangan minta bantuan siapa pun; kau harus melakukannya sendiri. Kalau kau sanggup bertahan dalam tugas berbahaya ini selama 6 pekan, kau boleh kembali kepadaku dan melanjutkan latihanmu."
 						},
 						1
 					)
@@ -224,7 +224,7 @@ GhengisKhanNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"You have not proven your ability to survive on your own in the wild. Please return to me when you have done so."
+								"Kau belum membuktikan kemampuanmu bertahan hidup sendiri di alam liar. Kembalilah kepadaku setelah kau membuktikannya."
 							},
 							0
 						)
@@ -232,7 +232,7 @@ GhengisKhanNpc = {
 					end
 
 					player:addLegend(
-						"Passed the Barbarian trial of Survival",
+						"Lulus ujian Barbarian: Ketahanan Hidup",
 						"barbarian_trial_of_survival",
 						16,
 						15
@@ -242,8 +242,8 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You went all 6 weeks, and you're still alive?! Though, a bit banged up I see. Nevermind that, a little emaciation is good for the soul.",
-							"You have shown yourself to be a formidable survivalist, and are now one step closer to being embraced by our tribe."
+							"Kau melewati 6 pekan penuh dan masih hidup?! Meski kulihat agak babak belur. Tidak apa-apa, sedikit kurus itu baik untuk jiwa.",
+							"Kau membuktikan diri sebagai penyintas yang tangguh, dan kini selangkah lebih dekat untuk diterima suku kami."
 						},
 						0
 					)
@@ -258,9 +258,9 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"There is nothing more important to a Barbarian than his or her family! Tonight, we celebrate our way of life and our love and devotion towards each other.",
-							"Go and collect 10 full loads of meat from the vicious tiger, for our kin to enjoy. You will find these tigers in the Iron Labyrinth to the south.",
-							"The danger involved in the collection of this Barbarian delicacy only satiates our hunger further."
+							"Tidak ada yang lebih penting bagi seorang Barbarian selain keluarganya! Malam ini kita merayakan cara hidup kita serta kasih dan pengabdian kita satu sama lain.",
+							"Pergilah kumpulkan 10 tumpuk penuh daging dari harimau ganas untuk dinikmati sanak kita. Harimau itu ada di Iron Labyrinth di selatan.",
+							"Bahaya dalam mengumpulkan santapan khas Barbarian ini justru membuat lapar kami makin terpuaskan."
 						},
 						1
 					)
@@ -274,7 +274,7 @@ GhengisKhanNpc = {
 							player:dialogSeq(
 								{
 									t,
-									"You need a full stack of tiger meat to add to the total. Come back to me when you do."
+									"Kau butuh satu tumpuk penuh daging harimau untuk ditambahkan. Temui aku lagi kalau sudah ada."
 								},
 								0
 							)
@@ -291,7 +291,7 @@ GhengisKhanNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Thank you for the tiger meat. You now only need (" .. (200 - player.quest["barbarian_trial_of_atonement_meat_collected"]) .. ") more tiger meat to complete this task."
+								"Terima kasih atas daging harimaunya. Sekarang kau tinggal butuh (" .. (200 - player.quest["barbarian_trial_of_atonement_meat_collected"]) .. ") daging harimau lagi untuk menuntaskan tugas ini."
 							},
 							1
 						)
@@ -304,7 +304,7 @@ GhengisKhanNpc = {
 						player.quest["barbarian_trial_of_atonement"] = 0
 						player.quest["barbarian_trial"] = 3
 						player:addLegend(
-							"Passed the Barbarian trial of Atonement",
+							"Lulus ujian Barbarian: Penebusan",
 							"barbarian_trial_of_atonement",
 							16,
 							15
@@ -312,7 +312,7 @@ GhengisKhanNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Excellent, you have done well. This meat will help to satisfy the massive appetite of the Barbarian horde. Tonight, we feast!"
+								"Bagus sekali, kerjamu rapi. Daging ini akan memuaskan selera raksasa gerombolan Barbarian. Malam ini kita berpesta!"
 							},
 							1
 						)
@@ -330,11 +330,11 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Before your next task, first a little exposition. We Barbarians aren't simply against the ways of the townfolk's lavish lifestyles. We stand against everything they hold dear. This includes the unwavering allegiance to unjust hierarchies.",
-							"We Barbarians tend to be seen by Townies as cruel, heartless, morons. Nothing could be further from the truth. Nay, it is the townsfolk who are the fools. Their near-perverted idolatry of their kings, queens, generals, and other rulers, makes them little more than pitiful lambs ripe for slaughter.",
-							"We prefer to live a primarily non-hierarchical lifestyle, relying heavily on the democratic process. While there is still an Elder, and there are Guides, see these figures more as thought leaders than as dictators or oligarchs to be followed without question.",
-							"These are members of our community who have been here the longest, and done the most for our kind. Respect them as such, but you are not required to worship them or treat them as infallible.",
-							"It is in this way that Barbarians greatly differ from the other groups you'll find throughout the lands."
+							"Sebelum tugas berikutnya, sedikit penjelasan. Kami orang Barbarian bukan cuma menentang gaya hidup mewah orang kota. Kami menentang segala yang mereka junjung, termasuk kesetiaan buta pada hierarki yang tidak adil.",
+							"Orang kota menganggap kami Barbarian kejam, tidak berperasaan, dan dungu. Tidak ada yang lebih jauh dari kenyataan. Justru merekalah yang bodoh. Pemujaan mereka yang hampir menyimpang terhadap raja, ratu, jenderal, dan penguasa lain membuat mereka tak lebih dari domba malang yang siap disembelih.",
+							"Kami lebih suka hidup tanpa hierarki dan bersandar pada musyawarah. Memang masih ada Tetua dan para Pemandu, tetapi pandanglah mereka sebagai penunjuk arah pikiran, bukan diktator atau oligark yang harus diikuti tanpa bertanya.",
+							"Mereka adalah anggota masyarakat kami yang paling lama di sini dan paling banyak berbuat bagi kaum kami. Hormatilah mereka, tetapi kau tidak wajib memuja atau menganggap mereka tanpa cela.",
+							"Justru dalam hal inilah Barbarian sangat berbeda dari kelompok lain yang akan kau temui di seluruh negeri."
 						},
 						1
 					)
@@ -348,8 +348,8 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"One such group you will find, a particularly distasteful group, are the Dragons. There is no other enclave so hopelessly lost to the ruse of the dreaded hierarchy and the rule of the iron fist.",
-							"Alleviate them of their pathetic obsession with being controlled by cutting the heads off of their leaders and bringing them to me. ((Kill 1 of each Dragon boss.))"
+							"Salah satu kelompok itu, yang paling menjijikkan, adalah para Dragon. Tidak ada kelompok lain yang sedemikian tersesat oleh tipu daya hierarki dan kekuasaan tangan besi.",
+							"Sembuhkan obsesi menyedihkan mereka untuk dikendalikan dengan memenggal kepala para pemimpinnya dan membawanya kepadaku. ((Bunuh 1 dari tiap bos Dragon.))"
 						},
 						1
 					)
@@ -358,7 +358,7 @@ GhengisKhanNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"You have not heeded my words. I am still waiting for you to kill each Dragon boss."
+								"Kau tidak mengindahkan kata-kataku. Aku masih menunggumu membunuh tiap bos Dragon."
 							},
 							0
 						)
@@ -375,9 +375,9 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Wonderful, these heads will look great stuffed and mounted above the family mantle. Though, I don't expect what you've done to change the minds of the Dragon clan.",
-							"No doubt, the Dragons are already scrambling around, looking for someone else to tell them how to live. Some, I suppose, desperately seek to be dominated.",
-							"In fact, we're not done with them yet. Go and bring me the heads of their 2 replacement leaders. ((Kill 1 more of each Dragon boss.))"
+							"Bagus sekali, kepala-kepala ini akan tampak megah kalau diawetkan dan dipajang di atas perapian keluarga. Meski begitu, aku tidak berharap perbuatanmu mengubah pikiran klan Dragon.",
+							"Tidak diragukan lagi, para Dragon kini sibuk mencari orang lain yang akan memberitahu mereka cara hidup. Sebagian, kurasa, memang haus dikuasai.",
+							"Malah urusan kita dengan mereka belum selesai. Bawakan kepala 2 pemimpin pengganti mereka. ((Bunuh 1 lagi dari tiap bos Dragon.))"
 						},
 						1
 					)
@@ -386,7 +386,7 @@ GhengisKhanNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"You have not heeded my words. I am still waiting for you to kill 1 more of each Dragon boss."
+								"Kau tidak mengindahkan kata-kataku. Aku masih menunggumu membunuh 1 lagi dari tiap bos Dragon."
 							},
 							0
 						)
@@ -398,7 +398,7 @@ GhengisKhanNpc = {
 					player.quest["barbarian_trial_of_repudiation"] = 0
 					player.quest["barbarian_trial"] = 4
 					player:addLegend(
-						"Passed the Barbarian trial of Repudiation",
+						"Lulus ujian Barbarian: Penyangkalan",
 						"barbarian_trial_of_repudiation",
 						16,
 						15
@@ -406,8 +406,8 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"I did warn you at the start that this would not be easy, didn't I? But you've made it this far, much further than most.",
-							"I commend you on your display of courage and determination. However there is still one final test before you can be considered one of us."
+							"Sejak awal sudah kuperingatkan bahwa ini tidak mudah, bukan? Tapi kau sampai sejauh ini, jauh lebih jauh daripada kebanyakan orang.",
+							"Aku memujimu atas keberanian dan ketetapan hatimu. Namun masih ada satu ujian terakhir sebelum kau bisa dianggap bagian dari kami."
 						},
 						1
 					)
@@ -428,8 +428,8 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"We Barbarians are no pushovers, we are skilled fighters. Go and win 3 more Riches carnage events. Bathe your axe in the blood of the Townie enemies and return it here for me to examine.",
-							"If you can prove that you are skilled in the ways of battle, you may join us. Any wins prior to this moment will not count."
+							"Kami Barbarian bukan orang lemah, kami petarung terlatih. Pergilah dan menangkan 3 acara carnage Riches lagi. Mandikan kapakmu dalam darah musuh orang kota lalu bawa kembali ke sini untuk kuperiksa.",
+							"Kalau kau bisa membuktikan kepiawaianmu dalam pertempuran, kau boleh bergabung. Kemenangan sebelum saat ini tidak dihitung."
 						},
 						1
 					)
@@ -445,7 +445,7 @@ GhengisKhanNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"I am still waiting for you to prove your ability in battle. You must attain (" .. (3 - diff) .. ") more Carnage victories to prove your worth."
+								"Aku masih menunggumu membuktikan kemampuanmu bertempur. Kau harus meraih (" .. (3 - diff) .. ") kemenangan Carnage lagi untuk membuktikan kelayakanmu."
 							},
 							0
 						)
@@ -465,10 +465,10 @@ GhengisKhanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You've done it. You've finally finished your training. You've demonstrated each of the 5 most important components of a true Barbarian lifestyle.",
-							"You've disregarded the allure of the city life and their wasteful existance. You've displayed your wilderness survival skills. You've shown your faithfulness to family (and appreciation for delicious Tiger Meat!).",
-							"You've proven your aversion to hierarchies. And now, finally, you've exhibited your exceptional skills in battle.",
-							"You are now one of us. Welcome to the family!"
+							"Kau berhasil. Akhirnya latihanmu selesai. Kau sudah menunjukkan kelima unsur terpenting dari cara hidup Barbarian sejati.",
+							"Kau menampik godaan hidup kota dan hidup mereka yang boros. Kau menunjukkan keahlianmu bertahan di belantara. Kau membuktikan kesetiaanmu pada keluarga (dan kecintaanmu pada Tiger Meat yang lezat!).",
+							"Kau membuktikan keenggananmu pada hierarki. Dan kini, akhirnya, kau memperlihatkan kepiawaianmu yang luar biasa dalam pertempuran.",
+							"Kau kini bagian dari kami. Selamat datang di keluarga!"
 						},
 						0
 					)

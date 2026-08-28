@@ -10,7 +10,7 @@ survive = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -21,7 +21,7 @@ survive = {
 		player:sendAction(6, 20)
 		player:playSound(22)
 		player:setAether("survive", aether)
-		player:sendMinitext("You cast Survive.")
+		player:sendMinitext("Kau merapal Survive.")
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 
@@ -32,7 +32,7 @@ survive = {
 				target.attacker = player.ID
 				target:sendAnimation(5, 0)
 				target:addHealthExtend(heal, 0, 0, 0, 0, 0)
-				target:sendMinitext(player.name .. " casts Survive on you.")
+				target:sendMinitext(player.name .. " merapal Survive padamu.")
 			end
 		end
 	end,

@@ -17,10 +17,10 @@ PotionShopNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell"}
+		local opts = {"Beli", "Jual"}
 
 		local menu = player:menuString(
-			"Hello! What would you like to do today?",
+			"Halo! Apa yang ingin kau lakukan hari ini?",
 			opts
 		)
 
@@ -39,7 +39,7 @@ PotionShopNpc = {
 			end
 		end
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			local boughtItem = player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buyopts,
@@ -61,7 +61,7 @@ PotionShopNpc = {
 					] - 1
 				end
 			end
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend("What are you willing to sell today?", sellopts)
 		end
 	end),
@@ -80,8 +80,8 @@ PotionShopNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ahhhhhhh, yes! I think I know what you need...",
-					"This concoction is quick-acting but has a quick recovery. I need a Mountain Ginseng to finalize it, would you happen to have one?"
+					"Ahhhhhhh, ya! Kurasa aku tahu apa yang kau butuhkan...",
+					"Ramuan ini bekerja cepat tetapi pulihnya juga cepat. Aku butuh satu Mountain Ginseng untuk merampungkannya; kebetulan kau punya?"
 				},
 				0
 			)
@@ -93,10 +93,10 @@ PotionShopNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Slip the Slumberquick into Hwan's drink. Once he's asleep, you'll only have four minutes to get him to the interrogation location before he wakes up.",
-						"There is a tree in the middle of the Stealth Grotto that you could use to tie him up. No one can hear him scream down there, heh.",
-						"Oh and if you need another vial, come back here and talk to me about our Special Guest again.",
-						"It may take a bit to make though, this stuff is finnicky!"
+						"Selipkan Slumberquick ke minuman Hwan. Begitu ia tertidur, kau hanya punya empat menit untuk membawanya ke tempat interogasi sebelum ia bangun.",
+						"Ada pohon di tengah Stealth Grotto yang bisa kau pakai untuk mengikatnya. Tidak ada yang bisa mendengar teriakannya di bawah sana, heh.",
+						"Oh, dan kalau kau butuh botol lagi, kembalilah ke sini dan bicara lagi soal Tamu Istimewa kita.",
+						"Tapi membuatnya perlu waktu, bahan ini rewel!"
 					},
 					0
 				)
@@ -114,10 +114,10 @@ PotionShopNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Slip the Slumberquick into Hwan's drink. Once he's asleep, you'll only have four minutes to get him to the interrogation location before he wakes up.",
-							"There is a tree in the middle of the Stealth Grotto that you could use to tie him up. No one can hear him scream down there, heh.",
-							"Oh and if you need another vial, come back here and talk to me about our Special Guest again.",
-							"It may take a bit to make though, this stuff is finnicky!"
+							"Selipkan Slumberquick ke minuman Hwan. Begitu ia tertidur, kau hanya punya empat menit untuk membawanya ke tempat interogasi sebelum ia bangun.",
+							"Ada pohon di tengah Stealth Grotto yang bisa kau pakai untuk mengikatnya. Tidak ada yang bisa mendengar teriakannya di bawah sana, heh.",
+							"Oh, dan kalau kau butuh botol lagi, kembalilah ke sini dan bicara lagi soal Tamu Istimewa kita.",
+							"Tapi membuatnya perlu waktu, bahan ini rewel!"
 						},
 						0
 					)
@@ -126,7 +126,7 @@ PotionShopNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"I am going to need another Mountain Ginseng for this potion again."
+							"Aku butuh satu Mountain Ginseng lagi untuk ramuan ini."
 						},
 						0
 					)
@@ -136,7 +136,7 @@ PotionShopNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Unfortunately, I am still preparing to make another. Please come back later."
+						"Sayangnya aku masih bersiap membuat satu lagi. Kembalilah nanti."
 					},
 					0
 				)

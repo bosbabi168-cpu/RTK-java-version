@@ -62,6 +62,40 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void playerSpellSlotChanged(User sd, int slot) {
+        Clif.sendMagic(sd, slot);
+    }
+
+    @Override
+    public void playerProfile(User sd) {
+        // Di RetroTK profil menumpang clif_mystaytus (0x39), yang sengaja
+        // dibiarkan TAHAP 1 karena protokolnya memang akan diganti.
+        Clif.sendMyStatus(sd);
+    }
+
+    @Override
+    public void playerTransferred(User sd, String host, int port,
+                                  int m, int x, int y) {
+        Clif.transfer(sd, host, port);
+    }
+
+    @Override
+    public void worldTimeChanged(User sd) {
+        Clif.sendTime(sd);
+    }
+
+    @Override
+    public void townListToPlayer(User sd, java.util.List<String> kota) {
+        Clif.sendTowns(sd, kota);
+    }
+
+    @Override
+    public void rankingToPlayer(User sd, String judul, java.util.List<Object[]> baris) {
+        // clif_parseranking menyusun jendela teks 0x7D; belum diport dan
+        // nilainya rendah karena format kabelnya akan diganti.
+    }
+
+    @Override
     public void objectSideChanged(BlockList bl) {
         Clif.sendSide(bl);
     }

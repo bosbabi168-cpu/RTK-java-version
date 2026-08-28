@@ -28,14 +28,14 @@ cloth_bags = {
 			player:dialogSeq(
 				{
 					t,
-					"You have no " .. Item(amberType).name .. "s to add to the bag."
+					"Kau tidak punya " .. Item(amberType).name .. " untuk dimasukkan ke kantong."
 				},
 				0
 			)
 			return
 		end
 
-		amount = player:inputNumberCheck(player:input("How many " .. Item(amberType).name .. "s would you like to add to the bag?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak " .. Item(amberType).name .. " yang ingin kau masukkan ke kantong?"))
 
 		if amount > invAmount then
 			amount = invAmount
@@ -43,7 +43,7 @@ cloth_bags = {
 
 		if bag.dura == bag.maxDura then
 			player:dialogSeq(
-				{t, "Your bag is full of " .. Item(amberType).name .. "s."},
+				{t, "Kantongmu penuh dengan " .. Item(amberType).name .. "s."},
 				0
 			)
 			return
@@ -67,7 +67,7 @@ cloth_bags = {
 		local amount = 0
 
 		if bag.dura > 1 then
-			amount = player:inputNumberCheck(player:input("How many " .. Item(amberType).name .. "s would you like to remove from your bag?"))
+			amount = player:inputNumberCheck(player:input("Berapa banyak " .. Item(amberType).name .. " yang ingin kau keluarkan dari kantong?"))
 			if amount > bag.dura then
 				amount = bag.dura
 			end
@@ -99,7 +99,7 @@ cloth_bags = {
 			player:dialogSeq(
 				{
 					t,
-					"You cannot have more " .. Item(amberType).name .. "s until you remove some from your inventory."
+					"Kau tidak boleh punya lebih banyak " .. Item(amberType).name .. " sampai kau mengeluarkan sebagian dari kantongmu."
 				},
 				0
 			)
@@ -107,7 +107,7 @@ cloth_bags = {
 		end
 
 		if not player:hasSpace(amberType, amount) then
-			player:sendMinitext("Your bag is full.")
+			player:sendMinitext("Kantongmu penuh.")
 			return
 		end
 
@@ -137,17 +137,17 @@ cloth_bags = {
 
 		local choices = {}
 		if bag.dura ~= bag.maxDura then
-			table.insert(choices, "Add cloth to bag.")
+			table.insert(choices, "Masukkan kain ke tas.")
 		end
 		if bag.dura ~= 0 then
-			table.insert(choices, "Remove cloth from bag.")
+			table.insert(choices, "Keluarkan kain dari tas.")
 		end
 
-		local choice = player:menuString("What would you like to do?", choices)
+		local choice = player:menuString("Apa yang ingin kau lakukan?", choices)
 
-		if choice == "Add cloth to bag." then
+		if choice == "Masukkan kain ke tas." then
 			cloth_bags.addToBag(player, amberType)
-		elseif choice == "Remove cloth from bag." then
+		elseif choice == "Keluarkan kain dari tas." then
 			cloth_bags.removeFromBag(player, amberType)
 		end
 	end
@@ -181,7 +181,7 @@ empty_cloth_bag = {
 			player:dialogSeq(
 				{
 					t,
-					"You must have some cloth in your inventory to be able to add to the bag."
+					"Kau harus punya cloth di kantongmu untuk bisa menambahkannya ke tas."
 				},
 				0
 			)
@@ -215,7 +215,7 @@ empty_cloth_bag = {
 		if invItem ~= nil then
 			-- finally at the point we have a valid object from what the player chose
 			if invItem.amount > 1 then
-				amount = player:inputNumberCheck(player:input("How many " .. invItem.name .. "s would you like to add to your cloth bag?"))
+				amount = player:inputNumberCheck(player:input("Berapa banyak " .. invItem.name .. " yang ingin kau masukkan ke kantong kain?"))
 
 				if amount > invItem.amount then
 					amount = invItem.amount
@@ -237,7 +237,7 @@ empty_cloth_bag = {
 		local newBag = invItem.yname
 
 		if not player:hasSpace(newBag .. "_bag", 1) then
-			player:sendMinitext("Your inventory is full.")
+			player:sendMinitext("Kantongmu penuh.")
 			return
 		end
 

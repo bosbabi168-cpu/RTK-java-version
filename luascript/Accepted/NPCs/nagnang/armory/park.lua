@@ -10,13 +10,13 @@ ParkNpc = {
 		player.lastClick = npc.ID
 
 		if player.baseClass ~= 2 then
-			player:dialogSeq({t, "Sorry I cannot help your kind."}, 0)
+			player:dialogSeq({t, "Maaf, aku tidak bisa menolong kaummu."}, 0)
 			return
 		end
 
 		if not player:hasLegend("dagger_guild_member") then
 			player:dialogSeq(
-				{t, "You must finish your path's Nagnang quest."},
+				{t, "Kau harus menyelesaikan tugas Nagnang jalurmu dulu."},
 				0
 			)
 			return
@@ -25,9 +25,9 @@ ParkNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Thank the totems you're here! I hope you will drive out the evil army from here. Nagnag's evil henchmen captured me from my home, and forced me to work for them here.",
-				"I have been enslaved by an evil spell which keeps me bound here. I can never escape. They have been forcing me to create special armor and weapons for them to use in a mission they are on,",
-				"I want you to get revenge for me from Nagnag for what he has done to me, the only thing I can do to help is create the items for you that I made for his rogues."
+				"Syukurlah kau datang! Kuharap kau mengusir pasukan jahat itu dari sini. Antek-antek Nagnag menculikku dari rumahku dan memaksaku bekerja untuk mereka di tempat ini.",
+				"Aku diperbudak oleh mantra jahat yang mengikatku di sini. Aku tidak akan pernah bisa kabur. Mereka memaksaku membuat zirah dan senjata khusus untuk misi yang sedang mereka jalankan,",
+				"Aku ingin kau membalaskan dendamku pada Nagnag atas apa yang ia lakukan padaku. Satu-satunya yang bisa kubantu adalah membuatkanmu barang-barang yang dulu kubuat untuk para rogues-nya."
 			},
 			1
 		)
@@ -60,7 +60,7 @@ ParkNpc = {
 		end
 
 		local choice = player:menuString(
-			"What would you like me to help you make?",
+			"Apa yang ingin kubantu buatkan?",
 			items
 		)
 
@@ -68,9 +68,9 @@ ParkNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Battle amulet is an amazing amulet, it's powerful.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Earth armor, 10 bear's livers, a herb pipe, and 1,000 gold."
+					"Battle amulet adalah amulet yang luar biasa, sangat berkuasa.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Earth armor, 10 bear's liver, satu herb pipe, dan 1,000 emas."
 				},
 				1
 			)
@@ -80,15 +80,15 @@ ParkNpc = {
 				1
 			) ~= true or player.money < 1000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -102,7 +102,7 @@ ParkNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return to me when you have the required items."
+							"Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -119,14 +119,14 @@ ParkNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Battle amulet. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Battle amulet milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -134,24 +134,24 @@ ParkNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Battle rune is an amazing rune, it's powerful.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Moonblade, a Fine metal, and 4,000 gold."
+					"Battle rune adalah rune yang luar biasa, sangat berkuasa.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Moonblade, satu Fine metal, dan 4,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("moonblade", 1) ~= true or player:hasItem("fine_metal", 1) ~= true or player.money < 4000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -162,7 +162,7 @@ ParkNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return to me when you have the required items."
+							"Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -178,14 +178,14 @@ ParkNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Battle rune. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Battle rune milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -193,9 +193,9 @@ ParkNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Light buckler is an amazing buckler, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Whisper bracelet, a Scroll of defense, and 12,000 gold."
+					"Light buckler adalah buckler yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Whisper bracelet, satu Scroll of defense, dan 12,000 emas."
 				},
 				1
 			)
@@ -205,15 +205,15 @@ ParkNpc = {
 				1
 			) ~= true or player.money < 12000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -227,7 +227,7 @@ ParkNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return to me when you have the required items."
+							"Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -243,14 +243,14 @@ ParkNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Light buckler. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Light buckler milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -258,24 +258,24 @@ ParkNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Basic buckler is an amazing buckler, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of Defense for a mold, a Blood to hold the power forged into it, and 24,000 gold."
+					"Basic buckler adalah buckler yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of Defense sebagai cetakan, satu Blood untuk menampung kekuatan yang ditempa ke dalamnya, dan 24,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("blood", 1) ~= true or player:hasItem("scroll_of_defense", 1) ~= true or player.money < 24000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -286,7 +286,7 @@ ParkNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -302,14 +302,14 @@ ParkNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Basic buckler. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Basic buckler milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -317,9 +317,9 @@ ParkNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Heavy buckler is an amazing buckler, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of defense for a mold, a Il san Blood to hold the power forged into it, and 48,000 gold."
+					"Heavy buckler adalah buckler yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of defense sebagai cetakan, satu Il san Blood untuk menampung kekuatan yang ditempa ke dalamnya, dan 48,000 emas."
 				},
 				1
 			)
@@ -329,15 +329,15 @@ ParkNpc = {
 				1
 			) ~= true or player.money < 48000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -351,7 +351,7 @@ ParkNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -367,14 +367,14 @@ ParkNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Heavy buckler. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Heavy buckler milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -382,9 +382,9 @@ ParkNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Amber buckler is an amazing buckler, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of defense for a mold, a EE san Blood to hold the power forged into it, and 96,000 gold."
+					"Amber buckler adalah buckler yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of defense sebagai cetakan, satu EE san Blood untuk menampung kekuatan yang ditempa ke dalamnya, dan 96,000 emas."
 				},
 				1
 			)
@@ -394,15 +394,15 @@ ParkNpc = {
 				1
 			) ~= true or player.money < 96000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -416,7 +416,7 @@ ParkNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -432,14 +432,14 @@ ParkNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Amber buckler. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Amber buckler milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -447,9 +447,9 @@ ParkNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Enchanted buckler is an amazing buckler, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of defense for a mold, a Sam san Blood to hold the power forged into it, and 192,000 gold."
+					"Enchanted buckler adalah buckler yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of defense sebagai cetakan, satu Sam san Blood untuk menampung kekuatan yang ditempa ke dalamnya, dan 192,000 emas."
 				},
 				1
 			)
@@ -459,15 +459,15 @@ ParkNpc = {
 				1
 			) ~= true or player.money < 192000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -481,7 +481,7 @@ ParkNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -497,14 +497,14 @@ ParkNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Enchanted buckler. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Enchanted buckler milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -512,9 +512,9 @@ ParkNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Mystic buckler is an amazing buckler, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of defense for a mold, a Sa san Blood to hold the power forged into it, 500 Ri shards, 250 Xi shards, 100 Zen shards, and 384,000 gold."
+					"Mystic buckler adalah buckler yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of defense sebagai cetakan, satu Sa san Blood untuk menampung kekuatan yang ditempa ke dalamnya, 500 Ri shard, 250 Xi shard, 100 Zen shard, dan 384,000 emas."
 				},
 				1
 			)
@@ -527,15 +527,15 @@ ParkNpc = {
 				250
 			) ~= true or player:hasItem("zen_shard", 100) ~= true or player.money < 384000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -552,7 +552,7 @@ ParkNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -571,14 +571,14 @@ ParkNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Mystic buckler. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Mystic buckler milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end

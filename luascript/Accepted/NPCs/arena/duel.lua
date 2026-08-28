@@ -15,7 +15,7 @@ DuelNpc = {
 			table.insert(opts, "Clear duel")
 		end
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
 		if menu == "Engage duel" then
 			DuelNpc.duelSetup(player, npc)
@@ -39,8 +39,8 @@ DuelNpc = {
 		player.lastClick = npc.ID
 
 		local choice = player:menuSeq(
-			"Are you sure you want to engage duel?",
-			{"Yes", "No"},
+			"Kau yakin ingin memulai duel?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -55,28 +55,28 @@ DuelNpc = {
 				end
 
 				if duelist1.name == player.name then
-					player:dialogSeq({t, "You cannot duel yourself."}, 0)
+					player:dialogSeq({t, "Kau tidak bisa berduel dengan dirimu sendiri."}, 0)
 					return
 				end
 
 				local against = player:menuSeq(
-					"Will you fight against " .. duelist1.name .. " gold " .. Tools.formatNumber(npc.registry["duelist1gold"]) .. " Handicap " .. npc.registry[
+					"Maukah kau bertarung melawan " .. duelist1.name .. " emas " .. Tools.formatNumber(npc.registry["duelist1gold"]) .. " Handicap " .. npc.registry[
 						"duelist1handicap"
 					] .. "?",
-					{"Yes", "No"},
+					{"Ya", "Tidak"},
 					{}
 				)
 
 				if against == 2 then
-					player:dialogSeq({t, "See ya."}, 0)
+					player:dialogSeq({t, "Sampai jumpa."}, 0)
 					return
 				end
 			end
 
-			local input = player:input("How much would you like to bet?")
+			local input = player:input("Berapa banyak yang ingin kau pertaruhkan?")
 
 			if (not input:match("%d")) then
-				player:dialog("You can only enter numbers, no letters.", {})
+				player:dialog("Kau hanya boleh memasukkan angka, bukan huruf.", {})
 				return
 			end
 
@@ -86,7 +86,7 @@ DuelNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You must enter a positive number that is not greater than your Kan balance."
+						"Kau harus memasukkan angka positif yang tidak melebihi saldo Kan-mu."
 					},
 					0
 				)
@@ -95,22 +95,22 @@ DuelNpc = {
 
 			if amount > player.money then
 				player:dialogSeq(
-					{t, "You don't have that much money with you."},
+					{t, "Uangmu tidak sebanyak itu."},
 					0
 				)
 				return
 			end
 
 			local confirm = player:menuSeq(
-				"Are you sure you want to bet " .. Tools.formatNumber(amount) .. " gold?",
-				{"Yes", "No"},
+				"Kau yakin ingin mempertaruhkan " .. Tools.formatNumber(amount) .. " emas?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
 			if confirm == 1 then
-				local input2 = player:input("What will be your Handicap? 1-99(%)")
+				local input2 = player:input("Berapa Handicap-mu? 1-99(%)")
 				if (not input2:match("%d")) then
-					player:dialog("You can only enter numbers, no letters.", {})
+					player:dialog("Kau hanya boleh memasukkan angka, bukan huruf.", {})
 					return
 				end
 
@@ -118,15 +118,15 @@ DuelNpc = {
 
 				if handicap < 1 or handicap > 99 then
 					player:dialogSeq(
-						{t, "You must enter a number between 1 and 99"},
+						{t, "Kau harus memasukkan angka antara 1 dan 99"},
 						0
 					)
 					return
 				end
 
 				local handicapConfirm = player:menuSeq(
-					"Are you sure you want to set Vita at " .. handicap .. "(%) and Mana at " .. handicap .. "(%)?",
-					{"Yes", "No"},
+					"Kau yakin ingin menetapkan Vita pada " .. handicap .. "(%) dan Mana pada " .. handicap .. "(%)?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
@@ -152,7 +152,7 @@ DuelNpc = {
 				end
 			end
 		elseif choice == 2 then
-			player:dialogSeq({t, "See ya."}, 0)
+			player:dialogSeq({t, "Sampai jumpa."}, 0)
 			return
 		end
 	end,
@@ -169,15 +169,15 @@ DuelNpc = {
 
 		if npc.registry["duelist1"] ~= player.ID and npc.registry["duelist2"] ~= player.ID then
 			player:dialogSeq(
-				{t, "Only the people dueling can end the duel."},
+				{t, "Hanya yang sedang berduel yang bisa mengakhiri duel."},
 				0
 			)
 			return
 		end
 
 		local choice = player:menuSeq(
-			"Are you sure you wish to end the duel?",
-			{"Yes", "No"},
+			"Kau yakin ingin mengakhiri duel ini?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -249,8 +249,8 @@ DuelNpc = {
 					end
 
 					local choice = player:menuSeq(
-						"You understand that you are forfeiting the game to " .. Player(winner) .. "?",
-						{"Yes", "No"},
+						"Kau paham bahwa kau menyerahkan kemenangan kepada " .. Player(winner) .. "?",
+						{"Ya", "Tidak"},
 						{}
 					)
 

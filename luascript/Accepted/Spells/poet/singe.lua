@@ -7,10 +7,10 @@ singe_poet = {
 		local damage = 25 + math.floor(player.level / 2) + math.floor((player.will + 3) / 4)
 		local worked = global_zap.cast(player, target, damage, 20, 11)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -32,10 +32,10 @@ embrace_of_the_void_poet = {
 		local damage = 25 + math.floor(player.level / 2) + math.floor((player.will + 3) / 4)
 		local worked = global_zap.cast(player, target, damage, 20, 1)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -57,10 +57,10 @@ lightning_poet = {
 		local damage = 25 + math.floor(player.level / 2) + math.floor((player.will + 3) / 4)
 		local worked = global_zap.cast(player, target, damage, 20, 2)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -82,10 +82,10 @@ natures_storm_poet = {
 		local damage = 25 + math.floor(player.level / 2) + math.floor((player.will + 3) / 4)
 		local worked = global_zap.cast(player, target, damage, 20, 3)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 

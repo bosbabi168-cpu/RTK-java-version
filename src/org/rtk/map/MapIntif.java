@@ -199,11 +199,19 @@ public final class MapIntif {
                 c.name, c.level, c.inventory.size(), clientFd);
 
         if (!org.rtk.map.Pc.enterWorld(MapServer.world, sd)) {
-            log.error("[MAP] {} gagal ditempatkan di dunia — koneksi ditutup", c.name);
             MapServer.onlineChars.remove(clientFd);
-            Session cs = net.session(clientFd);
-            if (cs != null) {
-                cs.eof = true;
+            if (sd.pindahTertunda) {
+                // ⚠️ Sambungannya TIDAK ditutup seketika: paket alihannya
+                // masih di outbox, dan `sessionEof` menutup soket tanpa
+                // menunggu ia terkirim. Klien yang tidak pernah menerima
+                // alamat tujuannya hanya melihat sambungan mati.
+                log.info("[MAP] {} dialihkan ke map server lain — sambungan "
+                        + "ditutup setelah paketnya terkirim", c.name);
+                MapServer.timers.insert(TUTUP_SETELAH_ALIH_MS, 0,
+                        (a, b) -> tutupSesi(clientFd), 0, 0);
+            } else {
+                log.error("[MAP] {} gagal ditempatkan di dunia — koneksi ditutup", c.name);
+                tutupSesi(clientFd);
             }
         }
         return 0;
@@ -368,17 +376,37 @@ public final class MapIntif {
             log.error("[MAP] tidak bisa membuka papan: belum terhubung ke char server");
             return false;
         }
+        // ⚠️ Panjangnya TETAP 34 byte dengan ladang nama 16 byte — bukan
+        // "18 + panjang nama". Tabel panjang di char server tidak bisa
+        // menebak ukuran variabel untuk opcode ini (ladang [2] berisi fd,
+        // bukan panjang), dan paket sepanjang isi membuat aliran
+        // antar-server bergeser lalu sambungannya diputus. Di C strukturnya
+        // juga berukuran tetap.
         byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int n = Math.min(nama.length, 16);
         s.wfifoW(0, 0x3009);
         s.wfifoW(2, sd.fd);
         s.wfifoL(4, board);
         s.wfifoL(8, page);
         s.wfifoL(12, flags);
         s.wfifoB(16, popup ? 1 : 0);
-        s.wfifoB(17, nama.length);
-        s.wfifoBytes(18, nama);
-        s.wfifoSet(18 + nama.length);
+        s.wfifoB(17, n);
+        for (int i = 0; i < 16; i++) {
+            s.wfifoB(18 + i, i < n ? nama[i] : 0);
+        }
+        s.wfifoSet(org.rtk.charserver.Mapif.BOARD_SHOW_LEN);
         return true;
+    }
+
+    /** Jeda sebelum menutup sambungan yang sedang dialihkan (R3/C3). */
+    private static final long TUTUP_SETELAH_ALIH_MS = 500;
+
+    private static int tutupSesi(int fd) {
+        Session cs = net.session(fd);
+        if (cs != null) {
+            cs.eof = true;
+        }
+        return 0;
     }
 
     /**

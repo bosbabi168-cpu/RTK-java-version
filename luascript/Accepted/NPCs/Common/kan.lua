@@ -13,24 +13,24 @@ KanNpc = {
 
 		local opts = {
 			"Kan account information",
-			"Buy Kan Certificates",
+			"Beli Sertifikat Kan",
 			--"Exp Envelope Packs",
-			"Crafting bags",
+			"Tas kerajinan",
 			"Cosmetics",
 			"Browse Mounts",
 			"Random Mount Boxes",
-			"Browse Other",
+			"Lihat Lainnya",
 			"War Paint"
 		}
 
 		local choice = player:menuString(
-			"Hello and welcome to the Kan shop! How can I help you today?",
+			"Halo dan selamat datang di toko Kan! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 
 		if choice == "Kan account information" then
 			KanNpc.getKanAccountInfo(player)
-		elseif choice == "Buy Kan Certificates" then
+		elseif choice == "Beli Sertifikat Kan" then
 			local items = {
 				"kan_certificate_500",
 				"kan_certificate_1000",
@@ -62,7 +62,7 @@ KanNpc = {
 			end
 
 			local packChoice = player:menuSeq(
-				"Please choose an option from below.",
+				"Pilih satu dari pilihan di bawah.",
 				packNames,
 				{}
 			)
@@ -84,8 +84,8 @@ KanNpc = {
 			end
 
 			local confirm = player:menuSeq(
-				"This " .. expPack.name .. " will cost " .. Tools.formatNumber(expPack.price) .. " Kan. Do you wish to buy it?",
-				{"Yes", "No"},
+				"" .. expPack.name .. " seharga " .. Tools.formatNumber(expPack.price) .. " Kan. Kau ingin membelinya?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -94,7 +94,7 @@ KanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Unfortunately, you do not have enough Kan to complete this purchase."
+							"Sayangnya Kan-mu tidak cukup untuk menuntaskan pembelian ini."
 						},
 						0
 					)
@@ -108,14 +108,14 @@ KanNpc = {
 		elseif choice == "Cosmetics" then
 			local subChoices = {"Skins", "Equipment", "Faces", "Hair Dyes"}
 			local subChoice = player:menuString(
-				"Please select an option\n\n<b>BLEACH\nPlease remember to bleach yourself (via War Paint option) if your new cosmetic item does not appear as you expect.",
+				"Pilih satu pilihan\n\n<b>LURUHKAN\nIngat untuk meluruhkan warnamu (lewat pilihan War Paint) kalau barang hiasmu yang baru tidak tampil seperti yang kau harapkan.",
 				subChoices
 			)
 
 			if subChoice == "Skins" then
 				local skinChoice = player:menuString(
-					"Please select an option",
-					{"Weapon", "Armor"}
+					"Pilih satu pilihan",
+					{"Senjata", "Zirah"}
 				)
 			elseif subChoice == "Faces" then
 				local faces = {}
@@ -124,9 +124,9 @@ KanNpc = {
 				end
 
 				local opts = {
-					"Buy face",
-					"Next face",
-					"Previous face",
+					"Beli wajah",
+					"Wajah berikutnya",
+					"Wajah sebelumnya",
 					"Nevermind"
 				}
 
@@ -150,22 +150,22 @@ KanNpc = {
 					player:updateState()
 
 					local optsChoice = player:menuString(
-						"<b>Face: " .. face.name .. "\n\nPrice: " .. Tools.formatNumber(face.price) .. " Kan\n\nIs this style acceptable?",
+						"<b>Face: " .. face.name .. "\n\nPrice: " .. Tools.formatNumber(face.price) .. " Kan\n\nApakah gaya ini sudah cocok?",
 						opts
 					)
 
-					if optsChoice == "Buy face" then
+					if optsChoice == "Beli wajah" then
 						local confirm = player:menuString(
-							"Ah, I see you have found a suitable face.\n\nThe price will be: " .. Tools.formatNumber(face.price) .. " Kan. Would you like to buy?",
-							{"Yes, I want to buy.", "No, nevermind."}
+							"Ah, kulihat kau sudah menemukan wajah yang cocok.\n\nHarganya: " .. Tools.formatNumber(face.price) .. " Kan. Kau mau beli?",
+							{"Ya, aku mau beli.", "Tidak, lupakan saja."}
 						)
 
-						if confirm == "Yes, I want to buy." then
+						if confirm == "Ya, aku mau beli." then
 							if player.registry[kanRegistry] < face.price then
 								player:dialogSeq(
 									{
 										t,
-										"Unfortunately, you do not have enough Kan to complete this purchase."
+										"Sayangnya Kan-mu tidak cukup untuk menuntaskan pembelian ini."
 									},
 									0
 								)
@@ -179,13 +179,13 @@ KanNpc = {
 
 							return
 						end
-					elseif optsChoice == "Next face" then
+					elseif optsChoice == "Wajah berikutnya" then
 						index = index + 1
 						if index > #faces then
 							index = #faces
 						end
 						player.gfxFace = face.look
-					elseif optsChoice == "Previous face" then
+					elseif optsChoice == "Wajah sebelumnya" then
 						index = index - 1
 						if index < 1 then
 							index = 1
@@ -218,7 +218,7 @@ KanNpc = {
 					"Beard"
 				}
 				local slotChoice = player:menuString(
-					"Please select an equipment slot",
+					"Pilih satu slot perlengkapan",
 					slots
 				)
 
@@ -458,9 +458,9 @@ KanNpc = {
 				"yellow_horse_mount"
 			}
 			local opts = {
-				"Buy mount",
-				"Next mount",
-				"Previous mount",
+				"Beli tunggangan",
+				"Tunggangan berikutnya",
+				"Tunggangan sebelumnya",
 				"Nevermind"
 			}
 
@@ -480,22 +480,22 @@ KanNpc = {
 				player:updateState()
 
 				local optsChoice = player:menuString(
-					"<b>Mount: " .. mount.name .. "\n\nPrice: " .. Tools.formatNumber(mount.price) .. " Kan\n\nIs this style acceptable?",
+					"<b>Mount: " .. mount.name .. "\n\nPrice: " .. Tools.formatNumber(mount.price) .. " Kan\n\nApakah gaya ini sudah cocok?",
 					opts
 				)
 
-				if optsChoice == "Buy mount" then
+				if optsChoice == "Beli tunggangan" then
 					local confirm = player:menuString(
-						"Ah, I see you have found a suitable mount.\n\nThe price will be: " .. Tools.formatNumber(mount.price) .. " Kan. Would you like to buy?",
-						{"Yes, I want to buy.", "No, nevermind."}
+						"Ah, kulihat kau sudah menemukan tunggangan yang cocok.\n\nHarganya: " .. Tools.formatNumber(mount.price) .. " Kan. Kau mau beli?",
+						{"Ya, aku mau beli.", "Tidak, lupakan saja."}
 					)
 
-					if confirm == "Yes, I want to buy." then
+					if confirm == "Ya, aku mau beli." then
 						if player.registry[kanRegistry] < mount.price then
 							player:dialogSeq(
 								{
 									t,
-									"Unfortunately, you do not have enough Kan to complete this purchase."
+									"Sayangnya Kan-mu tidak cukup untuk menuntaskan pembelian ini."
 								},
 								0
 							)
@@ -508,12 +508,12 @@ KanNpc = {
 
 						return
 					end
-				elseif optsChoice == "Next mount" then
+				elseif optsChoice == "Tunggangan berikutnya" then
 					index = index + 1
 					if index > #mounts then
 						index = #mounts
 					end
-				elseif optsChoice == "Previous mount" then
+				elseif optsChoice == "Tunggangan sebelumnya" then
 					index = index - 1
 					if index < 1 then
 						index = 1
@@ -524,7 +524,7 @@ KanNpc = {
 					return
 				end
 			end
-		elseif choice == "Crafting bags" then
+		elseif choice == "Tas kerajinan" then
 			local items = {
 				"empty_ore_bag",
 				"empty_metal_bag",
@@ -540,7 +540,7 @@ KanNpc = {
 				"I think I can accommodate some of the things you need. What would you like?",
 				items
 			)
-		elseif choice == "Browse Other" then
+		elseif choice == "Lihat Lainnya" then
 			local items = {
 				"item_protection_i",
 				"item_protection_ii",
@@ -573,11 +573,11 @@ KanNpc = {
 				table.insert(itemNames, Item(items[i]).name)
 			end
 
-			local choice = player:menuSeq("Please select a box.", itemNames, {})
+			local choice = player:menuSeq("Pilih satu kotak.", itemNames, {})
 
 			local subChoice = player:menuSeq(
-				"Please select what you would like to do.",
-				{"Buy box", "Browse possible outcomes."},
+				"Pilih apa yang ingin kau lakukan.",
+				{"Beli kotak", "Browse possible outcomes."},
 				{}
 			)
 
@@ -585,8 +585,8 @@ KanNpc = {
 				-- buy
 				local price = Item(items[choice]).price
 				local confirm = player:menuSeq(
-					"This " .. Item(items[choice]).name .. " box will cost " .. Tools.formatNumber(price) .. " Kan. Do you wish to buy it?",
-					{"Yes", "No"},
+					"" .. Item(items[choice]).name .. " kotak seharga " .. Tools.formatNumber(price) .. " Kan. Kau ingin membelinya?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
@@ -595,7 +595,7 @@ KanNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Sorry but you do not have enough Kan for this purchase."
+								"Maaf, Kan-mu tidak cukup untuk pembelian ini."
 							},
 							0
 						)
@@ -609,7 +609,7 @@ KanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Here is your box. Good luck\n\nThank you for continuing to support our server."
+							"Ini kotakmu. Semoga beruntung\n\nTerima kasih sudah terus mendukung server kami."
 						},
 						0
 					)
@@ -620,7 +620,7 @@ KanNpc = {
 				--browse
 
 				local rarityChoice = player:menuSeq(
-					"Please select a rarity.",
+					"Pilih satu tingkat kelangkaan.",
 					rarityChoices,
 					{}
 				)
@@ -656,8 +656,8 @@ KanNpc = {
 
 	getKanAccountInfo = function(player)
 		local donate = player:menuSeq(
-			"Kan balance: " .. Tools.formatNumber(player.registry[kanRegistry]) .. "\n\nWould you like to purchase more Kan?",
-			{"Yes", "No"},
+			"Saldo Kan: " .. Tools.formatNumber(player.registry[kanRegistry]) .. "\n\nKau ingin membeli Kan lagi?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -666,8 +666,8 @@ KanNpc = {
 			local kanPrice = 3000000
 
 			local confirmDonate = player:menuSeq(
-				"The gods demand a significant tribute in exchange for Kan. Are you sure?",
-				{"Buy " .. Tools.formatNumber(kanAmount) .. " Kan for " .. Tools.formatNumber(kanPrice) .. " coins", "Maybe next time"},
+				"Para dewa menuntut upeti yang besar sebagai penukar Kan. Kau yakin?",
+				{"Beli " .. Tools.formatNumber(kanAmount) .. " Kan seharga " .. Tools.formatNumber(kanPrice) .. " keping", "Mungkin lain kali"},
 				{}
 			)
 
@@ -676,13 +676,13 @@ KanNpc = {
 			end
 
 			if (player.money < kanPrice) then
-				player:dialogSeq({"Paying for what you want is a sign of devotion. Return when you have what is required."}, 0)
+				player:dialogSeq({"Membayar apa yang kau inginkan adalah tanda pengabdian. Kembalilah kalau syaratnya sudah kau penuhi."}, 0)
 				return
 			end
 
 			player.money = player.money - kanPrice
 			KanNpc.addKan(player, kanAmount)
-			player:sendMinitext(Tools.formatNumber(kanAmount) .. " Kan has been added to your account.")
+			player:sendMinitext(Tools.formatNumber(kanAmount) .. " Kan telah ditambahkan ke akunmu.")
 			player:forceSave()
 		end
 	end,

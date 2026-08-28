@@ -7,18 +7,18 @@ might_rogue = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(mights) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Might.")
+		player:sendMinitext("Kau merapal Might.")
 		player:setDuration("might_rogue", 625000)
 		player:playSound(12)
 		player:sendAnimation(11)
@@ -51,18 +51,18 @@ spirit_strength_rogue = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(mights) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Spirit Strength.")
+		player:sendMinitext("Kau merapal Spirit Strength.")
 		player:setDuration("spirit_strength_rogue", 625000)
 		player:playSound(31)
 		player:sendAnimation(117)
@@ -95,18 +95,18 @@ inner_blessing_rogue = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(mights) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Inner Blessing.")
+		player:sendMinitext("Kau merapal Inner Blessing.")
 		player:setDuration("inner_blessing_rogue", 625000)
 		player:playSound(31)
 		player:sendAnimation(11)
@@ -139,18 +139,18 @@ temper_rogue = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(mights) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Temper.")
+		player:sendMinitext("Kau merapal Temper.")
 		player:setDuration("temper_rogue", 625000)
 		player:playSound(31)
 		player:sendAnimation(11)

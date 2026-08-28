@@ -88,6 +88,37 @@ public final class ProtocolRouter implements ClientView {
     }
 
     @Override
+    public void playerSpellSlotChanged(User sd, int slot) {
+        tujuan.forEach(v -> v.playerSpellSlotChanged(sd, slot));
+    }
+
+    @Override
+    public void playerProfile(User sd) {
+        tujuan.forEach(v -> v.playerProfile(sd));
+    }
+
+    @Override
+    public void playerTransferred(User sd, String host, int port,
+                                  int m, int x, int y) {
+        tujuan.forEach(v -> v.playerTransferred(sd, host, port, m, x, y));
+    }
+
+    @Override
+    public void worldTimeChanged(User sd) {
+        tujuan.forEach(v -> v.worldTimeChanged(sd));
+    }
+
+    @Override
+    public void townListToPlayer(User sd, java.util.List<String> kota) {
+        tujuan.forEach(v -> v.townListToPlayer(sd, kota));
+    }
+
+    @Override
+    public void rankingToPlayer(User sd, String judul, java.util.List<Object[]> baris) {
+        tujuan.forEach(v -> v.rankingToPlayer(sd, judul, baris));
+    }
+
+    @Override
     public void playerSpellRemoved(User sd, int slot) {
         tujuan.forEach(v -> v.playerSpellRemoved(sd, slot));
     }

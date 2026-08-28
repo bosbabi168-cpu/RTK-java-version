@@ -5,7 +5,7 @@ call_lightning = {
 		target.attacker = mob.ID
 
 		if target.blType == BL_PC then
-			target:sendMinitext(mob.name .. " attacks you with Call Lightning spell.")
+			target:sendMinitext(mob.name .. " menyerangmu dengan mantra Call Lightning.")
 		end
 
 		target:removeHealthExtend(693, 1, 1, 1, 1, 0)

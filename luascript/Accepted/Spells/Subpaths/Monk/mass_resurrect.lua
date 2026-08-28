@@ -10,7 +10,7 @@ mass_resurrect = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -19,7 +19,7 @@ mass_resurrect = {
 		player:sendStatus()
 
 		player:sendAction(6, 35)
-		player:sendMinitext("You cast Mass resurrect.")
+		player:sendMinitext("Kau merapal Mass resurrect.")
 
 		local pcs = player:getObjectsInSameMap(BL_PC)
 
@@ -34,7 +34,7 @@ mass_resurrect = {
 					pcs[i]:playSound(112)
 					pcs[i]:updateState()
 					pcs[i]:sendStatus()
-					pcs[i]:sendMinitext(player.name .. " cast Mass resurrect on you.")
+					pcs[i]:sendMinitext(player.name .. " merapal Mass resurrect padamu.")
 				end
 			end
 		end

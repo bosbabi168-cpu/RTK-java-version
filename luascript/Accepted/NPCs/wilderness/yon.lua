@@ -5,10 +5,10 @@ YonNpc = {
 		Tools.configureDialog(player, npc)
 
 		local opts = {
-			"Buy",
-			"Sell",
-			"Crafting Skills",
-			"Joy of Weaving",
+			"Beli",
+			"Jual",
+			"Keahlian Kerajinan",
+			"Nikmatnya Menenun",
 			"Weaving Specialization"
 		}
 
@@ -21,22 +21,22 @@ YonNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			local items = YonNpc.buyItems(npc)
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				items
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			local items = YonNpc.sellItems(npc)
 			player:sellExtend("What are you willing to sell today?", items)
-		elseif choice == "Crafting Skills" then
+		elseif choice == "Keahlian Kerajinan" then
 			generalNPC.crafting_skills(player, npc)
-		elseif choice == "Joy of Weaving" then
+		elseif choice == "Nikmatnya Menenun" then
 			YonNpc.joy_of_weaving(player, npc)
 		elseif choice == "Weaving Specialization" then
 			YonNpc.weaving_specialization(player, npc)
@@ -73,8 +73,8 @@ YonNpc = {
 
 		player:dialogSeq(
 			{
-				"I would be happy to tell you about weaving! Weaving requires three things: steady hands, some wool, and good weaving equipment.",
-				"You can get wool from sheep.\nYou'll have to see a woodworker in order to acquire your own weaving tools, but I can loan you the rest of the things you need. As for the steady hands, those come with practice.",
+				"Dengan senang hati kuceritakan soal menenun! Menenun butuh tiga hal: tangan yang mantap, wol, dan alat tenun yang baik.",
+				"Wol bisa kau dapat dari domba.\nKau harus menemui tukang kayu untuk memperoleh alat tenunmu sendiri, tetapi sisanya bisa kupinjamkan. Soal tangan yang mantap, itu datang dari latihan.",
 				"Katakan saja 'tenun' padaku kalau kau sudah siap mencobanya!"
 			},
 			0
@@ -85,14 +85,14 @@ YonNpc = {
 		Tools.configureDialog(player, npc)
 
 		if crafting.checkSpecializationLegend(player, "weaving") then
-			player:dialogSeq({"You have already specialized in Weaving."}, 0)
+			player:dialogSeq({"Kau sudah mendalami Weaving."}, 0)
 			return
 		end
 
 		crafting.checkSpecialization(player, npc, "smelting")
 		crafting.checkSpecialization(player, npc, "gemcutting")
 
-		player:dialogSeq({"Weavers can make cloth from wool. Do you want to specialize in weaving? ((You need to be specialized to become better than 'Accomplished.'))"}, 1)
+		player:dialogSeq({"Penenun bisa membuat kain dari wol. Kau mau mendalami tenun? ((Kau harus mendalaminya untuk bisa melampaui tingkat 'Accomplished'.))"}, 1)
 
 		crafting.addSpecialization(player, npc, "weaving")
 	end,
@@ -107,12 +107,12 @@ YonNpc = {
 			"fine_weaving_tools",
 			1
 		) ~= true then
-			player:dialogSeq({"You do not have the required items to weave the magical net. You need (10) Fine cloth, (1) Red potion, (1) Fine weaving tools"}, 0)
+			player:dialogSeq({"Kau tidak punya bahan yang diperlukan untuk menenun jaring bersihir. Kau butuh (10) Fine cloth, (1) Red potion, (1) Fine weaving tools"}, 0)
 		end
 
 		if chance == 1 then
 			if player.quest["magical_net_created"] == 1 then
-				player:dialogSeq({"You have already created a magical net."}, 0)
+				player:dialogSeq({"Kau sudah pernah membuat jaring bersihir."}, 0)
 				return
 			end
 
@@ -121,11 +121,11 @@ YonNpc = {
 			player:addItem("magical_net", 1)
 			player:addKarma(1)
 			player.quest["magical_net_created"] = 1
-			player:dialogSeq({fineClothDialog, "You have succeeded."}, 0)
+			player:dialogSeq({fineClothDialog, "Kau berhasil."}, 0)
 		else
 			player:removeItem("fine_cloth", 10, 9)
 			player:removeItem("red_potion", 1, 9)
-			player:dialogSeq({"You failed in this very difficult task."}, 0)
+			player:dialogSeq({"Kau gagal dalam tugas yang sangat sulit ini."}, 0)
 		end
 	end,
 
@@ -147,7 +147,7 @@ YonNpc = {
 					player:dialogSeq(
 						{
 							yonDialog,
-							"Please return to your tutor with the cloth."
+							"Kembalilah ke tutormu dengan membawa kainnya."
 						},
 						1
 					)
@@ -158,7 +158,7 @@ YonNpc = {
 				player:dialogSeq(
 					{
 						woolDialog,
-						"So you want to make some cloth for your Student cap? Well I can help you."
+						"Jadi kau ingin membuat kain untuk Student cap-mu? Aku bisa membantumu."
 					},
 					1
 				)
@@ -166,7 +166,7 @@ YonNpc = {
 				player:dialogSeq(
 					{
 						weavingToolsDialog,
-						"Usually I don't let people weave without their own tools, but since you are new to the land I will let you use mine."
+						"Biasanya aku tidak mengizinkan orang menenun tanpa alat sendiri, tetapi karena kau baru di tanah ini, kau boleh memakai alatku."
 					},
 					1
 				)
@@ -181,8 +181,8 @@ YonNpc = {
 					player:dialogSeq(
 						{
 							woolDialog,
-							"But before we even get that far... you need some wool! Go back to the center of the Wilderness and collect some wool.",
-							"When you have collected some, come back to me again."
+							"Tapi sebelum sampai ke sana... kau butuh wol! Kembalilah ke tengah Wilderness dan kumpulkan wol.",
+							"Kalau sudah terkumpul, temui aku lagi."
 						},
 						1
 					)
@@ -196,7 +196,7 @@ YonNpc = {
 					player:dialogSeq(
 						{
 							yonDialog,
-							"You take a few moments with Yon's weaving tools and craft one piece of cloth. You return the borrowed weaving tools."
+							"Kau menghabiskan beberapa saat dengan alat tenun Yon dan membuat sehelai kain. Alat tenun pinjaman itu kau kembalikan."
 						},
 						1
 					)
@@ -205,7 +205,7 @@ YonNpc = {
 					player:dialogSeq(
 						{
 							yonDialog,
-							"What happened to the pair of weaving tools that I let you borrow?  You do realize I need them back, right?"
+							"Apa yang terjadi dengan sepasang alat tenun yang kupinjamkan? Kau sadar aku membutuhkannya kembali, kan?"
 						},
 						1
 					)
@@ -224,16 +224,16 @@ YonNpc = {
 			Tools.checkKarma(player)
 
 			if player.quest["wool_twine"] == 1 then
-				player:dialogSeq({"Ah, there is the wool, give it to me and I will quickly spin it into twine for you."}, 1)
+				player:dialogSeq({"Ah, itu wolnya. Berikan padaku dan akan segera kupintal jadi tali untukmu."}, 1)
 
 				if player:hasItem("wool", 10) ~= true then
-					player:dialogSeq({"Where is the wool? Without 10 Wool I can't make you any twine."}, 0)
+					player:dialogSeq({"Mana wolnya? Tanpa 10 Wool aku tidak bisa membuatkanmu tali."}, 0)
 					return
 				end
 
 				player:removeItem("wool", 10)
 				player:addItem("wool_twine", 1)
-				player:dialogSeq({"There you go, your own roll of twine. I hope that's all you need, but if you want more you can always come back to me."}, 0)
+				player:dialogSeq({"Ini dia, segulung tali milikmu. Semoga itu cukup, tetapi kalau kau mau lagi kau selalu bisa kembali kepadaku."}, 0)
 
 				return
 			end
@@ -242,8 +242,8 @@ YonNpc = {
 				player.quest["wool_twine"] = 1
 				player:dialogSeq(
 					{
-						"Wool twine? Yes, its extremely easy to make. You just twist and stretch the wool for a while, but not so much as if you wanted to make thread.",
-						"If you have 10 Wool I can quickly make you some twine."
+						"Tali wol? Ya, sangat mudah dibuat. Cukup pilin dan tarik wolnya sebentar, tetapi jangan seperti kalau kau hendak membuat benang.",
+						"Kalau kau punya 10 Wool, aku bisa cepat membuatkanmu tali."
 					},
 					0
 				)

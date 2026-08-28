@@ -31,7 +31,7 @@ spy_server = {
 
 	move = function(mob, target)
 		if math.random(1, 100) == 1 then
-			mob:talk(0, "Server: Would you care for anything to drink?")
+			mob:talk(0, "Pelayan: Anda ingin minum sesuatu?")
 		end
 		mob.side = math.random(0, 3)
 		mob:sendSide()

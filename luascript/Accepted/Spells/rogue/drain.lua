@@ -1,7 +1,7 @@
 drain_rogue = {
 	cast = function(player, target)
 		if not distanceSquare(player, target, 6) then
-			player:sendMinitext("Target is too far away!")
+			player:sendMinitext("Sasaran terlalu jauh!")
 			return
 		end
 
@@ -11,7 +11,7 @@ drain_rogue = {
 			return
 		end
 		if target:checkIfCast(venoms) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
@@ -45,7 +45,7 @@ drain_rogue = {
 drink_of_souls_rogue = {
 	cast = function(player, target)
 		if not distanceSquare(player, target, 6) then
-			player:sendMinitext("Target is too far away!")
+			player:sendMinitext("Sasaran terlalu jauh!")
 			return
 		end
 
@@ -55,7 +55,7 @@ drink_of_souls_rogue = {
 			return
 		end
 		if target:checkIfCast(venoms) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 		if player.magic < magicCost then
@@ -88,7 +88,7 @@ drink_of_souls_rogue = {
 parasite_rogue = {
 	cast = function(player, target)
 		if not distanceSquare(player, target, 6) then
-			player:sendMinitext("Target is too far away!")
+			player:sendMinitext("Sasaran terlalu jauh!")
 			return
 		end
 
@@ -98,7 +98,7 @@ parasite_rogue = {
 			return
 		end
 		if target:checkIfCast(venoms) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 		if player.magic < magicCost then
@@ -131,7 +131,7 @@ parasite_rogue = {
 absorb_rogue = {
 	cast = function(player, target)
 		if not distanceSquare(player, target, 6) then
-			player:sendMinitext("Target is too far away!")
+			player:sendMinitext("Sasaran terlalu jauh!")
 			return
 		end
 
@@ -141,7 +141,7 @@ absorb_rogue = {
 			return
 		end
 		if target:checkIfCast(venoms) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 		if player.magic < magicCost then

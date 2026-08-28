@@ -65,7 +65,7 @@ assault = {
 					0
 				)
 				if worked == 2 then
-					target[1]:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target[1]:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 					landed = 1
 					player.health = math.ceil(player.health * 0.50)
 				end
@@ -75,6 +75,6 @@ assault = {
 		player:sendStatus()
 		player:playSound(sound)
 		player:removeHealth(35000, 1, 0, 0, 0, 0)
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 	end
 }

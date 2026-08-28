@@ -31,7 +31,7 @@ smoke_screen = {
 		end
 
 		if target.blType == BL_PC then
-			target:sendMinitext("You cannot see anything.")
+			target:sendMinitext("Kau tidak bisa melihat apa pun.")
 		end
 
 		target:setDuration("smoke_screen", duration)

@@ -21,7 +21,7 @@ ClanAdminNpc = {
 
 		local opts = {"Clan roster", "Add member"}
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
 		if menu == "Clan roster" then
 			ClanAdminNpc.clanRoster(player, npc, player.clan)
@@ -51,7 +51,7 @@ ClanAdminNpc = {
 		local target = Player(input)
 
 		if target == nil then
-			player:dialogSeq({t, "Player is not online."}, 0)
+			player:dialogSeq({t, "Pemain tidak daring."}, 0)
 			return
 		end
 
@@ -65,7 +65,7 @@ ClanAdminNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Member is currently part of another clan. They must leave that clan before they can join yours."
+					"Anggota itu sedang menjadi bagian klan lain. Ia harus keluar dari klan itu sebelum bisa bergabung dengan klanmu."
 				},
 				0
 			)
@@ -89,8 +89,8 @@ ClanAdminNpc = {
 		local clanName = getClanName(clanid)
 
 		local choice = player:menuSeq(
-			asker.name .. " is inviting you to join the " .. clanName .. " clan. Do you wish to join?",
-			{"Yes, join.", "No, I do not want to join."},
+			asker.name .. " mengundangmu bergabung dengan klan " .. clanName .. ". Kau ingin bergabung?",
+			{"Ya, gabung.", "Tidak, aku tidak mau bergabung."},
 			{}
 		)
 
@@ -188,7 +188,7 @@ ClanAdminNpc = {
 		local chosenMemberRank = sortedMemberRanks[choice]
 
 		if player.ID == chosenMemberId then
-			player:dialogSeq({t, "You cannot edit your own rank."}, 0)
+			player:dialogSeq({t, "Kau tidak bisa mengubah pangkatmu sendiri."}, 0)
 			return
 		end
 
@@ -196,7 +196,7 @@ ClanAdminNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You can only modify members that are below your current rank."
+					"Kau hanya bisa mengubah anggota yang pangkatnya di bawahmu."
 				},
 				0
 			)
@@ -204,7 +204,7 @@ ClanAdminNpc = {
 		end
 
 		local choice2 = player:menuString(
-			"What would you like to do " .. clanRankNames[chosenMemberRank] .. " " .. chosenMemberName .. "?",
+			"Apa yang ingin kau lakukan " .. clanRankNames[chosenMemberRank] .. " " .. chosenMemberName .. "?",
 			{"Promote member", "Demote member", "Remove member"},
 			{}
 		)
@@ -214,7 +214,7 @@ ClanAdminNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Member cannot be promoted to Primogen. You must access the Step down feature to complete this action."
+						"Anggota tidak bisa dinaikkan ke pangkat Primogen. Kau harus memakai fitur Mundur untuk menuntaskan tindakan ini."
 					},
 					0
 				)
@@ -222,10 +222,10 @@ ClanAdminNpc = {
 			end
 
 			local promote = player:menuSeq(
-				"You will be promoting " .. chosenMemberName .. " from " .. clanRankNames[
+				"Kau akan menaikkan pangkat " .. chosenMemberName .. " dari " .. clanRankNames[
 					chosenMemberRank
-				] .. " to " .. clanRankNames[chosenMemberRank + 1] .. ". Do you wish to proceed?",
-				{"Yes, promote them.", "No, nevermind."},
+				] .. " ke " .. clanRankNames[chosenMemberRank + 1] .. ". Kau ingin melanjutkan?",
+				{"Ya, naikkan pangkatnya.", "Tidak, lupakan saja."},
 				{}
 			)
 
@@ -247,9 +247,9 @@ ClanAdminNpc = {
 				player:dialogSeq(
 					{
 						t,
-						chosenMemberName .. " has been promoted to the rank of " .. clanRankNames[
+						chosenMemberName .. " telah dinaikkan ke pangkat " .. clanRankNames[
 							chosenMemberRank + 1
-						] .. " in your clan."
+						] .. " di klanmu."
 					},
 					0
 				)
@@ -260,7 +260,7 @@ ClanAdminNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"This member cannot be demoted any lower than their current rank."
+						"Anggota ini tidak bisa diturunkan lebih rendah dari pangkatnya sekarang."
 					},
 					0
 				)
@@ -268,10 +268,10 @@ ClanAdminNpc = {
 			end
 
 			local demote = player:menuSeq(
-				"You will be demoting " .. chosenMemberName .. " from " .. clanRankNames[
+				"Kau akan menurunkan pangkat " .. chosenMemberName .. " dari " .. clanRankNames[
 					chosenMemberRank
-				] .. " to " .. clanRankNames[chosenMemberRank - 1] .. ". Do you wish to proceed?",
-				{"Yes, demote them.", "No, nevermind."},
+				] .. " ke " .. clanRankNames[chosenMemberRank - 1] .. ". Kau ingin melanjutkan?",
+				{"Ya, turunkan pangkatnya.", "Tidak, lupakan saja."},
 				{}
 			)
 
@@ -293,9 +293,9 @@ ClanAdminNpc = {
 				player:dialogSeq(
 					{
 						t,
-						chosenMemberName .. " has been demoted to the rank of " .. clanRankNames[
+						chosenMemberName .. " telah diturunkan ke pangkat " .. clanRankNames[
 							chosenMemberRank - 1
-						] .. " in the " .. clanName .. " clan."
+						] .. " di " .. clanName .. " clan."
 					},
 					0
 				)
@@ -303,8 +303,8 @@ ClanAdminNpc = {
 			end
 		elseif choice2 == "Remove member" then
 			local confirm = player:menuSeq(
-				"You will be removing " .. chosenMemberName .. " from " .. clanName .. " clan. Do you wish to proceed?",
-				{"Yes, remove them.", "No, nevermind."},
+				"Kau akan mengeluarkan " .. chosenMemberName .. " dari " .. clanName .. ". Kau ingin melanjutkan?",
+				{"Ya, keluarkan dia.", "Tidak, lupakan saja."},
 				{}
 			)
 
@@ -323,7 +323,7 @@ ClanAdminNpc = {
 				player:dialogSeq(
 					{
 						t,
-						chosenMemberName .. " has been removed from " .. clanName .. "."
+						chosenMemberName .. " telah dikeluarkan dari " .. clanName .. "."
 					},
 					0
 				)

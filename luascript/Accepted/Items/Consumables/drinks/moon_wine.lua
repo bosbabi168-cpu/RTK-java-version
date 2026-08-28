@@ -8,7 +8,7 @@ moon_wine = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("You need a physical body in order to eat.")
+			player:sendMinitext("Kau butuh tubuh jasmani untuk makan.")
 			return
 		end
 

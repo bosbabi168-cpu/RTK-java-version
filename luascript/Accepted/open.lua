@@ -8,7 +8,7 @@ onOpen = function(player)
 
 		if npc.yname == "IronLabTreasureChestNpc" then
 			if player:hasItem("iron_key", 1) ~= true then
-				player:sendMinitext("You need a key to unlock the chest.")
+				player:sendMinitext("Kau butuh kunci untuk membuka peti itu.")
 				return
 			end
 
@@ -16,7 +16,7 @@ onOpen = function(player)
 				player:removeItem("iron_key", 1, 9)
 				IronLabTreasureChestNpc.open(player, npc)
 			else
-				player:sendMinitext("It's already unlocked.")
+				player:sendMinitext("Kuncinya sudah terbuka.")
 			end
 		end
 	end
@@ -61,7 +61,7 @@ openDoors = function(player)
 	local obj = getObject(m, x, y)
 
 	if obj ~= 0 and doorLockedCheck(player, m, x, y) == true then
-		player:sendMinitext("The door is locked.")
+		player:sendMinitext("Pintunya terkunci.")
 		return
 	end
 

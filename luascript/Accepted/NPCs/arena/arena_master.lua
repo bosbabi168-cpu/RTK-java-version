@@ -11,7 +11,7 @@ ArenaMasterNpc = {
 
 		local opts = {"War paint"}
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
 		if menu == "War paint" then
 			general_npc_funcs.warPaint(player, npc)

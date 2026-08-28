@@ -7,7 +7,7 @@ resurrect_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -18,14 +18,14 @@ resurrect_poet = {
 		player:sendAction(6, 20)
 		target:sendAnimation(11)
 		player.magic = player.magic - magicCost
-		player:sendMinitext("You cast Resurrect.")
+		player:sendMinitext("Kau merapal Resurrect.")
 		player:setAether("resurrect_poet", 8000)
 		player:sendStatus()
 
 		if target.state == 1 then
 			target.state = 0
 			target.health = target.maxHealth
-			target:sendMinitext(player.name .. " cast Resurrect on you.")
+			target:sendMinitext(player.name .. " merapal Resurrect padamu.")
 			target:sendStatus()
 			target:updateState()
 		end
@@ -54,7 +54,7 @@ return_spirit_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -65,14 +65,14 @@ return_spirit_poet = {
 		player:sendAction(6, 20)
 		target:sendAnimation(96)
 		player.magic = player.magic - magicCost
-		player:sendMinitext("You cast Return spirit.")
+		player:sendMinitext("Kau merapal Return spirit.")
 		player:setAether("return_spirit_poet", 8000)
 		player:sendStatus()
 
 		if target.state == 1 then
 			target.state = 0
 			target.health = target.maxHealth
-			target:sendMinitext(player.name .. " cast Return spirit on you.")
+			target:sendMinitext(player.name .. " merapal Return spirit padamu.")
 			target:sendStatus()
 			target:updateState()
 		end
@@ -101,7 +101,7 @@ mingken_blessing_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -112,14 +112,14 @@ mingken_blessing_poet = {
 		player:sendAction(6, 20)
 		target:sendAnimation(116)
 		player.magic = player.magic - magicCost
-		player:sendMinitext("You cast Mingken blessing.")
+		player:sendMinitext("Kau merapal Mingken blessing.")
 		player:setAether("mingken_blessing_poet", 8000)
 		player:sendStatus()
 
 		if target.state == 1 then
 			target.state = 0
 			target.health = target.maxHealth
-			target:sendMinitext(player.name .. " cast Mingken blessing on you.")
+			target:sendMinitext(player.name .. " merapal Mingken blessing padamu.")
 			target:sendStatus()
 			target:updateState()
 		end
@@ -148,7 +148,7 @@ death_undone_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -159,14 +159,14 @@ death_undone_poet = {
 		player:sendAction(6, 20)
 		target:sendAnimation(92)
 		player.magic = player.magic - magicCost
-		player:sendMinitext("You cast Death undone.")
+		player:sendMinitext("Kau merapal Death undone.")
 		player:setAether("death_undone_poet", 8000)
 		player:sendStatus()
 
 		if target.state == 1 then
 			target.state = 0
 			target.health = target.maxHealth
-			target:sendMinitext(player.name .. " cast Death undone on you.")
+			target:sendMinitext(player.name .. " merapal Death undone padamu.")
 			target:sendStatus()
 			target:updateState()
 		end

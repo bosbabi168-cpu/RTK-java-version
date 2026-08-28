@@ -10,13 +10,13 @@ DobosNpc = {
 		player.lastClick = npc.ID
 
 		if player.baseClass ~= 1 then
-			player:dialogSeq({t, "Sorry I cannot help your kind."}, 0)
+			player:dialogSeq({t, "Maaf, aku tidak bisa menolong kaummu."}, 0)
 			return
 		end
 
 		if not player:hasLegend("nagnang_warrior_trial") then
 			player:dialogSeq(
-				{t, "You must finish your path's Nagnang quest."},
+				{t, "Kau harus menyelesaikan tugas Nagnang jalurmu dulu."},
 				0
 			)
 			return
@@ -25,9 +25,9 @@ DobosNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Thank the totems you're here! I hope you will drive out the evil army from here. Nagnag's evil henchmen captured me from my home, and forced me to work for them here.",
-				"I have been enslaved by an evil spell which keeps me bound here. I can never escape. They have been forcing me to create special armor and weapons for them to use in a mission they are on,",
-				"I want you to get revenge for me from Nagnag for what he has done to me, the only thing I can do to help is create the items for you that I made for his warriors."
+				"Syukurlah kau datang! Kuharap kau mengusir pasukan jahat itu dari sini. Antek-antek Nagnag menculikku dari rumahku dan memaksaku bekerja untuk mereka di tempat ini.",
+				"Aku diperbudak oleh mantra jahat yang mengikatku di sini. Aku tidak akan pernah bisa kabur. Mereka memaksaku membuat zirah dan senjata khusus untuk misi yang sedang mereka jalankan,",
+				"Aku ingin kau membalaskan dendamku pada Nagnag atas apa yang ia lakukan padaku. Satu-satunya yang bisa kubantu adalah membuatkanmu barang-barang yang dulu kubuat untuk para warriors-nya."
 			},
 			1
 		)
@@ -60,7 +60,7 @@ DobosNpc = {
 		end
 
 		local choice = player:menuString(
-			"What would you like me to help you make?",
+			"Apa yang ingin kubantu buatkan?",
 			items
 		)
 
@@ -68,9 +68,9 @@ DobosNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The War amulet is an amazing amulet, it's powerful.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Earth scalemail, 10 bear's livers, a herb pipe, and 1,000 gold."
+					"War amulet adalah amulet yang luar biasa, sangat berkuasa.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Earth scalemail, 10 bear's liver, satu herb pipe, dan 1,000 emas."
 				},
 				1
 			)
@@ -80,15 +80,15 @@ DobosNpc = {
 				10
 			) ~= true or player:hasItem("herb_pipe", 1) ~= true or player.money < 1000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -112,14 +112,14 @@ DobosNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own War amulet. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, War amulet milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -127,24 +127,24 @@ DobosNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The War rune is an amazing rune, it's powerful.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Hunang's axe, a Fine metal, and 4,000 gold."
+					"War rune adalah rune yang luar biasa, sangat berkuasa.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Hunang's axe, satu Fine metal, dan 4,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("hunangs_axe", 1) ~= true or player:hasItem("fine_metal", 1) ~= true or player.money < 4000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -164,14 +164,14 @@ DobosNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own War rune. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini rune Perang milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -179,24 +179,24 @@ DobosNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Bamboo shield is an amazing shield, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Titanium glove, a Tall shield, and 12,000 gold."
+					"Bamboo shield adalah shield yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Titanium glove, satu Tall shield, dan 12,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("titanium_glove", 1) ~= true or player:hasItem("tall_shield", 1) ~= true or player.money < 12000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -219,14 +219,14 @@ DobosNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own War rune. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini rune Perang milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -234,24 +234,24 @@ DobosNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Stone shield is an amazing shield. It's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Tall shield for a mold, a Spike to hold the power forged into it, and 24,000 gold."
+					"Stone shield adalah shield yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Tall shield sebagai cetakan, satu Spike untuk menampung kekuatan yang ditempa ke dalamnya, dan 24,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("spike", 1) ~= true or player:hasItem("tall_shield", 1) ~= true or player.money < 24000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -271,14 +271,14 @@ DobosNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Stone shield. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Stone shield milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -286,24 +286,24 @@ DobosNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Hide shield is an amazing shield, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Tall shield for a mold, a Il san Spike to hold the power forged into it, and 48,000 gold."
+					"Hide shield adalah shield yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Tall shield sebagai cetakan, satu Il san Spike untuk menampung kekuatan yang ditempa ke dalamnya, dan 48,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("il_san_spike", 1) ~= true or player:hasItem("tall_shield", 1) ~= true or player.money < 48000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -323,14 +323,14 @@ DobosNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Hide shield. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Hide shield milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -338,24 +338,24 @@ DobosNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Brass shield is an amazing shield, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Tall shield for a mold, a EE san Spike to hold the power forged into it, and 96,000 gold."
+					"Brass shield adalah shield yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Tall shield sebagai cetakan, satu EE san Spike untuk menampung kekuatan yang ditempa ke dalamnya, dan 96,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("ee_san_spike", 1) ~= true or player:hasItem("tall_shield", 1) ~= true or player.money < 96000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -375,14 +375,14 @@ DobosNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Brass shield. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Brass shield milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -390,9 +390,9 @@ DobosNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Titanium shield is an amazing shield, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Tall shield for a mold, a Sam san Spike to hold the power forged into it, and 192,000 gold."
+					"Titanium shield adalah shield yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Tall shield sebagai cetakan, satu Sam san Spike untuk menampung kekuatan yang ditempa ke dalamnya, dan 192,000 emas."
 				},
 				1
 			)
@@ -402,15 +402,15 @@ DobosNpc = {
 				1
 			) ~= true or player.money < 192000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -433,14 +433,14 @@ DobosNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Titanium shield. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Titanium shield milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -448,9 +448,9 @@ DobosNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Noble shield is an amazing shield, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Tall shield for a mold, a Sa san Spike to hold the power forged into it, 500 Ri shards, 250 Xi shards, 100 Zen shards, and 384,000 gold."
+					"Noble shield adalah shield yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Tall shield sebagai cetakan, satu Sa san Spike untuk menampung kekuatan yang ditempa ke dalamnya, 500 Ri shard, 250 Xi shard, 100 Zen shard, dan 384,000 emas."
 				},
 				1
 			)
@@ -463,15 +463,15 @@ DobosNpc = {
 				100
 			) ~= true or player.money < 384000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -500,14 +500,14 @@ DobosNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Noble shield. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Noble shield milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end

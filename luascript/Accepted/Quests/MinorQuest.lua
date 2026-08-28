@@ -1557,7 +1557,7 @@ local _clearMinorQuest = function(player, activeQuest, activeTier, abandoned)
 
 	if (abandoned) then
 		player.registry[_minorQuestTimer] = os.time() + _questTiers[activeTier].abandonHours * 3600
-		player:dialogSeq({"So be it."}, 1)
+		player:dialogSeq({"Biarlah begitu."}, 1)
 		return
 	end
 
@@ -1565,7 +1565,7 @@ local _clearMinorQuest = function(player, activeQuest, activeTier, abandoned)
 
 	player.registry[_minorQuestsCompleted] = completeCount
 	player:removeLegendbyName(_minorQuestsCompleted)
-	player:addLegend("Completed " .. completeCount .. " minor quests", _minorQuestsCompleted, 5, 128)
+	player:addLegend("Completed " .. completeCount .. " tugas kecil", _minorQuestsCompleted, 5, 128)
 	player:forceSave()
 end
 
@@ -1580,7 +1580,7 @@ local _showAbandonMenu = function(player, activeTier)
 	local abandonHours = _questTiers[activeTier].abandonHours
 
 	local choice = player:menuSeq(
-		"You are already on a quest to slay one " .. activeQuest.displayName .. ". Abandoning your quest will prevent you from beginning a new quest for " .. abandonHours .. " hours.",
+		"Kau sedang menjalani tugas membunuh satu " .. activeQuest.displayName .. ". Meninggalkan tugasmu akan menghalangimu memulai tugas baru selama " .. abandonHours .. " hours.",
 		{"Continue", "Abandon"},
 		{}
 	)
@@ -1642,7 +1642,7 @@ MinorQuest = {
 				dialog = dialog .. "s"
 			end
 
-			player:dialogSeq({dialog .. " before beginning another quest."}, 0)
+			player:dialogSeq({dialog .. " sebelum memulai tugas berikutnya."}, 0)
 			return
 		end
 
@@ -1664,7 +1664,7 @@ MinorQuest = {
 				table.insert(questLabels, _questTiers[3].label)
 			end
 
-			activeTier = player:menuSeq("Which type of quest do you seek?", questLabels, {})
+			activeTier = player:menuSeq("Tugas jenis apa yang kau cari?", questLabels, {})
 		end
 
 		local availableQuests = _questTiers[activeTier].quests
@@ -1690,7 +1690,7 @@ MinorQuest = {
 		end
 
 		if (#qualifyingQuests < 1) then
-			player:dialogSeq({"I have no such quest for you right now. Please choose another."}, 0)
+			player:dialogSeq({"Saat ini aku tidak punya tugas semacam itu untukmu. Pilih yang lain."}, 0)
 			-- @TODO: Log this since it's not ever supposed to happen
 			return
 		end
@@ -1712,13 +1712,13 @@ MinorQuest = {
 			player:removeLegendbyName(_minorQuestInfo)
 		end
 
-		player:addLegend("On a quest to slay the " .. displayName, _minorQuestInfo, 5, 128)
+		player:addLegend("Menjalani tugas membunuh " .. displayName, _minorQuestInfo, 5, 128)
 		player:forceSave()
 
 		player:dialogSeq(
 			{
-				"Alas, it has come to my attention that a curse has been laid upon one of your fellow citizens.",
-				"You must slay one " .. displayName .. " to release the curse. I will reward you if you can accomplish this task.",
+				"Sayangnya sampai ke telingaku bahwa kutukan telah ditimpakan pada salah seorang sesama wargamu.",
+				"Kau harus membunuh satu " .. displayName .. " untuk melepaskan kutukan itu. Kau akan kuberi ganjaran kalau tugas ini berhasil kau tuntaskan.",
 				_sayCompleteWhenDone
 			},
 			0
@@ -1729,7 +1729,7 @@ MinorQuest = {
 		Tools.configureDialog(player, npc)
 
 		if (player.registryString[_minorQuest] == "") then
-			player:dialogSeq({"You must begin a quest before you can complete it."}, 0)
+			player:dialogSeq({"Kau harus memulai tugas sebelum bisa menuntaskannya."}, 0)
 			return
 		end
 
@@ -1750,7 +1750,7 @@ MinorQuest = {
 		end
 
 		if (not isKillRequirementMet) then
-			player:dialogSeq({"Please return when you have slain one " .. activeQuest.displayName .. "."}, 0)
+			player:dialogSeq({"Kembalilah kalau kau sudah membunuh satu " .. activeQuest.displayName .. "."}, 0)
 			return
 		end
 

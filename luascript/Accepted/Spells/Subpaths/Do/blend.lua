@@ -13,7 +13,7 @@ blend = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -25,7 +25,7 @@ blend = {
 		player:sendStatus()
 		player:sendAction(6, 35)
 		player:sendAnimation(16, 30)
-		player:sendMinitext("You cast Blend.")
+		player:sendMinitext("Kau merapal Blend.")
 		player:updateState()
 	end,
 	while_cast = function(player)
@@ -37,7 +37,7 @@ blend = {
 			player.state = 0
 			player.invis = 1
 			player:updateState()
-			player:sendMinitext("You are no longer invisible.")
+			player:sendMinitext("Kau tidak lagi tak terlihat.")
 		end
 	end,
 

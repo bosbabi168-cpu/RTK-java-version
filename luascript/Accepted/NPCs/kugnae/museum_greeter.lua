@@ -12,11 +12,11 @@ MuseumGreeterNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Well hello there traveler! Welcome to the museum.",
-				"There are many fascinating things to see here, and so much to learn. Have you ever wondered how Gut got his name? Who Linskrae was? Or how the greedy King Suyo died?",
-				"You can learn all about these things, and more, right here at the museum!",
-				"I hope you enjoy your visit. Please remember you are welcome to look at everything, but you must not touch! Some of the items found in this museum are priceless!",
-				"And be sure to stop by the caretakers room at the end of the tour. He will surely have a thank you gift waiting there."
+				"Wah, halo, pengembara! Selamat datang di museum.",
+				"Banyak hal menarik untuk dilihat di sini, dan banyak yang bisa dipelajari. Pernahkah kau bertanya-tanya bagaimana Gut mendapat namanya? Siapa Linskrae? Atau bagaimana Raja Suyo yang tamak itu mati?",
+				"Kau bisa mempelajari semua itu, dan lebih banyak lagi, di museum ini!",
+				"Semoga kau menikmati kunjunganmu. Ingat, kau boleh melihat segalanya, tetapi jangan menyentuh! Sebagian benda di museum ini tak ternilai harganya!",
+				"Dan jangan lupa mampir ke ruang penjaga di akhir kunjungan. Pasti ada hadiah terima kasih menunggu di sana."
 			},
 			1
 		)

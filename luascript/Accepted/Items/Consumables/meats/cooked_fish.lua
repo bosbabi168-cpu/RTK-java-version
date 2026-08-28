@@ -49,14 +49,14 @@ cooked_fish = {
 				player:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 				if player.health == player.maxHealth then
-					player:sendMinitext("You feel satiated.")
+					player:sendMinitext("Kau merasa kenyang.")
 				end
 
 				partner.attacker = partner.ID
 				partner:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 				if partner.health == partner.maxHealth then
-					partner:sendMinitext("You feel satiated.")
+					partner:sendMinitext("Kau merasa kenyang.")
 				end
 
 				return
@@ -67,7 +67,7 @@ cooked_fish = {
 			player:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 			if player.health == player.maxHealth then
-				player:sendMinitext("You feel satiated.")
+				player:sendMinitext("Kau merasa kenyang.")
 			end
 		end
 	end

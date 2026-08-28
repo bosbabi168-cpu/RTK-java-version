@@ -224,3 +224,28 @@ Dicatat di sini karena ditemukan oleh audit yang sama. Ada di
 - **pustaka `debug`** — tidak ikut `JsePlatform.standardGlobals()`, padahal
   `Developers/sys.lua` memakai `debug.traceback()` di `_errhandler`, yang
   berarti penangan error justru ikut gagal. Ditambahkan `DebugLib`.
+
+---
+
+## Dilaporkan saat R4 (28 Agustus 2026), belum diperbaiki
+
+Dua cacat konten yang **sudah ada sebelum terjemahan** dan sengaja tidak
+disentuh, karena memperbaikinya adalah keputusan desain, bukan kesalahan
+yang pasti:
+
+1. **`speech "complete quest"`** — di keempat berkas `*_trainer.lua`
+   (`poet_trainer.lua:1107`, `warrior_trainer.lua:1033`,
+   `mage_trainer.lua:1324`, `rogue_trainer.lua:1273`) tertulis
+   `elseif speech == "selesai" or speech "complete quest" then`.
+   Di Lua `speech "…"` berarti `speech("…")` — memanggil sebuah string
+   sebagai fungsi. Cabangnya hanya dievaluasi bila ucapan pemain BUKAN
+   "selesai", jadi jalur itu melempar setiap kali kata lain diucapkan ke
+   NPC tersebut. Identik dengan salinan upstream (diperiksa terhadap
+   `git show HEAD`).
+
+2. **Petunjuk 'transport' di `Scripts/Waypoint.lua:402`** — pesannya
+   menyuruh pemain mengucapkan `'transport'`, tetapi pencocokannya
+   (`Waypoint.lua:466`) hanya membandingkan `speech == keywords[j]` dan
+   tidak ada satu pun waypoint yang memuat kata kunci "transport".
+   Kalimat aslinya dalam bahasa Inggris pun sudah menyesatkan; terjemahan
+   mempertahankannya apa adanya supaya perilaku tidak ikut berubah.

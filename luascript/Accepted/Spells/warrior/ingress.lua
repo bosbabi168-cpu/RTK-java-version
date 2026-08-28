@@ -7,16 +7,16 @@ ingress_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if player:checkIfCast(enchants) or player.enchant > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player:sendAction(6, 35)
-		player:sendMinitext(weap.name .. " shines with holy light.")
+		player:sendMinitext(weap.name .. " bersinar oleh cahaya suci.")
 		player.magic = player.magic - magic
 		player.enchant = 3
 		player:sendStatus()
@@ -28,7 +28,7 @@ ingress_warrior = {
 	uncast = function(player)
 		player.enchant = 1
 		player:sendStatus()
-		player:sendMinitext("The glimmer subsides into a throb and then vanishes.")
+		player:sendMinitext("Kilauannya meredup jadi denyut, lalu lenyap.")
 	end,
 	requirements = function(player)
 		local level = 70
@@ -53,16 +53,16 @@ hand_of_darkness_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if player:checkIfCast(enchants) or player.enchant > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player:sendAction(6, 35)
-		player:sendMinitext(weap.name .. " shines with holy light.")
+		player:sendMinitext(weap.name .. " bersinar oleh cahaya suci.")
 		player.magic = player.magic - magic
 		player.enchant = 3
 		player:sendStatus()
@@ -74,7 +74,7 @@ hand_of_darkness_warrior = {
 	uncast = function(player)
 		player.enchant = 1
 		player:sendStatus()
-		player:sendMinitext("The glimmer subsides into a throb and then vanishes.")
+		player:sendMinitext("Kilauannya meredup jadi denyut, lalu lenyap.")
 	end,
 	requirements = function(player)
 		local level = 70
@@ -99,16 +99,16 @@ dragons_claw_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if player:checkIfCast(enchants) or player.enchant > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player:sendAction(6, 35)
-		player:sendMinitext(weap.name .. " shines with holy light.")
+		player:sendMinitext(weap.name .. " bersinar oleh cahaya suci.")
 		player.magic = player.magic - magic
 		player.enchant = 3
 		player:sendStatus()
@@ -120,7 +120,7 @@ dragons_claw_warrior = {
 	uncast = function(player)
 		player.enchant = 1
 		player:sendStatus()
-		player:sendMinitext("The glimmer subsides into a throb and then vanishes.")
+		player:sendMinitext("Kilauannya meredup jadi denyut, lalu lenyap.")
 	end,
 	requirements = function(player)
 		local level = 70
@@ -145,16 +145,16 @@ razors_edge_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if player:checkIfCast(enchants) or player.enchant > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player:sendAction(6, 35)
-		player:sendMinitext(weap.name .. " shines with holy light.")
+		player:sendMinitext(weap.name .. " bersinar oleh cahaya suci.")
 		player.magic = player.magic - magic
 		player.enchant = 3
 		player:sendStatus()
@@ -166,7 +166,7 @@ razors_edge_warrior = {
 	uncast = function(player)
 		player.enchant = 1
 		player:sendStatus()
-		player:sendMinitext("The glimmer subsides into a throb and then vanishes.")
+		player:sendMinitext("Kilauannya meredup jadi denyut, lalu lenyap.")
 	end,
 	requirements = function(player)
 		local level = 70

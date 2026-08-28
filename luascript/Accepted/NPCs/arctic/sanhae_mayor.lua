@@ -6,66 +6,66 @@ SanhaeMayorNpc = {
 
 		local opts = {
 			"Sanhae Mayor",
-			"Live in Sanhae"
+			"Tinggal di Sanhae"
 		}
 
 		if (not Waypoint.isEnabled(player, _waypointId)) then
 			table.insert(opts, "Waypoint")
 		end
 
-		local choice = player:menuString("Hello! How can I help you today?", opts, {})
+		local choice = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts, {})
 		local choice2
 
 		if choice == "Waypoint" then
 			Waypoint.add(player, npc, _waypointId)
 		elseif choice == "Sanhae Mayor" then
-			player:dialogSeq({"Hello there. welcome to the town of Sanhae."}, 1)
+			player:dialogSeq({"Halo. Selamat datang di kota Sanhae."}, 1)
 
 			if player.quest["tutorial_quest"] == 11 then
-				player:dialogSeq({"You look troubled... And so you should be. There are some dark forces at work here."}, 1)
+				player:dialogSeq({"Kau tampak gelisah... memang seharusnya begitu. Ada kekuatan gelap yang bekerja di sini."}, 1)
 
 				choice2 = player:menuString(
-					"So, what can I help you with today?",
+					"Jadi, ada yang bisa kubantu hari ini?",
 					{"Missing Brother", "Dark Forces?", "Du Mountain?"},
 					{}
 				)
 			end
-		elseif choice == "Live in Sanhae" then
+		elseif choice == "Tinggal di Sanhae" then
 			if player.country ~= 2 then
-				player:dialogSeq({"Greetings, I would love to let you live here, but only people who are Buyan may live in this town."}, 1)
+				player:dialogSeq({"Salam. Aku ingin sekali mengizinkanmu tinggal di sini, tetapi hanya orang Buya yang boleh tinggal di kota ini."}, 1)
 			else
 				if player.registry["home"] == 10 then
 					local confirm = player:menuSeq(
-						"You already live in my towns tavern... do you wish to leave already?",
-						{"Yes, I do.", "No, I wish to stay."},
+						"Kau sudah tinggal di kedai kotaku... apa kau mau pergi secepat ini?",
+						{"Ya, aku mau.", "Tidak, aku ingin tinggal."},
 						{}
 					)
 
 					if confirm == 1 then
 						-- leave
 						player.registry["home"] = 0
-						player:dialogSeq({"Well, nothing lasts forever. Good luck in the future."}, 0)
+						player:dialogSeq({"Yah, tidak ada yang abadi. Semoga beruntung di kemudian hari."}, 0)
 
 						return
 					elseif confirm == 2 then
-						player:dialogSeq({"Ah, that is good to hear. I hope you like my service here."}, 0)
+						player:dialogSeq({"Ah, senang mendengarnya. Semoga kau menyukai layananku di sini."}, 0)
 						return
 					end
 				else
-					player:dialogSeq({"So you wish to live in my humble tavern, eh? Well, I can spare you some room. But remember, you will always return here, and not the taverns in the city if you do this."}, 1)
+					player:dialogSeq({"Jadi kau ingin tinggal di kedaiku yang sederhana ini? Baiklah, ada kamar untukmu. Tapi ingat, kalau begitu kau akan selalu kembali ke sini, bukan ke kedai-kedai di kota."}, 1)
 
 					local confirm = player:menuSeq(
-						"Are you sure you want to do this?",
-						{"Yes, I wish to.", "No, I do not."},
+						"Kau yakin ingin melakukan ini?",
+						{"Ya, aku mau.", "Tidak, aku tidak mau."},
 						{}
 					)
 
 					if confirm == 1 then
 						player.registry["home"] = 10
-						player:dialogSeq({"Welcome to my tavern, I hope you enjoy your time here."}, 0)
+						player:dialogSeq({"Selamat datang di kedaiku, semoga kau betah di sini."}, 0)
 						return
 					elseif confirm == 2 then
-						player:dialogSeq({"That is your choice, plenty of room if you wish to come back later."}, 0)
+						player:dialogSeq({"Itu pilihanmu. Kamarnya masih banyak kalau nanti kau berubah pikiran."}, 0)
 						return
 					end
 				end
@@ -76,26 +76,26 @@ SanhaeMayorNpc = {
 		if choice2 == "Missing Brother" then
 			player:dialogSeq(
 				{
-					"Poor, poor man. He went off with the others to hunt, and is lost with them.",
-					"Darn these evil forces, if only somebody brave enough would lift the curse."
+					"Kasihan sekali orang itu. Ia pergi berburu bersama yang lain dan hilang bersama mereka.",
+					"Terkutuklah kekuatan jahat ini; andai ada yang cukup berani mengangkat kutukannya."
 				},
 				1
 			)
 		elseif choice2 == "Dark Forces?" then
 			player:dialogSeq(
 				{
-					"Recently several of our men have gone missing from this town.",
-					"They go off to hunt at Du Mountain, and never return.",
-					"I fear it will be the end of our village if something is not done soon."
+					"Belakangan ini beberapa lelaki kami hilang dari kota.",
+					"Mereka pergi berburu ke Gunung Du dan tidak pernah kembali.",
+					"Aku khawatir desa kami akan berakhir kalau tidak segera ada tindakan."
 				},
 				1
 			)
 		elseif choice2 == "Du Mountain?" then
 			player:dialogSeq(
 				{
-					"Oh, you are new to these lands. Du Mountain is to the west of our town.",
-					"If you go back the way you came, then head to the west side of the northern pass you will find it.",
-					"But I beg you not to go there, only evil resides there now."
+					"Oh, kau baru di tanah ini. Gunung Du ada di sebelah barat kota kami.",
+					"Kalau kau kembali lewat jalan yang tadi lalu menuju sisi barat celah utara, kau akan menemukannya.",
+					"Tapi kumohon jangan ke sana; sekarang hanya kejahatan yang bersemayam di situ."
 				},
 				1
 			)

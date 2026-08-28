@@ -12,14 +12,14 @@ weaving = {
 		if speech == "tenun" then
 			if player:hasItem("weaving_tools", 1) ~= true and player:hasItem("fine_weaving_tools", 1) ~= true then
 				player:dialogSeq(
-					{t, "Without suitable tools, this is an impossible task."},
+					{t, "Tanpa alat yang sesuai, tugas ini mustahil."},
 					0
 				)
 				return
 			end
 
 			if player:hasItem("wool", 1) ~= true then
-				player:dialogSeq({t, "You have nothing to craft."}, 0)
+				player:dialogSeq({t, "Tidak ada yang bisa kau buat."}, 0)
 				return
 			end
 
@@ -43,7 +43,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -55,7 +55,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -68,7 +68,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You completely mangled that bunch of wool."
+							"Segumpal wol itu kau rusak sama sekali."
 						},
 						0
 					)
@@ -81,7 +81,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -95,7 +95,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -109,7 +109,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -121,7 +121,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -134,7 +134,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You completely mangled that bunch of wool."
+							"Segumpal wol itu kau rusak sama sekali."
 						},
 						0
 					)
@@ -147,7 +147,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -161,7 +161,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -175,7 +175,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -187,7 +187,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -200,7 +200,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You completely mangled that bunch of wool."
+							"Segumpal wol itu kau rusak sama sekali."
 						},
 						0
 					)
@@ -213,7 +213,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -227,7 +227,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -241,7 +241,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -253,7 +253,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -266,7 +266,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You completely mangled that bunch of wool."
+							"Segumpal wol itu kau rusak sama sekali."
 						},
 						0
 					)
@@ -279,7 +279,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -293,7 +293,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -307,7 +307,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -319,7 +319,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -332,7 +332,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You completely mangled that bunch of wool."
+							"Segumpal wol itu kau rusak sama sekali."
 						},
 						0
 					)
@@ -345,7 +345,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -359,7 +359,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -373,7 +373,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -385,7 +385,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -398,7 +398,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You completely mangled that bunch of wool."
+							"Segumpal wol itu kau rusak sama sekali."
 						},
 						0
 					)
@@ -411,7 +411,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -425,7 +425,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -439,7 +439,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -451,7 +451,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -464,7 +464,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You completely mangled that bunch of wool."
+							"Segumpal wol itu kau rusak sama sekali."
 						},
 						0
 					)
@@ -477,7 +477,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -491,7 +491,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -505,7 +505,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -517,7 +517,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -530,7 +530,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -544,7 +544,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -558,7 +558,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -570,7 +570,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -583,7 +583,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -597,7 +597,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -611,7 +611,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -623,7 +623,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -636,7 +636,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -650,7 +650,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -664,7 +664,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -676,7 +676,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -689,7 +689,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -703,7 +703,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -717,7 +717,7 @@ weaving = {
 								graphic = Item("fine_cloth").icon,
 								color = Item("fine_cloth").iconC
 							},
-							"You have succeeded masterfully!"
+							"Kau berhasil dengan sempurna!"
 						},
 						0
 					)
@@ -729,7 +729,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)
@@ -742,7 +742,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You completely mangled that bunch of wool."
+							"Segumpal wol itu kau rusak sama sekali."
 						},
 						0
 					)
@@ -755,7 +755,7 @@ weaving = {
 								graphic = Item("wool").icon,
 								color = Item("wool").iconC
 							},
-							"You will need some more wool to finish this cloth."
+							"Kau butuh lebih banyak wol untuk menyelesaikan kain ini."
 						},
 						0
 					)
@@ -769,7 +769,7 @@ weaving = {
 								graphic = Item("cloth").icon,
 								color = Item("cloth").iconC
 							},
-							"You have made some cloth!"
+							"Kau berhasil membuat kain!"
 						},
 						0
 					)

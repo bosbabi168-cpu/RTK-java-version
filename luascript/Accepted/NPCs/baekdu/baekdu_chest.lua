@@ -170,12 +170,12 @@ BaekduChestNpc = {
 		local itemsGained = 0
 
 		if player.state == 1 then
-			player:sendMinitext("How can you open a chest without hands?")
+			player:sendMinitext("Bagaimana kau bisa membuka peti tanpa tangan?")
 			return
 		end
 
 		if player.quest["baekdu_boss_killed"] == 0 then
-			player:sendMinitext("You have already received your loot.")
+			player:sendMinitext("Jarahanmu sudah kau terima.")
 			return
 		end
 
@@ -187,7 +187,7 @@ BaekduChestNpc = {
 			if commonChance <= 3 then
 				-- chance to roll common loot
 				player:addItem(itemsCommon[commonTable], 1)
-				player:sendMinitext("You open the Abyssal Chest and receive " .. itemsCommonDesc[commonTable] .. "!")
+				player:sendMinitext("Kau membuka Abyssal Chest dan menerima " .. itemsCommonDesc[commonTable] .. "!")
 				npc:talk(
 					1,
 					"[Mt Baekdu Chest]: " .. pname .. " received " .. itemsCommonDesc[
@@ -200,7 +200,7 @@ BaekduChestNpc = {
 			if rareChance == 1 then
 				-- chance to roll rare loot
 				player:addItem(itemsRare[rareTable], 1)
-				player:sendMinitext("You open the Abyssal Chest and receive " .. itemsRareDesc[rareTable] .. "!")
+				player:sendMinitext("Kau membuka Abyssal Chest dan menerima " .. itemsRareDesc[rareTable] .. "!")
 				npc:talk(
 					1,
 					"[Mt Baekdu Chest]: " .. pname .. " received " .. itemsRareDesc[
@@ -213,7 +213,7 @@ BaekduChestNpc = {
 			if ultraChance == 1 then
 				-- chance to roll ultra rare loot
 				player:addItem(itemsUltraRare[ultraTable], 1)
-				player:sendMinitext("You open the Abyssal Chest and receive " .. itemsUltraRareDesc[ultraTable] .. "!")
+				player:sendMinitext("Kau membuka Abyssal Chest dan menerima " .. itemsUltraRareDesc[ultraTable] .. "!")
 				npc:talk(
 					1,
 					"[Mt Baekdu Chest]: " .. pname .. " received " .. itemsUltraRareDesc[
@@ -226,7 +226,7 @@ BaekduChestNpc = {
 			if legendaryChance == 1 then
 				-- chance to roll legendary loot
 				player:addItem(itemsLegendary[legendaryTable], 1)
-				player:sendMinitext("You open the Abyssal Chest and receive " .. itemsLegendaryDesc[legendaryTable] .. "!")
+				player:sendMinitext("Kau membuka Abyssal Chest dan menerima " .. itemsLegendaryDesc[legendaryTable] .. "!")
 				npc:talk(
 					1,
 					"[Mt Baekdu Chest]: " .. pname .. " received " .. itemsLegendaryDesc[
@@ -236,12 +236,12 @@ BaekduChestNpc = {
 				itemsGained = itemsGained + 1
 			end
 			if itemsGained == 0 then
-				player:sendMinitext("You open the Abyssal Chest, but it was empty!")
+				player:sendMinitext("Kau membuka Abyssal Chest, tetapi kosong!")
 
 				--npc:sendAnimation(259)
 				npc:talk(
 					1,
-					"[Mt Baekdu Chest]: Sorry " .. pname .. ", better luck next time!"
+					"[Mt Baekdu Chest]: Maaf " .. pname .. ", semoga lain kali lebih beruntung!"
 				)
 				npc:sendAnimation(152)
 				player:sendAction(12, 90)

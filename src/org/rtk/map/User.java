@@ -339,6 +339,18 @@ public final class User extends BlockList
     public int equipSlot;
     public int invSlot;
 
+    /**
+     * Pemain sedang dialihkan ke map server lain (R3/C3): sambungannya
+     * ditutup <b>setelah</b> paket alihannya sempat terkirim.
+     */
+    public boolean pindahTertunda;
+
+    /** Teks profil yang pemain tulis sendiri ({@code sd->profile_data}). */
+    public String profileText = "";
+
+    /** Penanda pemburu ({@code sd->hunter}) — kolom {@code ChaHunter}. */
+    public int hunter;
+
     // ---- papan pesan (sd->board*) ----
     /** Papan yang sedang dibuka; 0 berarti kotak surat, bukan papan. */
     public int board;
@@ -481,6 +493,8 @@ public final class User extends BlockList
         for (int i = 0; i < status.spells.length; i++) {
             if (status.spells[i] == 0) {
                 status.spells[i] = id;
+                // K3.2: klien diberi tahu (di C: pcl_addspell -> pc_loadmagic)
+                MapServer.clientView.playerSpellSlotChanged(this, i);
                 return true;
             }
         }
@@ -488,6 +502,7 @@ public final class User extends BlockList
         int[] baru = java.util.Arrays.copyOf(status.spells, status.spells.length + 1);
         baru[baru.length - 1] = id;
         status.spells = baru;
+        MapServer.clientView.playerSpellSlotChanged(this, baru.length - 1);
         return true;
     }
 
@@ -1027,6 +1042,12 @@ public final class User extends BlockList
         }
         int stack = Math.max(1, info.stackAmount());
         int sisa = amount;
+        // ⚠️ Slot yang berubah harus DIKABARKAN ke klien. Sebelum ini
+        // method ini hanya mengubah inventaris di server: memungut barang
+        // benar-benar berhasil, tetapi kantong di layar pemain tidak
+        // pernah berubah sampai ia login ulang. Tidak ada yang melempar —
+        // barangnya sekadar tidak terlihat.
+        java.util.List<Integer> tersentuh = new java.util.ArrayList<>();
 
         if (stack > 1) {
             for (org.rtk.common.mmo.Item it : status.inventory) {
@@ -1037,6 +1058,7 @@ public final class User extends BlockList
                     int muat = Math.min(stack - it.amount, sisa);
                     it.amount += muat;
                     sisa -= muat;
+                    tersentuh.add(it.pos);
                 }
             }
         }
@@ -1048,7 +1070,10 @@ public final class User extends BlockList
             // dua barang di satu slot, tanpa error. Lihat Peringatan #85.
             int slot = status.firstFreeInventorySlot(status.maxInv);
             if (slot < 0) {
-                return false;   // inventaris penuh; sebagian mungkin sudah masuk
+                // Inventaris penuh; sebagian mungkin SUDAH masuk — yang itu
+                // tetap harus terlihat pemain.
+                kabarkanSlot(tersentuh);
+                return false;
             }
             org.rtk.common.mmo.Item baru = new org.rtk.common.mmo.Item();
             baru.id = info.id();
@@ -1057,8 +1082,20 @@ public final class User extends BlockList
             baru.pos = slot;
             status.inventory.add(baru);
             sisa -= baru.amount;
+            tersentuh.add(slot);
         }
+        kabarkanSlot(tersentuh);
         return true;
+    }
+
+    /** Kirim isi slot-slot yang baru saja berubah ke klien pemilik. */
+    private void kabarkanSlot(java.util.List<Integer> slot) {
+        if (MapServer.clientView == null) {
+            return;
+        }
+        for (int p : slot) {
+            MapServer.clientView.playerInventorySlotChanged(this, p);
+        }
     }
 
     /** pcl_removeinventoryitem(): buang barang, boleh lintas beberapa slot. */

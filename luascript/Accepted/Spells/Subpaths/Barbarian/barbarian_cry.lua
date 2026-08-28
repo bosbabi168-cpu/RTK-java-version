@@ -15,7 +15,7 @@ barbarian_cry = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -39,9 +39,9 @@ barbarian_cry = {
 		end
 
 		player:sendStatus()
-		player:sendMinitext("You cast Townie.")
-		player:sendMinitext("You can not touch the spirit world.")
-		player:sendMinitext("You cast Barbarian cry.")
+		player:sendMinitext("Kau merapal Townie.")
+		player:sendMinitext("Kau tidak bisa menyentuh dunia arwah.")
+		player:sendMinitext("Kau merapal Barbarian cry.")
 	end,
 	requirements = function(player)
 		local l = 99

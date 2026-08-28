@@ -14,7 +14,7 @@ scribing = {
 				player:dialogSeq(
 					{
 						t,
-						"You are not a scribe, I can't let you work with my scribing tools."
+						"Kau bukan juru tulis; aku tidak bisa membiarkanmu memakai alat tulisku."
 					},
 					0
 				)
@@ -64,7 +64,7 @@ scribing = {
 				chosenScroll = "scroll_of_protection"
 			else
 				local choice = player:menuSeq(
-					"Which task shall you attempt?",
+					"Tugas mana yang akan kau coba?",
 					scrollNames,
 					{}
 				)
@@ -76,7 +76,7 @@ scribing = {
 					player:dialogSeq(
 						{
 							tWhitePaper,
-							"You need a sheet of white paper for this scroll."
+							"Kau butuh selembar white paper untuk gulungan ini."
 						},
 						0
 					)
@@ -84,14 +84,14 @@ scribing = {
 				end
 
 				if player:hasItem("ink", 1) ~= true then
-					player:dialogSeq({tInk, "You need ink to write with."}, 0)
+					player:dialogSeq({tInk, "Kau butuh tinta untuk menulis."}, 0)
 					return
 				end
 				if player:hasItem("amber", 1) ~= true then
 					player:dialogSeq(
 						{
 							tAmber,
-							"You need an amber to focus the magical energies."
+							"Kau butuh satu amber untuk memusatkan tenaga sihirnya."
 						},
 						0
 					)
@@ -105,21 +105,21 @@ scribing = {
 					player:dialogSeq(
 						{
 							tWhitePaper,
-							"You need 3 sheets of white paper for this scroll."
+							"Kau butuh 3 lembar white paper untuk gulungan ini."
 						},
 						0
 					)
 					return
 				end
 				if player:hasItem("ink", 1) ~= true then
-					player:dialogSeq({tInk, "You need ink to write with."}, 0)
+					player:dialogSeq({tInk, "Kau butuh tinta untuk menulis."}, 0)
 					return
 				end
 				if player:hasItem("dark_amber", 1) ~= true then
 					player:dialogSeq(
 						{
 							tAmber,
-							"You need a dark amber to focus the magical energies."
+							"Kau butuh satu dark amber untuk memusatkan tenaga sihirnya."
 						},
 						0
 					)
@@ -133,21 +133,21 @@ scribing = {
 					player:dialogSeq(
 						{
 							tMoonPaper,
-							"You need a sheet of moon paper for this scroll."
+							"Kau butuh selembar moon paper untuk gulungan ini."
 						},
 						0
 					)
 					return
 				end
 				if player:hasItem("ink", 1) ~= true then
-					player:dialogSeq({tInk, "You need ink to write with."}, 0)
+					player:dialogSeq({tInk, "Kau butuh tinta untuk menulis."}, 0)
 					return
 				end
 				if player:hasItem("white_amber", 2) ~= true then
 					player:dialogSeq(
 						{
 							tAmber,
-							"You need 2 white ambers to focus the magical energies."
+							"Kau butuh 2 white amber untuk memusatkan tenaga sihirnya."
 						},
 						0
 					)
@@ -161,7 +161,7 @@ scribing = {
 					player:dialogSeq(
 						{
 							tMoonPaper,
-							"You need 3 sheets of moon paper for this scroll."
+							"Kau butuh 3 lembar moon paper untuk gulungan ini."
 						},
 						0
 					)
@@ -169,7 +169,7 @@ scribing = {
 				end
 				if player:hasItem("purple_potion", 1) ~= true then
 					player:dialogSeq(
-						{tInk, "You need a Purple potion for this scroll."},
+						{tInk, "Kau butuh satu Purple potion untuk gulungan ini."},
 						0
 					)
 					return
@@ -178,7 +178,7 @@ scribing = {
 					player:dialogSeq(
 						{
 							tAmber,
-							"You need 4 Well cftd wt ambers to focus the magical energies."
+							"Kau butuh 4 Well cftd wt amber untuk memusatkan tenaga sihirnya."
 						},
 						0
 					)
@@ -208,10 +208,10 @@ scribing = {
 			if math.random(1, 5) == 1 then
 				-- success
 				player:addItem(chosenScroll, 1)
-				player:dialogSeq({tScroll, "You were successful."}, 0)
+				player:dialogSeq({tScroll, "Kau berhasil."}, 0)
 			else
 				player:dialogSeq(
-					{tScroll, "Your efforts were unsuccessful."},
+					{tScroll, "Usahamu tidak berhasil."},
 					0
 				)
 			end

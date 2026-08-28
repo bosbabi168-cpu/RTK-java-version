@@ -9,10 +9,10 @@ ArenaShopNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell"}
+		local opts = {"Beli", "Jual"}
 
 		if player.alignment > 0 then
-			table.insert(opts, "Return to natural balance")
+			table.insert(opts, "Kembali ke keseimbangan alami")
 		end
 
 		if npc.mapTitle == "Buchi Shop" or npc.mapTitle == "Nagnang Arena Shop" then
@@ -21,16 +21,16 @@ ArenaShopNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				ArenaShopNpc.buyItems(npc)
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				ArenaShopNpc.sellItems(npc)

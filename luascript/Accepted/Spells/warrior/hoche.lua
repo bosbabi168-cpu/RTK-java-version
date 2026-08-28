@@ -7,12 +7,12 @@ hoche_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Hoche.")
+		player:sendMinitext("Kau merapal Hoche.")
 		player:setDuration("hoche_warrior", 60000)
 		player:setAether("hoche_warrior", 180000)
 		player:playSound(10)
@@ -44,12 +44,12 @@ immunity_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Immunity.")
+		player:sendMinitext("Kau merapal Immunity.")
 		player:setDuration("immunity_warrior", 60000)
 		player:setAether("immunity_warrior", 180000)
 		player:playSound(10)
@@ -81,12 +81,12 @@ forest_blessing_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Forest Blessing.")
+		player:sendMinitext("Kau merapal Forest Blessing.")
 		player:setDuration("forest_blessing_warrior", 60000)
 		player:setAether("forest_blessing_warrior", 180000)
 		player:playSound(10)
@@ -118,12 +118,12 @@ magics_shield_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Magic Shield.")
+		player:sendMinitext("Kau merapal Magic Shield.")
 		player:setDuration("magics_shield_warrior", 60000)
 		player:setAether("magics_shield_warrior", 180000)
 		player:playSound(10)

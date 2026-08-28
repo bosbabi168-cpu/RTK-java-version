@@ -7,16 +7,16 @@ qui_hyang = {
 		player.dialogType = 0
 
 		if player.warpOut == 0 then
-			player:sendMinitext("Unable to warp out.")
+			player:sendMinitext("Tidak bisa berpindah keluar.")
 			return
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("You need a physical body in order to use this yellow scroll.")
+			player:sendMinitext("Kau butuh tubuh jasmani untuk memakai gulungan kuning ini.")
 			return
 		end
 
-		local opts = {"Home"}
+		local opts = {"Pulang"}
 
 		if player.clan ~= 0 then
 			table.insert(opts, "Clan hall")
@@ -28,9 +28,9 @@ qui_hyang = {
 
 		table.insert(opts, "Main Inn")
 
-		local choice = player:menuString("Where do you wish to go?", opts)
+		local choice = player:menuString("Ke mana kau ingin pergi?", opts)
 
-		if choice == "Home" then
+		if choice == "Pulang" then
 			player:returnFunc()
 			return
 		elseif choice == "Subpath Circle" then

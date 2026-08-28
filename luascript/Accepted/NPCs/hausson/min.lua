@@ -9,24 +9,24 @@ MinNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local options = {"Buy", "Sell", "Cooking Skills"}
+		local options = {"Beli", "Jual", "Keahlian Memasak"}
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			options
 		)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				MinNpc.buyItems(npc)
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				MinNpc.sellItems(npc)
 			)
-		elseif choice == "Cooking Skills" then
+		elseif choice == "Keahlian Memasak" then
 			MinNpc.cookingSkills(player, npc)
 		end
 	end),
@@ -73,12 +73,12 @@ MinNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Ah, the joy of cooking. It's a favorite passion of the people of Hausson.",
-				"We only know how to refine the food and make a basic noodle dish.",
-				"I am sure, however, that there are some great recipies from other kingdoms that can be used.",
-				"For now, I can only help you prepare wheat, eggs, and some meats for cooking with.",
-				"Once you are able to prepare food, I will help you make some noodles.",
-				"Just tell me what you want to prepare, and I will assist you."
+				"Ah, nikmatnya memasak. Itu kegemaran utama orang Hausson.",
+				"Kami hanya tahu cara mengolah bahan dan membuat hidangan mi sederhana.",
+				"Tapi aku yakin ada resep-resep hebat dari kerajaan lain yang bisa dipakai.",
+				"Untuk sekarang aku hanya bisa membantumu menyiapkan gandum, telur, dan beberapa jenis daging untuk dimasak.",
+				"Setelah kau bisa menyiapkan bahan makanan, akan kubantu kau membuat mi.",
+				"Katakan saja apa yang ingin kau siapkan, dan akan kubantu."
 			},
 			0
 		)
@@ -108,15 +108,15 @@ MinNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"So, you seek the path of Virtue? Yes, I am the one who set the guard to protect the secret.",
-						"You have done well to get this far, and I am pleased with your progress.",
-						"You have shown yourself to have virtue enough to get this far, and that is a great accomplishment in itself.",
-						"((The woman smiles at you))",
-						"You do not even realize it yourself, do you? Well in time you will, of this I am sure.",
-						"I alone am not the only keeper of the secret, another must judge you as well.",
-						"He is my old friend Chul, who lives in the Nagnang capitol.",
-						"Bring him a Stardrop, and he will tell you more.",
-						"Take care of yourself on your journey. I will see you again, you still have far to go."
+						"Jadi kau mencari jalur Virtue? Ya, akulah yang menempatkan penjaga untuk melindungi rahasia itu.",
+						"Kau sudah bekerja baik hingga sampai sejauh ini, dan aku senang dengan kemajuanmu.",
+						"Kau membuktikan kebajikanmu cukup untuk sampai sejauh ini, dan itu sendiri sudah pencapaian besar.",
+						"((Perempuan itu tersenyum kepadamu))",
+						"Kau sendiri bahkan tidak menyadarinya, bukan? Pada waktunya kau akan sadar; aku yakin itu.",
+						"Bukan hanya aku pemegang rahasia itu; orang lain juga harus menilaimu.",
+						"Dia kawan lamaku, Chul, yang tinggal di ibu kota Nagnang.",
+						"Bawakan dia Stardrop, dan ia akan bercerita lebih banyak.",
+						"Jaga dirimu dalam perjalanan. Kita akan bertemu lagi; jalanmu masih panjang."
 					},
 					0
 				)
@@ -125,7 +125,7 @@ MinNpc = {
 
 			if player.quest["min_clicked"] == 1 then
 				player:dialogSeq(
-					{t, "Go on my friend, this journey you must finish alone."},
+					{t, "Lanjutkan, kawan; perjalanan ini harus kau tuntaskan sendiri."},
 					0
 				)
 				return
@@ -137,7 +137,7 @@ MinNpc = {
 
 			if player.quest["lost_legend_chest_clicked"] == 0 or player.quest["wind_armor"] == 0 then
 				player:dialogSeq(
-					{t, "I really have no idea what you are talking about."},
+					{t, "Aku sungguh tidak paham apa yang kau bicarakan."},
 					0
 				)
 				return
@@ -147,10 +147,10 @@ MinNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ah, so you are back, and you have heard the song. I am glad you have made it so far.",
-					"That tune, it was one of my favorites, long ago.",
-					"I wish I could remember the tune, but I forgot it so long ago.",
-					"I just remember hearing it while on that ship that brought me to this land."
+					"Ah, kau kembali, dan kau sudah mendengar lagunya. Aku senang kau sampai sejauh ini.",
+					"Lagu itu, dulu salah satu kesukaanku.",
+					"Andai aku masih ingat nadanya, tetapi sudah lama sekali kulupakan.",
+					"Aku hanya ingat mendengarnya di atas kapal yang membawaku ke tanah ini."
 				},
 				0
 			)
@@ -161,7 +161,7 @@ MinNpc = {
 
 			if player.quest["wind_armor"] == 0 or player.quest["dae_shore_paper_burned"] == 0 then
 				player:dialogSeq(
-					{t, "I really have no idea what you are talking about."},
+					{t, "Aku sungguh tidak paham apa yang kau bicarakan."},
 					0
 				)
 				return
@@ -171,16 +171,16 @@ MinNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Why does it not surprise me that you have made it this far?",
-					"Your heart is strong, and full of fire. You will not be swayed from your goal.",
-					"Well, I am sure you are not here for praise, though it never hurts.",
-					"Kawlana is a word from my own home town. It is the realm of shadows where your spirit roams free and the winds of true power live.",
-					"Kawlana is the source of your power. It lives and resides within each and every one of us.",
-					"During my journeys I needed a way to attract the winds to the net so they could be captured.",
-					"With the magical and powerful Kawlana I was able to get the winds close enough, but at a heavy cost.",
-					"That is when the true battle began, one that I thought I would never live through.",
-					"Thank the stars above I had enough life force to survive the battle.",
-					"You will need to get your own Kawlana if you intend to capture the winds."
+					"Kenapa aku tidak heran kau sampai sejauh ini?",
+					"Hatimu kuat dan berapi-api. Kau tidak akan goyah dari tujuanmu.",
+					"Aku yakin kau ke sini bukan untuk dipuji, meski pujian tidak pernah merugikan.",
+					"Kawlana adalah kata dari kampung halamanku. Ia alam bayangan tempat jiwamu berkelana bebas dan angin kekuatan sejati hidup.",
+					"Kawlana adalah sumber kekuatanmu. Ia hidup dan bersemayam di dalam diri kita masing-masing.",
+					"Dalam perjalananku, aku butuh cara memancing angin ke jaring supaya bisa ditangkap.",
+					"Dengan Kawlana yang bersihir dan berkuasa, aku berhasil mendekatkan angin itu, tetapi dengan pengorbanan berat.",
+					"Saat itulah pertempuran yang sesungguhnya dimulai, yang kukira takkan kulewati hidup-hidup.",
+					"Syukur kepada bintang-bintang di atas, daya hidupku cukup untuk selamat dari pertempuran itu.",
+					"Kau harus memperoleh Kawlana-mu sendiri kalau berniat menangkap angin."
 				},
 				0
 			)
@@ -191,7 +191,7 @@ MinNpc = {
 
 			if player.quest["wind_armor"] == 0 then
 				player:dialogSeq(
-					{t, "I really have no idea what you are talking about."},
+					{t, "Aku sungguh tidak paham apa yang kau bicarakan."},
 					0
 				)
 				return
@@ -199,7 +199,7 @@ MinNpc = {
 
 			if player:hasItem("captured_wind", 1) ~= true then
 				player:dialogSeq(
-					{t, "You must have a captured wind to continue."},
+					{t, "Kau harus punya angin tangkapan untuk melanjutkan."},
 					0
 				)
 				return
@@ -210,13 +210,13 @@ MinNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Oh my... I will never get used to that sight.",
-						"The wind, trapped like that.",
-						"But yes, I will help you weave the wind into a garment. I am the only one who could show you how.",
-						"But you will need help from weaver and a tailor, who have at least mastered their craft.",
-						"Together the four of us (or three if you possess these skills) will be able to make the armor.",
-						"Sorry, it won't be like the armor you are used to. I only know styles from my homeland.",
-						"Go now, and when you have the people, return and we will begin."
+						"Astaga... aku tidak akan pernah terbiasa melihat itu.",
+						"Angin, terperangkap seperti itu.",
+						"Tapi ya, akan kubantu kau menenun angin itu menjadi busana. Hanya aku yang bisa menunjukkan caranya.",
+						"Tapi kau butuh bantuan penenun dan penjahit yang setidaknya sudah menguasai kerajinannya.",
+						"Berempat (atau bertiga kalau kau sendiri punya keahlian itu) kita bisa membuat zirahnya.",
+						"Maaf, bentuknya tidak seperti zirah yang biasa kau pakai. Aku hanya tahu gaya dari tanah kelahiranku.",
+						"Pergilah, dan kalau orang-orangnya sudah kau kumpulkan, kembalilah dan kita mulai."
 					},
 					0
 				)
@@ -225,38 +225,38 @@ MinNpc = {
 
 			if player.quest["min_weave_wind"] == 1 then
 				local choice = player:menuSeq(
-					"So, do you have the people you need to weave this garment? (If you have people with you, they do not need to be grouped. Only present.)",
-					{"Yes, they are here.", "No, they aren't here."},
+					"Jadi, orang-orang yang kau butuhkan untuk menenun busana ini sudah ada? (Kalau mereka bersamamu, mereka tidak perlu bergrup, cukup hadir.)",
+					{"Ya, mereka di sini.", "Tidak, mereka belum ada."},
 					{}
 				)
 
 				if choice == 1 then
-					local input = player:inputLetterCheck(player:input("Who is it that will weave your armor?"))
+					local input = player:inputLetterCheck(player:input("Siapa yang akan menenun zirahmu?"))
 					local weaver = Player(input)
 
 					if weaver == nil then
-						player:dialogSeq({t, "That person is not online."}, 0)
+						player:dialogSeq({t, "Orang itu sedang tidak daring."}, 0)
 						return
 					end
 
-					input = player:inputLetterCheck(player:input("Who is it that will tailor your armor?"))
+					input = player:inputLetterCheck(player:input("Siapa yang akan menjahit zirahmu?"))
 					local tailor = Player(input)
 
 					if tailor == nil then
-						player:dialogSeq({t, "That person is not online."}, 0)
+						player:dialogSeq({t, "Orang itu sedang tidak daring."}, 0)
 						return
 					end
 
 					if weaver.m ~= player.m then
 						player:dialogSeq(
-							{t, "Your weaver must be in here with you."},
+							{t, "Penenunmu harus ada di sini bersamamu."},
 							0
 						)
 						return
 					end
 					if tailor.m ~= player.m then
 						player:dialogSeq(
-							{t, "Your tailor must be in here with you."},
+							{t, "Penjahitmu harus ada di sini bersamamu."},
 							0
 						)
 						return
@@ -266,7 +266,7 @@ MinNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"You are missing the skills required to make your wind armor. Increase your skills or bring along others who have the required skills."
+								"Keahlianmu belum cukup untuk membuat zirah anginmu. Tingkatkan keahlianmu atau ajak orang lain yang punya keahlian itu."
 							},
 							0
 						)
@@ -276,7 +276,7 @@ MinNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"You are missing the skills required to make your wind armor. Increase your skills or bring along others who have the required skills."
+								"Keahlianmu belum cukup untuk membuat zirah anginmu. Tingkatkan keahlianmu atau ajak orang lain yang punya keahlian itu."
 							},
 							0
 						)
@@ -316,7 +316,7 @@ MinNpc = {
 
 					if not player:hasLegend("captured_the_wind") then
 						player:addLegend(
-							"Captured the wind (" .. curT() .. ")",
+							"Menangkap angin (" .. curT() .. ")",
 							"captured_the_wind",
 							0,
 							128
@@ -342,14 +342,14 @@ MinNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"And there you go! The armor you have been seeking for so long!",
-							"Wear it well, and wear it with great pride."
+							"Dan ini dia! Zirah yang sekian lama kau cari!",
+							"Kenakan baik-baik, dan kenakan dengan bangga."
 						},
 						0
 					)
 				elseif choice == 2 then
 					player:dialogSeq(
-						{t, "Please come back when you are ready."},
+						{t, "Kembalilah kalau kau sudah siap."},
 						0
 					)
 				end

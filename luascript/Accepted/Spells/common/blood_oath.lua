@@ -14,7 +14,7 @@ blood_oath = {
 		local pcs = player:getObjectsInArea(BL_PC)
 
 		if player:hasLegend("engaged") or player:hasLegend("married") or player:hasLegend("forged_blood_oath") or player:hasLegend("sealed_blood_oath") or player.partner ~= 0 then
-			player:dialog("You are already committed to someone else!", {})
+			player:dialog("Kau sudah terikat dengan orang lain!", {})
 			return
 		end
 
@@ -30,14 +30,14 @@ blood_oath = {
 			return
 		end
 		if choice == player.name then
-			player:dialog("You can't make such a commitment to yourself.", {})
+			player:dialog("Kau tidak bisa mengikat janji semacam itu dengan dirimu sendiri.", {})
 			return
 		end
 
 		local target = Player(choice)
 
 		if target == nil then
-			player:dialog("Player is not valid or not online.", {})
+			player:dialog("Pemain tidak sah atau tidak daring.", {})
 			return
 		end
 
@@ -56,7 +56,7 @@ blood_oath = {
 
 		if target:hasLegend("engaged") or target:hasLegend("married") or target:hasLegend("forged_blood_oath") or target:hasLegend("sealed_blood_oath") or target.partner ~= 0 then
 			player:dialog(
-				target.name .. " is already committed to someone else!",
+				target.name .. " sudah terikat dengan orang lain!",
 				{}
 			)
 			return
@@ -71,8 +71,8 @@ blood_oath = {
 		local proposer = Player(target.registry["proposer"])
 
 		local accept = target:menuSeq(
-			proposer.name .. " swears a blood oath to you. Do you accept?  If you do, you may feel a small prick while I withdraw some blood required for the ritual",
-			{"Yes! I want this.", "No, I must decline."},
+			proposer.name .. " bersumpah darah kepadamu. Kau terima? Kalau ya, kau mungkin merasakan tusukan kecil saat aku mengambil darah yang diperlukan untuk ritualnya",
+			{"Ya! Aku mau ini.", "Tidak, aku harus menolak."},
 			{"close"}
 		)
 
@@ -102,14 +102,14 @@ blood_oath = {
 			)
 
 			target:addLegend(
-				"Forged blood oath with $player (" .. curT() .. ")",
+				"Mengikat sumpah darah dengan $player (" .. curT() .. ")",
 				"forged_blood_oath",
 				51,
 				1,
 				proposer.ID
 			)
 			proposer:addLegend(
-				"Forged blood oath with $player (" .. curT() .. ")",
+				"Mengikat sumpah darah dengan $player (" .. curT() .. ")",
 				"forged_blood_oath",
 				51,
 				1,

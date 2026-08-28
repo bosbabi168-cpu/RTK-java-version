@@ -8,27 +8,27 @@ chill = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType == BL_PC and not player:canPK(target)) or target.blType == BL_NPC then
-			player:sendMinitext("You cannot attack that target.")
+			player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 			return
 		end
 
 		if target:checkIfCast(curses) or target.cursed == 1 then
-			player:sendMinitext("Another spell of this type is in effect.")
+			player:sendMinitext("Mantra lain sejenis ini sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is already protected.")
+			player:sendMinitext("Sasaran itu sudah terlindungi.")
 			return
 		end
 
@@ -40,7 +40,7 @@ chill = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(43)
-		player:sendMinitext("You cast Chill.")
+		player:sendMinitext("Kau merapal Chill.")
 		player:sendMinitext("Calling Chill.")
 		target:setDuration("chill", duration)
 		target:sendAnimation(1, 0)
@@ -49,7 +49,7 @@ chill = {
 			target.armor = target.armor + 8
 			target.cursed = 1
 		elseif (target.blType == BL_PC and player:canPK(target)) then
-			target:sendMinitext(player.name .. " casts Chill on you.")
+			target:sendMinitext(player.name .. " merapal Chill padamu.")
 			target:calcStat()
 		end
 	end,

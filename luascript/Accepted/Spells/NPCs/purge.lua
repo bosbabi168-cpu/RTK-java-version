@@ -1,7 +1,7 @@
 purge = {
 	cast = function(player)
 		player:removeDuras(venoms)
-		player:sendMinitext("You cast Purge.")
+		player:sendMinitext("Kau merapal Purge.")
 
 		player:sendAction(6, 35)
 

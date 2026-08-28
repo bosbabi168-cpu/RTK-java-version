@@ -130,9 +130,11 @@ public final class MapCommands implements ClientCommands {
 
         MapData dest = MapServer.world.get(w.tm());
         if (dest == null) {
-            // portal ke peta milik map server lain — roadmap C3
-            log.warn("[MASUK] {} menginjak portal ke peta {} yang tidak dimuat di server ini",
-                    sd.name(), w.tm());
+            // R3/C3: portal ke peta milik map server LAIN. Syarat masuk
+            // (tingkat, jalur, mark) tidak bisa diperiksa di sini karena
+            // metadata petanya ada di server sana — Pc.warp menyerahkan
+            // pemainnya, dan server tujuan yang memutuskan.
+            Pc.warp(MapServer.world, sd, w.tm(), w.tx(), w.ty());
             return;
         }
 
@@ -240,7 +242,13 @@ public final class MapCommands implements ClientCommands {
                 return false;
             }
         }
-        // TODO(A5): mob yang sudah mati tidak menghalangi (MOB_DEAD di C).
+        // R2: mob yang sudah MATI tidak menghalangi (clif_canmove_sub:
+        // `if (mob->state == MOB_DEAD) return 0;`). Bangkainya masih
+        // terdaftar di petaknya sampai disapu, jadi tanpa cabang ini pemain
+        // terhalang oleh sesuatu yang sudah tidak ada di layar.
+        if (bl instanceof Mob mb && mb.state == MobData.MOB_DEAD) {
+            return false;
+        }
         return true;
     }
     /**
@@ -391,8 +399,264 @@ public final class MapCommands implements ClientCommands {
         sd.lastClick = bl.id;
         if (bl instanceof Npc nd) {
             clickNpc(sd, nd);
+        } else if (bl instanceof Mob mb) {
+            clickMob(sd, mb);
         }
-        // TODO(A5): klik mob -> onLook + skrip "click" milik mob
+    }
+
+    /**
+     * Klik pada mob — port cabang {@code BL_MOB} di
+     * {@code clif_handle_clickgetinfo}.
+     *
+     * <p>Dua kait, berurutan: {@code onLook} global lalu {@code click} milik
+     * skrip mobnya sendiri ({@code mob->data->yname}) — <b>bukan</b> nama
+     * tampilannya. Keduanya menerima dua argumen (pemain, mob).</p>
+     *
+     * <p>⚠️ Radiusnya <b>10, kecuali mob bertipe 3 yang radiusnya 0</b>
+     * (harus dipijak). Aturan yang sama dengan NPC berjenis lantai.</p>
+     */
+    private static void clickMob(User sd, Mob mb) {
+        var engine = MapServer.scriptEngine;
+        if (engine == null) {
+            return;
+        }
+        int radius = mb.data != null && mb.data.type == 3 ? 0 : RADIUS_KLIK;
+        if (Math.abs(mb.x - sd.x) > radius || Math.abs(mb.y - sd.y) > radius) {
+            return;                       // CheckProximity gagal
+        }
+        var p = sd.scriptPlayer();
+        engine.cancel(p);                 // sl_async_freeco
+        LuaValue ref = engine.playerRef(p);
+        LuaValue mobRef = engine.objectRef(mb);
+        kait2(engine, "onLook", null, ref, mobRef);
+        if (mb.data != null && !mb.data.yname.isEmpty()) {
+            kait2(engine, mb.data.yname, "click", ref, mobRef);
+        }
+        MapServer.clientView.scriptDialogReady(sd, p);
+    }
+
+    /** Radius klik mob; {@code Radius = 10} di clif_handle_clickgetinfo. */
+    private static final int RADIUS_KLIK = 10;
+
+    // ==================================================================
+    // Ekspresi, pandangan, dan susun ulang (R1/K4)
+    // ==================================================================
+
+    @Override
+    public void playerTurns(User sd, int arah) {
+        // clif_parseside(): setel arah, siarkan, lalu kait onTurn. Tidak ada
+        // pemeriksaan tabrakan — berputar bukan melangkah.
+        sd.status.side = arah & 3;
+        MapServer.clientView.objectSideChanged(sd);
+        var engine = MapServer.scriptEngine;
+        if (engine != null) {
+            kait(engine, "onTurn", null, engine.playerRef(sd.scriptPlayer()));
+        }
+    }
+
+    @Override
+    public void playerEmotes(User sd, int emosi) {
+        // clif_parseemotion(): HANYA pada keadaan normal — hantu, tak
+        // terlihat, dan yang sedang menyamar tidak beremosi. Nomor aksinya
+        // emosi + 11, waktunya 0x4E; keduanya dari C.
+        if (sd.status.state != 0) {
+            return;
+        }
+        MapServer.clientView.objectActed(sd, emosi + 11, 0x4E, 0);
+    }
+
+    @Override
+    public void playerRequestsRefresh(User sd) {
+        // case 0x38 di C: clif_refresh() saja.
+        MapServer.clientView.playerViewRefreshed(sd);
+    }
+
+    @Override
+    public void playerLooksAt(User sd, long objectId) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        BlockList bl = MapServer.npcs.byId(objectId);
+        if (bl == null || bl.m != sd.m) {
+            return;
+        }
+        // clif_parselookat_sub(): satu kait, dua argumen (penonton, benda).
+        // Apa yang muncul di layar diputuskan skripnya — bukan di sini.
+        var engine = MapServer.scriptEngine;
+        if (engine != null) {
+            kait2(engine, "onLook", null,
+                    engine.playerRef(sd.scriptPlayer()), engine.objectRef(bl));
+        }
+    }
+
+    @Override
+    public void playerSwapsItems(User sd, int dari, int ke) {
+        // pc_changeitem(): di luar batas = tidak melakukan apa pun.
+        if (dari < 0 || ke < 0
+                || dari >= sd.status.maxInv || ke >= sd.status.maxInv) {
+            return;
+        }
+        if (dari == ke) {
+            return;
+        }
+        // ⚠️ Slot ada di Item.pos, bukan indeks daftar (lihat CharStatus).
+        // Menukar berarti menukar POS-nya, bukan memindahkan elemen daftar.
+        org.rtk.common.mmo.Item a = sd.status.inventoryAt(dari);
+        org.rtk.common.mmo.Item b = sd.status.inventoryAt(ke);
+        if (a == null && b == null) {
+            return;
+        }
+        if (a != null) {
+            a.pos = ke;
+        }
+        if (b != null) {
+            b.pos = dari;
+        }
+        // Kedua slot dikirim ulang: yang jadi kosong harus DIKOSONGKAN di
+        // klien, bukan dibiarkan memegang gambar lamanya.
+        kirimSlot(sd, dari);
+        kirimSlot(sd, ke);
+    }
+
+    private static void kirimSlot(User sd, int slot) {
+        if (sd.status.inventoryAt(slot) != null) {
+            MapServer.clientView.playerInventorySlotChanged(sd, slot);
+        } else {
+            MapServer.clientView.playerInventorySlotCleared(sd, slot, 0);
+        }
+    }
+
+    @Override
+    public void playerSwapsSpells(User sd, int dari, int ke) {
+        int[] mantra = sd.status.spells;
+        if (dari < 0 || ke < 0 || dari >= mantra.length || ke >= mantra.length
+                || dari == ke) {
+            return;
+        }
+        int tmp = mantra[dari];
+        mantra[dari] = mantra[ke];
+        mantra[ke] = tmp;
+        // clif_parsechangespell(): kedua slot dihapus di klien lebih dulu,
+        // baru dikirim ulang — slot yang jadi kosong tidak boleh menyisakan
+        // mantra lamanya.
+        MapServer.clientView.playerSpellRemoved(sd, dari);
+        MapServer.clientView.playerSpellRemoved(sd, ke);
+        MapServer.clientView.playerSpellSlotChanged(sd, dari);
+        MapServer.clientView.playerSpellSlotChanged(sd, ke);
+    }
+
+    // ---- R1 batch 2: profil, papan, kota, teman, peringkat ----
+
+    @Override
+    public void playerOpensProfile(User sd, int ragam) {
+        // case 0x2D di C: ladang [5] nol -> clif_mystaytus, selain itu
+        // clif_groupstatus. Keduanya paket TAMPILAN; di RTK2 status grup
+        // sudah punya peristiwanya sendiri, jadi ragam 1 cukup menyegarkan.
+        if (ragam != 0) {
+            Groups.kirimUlang(sd);
+            return;
+        }
+        MapServer.clientView.playerProfile(sd);
+    }
+
+    @Override
+    public void playerEditsProfile(User sd, String teks) {
+        // clif_changeprofile(): C menyimpan dua blob (gambar + teks) di
+        // sesi. Gambarnya format klien lama dan tidak dibawa ke RTK2;
+        // teksnya disimpan supaya pemain lain bisa membacanya.
+        sd.profileText = teks == null ? "" : teks;
+        MapServer.clientView.playerProfile(sd);
+    }
+
+    @Override
+    public void playerRequestsTowns(User sd) {
+        MapServer.clientView.townListToPlayer(sd, MapServer.towns);
+    }
+
+    @Override
+    public void playerRequestsRanking(User sd) {
+        // clif_parseranking(): membaca RankingScores. Tabelnya boleh kosong
+        // — daftar kosong tetap dikirim supaya klien menutup jendelanya,
+        // bukan menggantung menunggu.
+        java.util.List<Object[]> baris = new java.util.ArrayList<>();
+        int rows = MapServer.sql.forEachRow(
+                "SELECT `Rank`,`ChaName`,`Score` FROM `RankingScores` "
+                + "ORDER BY `Rank` LIMIT 50",
+                rs -> baris.add(new Object[] {
+                    rs.getInt("Rank"), rs.getString("ChaName"), rs.getLong("Score")}));
+        if (rows < 0) {
+            log.warn("[CMD] tabel RankingScores tidak terbaca");
+        }
+        MapServer.clientView.rankingToPlayer(sd, "Peringkat", baris);
+    }
+
+    @Override
+    public void playerSavesFriends(User sd, java.util.List<String> teman) {
+        // clif_parsefriends(): baris dibuat bila belum ada, lalu KEDUA
+        // PULUH kolom ditulis — yang tidak dikirim dikosongkan, persis
+        // seperti C (loop 0..19 tanpa syarat).
+        if (teman == null) {
+            return;
+        }
+        Integer ada = MapServer.sql.queryInt(
+                "SELECT `FndChaId` FROM `Friends` WHERE `FndChaId` = ?", sd.status.id);
+        if (ada == null) {
+            MapServer.sql.update("INSERT INTO `Friends` (`FndChaId`) VALUES (?)",
+                    sd.status.id);
+        }
+        for (int i = 0; i < 20; i++) {
+            String nama = i < teman.size() && teman.get(i) != null ? teman.get(i) : "";
+            MapServer.sql.update(
+                    "UPDATE `Friends` SET `FndChaName" + (i + 1) + "` = ? "
+                    + "WHERE `FndChaId` = ?", nama, sd.status.id);
+        }
+        mini(sd, "Daftar teman disimpan.");
+    }
+
+    @Override
+    public void playerSetsHunter(User sd, boolean nyala, String catatan) {
+        // clif_huntertoggle(): catatan dipotong 40 huruf seperti larik di C.
+        String note = catatan == null ? "" : catatan;
+        if (note.length() > 40) {
+            note = note.substring(0, 40);
+        }
+        sd.hunter = nyala ? 1 : 0;
+        MapServer.sql.update(
+                "UPDATE `Character` SET `ChaHunter` = ?, `ChaHunterNote` = ? "
+                + "WHERE `ChaId` = ?", sd.hunter, note, sd.status.id);
+        mini(sd, "Penanda pemburu " + (nyala ? "menyala." : "mati."));
+    }
+
+    @Override
+    public void playerUsesBoard(User sd, int aksi, int papan, int pos) {
+        var engine = MapServer.scriptEngine;
+        // Nomor aksinya sama dengan clif_handle_boards; yang belum diport
+        // dilewati dengan pesan, bukan didiamkan.
+        switch (aksi) {
+            case 1 -> {
+                sd.boardPage = 0;
+                sd.boardPopup = false;
+                Boards.show(engine, sd, 0, 0, false);
+            }
+            case 2 -> {
+                sd.boardPage = 0;
+                Boards.show(engine, sd, papan, 0, false);
+            }
+            case 3, 5 -> mini(sd, "Belum tersedia.");
+            case 9 -> {
+                sd.boardPage = 0;
+                Boards.show(engine, sd, 0, 0, false);
+            }
+            default -> log.debug("[CMD] aksi papan {} tidak dikenal", aksi);
+        }
+    }
+
+    @Override
+    public void playerCollectsParcel(User sd) {
+        // clif_parseparcel(): satu baris pesan, itu saja — badannya memang
+        // sependek ini di C.
+        mini(sd, "You should go see your kingdom's messenger to collect this parcel");
     }
 
     @Override
@@ -1205,10 +1469,19 @@ public final class MapCommands implements ClientCommands {
                 return;
             }
         }
-        if (slot < 0 || slot >= sd.status.maxInv || slot >= sd.status.inventory.size()) {
+        // ⚠️ SLOT DARI KLIEN ADALAH POSISI, bukan indeks daftar.
+        // `inventory` adalah List yang RAPAT, sedangkan slot yang
+        // dikirim ke klien berasal dari `inventoryAt()` yang berbasis
+        // posisi — dan kantong nyata BERLUBANG. Memakai `get(slot)` di
+        // sini membuat perintah pemain mengenai barang yang SALAH,
+        // atau diam saja bila posisinya melewati ukuran daftar.
+        if (slot < 0 || slot >= sd.status.maxInv) {
             return;
         }
-        org.rtk.common.mmo.Item it = sd.status.inventory.get(slot);
+        org.rtk.common.mmo.Item it = sd.status.inventoryAt(slot);
+        if (it == null) {
+            return;
+        }
         if (it.id > 0 && MapServer.itemDb.cannotBePickedUp(it.id)) {
             // ⚠️ Kolomnya `ItmDroppable` dan artinya kebalikan namanya —
             // lihat Peringatan #32. Dibungkus supaya tidak menyesatkan lagi.
@@ -1351,10 +1624,19 @@ public final class MapCommands implements ClientCommands {
 
     @Override
     public void playerHandsItem(User sd, int slot, int amount) {
-        if (slot < 0 || slot >= sd.status.inventory.size() || amount <= 0) {
+        // ⚠️ SLOT DARI KLIEN ADALAH POSISI, bukan indeks daftar.
+        // `inventory` adalah List yang RAPAT, sedangkan slot yang
+        // dikirim ke klien berasal dari `inventoryAt()` yang berbasis
+        // posisi — dan kantong nyata BERLUBANG. Memakai `get(slot)` di
+        // sini membuat perintah pemain mengenai barang yang SALAH,
+        // atau diam saja bila posisinya melewati ukuran daftar.
+        if (slot < 0 || slot >= sd.status.maxInv || amount <= 0) {
             return;
         }
-        org.rtk.common.mmo.Item it = sd.status.inventory.get(slot);
+        org.rtk.common.mmo.Item it = sd.status.inventoryAt(slot);
+        if (it == null) {
+            return;
+        }
         if (it.id <= 0 || amount > it.amount) {
             return;
         }
@@ -1442,10 +1724,18 @@ public final class MapCommands implements ClientCommands {
 
     @Override
     public void playerWields(User sd, int slot) {
-        if (slot < 0 || slot >= sd.status.inventory.size()) {
+        // ⚠️ SLOT DARI KLIEN ADALAH POSISI, bukan indeks daftar.
+        // `inventory` adalah List yang RAPAT, sedangkan slot yang
+        // dikirim ke klien berasal dari `inventoryAt()` yang berbasis
+        // posisi — dan kantong nyata BERLUBANG. Memakai `get(slot)` di
+        // sini membuat perintah pemain mengenai barang yang SALAH,
+        // atau diam saja bila posisinya melewati ukuran daftar.
+        org.rtk.common.mmo.Item dipakai = slot >= 0 && slot < sd.status.maxInv
+                ? sd.status.inventoryAt(slot) : null;
+        if (dipakai == null) {
             return;
         }
-        int jenis = MapServer.itemDb.info(sd.status.inventory.get(slot).id).type();
+        int jenis = MapServer.itemDb.info(dipakai.id).type();
         // ⚠️ Rentangnya 3..16, BUKAN 3..17 seperti ItemDb.ITM_EQUIP_MAX.
         // ITM_HAND (17) punya slot perlengkapan tetapi tidak bisa dikenakan
         // lewat pintu ini — hanya lewat "pakai". Itu di C.
@@ -1485,10 +1775,18 @@ public final class MapCommands implements ClientCommands {
 
     @Override
     public void playerEatsItem(User sd, int slot) {
-        if (slot < 0 || slot >= sd.status.inventory.size()) {
+        // ⚠️ SLOT DARI KLIEN ADALAH POSISI, bukan indeks daftar.
+        // `inventory` adalah List yang RAPAT, sedangkan slot yang
+        // dikirim ke klien berasal dari `inventoryAt()` yang berbasis
+        // posisi — dan kantong nyata BERLUBANG. Memakai `get(slot)` di
+        // sini membuat perintah pemain mengenai barang yang SALAH,
+        // atau diam saja bila posisinya melewati ukuran daftar.
+        org.rtk.common.mmo.Item dimakan = slot >= 0 && slot < sd.status.maxInv
+                ? sd.status.inventoryAt(slot) : null;
+        if (dimakan == null) {
             return;
         }
-        if (MapServer.itemDb.info(sd.status.inventory.get(slot).id).type()
+        if (MapServer.itemDb.info(dimakan.id).type()
                 == ItemDb.ITM_EAT) {
             Items.useItem(sd, slot);
         } else {
@@ -1503,11 +1801,15 @@ public final class MapCommands implements ClientCommands {
 
     @Override
     public void playerThrowsItem(User sd, int slot, boolean confirmed) {
-        if (slot < 0 || slot >= sd.status.inventory.size()) {
-            return;
-        }
-        var it = sd.status.inventory.get(slot);
-        if (it.id <= 0) {
+        // ⚠️ SLOT DARI KLIEN ADALAH POSISI, bukan indeks daftar.
+        // `inventory` adalah List yang RAPAT, sedangkan slot yang
+        // dikirim ke klien berasal dari `inventoryAt()` yang berbasis
+        // posisi — dan kantong nyata BERLUBANG. Memakai `get(slot)` di
+        // sini membuat perintah pemain mengenai barang yang SALAH,
+        // atau diam saja bila posisinya melewati ukuran daftar.
+        var it = slot >= 0 && slot < sd.status.maxInv
+                ? sd.status.inventoryAt(slot) : null;
+        if (it == null || it.id <= 0) {
             return;
         }
         if (MapServer.itemDb.needsThrowConfirm(it.id) && !confirmed) {

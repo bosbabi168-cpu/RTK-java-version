@@ -11,7 +11,7 @@ elementalists_mark = {
 		local magicCost = 100
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -33,7 +33,7 @@ elementalists_mark = {
 		local target = Player(input)
 
 		if target == nil then
-			player:dialogSeq({t, "That player is currently not online."}, 0)
+			player:dialogSeq({t, "Pemain itu sedang tidak daring."}, 0)
 			return
 		end
 
@@ -43,7 +43,7 @@ elementalists_mark = {
 		local elements = {"Earth", "Fire", "Metal", "Water", "Wood"}
 
 		local choice = player:menuString(
-			"What do you wish to bestow on them?",
+			"Apa yang ingin kau anugerahkan kepadanya?",
 			opts
 		)
 
@@ -64,7 +64,7 @@ elementalists_mark = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has been recognized as a " .. elementChoice .. " Mage"
+					target.name .. " telah diakui sebagai " .. elementChoice .. " Mage"
 				},
 				0
 			)
@@ -78,7 +78,7 @@ elementalists_mark = {
 			end
 
 			local lmChoice = player:menuString(
-				"Which recognition would you like to remove?",
+				"Pengakuan mana yang ingin kau hapus?",
 				foundLegendMarks
 			)
 
@@ -92,7 +92,7 @@ elementalists_mark = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has had their " .. lmChoice .. " mage recognition removed."
+					target.name .. " telah " .. lmChoice .. " mage recognition removed."
 				},
 				0
 			)

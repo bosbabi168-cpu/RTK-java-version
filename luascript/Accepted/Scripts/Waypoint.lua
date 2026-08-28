@@ -341,13 +341,13 @@ local _transport = function(player, waypoint)
 	local fare = _getFare(player, waypoint)
 
 	if (player.money < fare) then
-		player:dialogSeq({"You need " .. Tools.formatNumber(fare) .. " coins to travel there."}, 0)
+		player:dialogSeq({"Kau butuh " .. Tools.formatNumber(fare) .. " keping untuk pergi ke sana."}, 0)
 		return
 	end
 
 	local choice = player:menuSeq(
-		waypoint.description .. "\n\nThe fare is " .. Tools.formatNumber(fare) .. " coins.\nDo you wish to travel there?",
-		{"Yes!", "No"},
+		waypoint.description .. "\n\nOngkosnya " .. Tools.formatNumber(fare) .. " keping.\nKau ingin pergi ke sana?",
+		{"Ya!", "Tidak"},
 		{}
 	)
 
@@ -372,21 +372,21 @@ Waypoint = {
 
 		local cost = 11000 + 1875 * (waypoint.costFactor - 1) * (1 + waypoint.costFactor / 10)
 
-		player:dialogSeq({"Waypoints allow you to quickly travel across great distances. A small fee is required for each use of this service."}, 1)
+		player:dialogSeq({"Waypoint memungkinkanmu bepergian cepat menempuh jarak jauh. Ada biaya kecil untuk tiap pemakaian layanan ini."}, 1)
 
 		local choice = player:menuSeq(
-			Tools.formatNumber(cost) .. " coins are required to establish a waypoint here.\n\nDo you wish to proceed?",
-			{"Yes", "No"},
+			Tools.formatNumber(cost) .. " keping diperlukan untuk mendirikan waypoint di sini.\n\nKau ingin melanjutkan?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
 		if (choice ~= 1) then
-			player:dialogSeq({"So be it. Return to me if you change your mind."}, 0)
+			player:dialogSeq({"Baiklah. Temui aku lagi kalau kau berubah pikiran."}, 0)
 			return
 		end
 
 		if (player.money < cost) then
-			player:dialogSeq({"Return to me when you have more gold."}, 0)
+			player:dialogSeq({"Temui aku lagi kalau emasmu lebih banyak."}, 0)
 			return
 		end
 
@@ -399,7 +399,7 @@ Waypoint = {
 		player.registryString[_waypointsRegistry] = player.registryString[_waypointsRegistry] .. waypointId .. "|"
 		player:forceSave()
 
-		player:dialogSeq({"It is done. Say 'transport' or '" .. waypoint.keywords[1] .. "' to any innkeeper whenever you would like to return here."}, 0)
+		player:dialogSeq({"Selesai. Ucapkan 'transport' atau '" .. waypoint.keywords[1] .. "' kepada pemilik penginapan mana pun kapan saja kau ingin kembali ke sini."}, 0)
 	end,
 
 	click = function(player, npc)
@@ -412,7 +412,7 @@ Waypoint = {
 		end
 
 		local choice = player:menuSeq(
-			"Where do you wish to travel?",
+			"Ke mana kau ingin pergi?",
 			waypointLabels,
 			{}
 		)

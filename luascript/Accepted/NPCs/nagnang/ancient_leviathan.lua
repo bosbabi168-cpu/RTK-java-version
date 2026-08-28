@@ -11,7 +11,7 @@ AncientLeviathanNpc = {
 
 		if player.level < 12 then
 			player:dialogSeq(
-				{t, "Come back when you've gained more insight."},
+				{t, "Kembalilah kalau pencerahanmu sudah bertambah."},
 				0
 			)
 			return
@@ -19,10 +19,10 @@ AncientLeviathanNpc = {
 
 		if player:hasLegend("leviathan_sworn_enemy") then
 			local choicea = player:menuSeq(
-				"You have been rude to me and my kind. For that you will need to pay me 1 million coins for me to continue talking with you. Do you wish to do so?",
+				"Kau bersikap kasar kepadaku dan kaumku. Karena itu kau harus membayar 1 juta keping supaya aku mau melanjutkan pembicaraan. Kau bersedia?",
 				{
-					"Yes. I am sorry for my remark and will pay you.",
-					"No. You are not worth the money."
+					"Ya. Aku menyesali ucapanku dan akan membayarmu.",
+					"Tidak. Kau tidak sepadan dengan uang itu."
 				},
 				{}
 			)
@@ -30,7 +30,7 @@ AncientLeviathanNpc = {
 			if choicea == 1 then
 				if player.money < 1000000 then
 					player:dialogSeq(
-						{t, "Return to me when you have the gold."},
+						{t, "Temui aku lagi kalau emasnya sudah kau punya."},
 						0
 					)
 					return
@@ -38,12 +38,12 @@ AncientLeviathanNpc = {
 
 				player:removeGold(1000000)
 				player:removeLegendbyName("leviathan_sworn_enemy")
-				player:dialogSeq({t, "I forgive you."}, 0)
+				player:dialogSeq({t, "Aku memaafkanmu."}, 0)
 			elseif choicea == 2 then
 				player:dialogSeq(
 					{
 						t,
-						"Then GO! And never return as we do not want your help!"
+						"Kalau begitu PERGI! Dan jangan kembali, kami tidak butuh bantuanmu!"
 					},
 					0
 				)
@@ -55,7 +55,7 @@ AncientLeviathanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Please go save my kindred with the talisman I gave you."
+						"Pergilah selamatkan sanakku dengan jimat yang kuberikan."
 					},
 					0
 				)
@@ -72,8 +72,8 @@ AncientLeviathanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"I thank you with all my heart for saving even one of our young kind. You will always be a friend to the free Leviathans.",
-						"In fact, there is one of your kind in a small hut northeast of here. He may be able to help you. He mistrusts strangers, but just tell him Dae-Whan has sent you."
+						"Dengan sepenuh hati aku berterima kasih karena kau menyelamatkan bahkan satu saja dari kaum muda kami. Kau akan selalu menjadi kawan para Leviathan merdeka.",
+						"Sebenarnya ada seorang dari kaummu di gubuk kecil timur laut sini. Ia mungkin bisa membantumu. Ia tidak percaya pada orang asing, tetapi katakan saja Dae-Whan yang mengutusmu."
 					},
 					1
 				)
@@ -83,18 +83,18 @@ AncientLeviathanNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"No! Please! Take no more of our kind!!!",
-					"Oh, you are not Him. I am sorry for my greeting of you. But we have been losing our kind for months now to a man whom we are unable to destroy.",
-					"He continues to come here from time to time to take our youngsters away and trains them to do his bidding at war.",
-					"He was just here a few days ago, and has taken a new group of them to his training grounds. Where he forces them to work and slave until they are mindless monsters for him.",
-					"I have spent many days making just one of these fragile talismans. My kind is bound by a spell in the cage. Only this talisman can free them."
+					"Tidak! Kumohon! Jangan ambil lagi kaum kami!!!",
+					"Oh, kau bukan Dia. Maafkan sambutanku tadi. Sudah berbulan-bulan kami kehilangan kaum kami karena seorang lelaki yang tak sanggup kami hancurkan.",
+					"Ia terus datang ke sini dari waktu ke waktu, membawa pergi anak-anak kami dan melatih mereka menuruti perintahnya dalam perang.",
+					"Beberapa hari lalu ia baru saja ke sini dan membawa sekelompok baru ke lapangan latihannya, tempat ia memaksa mereka bekerja dan diperbudak sampai menjadi monster tanpa pikiran untuknya.",
+					"Berhari-hari kuhabiskan hanya untuk membuat satu jimat rapuh ini. Kaumku terikat mantra di dalam kandang. Hanya jimat ini yang bisa membebaskan mereka."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Would you be willing to help an old leviathan save his kindred?",
-				{"Yes, I am honored.", "No. Your kind deserve their fate."},
+				"Bersediakah kau membantu seekor leviathan tua menyelamatkan sanaknya?",
+				{"Ya, itu suatu kehormatan.", "Tidak. Kaummu memang pantas menerima nasibnya."},
 				{}
 			)
 
@@ -106,21 +106,21 @@ AncientLeviathanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Thank you! Here is a talisman. It will only work once. Since they are so fragile and take so long to make, I will give you only one.",
-						"You must step next to my captured kind. The talisman will then break the spell and fall to dust. And my kind will be transported back here."
+						"Terima kasih! Ini satu jimat. Ia hanya bekerja sekali. Karena begitu rapuh dan lama pembuatannya, aku hanya memberimu satu.",
+						"Kau harus melangkah tepat di sebelah kaumku yang tertawan. Jimat itu lalu mematahkan mantranya dan hancur jadi debu, dan kaumku akan dipindahkan kembali ke sini."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						t,
-						"He moves his camp around from time to time but we believe it to be East of his homeland. If you go there and free even one of my kind, I will be grateful."
+						"Ia memindah-mindahkan perkemahannya, tetapi kami yakin tempatnya di Timur tanah kelahirannya. Kalau kau pergi ke sana dan membebaskan bahkan satu saja kaumku, aku akan berterima kasih."
 					},
 					0
 				)
 			elseif choice == 2 then
 				player:addLegend(
-					"Sworn enemy of the Leviathans (" .. curT() .. ")",
+					"Musuh bebuyutan para Leviathan (" .. curT() .. ")",
 					"leviathan_sworn_enemy",
 					7,
 					4
@@ -128,7 +128,7 @@ AncientLeviathanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Then GO! And never return as we do not want your help!"
+						"Kalau begitu PERGI! Dan jangan kembali, kami tidak butuh bantuanmu!"
 					},
 					0
 				)

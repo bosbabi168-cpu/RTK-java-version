@@ -12,10 +12,10 @@ BenitnathNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"What do you want now? Can't you see I have nothing else for you to steal?!",
-				"Oh wait... who are you? You're not part of the hideous army that took over this place... are you?",
-				"What are you doing here? Actually, no matter... so long as you're here to put a thorn in the side of \"THEM\".",
-				"I'm afraid I can't help you much, there is one way I know into the palace, through the sewers, but I don't think you want to go that way."
+				"Apa lagi maumu? Tidak lihat aku sudah tidak punya apa-apa lagi untuk kau curi?!",
+				"Oh tunggu... siapa kau? Kau bukan bagian dari pasukan keji yang menguasai tempat ini... kan?",
+				"Sedang apa kau di sini? Sebenarnya tidak penting... asalkan kau di sini untuk menjadi duri bagi \"MEREKA\".",
+				"Sayangnya aku tidak bisa banyak membantu. Ada satu jalan ke istana yang kutahu, lewat gorong-gorong, tetapi kurasa kau tidak mau lewat sana."
 			},
 			0
 		)
@@ -39,11 +39,11 @@ BenitnathNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The sewers? Yeah, you could make it through, if you can see in there.",
-					"That army came in and plugged every last light hole, it's darker than midnight in there, not even the moon and stars for light.",
-					"I wouldn't go in there without a torch or lantern, that's for sure!",
-					"If you want to go into the sewers just go over the corner there, you will find the drain pretty big, and will lead you down into the sewers.",
-					"Good luck, but remember, I warned you!"
+					"Gorong-gorong? Ya, kau bisa menembusnya, asal kau bisa melihat di dalam sana.",
+					"Pasukan itu datang dan menyumbat setiap lubang cahaya; di dalam lebih gelap daripada tengah malam, tanpa bulan atau bintang sekalipun.",
+					"Aku tidak akan masuk ke sana tanpa obor atau lentera, itu pasti!",
+					"Kalau kau mau masuk ke gorong-gorong, pergilah ke sudut sana; salurannya cukup besar dan akan membawamu turun ke bawah.",
+					"Semoga berhasil, tetapi ingat, aku sudah memperingatkanmu!"
 				},
 				0
 			)

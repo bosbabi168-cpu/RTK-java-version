@@ -17,7 +17,7 @@ bekyunarrow = {
 		player.npcColor = t.color
 		player.dialogType = 0
 
-		player:sendMinitext("You cast BekyunArrow.")
+		player:sendMinitext("Kau merapal BekyunArrow.")
 		player:setAether("bekyunarrow", aethers)
 
 		player.attacker = player.ID
@@ -26,12 +26,12 @@ bekyunarrow = {
 		player:sendStatus()
 
 		if player:hasItem(item.yname, 1) ~= true then
-			player:dialogSeq({t, "You need his spear to craft arrows from."}, 0)
+			player:dialogSeq({t, "Kau butuh tombaknya sebagai bahan anak panah."}, 0)
 			return
 		end
 
 		if not player:hasSpace("bekyuns_set", 5) then
-			player:sendMinitext("Your inventory is full.")
+			player:sendMinitext("Kantongmu penuh.")
 			return
 		end
 

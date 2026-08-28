@@ -9,16 +9,16 @@ ButcherNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local options = {"Buy", "Sell"}
+		local options = {"Beli", "Jual"}
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			options
 		)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			ButcherNpc.buy(player, npc)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			ButcherNpc.sell(player, npc)
 		end
 	end),

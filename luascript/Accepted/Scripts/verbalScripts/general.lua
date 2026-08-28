@@ -5,6 +5,6 @@ verbalScriptGeneral = function(player, npc, speech)
 		speech,
 		"what is your name"
 	) then
-		npc:talk(0, "Hello, my name is " .. npc.name .. ".")
+		npc:talk(0, "Halo, namaku " .. npc.name .. ".")
 	end
 end

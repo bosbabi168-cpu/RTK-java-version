@@ -38,7 +38,7 @@ onLevel = function(player)
 	end
 
 	if (player.class == 0 and player.level >= 5) then
-		player:sendMinitext("You cannot increase your level without choosing a path first.")
+		player:sendMinitext("Kau tidak bisa menaikkan level tanpa memilih jalur lebih dulu.")
 		return
 	end
 
@@ -87,6 +87,6 @@ onLevel = function(player)
 	player:playSound(123)
 	player:sendStatus()
 	player:sendAnimation(2, 0)
-	player:sendMinitext("You have gained new insight.")
+	player:sendMinitext("Kau memperoleh pencerahan baru.")
 	characterLog.levelUpWrite(player, player.level)
 end

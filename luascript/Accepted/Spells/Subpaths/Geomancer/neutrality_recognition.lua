@@ -11,7 +11,7 @@ neutrality_recognition = {
 		local magicCost = 100
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -33,11 +33,11 @@ neutrality_recognition = {
 		local target = Player(input)
 
 		if target == nil then
-			player:dialogSeq({t, "That player is currently not online."}, 0)
+			player:dialogSeq({t, "Pemain itu sedang tidak daring."}, 0)
 			return
 		end
 		if target.ID == player.ID then
-			player:dialogSeq({t, "You cannot provide your own recognition."}, 0)
+			player:dialogSeq({t, "Kau tidak bisa memberi pengakuan untuk dirimu sendiri."}, 0)
 			return
 		end
 
@@ -45,14 +45,14 @@ neutrality_recognition = {
 		local legendMarkyname = {"learned_to_walk_the_neutral_path"}
 		local legendMarks = {"Learned to walk the neutral path"}
 		local choice = player:menuString(
-			"What do you wish to bestow on them?",
+			"Apa yang ingin kau anugerahkan kepadanya?",
 			opts
 		)
 
 		if choice == "Neutrality recognition" then
 			target:removeLegendbyName("learned_to_walk_the_neutral_path")
 			target:addLegend(
-				"Learned to walk the neutral path, Marked by $player",
+				"Belajar menempuh jalan netral, Ditandai oleh $player",
 				"learned_to_walk_the_neutral_path",
 				145,
 				1,
@@ -61,7 +61,7 @@ neutrality_recognition = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has been recognized for walking the neutral path"
+					target.name .. " telah diakui karena menempuh jalan netral"
 				},
 				0
 			)
@@ -75,7 +75,7 @@ neutrality_recognition = {
 			end
 
 			local lmChoice = player:menuString(
-				"Which recognition would you like to remove?",
+				"Pengakuan mana yang ingin kau hapus?",
 				foundLegendMarks
 			)
 
@@ -89,7 +89,7 @@ neutrality_recognition = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has had their recognition removed for " .. lmChoice
+					target.name .. " kehilangan pengakuannya karena " .. lmChoice
 				},
 				0
 			)

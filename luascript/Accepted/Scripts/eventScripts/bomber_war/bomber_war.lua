@@ -301,10 +301,10 @@ BomberWarNpc = {
 			end
 		end
 		local opts = {}
-		table.insert(opts, "How To Play?")
+		table.insert(opts, "Cara Bermain?")
 		if core.gameRegistry["bomber_war"] == 1 then
 			if player.registry["bomber_war_registered"] == 0 then
-				table.insert(opts, "Register For Bomber War")
+				table.insert(opts, "Daftar untuk Bomber War")
 			else
 				par = " participant."
 			end
@@ -312,36 +312,36 @@ BomberWarNpc = {
 			if player.registry["bomber_war_registered"] > 0 or player.registry[
 				"bomber_war_team"
 			] > 0 then
-				table.insert(opts, "I can't register!")
+				table.insert(opts, "Aku tidak bisa mendaftar!")
 			end
 		end
 
-		table.insert(opts, "Exit")
+		table.insert(opts, "Keluar")
 
 		if core.gameRegistry["bomber_war_start"] > os.time() then
 			str = "Waiting time: " .. BomberWarNpc.getStartTimer()
 		end
 
 		menu = player:menuString(
-			n .. "Hello," .. par .. " The game will start in few minutes.\n" .. str .. "\nTotal players: " .. #total,
+			n .. "Halo," .. par .. " Permainan akan dimulai beberapa menit lagi.\n" .. str .. "\nTotal players: " .. #total,
 			opts
 		)
 
-		if menu == "How To Play?" then
+		if menu == "Cara Bermain?" then
 			player:dialogSeq(
 				{
 					t,
-					n .. "Bomber War is an explosive team-based game!",
-					n .. "Your attacks will drop bombs on the ground that will explode in a few seconds. The blast goes 1 tile in 4 directions, so make sure you stay out of the way!",
-					n .. "The explosions will destroy boxes around the map and open up paths. Sometimes, a magic symbol will be left on the ground after a box is destroyed.",
-					n .. "If you walk over one of these symbols, you'll get a powerup! Some will make you move faster, others will make your explosions bigger or let you drop more bombs at once.",
-					n .. "If you're caught in an explosion, you're dead. The team with a living player is the winner."
+					n .. "Bomber War adalah permainan beregu yang meledak-ledak!",
+					n .. "Seranganmu menjatuhkan bom ke tanah yang meledak beberapa detik kemudian. Ledakannya menjangkau 1 petak ke 4 arah, jadi pastikan kau menyingkir!",
+					n .. "Ledakannya menghancurkan kotak di seluruh peta dan membuka jalan. Kadang lambang bersihir tertinggal di tanah setelah sebuah kotak hancur.",
+					n .. "Kalau kau melangkahi salah satu lambang itu, kau memperoleh penguat! Ada yang membuatmu bergerak lebih cepat, ada yang memperbesar ledakanmu atau memungkinkanmu menjatuhkan lebih banyak bom sekaligus.",
+					n .. "Kalau kau terkena ledakan, kau mati. Regu yang masih punya pemain hidup adalah pemenangnya."
 				},
 				1
 			)
 			player:freeAsync()
 			BomberWarNpc.click(player, npc)
-		elseif menu == "Register For Bomber War" then
+		elseif menu == "Daftar untuk Bomber War" then
 			if os.time() < player.registry["minigameBan"] then
 				--Check if player is banned from minigames
 				player:popUp("You are currently banned from minigames! Try again later maybe.")
@@ -359,7 +359,7 @@ BomberWarNpc = {
 				player:dialogSeq(
 					{
 						t,
-						n .. "Allright, your character is registered for Bomber War.\nPlease wait until the game starts!"
+						n .. "Baik, karaktermu terdaftar untuk Bomber War.\nTunggu sampai permainannya dimulai!"
 					},
 					1
 				)
@@ -367,19 +367,19 @@ BomberWarNpc = {
 				player:dialogSeq(
 					{
 						t,
-						n .. "Please be patient!\n\n<b>Waiting time: " .. time .. ""
+						n .. "Bersabarlah!\n\n<b>Waktu tunggu: " .. time .. ""
 					},
 					1
 				)
 				BomberWarNpc.click(player, npc)
 			end
-		elseif menu == "I can't register!" then
+		elseif menu == "Aku tidak bisa mendaftar!" then
 			player.registry["bomber_war_registered"] = 0
 			player.registry["bomber_war_team"] = 0
 			player:dialogSeq(
 				{
 					t,
-					n .. "Looks like a simple paperwork mixup. You should be all set to register now, have fun at the game!"
+					n .. "Sepertinya cuma berkas yang tertukar. Sekarang kau sudah bisa mendaftar. Selamat bermain!"
 				},
 				1
 			)
@@ -638,7 +638,7 @@ BomberWarNpc = {
 				"bomber_war_entries"
 			] + 1
 			player:addLegend(
-				"Played in " .. player.registry["bomber_war_entries"] .. " Bomber Wars",
+				"Bermain di " .. player.registry["bomber_war_entries"] .. " Bomber Wars",
 				"bomber_war_entries",
 				76,
 				16
@@ -646,7 +646,7 @@ BomberWarNpc = {
 		else
 			player.registry["bomber_war_entries"] = 1
 			player:addLegend(
-				"Played in 1 Bomber War",
+				"Bermain dalam 1 Bomber War",
 				"bomber_war_entries",
 				76,
 				16
@@ -914,12 +914,12 @@ BomberWarNpc = {
 		local tileBombs = player:getObjectsInCell(m, x, y, BL_ITEM)
 
 		if core.gameRegistry["bomber_war_playing"] == 0 then
-			player:sendMinitext("The game isn't playing now!")
+			player:sendMinitext("Permainannya sedang tidak berlangsung!")
 			return
 		end
 
 		if #tileBombs > 0 then
-			player:sendMinitext("There is already a bomb here!")
+			player:sendMinitext("Sudah ada bom di sini!")
 			return
 		end
 
@@ -948,7 +948,7 @@ BomberWarNpc = {
 						player.ID
 					)
 				else
-					player:sendMinitext("You have too many bombs active to place another one.")
+					player:sendMinitext("Bommu yang aktif terlalu banyak untuk menaruh satu lagi.")
 				end
 			end
 		end

@@ -9,14 +9,14 @@ SeamstressNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell", "Unengrave cashshop item"}
+		local opts = {"Beli", "Jual", "Hapus ukiran barang cashshop"}
 		local buyopts = {
 			"Peasant clothes",
 			"Rogue's clothes",
 			"Mage's dress",
 			"Mage's skirt",
 			"Poet's draperies",
-			"Other items"
+			"Barang lainnya"
 		}
 
 		if npc.mapTitle == "Blossom Seams" then
@@ -25,8 +25,8 @@ SeamstressNpc = {
 		end
 
 		if npc.mapTitle == "Lin Cloth" then
-			table.insert(opts, "Crafting Skills")
-			table.insert(opts, "The Art of Tailoring")
+			table.insert(opts, "Keahlian Kerajinan")
+			table.insert(opts, "Seni Menjahit")
 			table.insert(opts, "Tailoring Devotion")
 			table.insert(opts, "Cloth Preparation")
 		end
@@ -82,13 +82,13 @@ SeamstressNpc = {
 		local oitems = {Item("wedding_dress").id}
 
 		local menu = player:menuString(
-			"Hello! What would you like to do today?",
+			"Halo! Apa yang ingin kau lakukan hari ini?",
 			opts
 		)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			choice = player:menuString(
-				"What do you want to buy today?",
+				"Apa yang ingin kau beli hari ini?",
 				buyopts,
 				{}
 			)
@@ -107,7 +107,7 @@ SeamstressNpc = {
 				choice2 = pgowns
 			elseif choice == "Poet's draperies" then
 				choice2 = pdraperies
-			elseif choice == "Other items" then
+			elseif choice == "Barang lainnya" then
 				choice2 = oitems
 			end
 
@@ -115,7 +115,7 @@ SeamstressNpc = {
 				"I think I can accomodate some of the things you need. What would you like?",
 				choice2
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				SeamstressNpc.sellItems()
@@ -130,15 +130,15 @@ SeamstressNpc = {
 		player:dialogSeq({t,"But you don't have the items I need.."},1)
 		]]
 			--
-		elseif menu == "Crafting Skills" then
+		elseif menu == "Keahlian Kerajinan" then
 			generalNPC.crafting_skills(player, npc)
-		elseif menu == "The Art of Tailoring" then
+		elseif menu == "Seni Menjahit" then
 			player:dialogSeq(
 				{
 					t,
-					"So, you think you're cut out to be a tailor? Tailoring is a necessity for making any type of garment.",
-					"Many types of clothing can be made by a tailor working alone, though some types require the assistance of a metalworker.",
-					"When you attempt to create a garment, the quality ((i.e., Spring, Summer, etc.)) of the product depends upon your skill, your cloth, and your luck.",
+					"Jadi kau merasa cocok jadi penjahit? Menjahit diperlukan untuk membuat busana jenis apa pun.",
+					"Banyak jenis pakaian bisa dibuat penjahit seorang diri, meski sebagian butuh bantuan ahli logam.",
+					"Ketika kau mencoba membuat busana, mutu hasilnya ((misalnya Spring, Summer, dsb.)) bergantung pada keahlianmu, kainmu, dan keberuntunganmu.",
 					"Katakan 'penjahit' padaku bila kau siap membuat sesuatu. Aku juga bisa membantumu menyiapkan kain, yang dibutuhkan sebelum kau bisa membuat zirah."
 				},
 				0
@@ -165,7 +165,7 @@ SeamstressNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have already devoted yourself to the study of Tailoring."
+					"Kau sudah menekuni ilmu Tailoring."
 				},
 				0
 			)
@@ -179,7 +179,7 @@ SeamstressNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Tailors can make clothing, and, with help from a metalworker, can make armor. Do you wish to become a tailor?"
+				"Penjahit bisa membuat pakaian, dan dengan bantuan ahli logam bisa membuat zirah. Kau ingin menjadi penjahit?"
 			},
 			1
 		)
@@ -200,13 +200,13 @@ SeamstressNpc = {
 		player.lastClick = npc.ID
 
 		if not crafting.checkSkillLegend(player, "tailoring") then
-			player:dialogSeq({t, "You are not a tailor."}, 0)
+			player:dialogSeq({t, "Kau bukan penjahit."}, 0)
 			return
 		end
 
 		if os.time() > player.quest["tailor_cloth_prepared"] then
 			if player:hasItem("cloth", 2) ~= true then
-				player:dialogSeq({tcloth, "You need two pieces of cloth."}, 0)
+				player:dialogSeq({tcloth, "Kau butuh dua helai kain."}, 0)
 				return
 			end
 
@@ -217,7 +217,7 @@ SeamstressNpc = {
 			player:dialogSeq(
 				{
 					tcloth,
-					"You have finished all of the necessary preparations. You still need to finish the task within the next hour."
+					"Seluruh persiapan yang diperlukan sudah selesai. Kau masih harus menuntaskan tugasnya dalam satu jam ke depan."
 				},
 				0
 			)
@@ -227,7 +227,7 @@ SeamstressNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have already prepared some cloth, you should use it first."
+					"Kau sudah menyiapkan kain; pakai dulu yang itu."
 				},
 				0
 			)
@@ -251,12 +251,12 @@ SeamstressNpc = {
 			"spy_trials"
 		] == 4 then
 			local choices = {
-				"To make me look fancy",
-				"To keep warm through a cold night breeze",
-				"Something light and dyable"
+				"Supaya penampilanku mewah",
+				"Supaya hangat menembus angin malam yang dingin",
+				"Sesuatu yang ringan dan bisa diwarnai"
 			}
 			local choice = player:menuSeq(
-				"Hey honey, what kind of occassion are you looking to dress for?",
+				"Hei sayang, untuk acara macam apa kau ingin berbusana?",
 				choices,
 				{}
 			)
@@ -266,18 +266,18 @@ SeamstressNpc = {
 				else
 					player:addItem("spring_dress", 1)
 				end
-				player:dialogSeq({t, "Here you go!"}, 0)
+				player:dialogSeq({t, "Ini dia!"}, 0)
 			elseif choice == 2 then
 				player.quest["spy_trial_outfit_timer"] = os.time()
 				player.quest["spy_trials"] = 5
 				player:dialogSeq(
 					{
 						t,
-						"Well, why didn't you say so! Someone else came in here earlier with a similar request.",
-						"** The seamstress steps from behind the counter, locks the door, and returns with a measurement tape **",
-						"Going to the casino huh? Nasty crowd. Those Imperial courtiers are always threatening to blow all of our covers up here in Sanhae",
-						"The Guild has secured employment for an extra food server at the underground casino, and that will be your temporary cover for this task",
-						"Okay! All measured up. I'll have your outfit ready in two days. Come back then and bring me some of that good soup they have in the Koguryian Taverns!"
+						"Kenapa tidak bilang dari tadi! Tadi ada orang lain ke sini dengan permintaan serupa.",
+						"** Penjahit itu keluar dari balik meja, mengunci pintu, lalu kembali membawa pita ukur **",
+						"Ke kasino, ya? Kerumunan yang buruk. Para punggawa Kekaisaran itu selalu mengancam membongkar seluruh kedok kami di Sanhae",
+						"Guild sudah mengamankan lowongan pelayan makanan tambahan di kasino bawah tanah, dan itulah kedok sementaramu untuk tugas ini",
+						"Baik! Ukurannya sudah lengkap. Busanamu siap dalam dua hari. Datanglah lagi lalu, dan bawakan aku sup enak dari Kedai Koguryo itu!"
 					},
 					0
 				)
@@ -287,7 +287,7 @@ SeamstressNpc = {
 				else
 					player:addItem("spring_dress", 1)
 				end
-				player:dialogSeq({t, "Here you go!"}, 0)
+				player:dialogSeq({t, "Ini dia!"}, 0)
 			end
 		elseif speech == "acara khusus" and npc.mapTitle == "Lin Cloth" and player.quest[
 			"spy_trials"
@@ -297,15 +297,15 @@ SeamstressNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Guild informants have relayed that the next Underground Casino will happen beneath the Nagnang Marketplace.",
-						"You'll need to go there and ask the marketplace manager for any Special Deals.",
-						"Be careful, but do this well and I'm sure you'll find more stable employment with us."
+						"Informan Guild mengabarkan bahwa Kasino Bawah Tanah berikutnya akan digelar di bawah Pasar Nagnang.",
+						"Kau harus ke sana dan menanyakan Penawaran Khusus kepada pengelola pasar.",
+						"Hati-hati, tetapi kalau kau mengerjakannya dengan baik, aku yakin kau akan mendapat pekerjaan yang lebih tetap bersama kami."
 					},
 					0
 				)
 			else
 				player:dialogSeq(
-					{t, "It's not quite ready yet. Check back soon."},
+					{t, "Belum sepenuhnya siap. Datanglah lagi nanti."},
 					0
 				)
 			end

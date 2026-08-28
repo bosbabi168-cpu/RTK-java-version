@@ -16,12 +16,12 @@ shamans_solace = {
 		-- maximum 10 tiles away in either direction (verified on NTK)
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("You need a different type of cure.")
+			player:sendMinitext("Kau butuh jenis penawar yang lain.")
 			return
 		end
 
@@ -31,8 +31,8 @@ shamans_solace = {
 
 		player:playSound(708)
 		target:sendAnimation(5, 25)
-		player:sendMinitext("You cast Shaman's solace.")
-		target:sendMinitext(player.name .. " cast Shaman's solace on you.")
+		player:sendMinitext("Kau merapal Shaman's solace.")
+		target:sendMinitext(player.name .. " merapal Shaman's solace padamu.")
 		target.attacker = player.ID
 		target:addHealthExtend(heal, 0, 0, 0, 0, 0)
 	end,

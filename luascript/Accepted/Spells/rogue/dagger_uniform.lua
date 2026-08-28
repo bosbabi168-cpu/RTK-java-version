@@ -9,7 +9,7 @@ dagger_uniform = {
 		end
 
 		if player.state ~= 0 then
-			player:sendMinitext("You cannot cast Invisible while dead or transformed.")
+			player:sendMinitext("Kau tidak bisa merapal Invisible saat mati atau dalam wujud berubah.")
 			return
 		end
 
@@ -18,11 +18,11 @@ dagger_uniform = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if (player:hasDuration("invisible_rogue")) then
-			player:sendMinitext("You cannot cast Invisible while dead or transformed.")
+			player:sendMinitext("Kau tidak bisa merapal Invisible saat mati atau dalam wujud berubah.")
 			return
 		end
 		player:sendAnimation(3, 3)

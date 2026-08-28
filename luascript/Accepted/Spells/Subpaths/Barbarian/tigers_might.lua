@@ -6,18 +6,18 @@ tigers_might = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(mights) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
-		player:sendMinitext("You cast Tiger's might.")
+		player:sendMinitext("Kau merapal Tiger's might.")
 		player:setDuration("tigers_might", 625000)
 		player:playSound(12)
 		player:sendAnimation(11)

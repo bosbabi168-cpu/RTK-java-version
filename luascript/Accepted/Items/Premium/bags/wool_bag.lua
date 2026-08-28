@@ -28,14 +28,14 @@ wool_bags = {
 			player:dialogSeq(
 				{
 					t,
-					"You have no " .. Item(amberType).name .. " to add to the bag."
+					"Kau tidak punya " .. Item(amberType).name .. " untuk dimasukkan ke kantong."
 				},
 				0
 			)
 			return
 		end
 
-		amount = player:inputNumberCheck(player:input("How many " .. Item(amberType).name .. " would you like to add to the bag?"))
+		amount = player:inputNumberCheck(player:input("Berapa banyak " .. Item(amberType).name .. " yang ingin kau masukkan ke kantong?"))
 
 		if amount > invAmount then
 			amount = invAmount
@@ -43,7 +43,7 @@ wool_bags = {
 
 		if bag.dura == bag.maxDura then
 			player:dialogSeq(
-				{t, "Your bag is full of " .. Item(amberType).name .. "."},
+				{t, "Kantongmu penuh dengan " .. Item(amberType).name .. "."},
 				0
 			)
 			return
@@ -67,7 +67,7 @@ wool_bags = {
 		local amount = 0
 
 		if bag.dura > 1 then
-			amount = player:inputNumberCheck(player:input("How many " .. Item(amberType).name .. "s would you like to remove from your bag?"))
+			amount = player:inputNumberCheck(player:input("Berapa banyak " .. Item(amberType).name .. " yang ingin kau keluarkan dari kantong?"))
 			if amount > bag.dura then
 				amount = bag.dura
 			end
@@ -99,7 +99,7 @@ wool_bags = {
 			player:dialogSeq(
 				{
 					t,
-					"You cannot have more " .. Item(amberType).name .. " until you remove some from your inventory."
+					"Kau tidak boleh punya lebih banyak " .. Item(amberType).name .. " sampai kau mengeluarkan sebagian dari kantongmu."
 				},
 				0
 			)
@@ -107,7 +107,7 @@ wool_bags = {
 		end
 
 		if not player:hasSpace(amberType, amount) then
-			player:sendMinitext("Your bag is full.")
+			player:sendMinitext("Kantongmu penuh.")
 			return
 		end
 
@@ -136,17 +136,17 @@ wool_bags = {
 
 		local choices = {}
 		if bag.dura ~= bag.maxDura then
-			table.insert(choices, "Add wool to bag.")
+			table.insert(choices, "Masukkan wol ke tas.")
 		end
 		if bag.dura ~= 0 then
-			table.insert(choices, "Remove wool from bag.")
+			table.insert(choices, "Keluarkan wol dari tas.")
 		end
 
-		local choice = player:menuString("What would you like to do?", choices)
+		local choice = player:menuString("Apa yang ingin kau lakukan?", choices)
 
-		if choice == "Add wool to bag." then
+		if choice == "Masukkan wol ke tas." then
 			wool_bags.addToBag(player, amberType)
-		elseif choice == "Remove wool from bag." then
+		elseif choice == "Keluarkan wol dari tas." then
 			wool_bags.removeFromBag(player, amberType)
 		end
 	end
@@ -176,14 +176,14 @@ empty_wool_bag = {
 			player:dialogSeq(
 				{
 					t,
-					"You must have some wool in your inventory to be able to add to the bag."
+					"Kau harus punya wool di kantongmu untuk bisa menambahkannya ke tas."
 				},
 				0
 			)
 			return
 		end
 
-		local amount = player:inputNumberCheck(player:input("How many Wool would you like to add to your wool bag?"))
+		local amount = player:inputNumberCheck(player:input("Berapa banyak Wool yang ingin kau masukkan ke tas wool?"))
 
 		if amount > invAmount then
 			amount = invAmount
@@ -199,7 +199,7 @@ empty_wool_bag = {
 		end
 
 		if not player:hasSpace("wool_bag", 1) then
-			player:sendMinitext("Your inventory is full.")
+			player:sendMinitext("Kantongmu penuh.")
 			return
 		end
 

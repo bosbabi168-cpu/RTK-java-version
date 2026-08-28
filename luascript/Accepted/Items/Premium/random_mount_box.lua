@@ -19,7 +19,7 @@ random_mount_i = {
 		end
 		local givenMount = Item(mounts[math.random(1, #mounts)])
 		if not player:hasSpace(givenMount.yname, 1) then
-			player:sendMinitext("Your bag is full.")
+			player:sendMinitext("Kantongmu penuh.")
 			return
 		end
 		if player:hasItem("random_mount_i", 1) ~= true then
@@ -29,7 +29,7 @@ random_mount_i = {
 			-1,
 			player.name .. " opened Random Mount Box I and received " .. givenMount.name .. "!"
 		)
-		player:sendMinitext("You've opened your box and received " .. givenMount.name .. "!")
+		player:sendMinitext("Kau membuka kotakmu dan menerima " .. givenMount.name .. "!")
 		player:addItem(givenMount.yname, 1)
 		player:removeItem("random_mount_i", 1)
 	end,
@@ -101,7 +101,7 @@ random_mount_ii = {
 		end
 		local givenMount = Item(mounts[math.random(1, #mounts)])
 		if not player:hasSpace(givenMount.yname, 1) then
-			player:sendMinitext("Your bag is full.")
+			player:sendMinitext("Kantongmu penuh.")
 			return
 		end
 		if player:hasItem("random_mount_ii", 1) ~= true then
@@ -111,7 +111,7 @@ random_mount_ii = {
 			-1,
 			player.name .. " opened Random Mount Box II and received " .. givenMount.name .. "!"
 		)
-		player:sendMinitext("You've opened your box and received " .. givenMount.name .. "!")
+		player:sendMinitext("Kau membuka kotakmu dan menerima " .. givenMount.name .. "!")
 		player:addItem(givenMount.yname, 1)
 		player:removeItem("random_mount_ii", 1)
 	end,

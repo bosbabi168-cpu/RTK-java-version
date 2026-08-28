@@ -133,7 +133,7 @@ MythicAllianceNpc = {
 				stormstrike.cast(npc, player)
 				player:returnToInn()
 				player:dialogSeq(
-					{t, "You are allied with our enemies. Die scum!"},
+					{t, "Kau bersekutu dengan musuh kami. Mampus, sampah!"},
 					0
 				)
 				return
@@ -158,7 +158,7 @@ MythicAllianceNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You did not heed my words and kill enough to fill my vengeance!"
+							"Kau tidak mengindahkan kata-kataku dan tidak cukup banyak membunuh untuk memenuhi dendamku!"
 						},
 						0
 					)
@@ -170,7 +170,7 @@ MythicAllianceNpc = {
 					item2_amount
 				) ~= true then
 					player:dialogSeq(
-						{t, "You are missing the needed items!"},
+						{t, "Barang yang diperlukan belum lengkap!"},
 						0
 					)
 					return
@@ -183,7 +183,7 @@ MythicAllianceNpc = {
 				player:addItem(alliance .. "s_favor", 1)
 				player:giveXP(10000000)
 				player:addLegend(
-					"Lesser alliance with the " .. alliance .. " (" .. curT() .. ")",
+					"Persekutuan kecil dengan " .. alliance .. " (" .. curT() .. ")",
 					"lesser_alliance_" .. string.lower(alliance),
 					5,
 					128
@@ -192,7 +192,7 @@ MythicAllianceNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have proven yourself worthy! Consider yourself an ally of the " .. alliance .. "!"
+						"Kau telah membuktikan kelayakanmu! Anggaplah dirimu sekutu " .. alliance .. "!"
 					},
 					1
 				)
@@ -201,8 +201,8 @@ MythicAllianceNpc = {
 			end
 
 			local choice = player:menuSeq(
-				"Greetings, mortal. Auspicious timing. Will you ally yourself with the mighty " .. alliance .. "?",
-				{"With honor.", "I withhold my allegiance."},
+				"Salam, manusia fana. Waktunya tepat. Maukah kau bersekutu dengan yang perkasa " .. alliance .. "?",
+				{"Dengan hormat.", "Aku menahan kesetiaanku."},
 				{}
 			)
 
@@ -210,8 +210,8 @@ MythicAllianceNpc = {
 				-- accept
 
 				local confirm = player:menuSeq(
-					"Starting this quest will reset your kills of these mobs that you may have had prior. Continue?",
-					{"Yes, reset the kills.", "No, nevermind."},
+					"Memulai tugas ini akan menolkan hitungan bunuhmu atas mob-mob ini. Lanjutkan?",
+					{"Ya, nolkan hitungan bunuhnya.", "Tidak, lupakan saja."},
 					{}
 				)
 
@@ -233,21 +233,21 @@ MythicAllianceNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"A wise choice. We do well in our eternal struggle against the vile " .. enemy .. ". I charge you with helping us finish them!"
+							"Pilihan yang bijak. Kami berjuang baik dalam pertikaian abadi melawan si keji " .. enemy .. ". Kutugaskan kau membantu kami menghabisi mereka!"
 						},
 						1
 					)
 					player:dialogSeq(
 						{
 							t,
-							"Slay three of each of their leaders and bring to me " .. items .. ". Try not to become too distracted, we want to win! I want the blood of the " .. enemy .. "s fresh on your blade!"
+							"Bunuh tiga dari tiap pemimpin mereka dan bawakan aku " .. items .. ". Jangan sampai terlalu terpecah perhatian, kami ingin menang! Aku ingin darah " .. enemy .. " masih segar di bilahmu!"
 						},
 						1
 					)
 				end
 			elseif choice == 2 then
 				stormstrike.cast(npc, player)
-				player:dialogSeq({t, "Then die."}, 0)
+				player:dialogSeq({t, "Kalau begitu, matilah."}, 0)
 				return
 			end
 		elseif speech == "agung" or speech == "aliansi agung" then
@@ -261,13 +261,13 @@ MythicAllianceNpc = {
 				stormstrike.cast(npc, player)
 				player:returnToInn()
 				player:dialogSeq(
-					{t, "You are allied with our enemies. Die scum!"},
+					{t, "Kau bersekutu dengan musuh kami. Mampus, sampah!"},
 					0
 				)
 				return
 			end
 			if not player:hasLegend("lesser_alliance_" .. string.lower(alliance)) then
-				player:dialogSeq({t, "You are not allied with us."}, 0)
+				player:dialogSeq({t, "Kau bukan sekutu kami."}, 0)
 				return
 			end
 
@@ -301,7 +301,7 @@ MythicAllianceNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You must complete more alliances before embarking on this journey."
+						"Kau harus menuntaskan lebih banyak persekutuan sebelum memulai perjalanan ini."
 					},
 					0
 				)
@@ -333,7 +333,7 @@ MythicAllianceNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You have failed to kill all that I have asked for. How can I trust you if you do not listen?"
+							"Kau gagal membunuh semua yang kuminta. Bagaimana aku bisa memercayaimu kalau kau tidak mendengarkan?"
 						},
 						0
 					)
@@ -347,7 +347,7 @@ MythicAllianceNpc = {
 
 				player:addKarma(8)
 				player:addLegend(
-					"Greater alliance with the " .. alliance .. " (" .. curT() .. ")",
+					"Persekutuan besar dengan " .. alliance .. " (" .. curT() .. ")",
 					"greater_alliance_" .. string.lower(alliance),
 					5,
 					128
@@ -357,7 +357,7 @@ MythicAllianceNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have proven yourself worthy! Consider yourself a mighty ally of the " .. alliance .. "!"
+						"Kau telah membuktikan kelayakanmu! Anggaplah dirimu sekutu perkasa " .. alliance .. "!"
 					},
 					1
 				)
@@ -366,7 +366,7 @@ MythicAllianceNpc = {
 
 			if player.mark == 0 then
 				player:dialogSeq(
-					{t, "Come back to me when you have more experience."},
+					{t, "Kembalilah kepadaku kalau pengalamanmu lebih banyak."},
 					0
 				)
 				return
@@ -375,15 +375,15 @@ MythicAllianceNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Our enemy, the " .. enemy .. " has gained some friends in the war against us.",
-					"I charge you, my champion, to take this matter into your own hands and break their alliances."
+					"Musuh kami, " .. enemy .. " telah mendapat kawan dalam perang melawan kami.",
+					"Kutugaskan kau, juaraku, mengambil alih perkara ini dan memutus persekutuan mereka."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Will you help us?",
-				{"Yes, I will", "No, I won't"},
+				"Maukah kau membantu kami?",
+				{"Ya, aku mau", "Tidak, aku tidak mau"},
 				{}
 			)
 
@@ -404,7 +404,7 @@ MythicAllianceNpc = {
 							stormstrike.cast(npc, player)
 							player:returnToInn()
 							player:dialogSeq(
-								{t, "You are aiding our enemy!"},
+								{t, "Kau membantu musuh kami!"},
 								0
 							)
 							return
@@ -412,7 +412,7 @@ MythicAllianceNpc = {
 							player:dialogSeq(
 								{
 									t,
-									"You are already on another Greater alliance quest"
+									"Kau sedang menjalani tugas Persekutuan besar yang lain"
 								},
 								0
 							)
@@ -425,7 +425,7 @@ MythicAllianceNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You have already completed three Greater alliances."
+							"Kau sudah menuntaskan tiga Persekutuan besar."
 						},
 						0
 					)
@@ -454,16 +454,16 @@ MythicAllianceNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The " .. enemy2 .. " have provided supplies to our enemy. Kill 5 of each of their leaders.",
-						"The " .. enemy3 .. " have provided men to our enemy. Kill 5 of each of their leaders as well.",
-						"Finally, strike another blow for our kind and kill 5 of the " .. enemy1 .. " bosses again.",
-						"Return to me immediately. This will crush their morale!"
+						"" .. enemy2 .. " telah memasok perbekalan kepada musuh kita. Bunuh 5 dari tiap pemimpin mereka.",
+						"" .. enemy3 .. " telah memasok orang kepada musuh kita. Bunuh juga 5 dari tiap pemimpin mereka.",
+						"Terakhir, pukullah sekali lagi demi kaum kami dan bunuh 5 " .. enemy1 .. " bosses again.",
+						"Segera kembali kepadaku. Ini akan meremukkan semangat mereka!"
 					},
 					1
 				)
 			elseif choice == 2 then
 				stormstrike.cast(npc, player)
-				player:dialogSeq({t, "Then die."}, 0)
+				player:dialogSeq({t, "Kalau begitu, matilah."}, 0)
 				return
 			end
 		end

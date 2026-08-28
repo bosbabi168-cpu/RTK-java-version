@@ -1,26 +1,26 @@
 CarnageHallShopNpc = {
 	click = async(function(player, npc)
-		local opts = {"Buy", "Sell", "Send me home"}
+		local opts = {"Beli", "Jual", "Pulangkan aku"}
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accommodate some of the things you need. What would you like?",
 				CarnageHallShopNpc.buyItems(npc)
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				CarnageHallShopNpc.sellItems(npc)
 			)
-		elseif choice == "Send me home" then
+		elseif choice == "Pulangkan aku" then
 			local confirm = player:menuSeq(
-				"Are you sure you wish to leave?",
-				{"Yes", "No"},
+				"Kau yakin ingin pergi?",
+				{"Ya", "Tidak"},
 				{}
 			)
 

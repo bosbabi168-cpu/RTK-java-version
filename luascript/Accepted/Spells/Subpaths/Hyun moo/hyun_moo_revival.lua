@@ -3,7 +3,7 @@ hyun_moo_revival = {
 		local magicCost = 10000
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -18,7 +18,7 @@ hyun_moo_revival = {
 		player:sendStatus()
 
 		player:sendAnimation(38, 3)
-		player:sendMinitext("You cast Hyun moo revival.")
+		player:sendMinitext("Kau merapal Hyun moo revival.")
 		player:setAether("hyun_moo_revival", 1500000)
 
 		player:sendAction(6, 20)

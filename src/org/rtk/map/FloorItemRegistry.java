@@ -335,11 +335,15 @@ public final class FloorItemRegistry {
      * @param type 0 = sekeping, bukan-nol = seluruh isi slot
      */
     public FloorItem dropFromInventory(User sd, int slot, int type) {
-        if (slot < 0 || slot >= sd.status.inventory.size()) {
+        // ⚠️ Slot dari klien adalah POSISI, bukan indeks daftar — lihat
+        // catatan di CharStatus.inventoryAt(). Sebelum ini, menjatuhkan
+        // barang pada kantong berlubang mengenai barang yang salah atau
+        // tidak melakukan apa pun sama sekali, TANPA pesan.
+        if (slot < 0 || slot >= sd.status.maxInv) {
             return null;
         }
-        org.rtk.common.mmo.Item it = sd.status.inventory.get(slot);
-        if (it.id <= 0 || it.amount <= 0) {
+        org.rtk.common.mmo.Item it = sd.status.inventoryAt(slot);
+        if (it == null || it.id <= 0 || it.amount <= 0) {
             return null;
         }
         int jumlah = type != 0 ? it.amount : 1;
@@ -387,7 +391,12 @@ public final class FloorItemRegistry {
 
         it.amount -= jumlah;
         if (it.amount <= 0) {
-            sd.status.inventory.remove(slot);
+            // ⚠️ Pasangan wajib inventoryAt(): remove(slot) membuang menurut
+            // INDEKS DAFTAR, yaitu barang milik slot lain.
+            sd.status.removeInventoryAt(slot);
+            MapServer.clientView.playerInventorySlotCleared(sd, slot, 0);
+        } else {
+            MapServer.clientView.playerInventorySlotChanged(sd, slot);
         }
         return hasil;
     }

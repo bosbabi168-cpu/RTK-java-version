@@ -14,9 +14,9 @@ SonhiGuardNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Who are you? What are you doing here?",
-						"This is a diplomatic check point. What lies beyond here is Sonhi claimed land. You will not be permitted to enter without a pass from KaKhan or Kaming.",
-						"If you have such  a pass, please present it. If not, you will need to go!"
+						"Siapa kau? Sedang apa di sini?",
+						"Ini pos pemeriksaan diplomatik. Di balik sini adalah tanah yang diklaim Sonhi. Kau tidak diizinkan masuk tanpa surat jalan dari KaKhan atau Kaming.",
+						"Kalau kau punya surat jalan itu, tunjukkan. Kalau tidak, kau harus pergi!"
 					},
 					0
 				)
@@ -32,8 +32,8 @@ SonhiGuardNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Let me see that pas...yes...yes... well, everything seems to be in order.",
-						"Here you go, you my pass sir."
+						"Coba kulihat surat jalannya... ya... ya... nah, sepertinya semuanya beres.",
+						"Ini dia, surat jalan Anda, Tuan."
 					},
 					1
 				)

@@ -6,7 +6,7 @@ viper_stick = {
 		if mob ~= nil then
 			if math.random(1, 100) <= 4 then
 				if not mob:checkIfCast(paras) then
-					player:sendMinitext("You cast paralyze.")
+					player:sendMinitext("Kau merapal paralyze.")
 					mob:setDuration("paralyze", 2) -- @TODO: Might make more sense to cast Doze since Viper stick is a requirement for that spell
 				end
 			end
@@ -18,7 +18,7 @@ viper_stick = {
 					return
 				end
 				if not pc:checkIfCast(paras) then
-					player:sendMinitext("You cast paralyze.")
+					player:sendMinitext("Kau merapal paralyze.")
 					pc:setDuration("paralyze", 2)
 				end
 			end

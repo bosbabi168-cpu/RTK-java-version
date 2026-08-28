@@ -11,17 +11,17 @@ harden_armor_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if target:checkIfCast(hardarmors) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -32,10 +32,10 @@ harden_armor_poet = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(5)
-			player:sendMinitext("You cast Harden Armor.")
+			player:sendMinitext("Kau merapal Harden Armor.")
 			target:setDuration("harden_armor_poet", duration)
 			target:sendAnimation(2)
-			target:sendMinitext(player.name .. " casts Harden Armor on you.")
+			target:sendMinitext(player.name .. " merapal Harden Armor padamu.")
 			target:calcStat()
 		end
 	end,
@@ -72,17 +72,17 @@ thicken_skin_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if target:checkIfCast(hardarmors) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -93,10 +93,10 @@ thicken_skin_poet = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(5)
-			player:sendMinitext("You cast Thicken Skin.")
+			player:sendMinitext("Kau merapal Thicken Skin.")
 			target:setDuration("thicken_skin_poet", duration)
 			target:sendAnimation(111)
-			target:sendMinitext(player.name .. " casts Thicken Skin on you.")
+			target:sendMinitext(player.name .. " merapal Thicken Skin padamu.")
 			target:calcStat()
 		end
 	end,
@@ -133,17 +133,17 @@ shield_of_life_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if target:checkIfCast(hardarmors) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -154,10 +154,10 @@ shield_of_life_poet = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(5)
-			player:sendMinitext("You cast Shield of Life.")
+			player:sendMinitext("Kau merapal Shield of Life.")
 			target:setDuration("shield_of_life_poet", duration)
 			target:sendAnimation(110)
-			target:sendMinitext(player.name .. " casts Shield of Life on you.")
+			target:sendMinitext(player.name .. " merapal Shield of Life padamu.")
 			target:calcStat()
 		end
 	end,
@@ -194,17 +194,17 @@ elemental_armor_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if target:checkIfCast(hardarmors) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -215,10 +215,10 @@ elemental_armor_poet = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(5)
-			player:sendMinitext("You cast Elemental Armor.")
+			player:sendMinitext("Kau merapal Elemental Armor.")
 			target:setDuration("elemental_armor_poet", duration)
 			target:sendAnimation(98)
-			target:sendMinitext(player.name .. " casts Elemental Armor on you.")
+			target:sendMinitext(player.name .. " merapal Elemental Armor padamu.")
 			target:calcStat()
 		end
 	end,

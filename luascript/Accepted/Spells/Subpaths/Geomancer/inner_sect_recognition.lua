@@ -16,7 +16,7 @@ inner_sect_recognition = {
 		local magicCost = 100
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -38,34 +38,34 @@ inner_sect_recognition = {
 		local target = Player(input)
 
 		if target == nil then
-			player:dialogSeq({t, "That player is currently not online."}, 0)
+			player:dialogSeq({t, "Pemain itu sedang tidak daring."}, 0)
 			return
 		end
 		if target.ID == player.ID then
-			player:dialogSeq({t, "You cannot provide your own recognition."}, 0)
+			player:dialogSeq({t, "Kau tidak bisa memberi pengakuan untuk dirimu sendiri."}, 0)
 			return
 		end
 
 		local opts = {
-			"Recognize for specialized training",
+			"Akui atas pelatihan khusus",
 			"Remove recognition"
 		}
 		local disciplines = {"Wu Wei", "Wu Xing", "Tiaoli"}
 
 		local levels = {"Initiate", "Apprentice", "Follower", "Sage", "Master"}
 
-		local choice = player:menuString("What would you like to do?", opts)
+		local choice = player:menuString("Apa yang ingin kau lakukan?", opts)
 
 		local icons = {145, 76, 122}
 		local colors = {145, 5, 20}
 
-		if choice == "Recognize for specialized training" then
+		if choice == "Akui atas pelatihan khusus" then
 			local discipline = player:menuString(
-				"Which specialized training?",
+				"Pelatihan khusus yang mana?",
 				disciplines
 			)
 			local level = player:menuString(
-				"Which level have they attained?",
+				"Tingkat mana yang sudah ia capai?",
 				levels
 			)
 			local disciplineyname = string.gsub(discipline, " ", "_")
@@ -94,7 +94,7 @@ inner_sect_recognition = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has been recognized as a " .. discipline .. " " .. level
+					target.name .. " telah diakui sebagai " .. discipline .. " " .. level
 				},
 				1
 			)
@@ -103,7 +103,7 @@ inner_sect_recognition = {
 			target:dialogSeq(
 				{
 					t,
-					"You have been recognized as a " .. discipline .. " " .. level
+					"Kau telah diakui sebagai " .. discipline .. " " .. level
 				},
 				0
 			)
@@ -123,7 +123,7 @@ inner_sect_recognition = {
 			end
 
 			local lmChoice = player:menuString(
-				"Which recognition would you like to remove?",
+				"Pengakuan mana yang ingin kau hapus?",
 				foundLegendMarks
 			)
 
@@ -141,7 +141,7 @@ inner_sect_recognition = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has had their recognition removed for " .. lmChoice
+					target.name .. " kehilangan pengakuannya karena " .. lmChoice
 				},
 				0
 			)

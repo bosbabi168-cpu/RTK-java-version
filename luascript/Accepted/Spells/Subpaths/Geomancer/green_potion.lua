@@ -14,14 +14,14 @@ create_green_potion = {
 
 		if player:hasItem("limestone", 1) ~= true then
 			player:dialogSeq(
-				{tlimestone, "Where did you put that limestone?"},
+				{tlimestone, "Di mana kau menaruh batu kapur itu?"},
 				0
 			)
 			return
 		end
 		if player:hasItem("fine_snake_meat", 1) ~= true then
 			player:dialogSeq(
-				{tfineSnakeMeat, "Where did you put that Fine Snake Meat?"},
+				{tfineSnakeMeat, "Di mana kau menaruh Fine Snake Meat itu?"},
 				0
 			)
 			return
@@ -31,7 +31,7 @@ create_green_potion = {
 		player:removeItem("fine_snake_meat", 1)
 		player:addItem("lime_potion", 1)
 		player:setAether("create_green_potion", aethers)
-		player:sendMinitext("You create a lime potion.")
+		player:sendMinitext("Kau membuat ramuan jeruk nipis.")
 	end,
 	requirements = function(player)
 		local level = 99

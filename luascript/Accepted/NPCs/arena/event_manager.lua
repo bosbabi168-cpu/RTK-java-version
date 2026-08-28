@@ -10,35 +10,35 @@ EventManagerNpc = {
 		player.lastClick = npc.ID
 
 		local opts = {
-			"Deposit Money",
-			"Deposit Item",
-			"Withdraw Money",
-			"Withdraw Item",
-			"Fix Item",
-			"Fix All Items",
-			"Enter Carnage"
+			"Titipkan Uang",
+			"Titipkan Barang",
+			"Ambil Uang",
+			"Ambil Barang",
+			"Perbaiki Barang",
+			"Perbaiki Semua Barang",
+			"Masuk Carnage"
 		}
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 
-		if choice == "Fix Item" then
+		if choice == "Perbaiki Barang" then
 			player:repairExtend()
-		elseif choice == "Fix All Items" then
+		elseif choice == "Perbaiki Semua Barang" then
 			player:repairAll(npc)
-		elseif choice == "Deposit Item" then
+		elseif choice == "Titipkan Barang" then
 			player:showBankDeposit(npc)
-		elseif choice == "Deposit Money" then
+		elseif choice == "Titipkan Uang" then
 			player:bankAddMoney(npc)
-		elseif choice == "Withdraw Item" then
+		elseif choice == "Ambil Barang" then
 			player:showBankWithdraw(npc)
-		elseif choice == "Withdraw Money" then
+		elseif choice == "Ambil Uang" then
 			player:bankWithdrawMoney(npc)
 		end
 
-		if choice == "Enter Carnage" then
+		if choice == "Masuk Carnage" then
 			local cost = 0
 
 			if (player.level >= 6 and player.level <= 35) then
@@ -68,8 +68,8 @@ EventManagerNpc = {
 			end
 
 			local agree1 = player:menuSeq(
-				"Have you read and agreed to the Carnage rules in the guide and for this battle?",
-				{"Yes", "No"},
+				"Sudahkah kau membaca dan menyetujui aturan Carnage di panduan dan untuk pertempuran ini?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -77,22 +77,22 @@ EventManagerNpc = {
 				--yes
 
 				local agree2 = player:menuSeq(
-					"You agree to abide by the host's decisions?",
-					{"Yes", "No"},
+					"Kau setuju menaati keputusan penyelenggara?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
 				if agree2 == 1 then
 					local agree3 = player:menuSeq(
-						"You have read and agree to the Carnage rules in the guide and wish to join this battle?",
-						{"Yes to all that", "I'm not sure"},
+						"Kau sudah membaca dan menyetujui aturan Carnage di panduan, serta ingin ikut pertempuran ini?",
+						{"Ya untuk semuanya", "Aku tidak yakin"},
 						{}
 					)
 
 					if agree3 == 1 then
 						local agree4 = player:menuSeq(
-							"Since you agreed to all that, the fee is " .. Tools.formatNumber(cost) .. " gold to join this carnage, do you accept?",
-							{"Shut up and take my money.", "No, nevermind."},
+							"Karena kau menyetujui semuanya, biayanya " .. Tools.formatNumber(cost) .. " emas untuk ikut carnage ini. Kau terima?",
+							{"Diam dan ambil saja uangku.", "Tidak, lupakan saja."},
 							{}
 						)
 
@@ -103,7 +103,7 @@ EventManagerNpc = {
 								player:dialogSeq(
 									{
 										t,
-										"You do not have enough gold to participate in " .. minigames.eventNameLookUp(core.gameRegistry["minigameEventId"]) .. ". Come back when you have more gold."
+										"Emasmu tidak cukup untuk ikut serta dalam " .. minigames.eventNameLookUp(core.gameRegistry["minigameEventId"]) .. ". Kembalilah kalau emasmu lebih banyak."
 									},
 									0
 								)
@@ -117,7 +117,7 @@ EventManagerNpc = {
 							] + 1
 							player:removeLegendbyName("carnagePart")
 							player:addLegend(
-								"Participated in " .. player.registry[
+								"Ikut serta dalam " .. player.registry[
 									"carnagePart"
 								] .. " Carnages",
 								"carnagePart",

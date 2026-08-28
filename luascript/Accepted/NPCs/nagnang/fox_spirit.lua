@@ -9,13 +9,13 @@ FoxSpiritNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		player:sendMinitext("A fox spirit finds you!")
+		player:sendMinitext("Seekor roh rubah menemukanmu!")
 
 		if player:hasItem("fox_charm", 1) == true then
 			player:dialogSeq(
 				{
 					t,
-					"Ah, I see you have met my kind and have bested us. Perhaps in the future we will be able to do business... Do not lose that talisman, for I never remember a face."
+					"Ah, kulihat kau sudah bertemu kaumku dan mengalahkan kami. Mungkin kelak kita bisa berdagang... Jangan sampai jimat itu hilang, sebab aku tidak pernah ingat wajah."
 				},
 				0
 			)

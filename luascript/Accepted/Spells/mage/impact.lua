@@ -7,10 +7,10 @@ impact_mage = {
 		local damage = 100 + (player.level * 2) + math.floor(((player.will + 1) / 2) * 2)
 		local worked = global_zap.cast(player, target, damage, 120, 0)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -32,10 +32,10 @@ soul_spike_mage = {
 		local damage = 100 + (player.level * 2) + math.floor(((player.will + 1) / 2) * 2)
 		local worked = global_zap.cast(player, target, damage, 120, 1)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -57,10 +57,10 @@ treefall_mage = {
 		local damage = 100 + (player.level * 2) + math.floor(((player.will + 1) / 2) * 2)
 		local worked = global_zap.cast(player, target, damage, 120, 2)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -82,10 +82,10 @@ shatter_mage = {
 		local damage = 100 + (player.level * 2) + math.floor(((player.will + 1) / 2) * 2)
 		local worked = global_zap.cast(player, target, damage, 120, 3)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
