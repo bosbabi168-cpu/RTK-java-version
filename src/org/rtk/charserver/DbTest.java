@@ -1026,7 +1026,7 @@ public final class DbTest {
         var engine = new org.rtk.map.script.ScriptEngine();
         engine.globals().load(
                 "BERI = function(pl, n) pl:addItem('fox_fur', n) end\n"
-              + "PUNYA = function(pl) return pl:hasItem('fox_fur') end\n"
+              + "PUNYA = function(pl, j) return pl:hasItem('fox_fur', j) end\n"
               + "BUANG = function(pl, n) return pl:removeItem('fox_fur', n) end\n").call();
 
         engine.globals().get("BERI").call(engine.playerRef(p), org.luaj.vm2.LuaValue.valueOf(10));
@@ -1039,8 +1039,18 @@ public final class DbTest {
         eq("slot pertama penuh di batas tumpuk", 50, c.inventory.get(0).amount);
         eq("sisanya di slot kedua", 5, c.inventory.get(1).amount);
 
-        var punya = engine.globals().get("PUNYA").call(engine.playerRef(p));
-        eq("hasItem menjumlahkan lintas slot", 55, punya.toint());
+        // ⚠️ `hasItem` BUKAN penghitung: ia menjawab `true` bila cukup, dan
+        // ANGKA KEKURANGAN bila tidak (sl.c:9197). Uji ini dulu menuntut
+        // jumlah yang dimiliki — mengunci perilaku port yang keliru, bukan
+        // perilaku C (Peringatan #135).
+        var cukup = engine.globals().get("PUNYA").call(engine.playerRef(p),
+                org.luaj.vm2.LuaValue.valueOf(55));
+        check("hasItem(55) = true: 55 keping terhitung lintas slot",
+                cukup.isboolean() && cukup.toboolean());
+        var kurang = engine.globals().get("PUNYA").call(engine.playerRef(p),
+                org.luaj.vm2.LuaValue.valueOf(60));
+        check("hasItem(60) = angka KEKURANGAN, bukan boolean",
+                !kurang.isboolean() && kurang.toint() == 5);
 
         // simpan lalu baca ulang dari database
         check("simpan setelah skrip memberi barang", CharPersistence.save(sql, c));
@@ -1189,22 +1199,27 @@ public final class DbTest {
         engine.globals().load(
                 "TITIP = function(pl, n, j) return pl:bankDeposit(n, j) end\n"
               + "AMBIL = function(pl, n, j) return pl:bankWithdraw(n, j) end\n"
-              + "PUNYA_BRG = function(pl, n) return pl:hasItem(n) end\n").call();
+              + "PUNYA_BRG = function(pl, n, j) return pl:hasItem(n, j) end\n").call();
         var LV = org.luaj.vm2.LuaValue.class;
         engine.globals().load("BERI2 = function(pl, n) pl:addItem('fox_fur', n) end").call();
         engine.globals().get("BERI2").call(engine.playerRef(p),
                 org.luaj.vm2.LuaValue.valueOf(10));
-        eq("punya 10 sebelum menitipkan", 10,
+        check("punya 10 sebelum menitipkan",
                 engine.globals().get("PUNYA_BRG").call(engine.playerRef(p),
-                        org.luaj.vm2.LuaValue.valueOf("fox_fur")).toint());
+                        org.luaj.vm2.LuaValue.valueOf("fox_fur"),
+                        org.luaj.vm2.LuaValue.valueOf(10)).toboolean());
 
         check("bankDeposit berhasil",
                 engine.globals().get("TITIP").call(engine.playerRef(p),
                         org.luaj.vm2.LuaValue.valueOf("fox_fur"),
                         org.luaj.vm2.LuaValue.valueOf(4)).toboolean());
-        eq("inventaris berkurang setelah menitipkan", 6,
+        check("inventaris berkurang setelah menitipkan: cukup 6, kurang 7",
                 engine.globals().get("PUNYA_BRG").call(engine.playerRef(p),
-                        org.luaj.vm2.LuaValue.valueOf("fox_fur")).toint());
+                        org.luaj.vm2.LuaValue.valueOf("fox_fur"),
+                        org.luaj.vm2.LuaValue.valueOf(6)).toboolean()
+                && engine.globals().get("PUNYA_BRG").call(engine.playerRef(p),
+                        org.luaj.vm2.LuaValue.valueOf("fox_fur"),
+                        org.luaj.vm2.LuaValue.valueOf(7)).toint() == 1);
         eq("bank berisi 4", 1, c.banks.size());
         eq("jumlah di bank benar", 4L, c.banks.get(0).amount);
 
@@ -1212,9 +1227,13 @@ public final class DbTest {
                 org.luaj.vm2.LuaValue.valueOf("fox_fur"),
                 org.luaj.vm2.LuaValue.valueOf(3));
         eq("bankWithdraw mengembalikan jumlah yang diambil", 3, diambil.toint());
-        eq("inventaris bertambah lagi", 9,
+        check("inventaris bertambah lagi: cukup 9, kurang 10",
                 engine.globals().get("PUNYA_BRG").call(engine.playerRef(p),
-                        org.luaj.vm2.LuaValue.valueOf("fox_fur")).toint());
+                        org.luaj.vm2.LuaValue.valueOf("fox_fur"),
+                        org.luaj.vm2.LuaValue.valueOf(9)).toboolean()
+                && engine.globals().get("PUNYA_BRG").call(engine.playerRef(p),
+                        org.luaj.vm2.LuaValue.valueOf("fox_fur"),
+                        org.luaj.vm2.LuaValue.valueOf(10)).toint() == 1);
         eq("sisa di bank benar", 1L, c.banks.get(0).amount);
 
         // --- semuanya tersimpan ke database ---

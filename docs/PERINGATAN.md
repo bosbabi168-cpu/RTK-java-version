@@ -1833,3 +1833,60 @@ ekor daftar dengan nomor lanjutan.
    ⚠️ `waktu` pada peristiwa itu bersatuan **tik 1/10 detik** (C memakai
    0x4E = 78 tik ≈ 7,8 detik). Menganggapnya milidetik membuat emosi
    berkedip sekejap dan praktis tak pernah terlihat.
+
+134. **`os.time()` LuaJ mengembalikan detik BERPECAHAN; Lua 5.1 tidak.**
+   LuaJ 3.0.1 menjawab `1787945123.01` — milidetik dibagi seribu sebagai
+   pecahan. Bedanya tak terlihat pada `>` maupun pengurangan, tetapi
+   mematikan **setiap** perbandingan `os.time() == x`, dan konten memakai
+   bentuk itu 13 kali — termasuk untuk menutup pintu acara Elixir dan
+   Carnage. Akibatnya acara tidak pernah bisa lewat dari tahap pertama,
+   tanpa satu pun pesan galat. `ScriptEngine` kini mengganti `os.time`
+   dengan detik bulat (bentuk `os.time(tabel)` diteruskan apa adanya).
+
+135. **`hasItem` BUKAN penghitung — dan port ini menjadikannya penghitung.**
+   `pcl_hasitem` di C mengembalikan **dua jenis nilai**: `true` (boolean)
+   bila barangnya cukup, dan **angka KEKURANGANNYA** bila tidak
+   (`sl.c:9197`). Port ini selalu mengembalikan JUMLAH yang dimiliki, dan
+   dua-duanya jadi salah:
+   - `hasItem(x, 1) == true` — dipakai **419 kali** di pohon skrip — SELALU
+     false, karena angka tidak pernah sama dengan boolean. **Setiap syarat
+     barang di quest gagal**, dan pemainnya diberi tahu ia tidak punya
+     barang yang ada di kantongnya;
+   - `if player:hasItem(x, n) then` selalu benar, karena di Lua angka 0 pun
+     truthy — jadi bentuk itu meloloskan pemain yang tidak punya apa-apa.
+   Tidak ada satu pun error dari keduanya. Ditemukan saat menjalankan satu
+   pertandingan Elixir: penyerahan piala selalu ditolak dengan "Kau butuh
+   elixir biru!" padahal elixirnya ada di kantong.
+   ⚠️ Balikan angka itu memang jebakan di C juga — karena itulah kontennya
+   menulis `== true`. Diport apa adanya, bukan "diperbaiki".
+   ⚠️ **Dua gerbang justru MENGUNCI perilaku yang salah** (`dbtest`
+   menuntut `hasItem` menjumlahkan lintas slot, `scripttest` memakai
+   `hasItem(...) + 39`). Gerbang yang ditulis dari perilaku port, bukan
+   dari sumber C, akan membela bug — keluarga yang sama dengan gerbang helm
+   di #130.
+
+136. **Wujud karakter tidak pernah terbaca skrip.** `face`, `faceColor`,
+   `hair`, `hairColor`, `armorColor`, `skinColor`, `disguise`,
+   `disguiseColor` semuanya ADA di `CharStatus` dan dipakai skrip ratusan
+   kali (`armorColor` 73×, `hair` 39×, `face` 21×), tetapi tidak satu pun
+   pernah dijawab `scriptGetAttr` — jadi semuanya nil. `clone.equip` gagal
+   di `player.armorColor > 0` dengan "attempt to compare nil with number",
+   dan itu mematikan **seluruh sistem klon**: penyamaran, pewarnaan regu
+   acara, dan potret NPC. `luaaudit` buta terhadapnya — ia memeriksa nama
+   METHOD, bukan ATRIBUT (keluarga yang sama dengan `.ID`, #120).
+
+137. **Gerbang acara harus menjalankan acaranya, bukan menirunya.**
+   `./run.sh elixirtest` memanggil `MapServer.boot` yang SAMA dengan
+   `./run.sh map` lalu memainkan satu pertandingan penuh di atas dunia
+   sungguhan. Yang dipercepat hanya JAMNYA (`elixirStart` dimundurkan);
+   setiap peralihan keadaan tetap diputuskan skrip acara, dan kemenangan
+   ronde didapat lewat `ElixirGameNpc.handItem` — jalur yang sama dengan
+   pemain sungguhan.
+   ⚠️ Tiga hal yang membuat ujinya sempat merah karena UJINYA, bukan
+   kodenya: (a) pembentukan regu hanya berjalan pada tik yang jatuh di
+   detik kelipatan lima (`os.time() % 5 == 0`), jadi menembakkan ratusan
+   tik dalam satu detik yang sama tidak pernah menyentuhnya — perlu jeda
+   kecil antar tik; (b) tahap hadiah menutup seketika bila tidak ada pemain
+   di peta ARENA, jadi pemainnya harus benar-benar dipindah ke sana;
+   (c) registry sedunia kini tulis-terus ke basis data, jadi gerbangnya
+   wajib menyimpan dan mengembalikan nilai awalnya.

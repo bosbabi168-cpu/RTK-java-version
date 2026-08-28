@@ -150,7 +150,9 @@ public final class ScriptTest {
           + "    if choice == \"Buy\" then\n"
           + "        player:dialogSeq({0, \"A fine choice.\", \"Here you go.\"}, 0)\n"
           + "        player:addItem(\"amber\", 3)\n"
-          + "        player.registry[\"testFlag\"] = player:hasItem(\"amber\") + 39\n"
+          + "        if player:hasItem(\"amber\", 3) == true then\n"
+          + "            player.registry[\"testFlag\"] = 42\n"
+          + "        end\n"
           + "        player:sendMinitext(\"Done: \" .. player.registry[\"testFlag\"])\n"
           + "    end\n"
           + "end)\n";

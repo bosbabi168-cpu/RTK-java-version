@@ -871,6 +871,20 @@ public final class MapServer {
     }
 
     public static void main(String[] args) {
+        boot(args);
+        core = new Core(net, timers);
+        core.mainLoop();
+    }
+
+    /**
+     * Seluruh penyalaan map server KECUALI loop utamanya.
+     *
+     * <p>Dipisahkan supaya gerbang bisa memakai penyalaan yang SAMA persis
+     * dengan server sungguhan — peta, NPC, barang, mantra, skrip, registry
+     * sedunia, dan timer. Gerbang yang menyusun dunianya sendiri hanya
+     * menguji dunia buatannya sendiri.</p>
+     */
+    static void boot(String[] args) {
         String confFile = "conf/map.conf";
         String interFile = "conf/inter.conf";
 
@@ -1019,8 +1033,5 @@ public final class MapServer {
 
         log.info("RetroTK Map Server (Java skeleton) is ready! Listening at {}.", mapPort);
         ServerLog.addLog("Server Ready! Listening at %d.%n", mapPort);
-
-        core = new Core(net, timers);
-        core.mainLoop();
     }
 }

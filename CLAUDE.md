@@ -70,7 +70,7 @@ Project mandiri — data game ada di dalamnya: `maps/` (3.544 `.map`),
 `meta/`, `db/`. Rantai konfigurasi: `resources/rtk-server.properties` →
 `conf/*.conf` (menimpa) → argumen CLI. Jangan menanam path di kode.
 
-## Build & uji — SEMBILAN gerbang
+## Build & uji — SEPULUH gerbang
 
 Build: NetBeans (*Clean and Build*) → `dist/RTK-java-version.jar`, atau
 `./build.sh` → `dist/RTK-java.jar`. Menjalankan:
@@ -89,7 +89,11 @@ selesai:
 ./run.sh dbtest       # lapisan database — 234 assertion; butuh MySQL
 ./run.sh luaaudit     # pemeriksa statis 907 skrip Lua
 ./run.sh wiresync     # Wire.java sinkron dengan repo klien
+./run.sh elixirtest   # SATU PERTANDINGAN ELIXIR penuh — 34 pemeriksaan
 ```
+
+⚠️ `elixirtest` memakai **penyalaan server yang sama** dengan `./run.sh map`
+(`MapServer.boot`), jadi map server lain harus MATI — portnya bentrok.
 
 **Gerbang KESEMBILAN — yang paling banyak menemukan bug.** Gerbang luring
 menguji kode terhadap dirinya sendiri dan **tidak bisa melihat "sesuatu
@@ -261,12 +265,12 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 
 | | |
 |---|---|
-| Gerbang luring | **8/8 hijau** (`cliftest` 903, `dbtest` 234) |
+| Gerbang luring | **9/9 hijau** (`cliftest` 903, `dbtest` 234, `elixirtest` 34) |
 | Gerbang klien sungguhan | `livetest` **182** pemeriksaan hijau |
 | Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v10) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#133 → `docs/PERINGATAN.md` |
+| Peringatan tercatat | #1–#137 → `docs/PERINGATAN.md` |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug
@@ -481,6 +485,29 @@ menganggap dunia satu server.
 `arena_exit_teleporter.lua`) dan `bomb_game` (bomber war) tidak
 terdefinisi di mana pun di pohon Lua ini — berkasnya memang tidak ikut.
 `processKanDonations` juga hilang (peringatan sekali per proses).
+
+**Putaran keempat (29 Agu 2026) — SATU PERTANDINGAN ELIXIR BERJALAN.**
+Gerbang baru `./run.sh elixirtest` memainkan pertandingan penuh di atas
+penyalaan server sungguhan: pintu dibuka → 6 pemain → regu dibentuk
+(3 lawan 3) → arena disiapkan → dua ronde dimenangi lewat
+`ElixirGameNpc.handItem` → NPC hadiah muncul → acara menutup dirinya
+sendiri. Yang dipercepat hanya JAMNYA; tiap peralihan keadaan tetap
+diputuskan skrip acara.
+
+Menjalankannya membongkar **tiga cacat mesin skrip** yang tidak satu pun
+gerbang pernah lihat, dan ketiganya diam total:
+
+| Cacat | Akibat |
+|---|---|
+| `os.time()` LuaJ berpecahan (#134) | **setiap** `os.time() == x` gagal — 13 tempat, termasuk penutupan pintu Elixir dan Carnage; acara tidak pernah lewat tahap pertama |
+| `hasItem` dikembalikan sebagai JUMLAH, bukan `true`/kekurangan (#135) | `hasItem(x,1) == true` dipakai **419×** dan SELALU false — setiap syarat barang di quest gagal; bentuk `if hasItem(...)` malah selalu lolos |
+| Wujud karakter (`face`, `hair`, `armorColor`, …) tak pernah dibaca skrip (#136) | `clone.equip` melempar "compare nil with number" — **seluruh sistem klon mati**: penyamaran, pewarnaan regu, potret NPC |
+
+⚠️ Dua gerbang lama justru **mengunci perilaku yang salah** — `dbtest`
+menuntut `hasItem` menjumlahkan lintas slot, `scripttest` memakai
+`hasItem(...) + 39`. Keduanya ditulis dari perilaku port, bukan dari sumber
+C, jadi keduanya membela bugnya (keluarga yang sama dengan gerbang helm
+#130). Sudah ditulis ulang ke kontrak C.
 
 **Sisa putaran berikutnya:** 7 opcode belum pernah dikirim klien
 (`profileEdit`, `dropGold`, `handItem`, `handGold`, `eat`, `throw`, dan

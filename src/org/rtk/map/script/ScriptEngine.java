@@ -489,6 +489,29 @@ public final class ScriptEngine {
         // Id NPC F1 — satu-satunya yang tidak mengikuti rumus id blok biasa.
         globals.set("F1_NPC", LuaValue.valueOf((double) org.rtk.map.Npc.F1_NPC));
 
+        // ⚠️ `os.time()` LuaJ 3.0.1 mengembalikan DETIK BERPECAHAN
+        // (1787945123.01), sementara Lua 5.1 sungguhan mengembalikan detik
+        // BULAT. Bedanya tidak terlihat pada `>` atau `-`, tetapi
+        // mematikan seluruh perbandingan `os.time() == x` — dan konten
+        // memakai bentuk itu 13 kali, termasuk untuk menutup pintu acara
+        // elixir dan carnage. Akibatnya acara tidak pernah bisa lewat dari
+        // tahap pertama, tanpa satu pun pesan galat.
+        // Lihat docs/PERINGATAN.md #134.
+        LuaValue os = globals.get("os");
+        if (!os.isnil()) {
+            final LuaValue aslinya = os.get("time");
+            os.set("time", new org.luaj.vm2.lib.VarArgFunction() {
+                @Override
+                public Varargs invoke(Varargs args) {
+                    if (args.narg() > 0) {
+                        return aslinya.invoke(args);   // bentuk os.time(tabel)
+                    }
+                    return LuaValue.valueOf(
+                            (double) (System.currentTimeMillis() / 1000L));
+                }
+            });
+        }
+
         // Bendera BL_* — dipakai skrip 1.500+ kali untuk menyaring
         // pencarian benda. Nilainya BIT, bukan nomor urut.
         for (int i = 0; i < org.rtk.map.data.BlockList.BL_NAMES.length; i++) {

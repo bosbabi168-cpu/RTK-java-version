@@ -670,13 +670,39 @@ final class Bindings {
             p.items.merge(name, qty, Integer::sum);
             return LuaValue.TRUE;
         });
+        /**
+         * pcl_hasitem(nama, jumlah) — <b>bukan</b> penghitung.
+         *
+         * <p>⚠️ C mengembalikan DUA JENIS nilai: {@code true} (boolean) bila
+         * barangnya cukup, dan <b>angka KEKURANGANNYA</b> bila tidak
+         * (sl.c:9197). Port ini dulu selalu mengembalikan JUMLAH yang
+         * dimiliki, dan akibatnya dua-duanya salah:</p>
+         *
+         * <ul>
+         *   <li>{@code hasItem(x, 1) == true} — dipakai <b>419 kali</b> di
+         *       pohon skrip — SELALU false, karena angka tidak pernah sama
+         *       dengan boolean. Setiap syarat barang di quest gagal;</li>
+         *   <li>{@code if player:hasItem(x, 1) then} selalu benar, karena di
+         *       Lua angka 0 pun truthy.</li>
+         * </ul>
+         *
+         * <p>Tidak ada satu pun error yang muncul dari keduanya. Ditemukan
+         * saat menjalankan satu pertandingan Elixir: penyerahan piala
+         * selalu ditolak dengan "Kau butuh elixir biru!". Lihat
+         * docs/PERINGATAN.md #135.</p>
+         *
+         * <p>⚠️ Bentuk balikan angka itu MEMANG jebakan di C juga — karena
+         * itulah kontennya menulis {@code == true}. Diport apa adanya.</p>
+         */
         player.addMethod("hasItem", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
-            String name = args.optjstring(2, "");
-            if (p.owner instanceof ScriptPlayer.Owner o) {
-                return LuaValue.valueOf(o.scriptCountItem(name));
-            }
-            return LuaValue.valueOf(p.items.getOrDefault(name, 0));
+            // C: `amount = abs(lua_tonumber(...))`; argumen yang hilang = 0.
+            int perlu = Math.abs(args.optint(3, 0));
+            int punya = p.owner instanceof ScriptPlayer.Owner o
+                    ? o.scriptCountItem(args.optjstring(2, ""))
+                    : p.items.getOrDefault(args.optjstring(2, ""), 0);
+            return punya >= perlu ? LuaValue.TRUE
+                    : LuaValue.valueOf(perlu - punya);
         });
         player.addMethod("removeItem", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;

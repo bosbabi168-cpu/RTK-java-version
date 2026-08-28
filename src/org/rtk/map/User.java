@@ -914,6 +914,24 @@ public final class User extends BlockList
             case "fakeDrop" -> (long) fakeDrop;
             case "invSlot" -> (long) invSlot;
             case "equipSlot" -> (long) equipSlot;
+            // ⚠️ Wujud karakter. Seluruh keluarga ini SUDAH ada di
+            // `CharStatus` dan dipakai skrip ratusan kali (`armorColor` 73×,
+            // `hair` 39×, `face` 21×) — tetapi tidak satu pun pernah dibaca
+            // dari Lua, jadi semuanya nil. `clone.equip` gagal di
+            // `player.armorColor > 0` dengan "attempt to compare nil with
+            // number", dan itu mematikan seluruh sistem klon: penyamaran,
+            // pewarnaan regu acara, dan potret NPC.
+            // `luaaudit` buta terhadapnya — ia memeriksa nama METHOD, bukan
+            // ATRIBUT (keluarga yang sama dengan `.ID`, Peringatan #120).
+            // Padanan C: `pcl_getattr` sl.c:7617.
+            case "face" -> (long) status.face;
+            case "faceColor" -> (long) status.faceColor;
+            case "hair" -> (long) status.hair;
+            case "hairColor" -> (long) status.hairColor;
+            case "armorColor" -> (long) status.armorColor;
+            case "skinColor" -> (long) status.skinColor;
+            case "disguise" -> (long) status.disguise;
+            case "disguiseColor" -> (long) status.disguiseColor;
             default -> null;
         };
     }
@@ -983,6 +1001,18 @@ public final class User extends BlockList
             case "fakeDrop" -> fakeDrop = (int) v;
             case "invSlot" -> invSlot = (int) v;
             case "equipSlot" -> equipSlot = (int) v;
+            // Wujud karakter — pasangan tulis dari `scriptGetAttr`.
+            // Padanan C: `pcl_setattr` sl.c:6890. ⚠️ Menulisnya TIDAK
+            // otomatis mengabarkan klien; skrip memanggil `updateState()`
+            // sesudahnya, persis seperti di C.
+            case "face" -> status.face = (int) v;
+            case "faceColor" -> status.faceColor = (int) v;
+            case "hair" -> status.hair = (int) v;
+            case "hairColor" -> status.hairColor = (int) v;
+            case "armorColor" -> status.armorColor = (int) v;
+            case "skinColor" -> status.skinColor = (int) v;
+            case "disguise" -> status.disguise = (int) v;
+            case "disguiseColor" -> status.disguiseColor = (int) v;
             default -> {
                 return false;
             }
