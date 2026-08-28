@@ -421,6 +421,9 @@ public interface ClientCommands {
     void playerUsesBoard(User sd, int aksi, int papan, int pos);
 
     /** Pemain mencoba mengambil kiriman (R1). */
+    /** Tulis kiriman baru di sebuah papan (K2-lanjutan). */
+    void playerWritesBoardPost(User sd, int papan, String topik, String isi);
+
     void playerCollectsParcel(User sd);
 
     void playerAnswersMenu(User sd, Answer answer);

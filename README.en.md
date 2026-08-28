@@ -16,7 +16,7 @@ Since 26 August 2026 this project **no longer pursues byte-per-byte
 compatibility** with the RetroTK client. What applies now:
 
 - **Our own protocol (RTK2)** — bidirectional, designed from the real
-  needs of the scripts: 43 inbound opcodes, 54 outbound events. Spec:
+  needs of the scripts: 46 inbound opcodes, 57 outbound events. Spec:
   [`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md).
 - **Our own client (libGDX)** — developed in the separate repo
   `../RTK-client`, not committed until every asset is replaced with our
@@ -45,9 +45,9 @@ writing a new adapter, not touching the logic.
 - **Scripting**: 906/906 scripts load with 0 errors; binding gaps **0**
   (the only remainder is `testPacket`, deliberately not ported).
 - **Testing**: 8 offline regression gates (903 `cliftest` assertions,
-  234 `dbtest`) + the real-client gate `livetest` (155 checks; **167** on a
+  234 `dbtest`) + the real-client gate `livetest` (182 checks; **194** on a
   two-map-server setup, `./tools/uji-dua-server.sh`).
-  36 of 43 RTK2 opcodes have now actually been sent by a real client.
+  36 of 46 RTK2 opcodes have now actually been sent by a real client.
 - **Indonesian translation**: COMPLETE — 0 of 9,812 dialogue points are
   still English; `livetest` asserts that the dialogue reaching the player
   is Indonesian.
@@ -174,8 +174,8 @@ scripts are identifiers. The dialogue text itself is **fully translated**
 | `dbtest` | database layer against live MySQL | 234 assertions; needs MySQL |
 | `luaaudit` | static checker for 907 scripts + binding gaps | `-Drtk.audit.penuh=true` for the full list |
 | `wiresync` | `Wire.java` identical to the client repo copy | skips itself if the client repo is absent |
-| `livetest` | a **real RTK2 client** enters the world + 155 checks | run from `../RTK-client` |
-| `tools/uji-dua-server.sh` | player transfer between map servers (R3/C3) | 167 checks; sets up and restores its own fixture |
+| `livetest` | a **real RTK2 client** enters the world + 182 checks | run from `../RTK-client` |
+| `tools/uji-dua-server.sh` | player transfer between map servers (R3/C3) | 194 checks; sets up and restores its own fixture |
 
 The first eight gates are offline — they test the code against itself and
 cannot see "something that did not happen". That is why every new
@@ -196,17 +196,18 @@ terminology in [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 28 August 2026:** 8/8 offline gates green, `livetest` 155 checks
-green, RTK2 protocol symmetric in both directions, binding gaps 0,
-`map.log` 0 ERROR/WARN. The main blocker is now on the client side
-(`../RTK-client`) — the server already sends more than the client can
-draw.
+**Status 28 August 2026:** 8/8 offline gates green, `livetest` 182 checks
+green (194 on two map servers), RTK2 protocol symmetric in both directions,
+binding gaps 0, `map.log` 0 ERROR/WARN. New players can now **sign
+themselves up** through the client (account login, character creation,
+character picking) — see K3-lanjutan. ⚠️ Sweep `logs/common.log` too: two
+real bugs hid there rather than in `map.log` (Peringatan #123, #125).
 
 The roadmap toward "a server that runs normally and smoothly with no
 bugs" — including the table of player actions that still lack an RTK2
 inbound path — is in
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Traps & lessons #1–#122 are in
+Traps & lessons #1–#127 are in
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)** (Indonesian).
 
 ## Folder structure

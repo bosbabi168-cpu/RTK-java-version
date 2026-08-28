@@ -1218,6 +1218,35 @@ public final class ClifTest {
                 fl2 == fl && reg.count() == sebelum && fl.data.amount == 5);
         check("drop: jumlah sebelumnya tercatat di lastAmount", fl.lastAmount == 3);
 
+        // --- nomor opcode & peristiwa harus UNIK (K2-lanjutan) ---
+        // ⚠️ Dua konstanta bernilai sama tidak selalu gagal compile: dua
+        // `case` dengan nilai sama baru merah kalau kebetulan ada di switch
+        // yang sama. Nomor yang bentrok di sisi server bisa lolos sampai
+        // klien membongkar peristiwa yang salah — dan itu terlihat seperti
+        // ladang yang bergeser, bukan seperti nomor yang sama.
+        {
+            java.util.Map<Integer, String> dipakai = new java.util.HashMap<>();
+            java.util.List<String> bentrok = new java.util.ArrayList<>();
+            for (java.lang.reflect.Field f : Wire.class.getDeclaredFields()) {
+                String n = f.getName();
+                if (!n.startsWith("OP_") && !n.startsWith("EV_")) {
+                    continue;
+                }
+                try {
+                    int v = f.getInt(null);
+                    String lama = dipakai.put(v, n);
+                    if (lama != null) {
+                        bentrok.add(lama + " = " + n);
+                    }
+                } catch (IllegalAccessException e) {
+                    // ladang non-publik: tidak relevan
+                }
+            }
+            check("tidak ada nomor opcode/peristiwa yang dipakai dua kali"
+                    + (bentrok.isEmpty() ? "" : " — " + bentrok),
+                    bentrok.isEmpty());
+        }
+
         // --- atribut ID: id BENDA, bukan id jenis barang (R5) ---
         // ⚠️ Skrip memakai `.ID` 1.292 kali di 347 berkas, dan `onPickup.lua`
         // memanggil `player:pickUp(groundItems[i].ID)`. Selama `.ID` menjawab
@@ -4118,6 +4147,12 @@ public final class ClifTest {
     }
 
     private static final class Rekam implements ClientCommands {
+        @Override
+        public void playerWritesBoardPost(User sd, int papan, String topik,
+                                          String isi) {
+            catat("playerWritesBoardPost", papan, topik, isi);
+        }
+
         String terakhir = "";
         final java.util.List<Object> arg = new java.util.ArrayList<>();
 
@@ -6173,6 +6208,13 @@ public final class ClifTest {
      * yang diuji di sini siapa yang MENERIMA siaran, bukan bytenya.</p>
      */
     private static final class RekamGuiText implements ClientView {
+        @Override
+        public void boardPostToPlayer(User sd, int board, int pos, int bendera,
+                                      String penulis, String topik, int bulan,
+                                      int hari, String isi) {
+            keluar.add("boardPost:" + board + "/" + pos + " " + topik);
+        }
+
         private final java.util.List<String> keluar;
         private final ClientView sunyi = new ProtocolRouter();
 

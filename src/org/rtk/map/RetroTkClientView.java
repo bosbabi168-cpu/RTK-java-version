@@ -130,6 +130,15 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void boardPostToPlayer(User sd, int board, int pos, int bendera,
+                                  String penulis, String topik, int bulan,
+                                  int hari, String isi) {
+        // ⚠️ Sengaja kosong: paket "isi satu kiriman" RetroTK belum diport,
+        // dan ARAH FINAL project ini adalah RTK2. Dibiarkan diam supaya
+        // klien RetroTK tidak menerima paket setengah jadi.
+    }
+
+    @Override
     public void exchangeOpened(User sd, User target) {
         Clif.exchangeOpen(sd, target);
     }

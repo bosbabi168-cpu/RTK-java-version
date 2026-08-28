@@ -98,7 +98,7 @@ luring):
 
 ```
 ./run.sh all
-(cd ../RTK-client && ./run.sh livetest 127.0.0.1 2001 Adrielle)   # 155 pemeriksaan
+(cd ../RTK-client && ./run.sh livetest 127.0.0.1 2001 Adrielle)   # 182 pemeriksaan
 ```
 
 **Gerbang KESEPULUH — dua map server.** Perpindahan pemain antar map
@@ -124,6 +124,14 @@ DAN `livetest`, lalu **rusak kodenya sengaja** untuk membuktikan gerbangnya
 bisa merah (kontrol negatif — dua kali menemukan lubang di ujinya sendiri).
 ⚠️ Jangan jalankan gerbang saat server hidup — keduanya menulis ke
 `logs/map.log` yang sama dan hitungan ERROR jadi tercemar.
+⚠️ **Sapu `logs/common.log` juga, bukan hanya `map.log`.** `org.rtk.common.*`
+(termasuk `Sql` dan `TimerSystem`) jatuh ke logger Root: dua bug nyata hari
+ini — kolam koneksi salah proses dan `ConcurrentModificationException` di
+timer NPC — TIDAK muncul di `map.log` sama sekali (Peringatan #123, #125).
+⚠️ Sebelum `uji-dua-server.sh`: `pgrep -a java | grep RTK-java` harus
+KOSONG. Server yang dijalankan dengan tangan tidak dimatikan `run.sh stop`,
+menahan port 2001, dan ujinya diam-diam berbicara dengan server yang salah
+(Peringatan #127).
 ⚠️ `livetest` memakan barang karakter uji (Peringatan #102) — periksa
 kantong `Adrielle` bila langkah masuk dunia mendadak merah.
 ⚠️ `livetest` juga MEMINDAHKAN pemain uji (langkah C3 berjalan ke portal
@@ -231,6 +239,22 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
   memverifikasi sandi terhadap `ChaPassword` (`CharDb.isPass`) sebelum
   meminta data karakter — dulu siapa pun yang tahu nama bisa masuk. Sandi
   salah = sambungan ditolak.
+- **K3-lanjutan pra-login RTK2** (Wire v10, 28 Agu 2026 malam): map server
+  kini melayani `OP_ACCOUNT_LOGIN` (→ `EV_CHAR_LIST`) dan `OP_CREATE_CHAR`
+  (→ `EV_ACCOUNT_RESULT`) **pada sambungan yang sama** dengan `OP_HELLO`.
+  Ini **menyimpang dari C dengan sengaja**: di C pemain menyambung tiga
+  kali (login → char → map); RTK2 memakai satu titik. Sesi yang sudah masuk
+  akun boleh memilih karakter miliknya tanpa sandi karakter —
+  kepemilikannya diperiksa ULANG ke tabel `Accounts` (`akunMemiliki`),
+  klien tidak pernah boleh menyebut karakter mana miliknya. Slot akun
+  diperiksa SEBELUM `newChar` supaya akun penuh tidak meninggalkan baris
+  `Character` yatim. Lihat Peringatan #123, #124.
+- **K2-lanjutan papan baca-tulis** (Wire v9): `OP_BOARD_WRITE` /
+  `EV_BOARD_POST` menembus map server → char server → MySQL
+  (`MapIntif` 0x300A baca, 0x300B hapus, 0x300C tulis; `Mapif` 0x380A
+  balas). ⚠️ Papan 0 adalah KOTAK SURAT, bukan papan biasa. `cliftest`
+  dapat gerbang baru: nomor opcode/peristiwa ganda langsung merah (satu
+  tabrakan `EV_BOARD_POST` vs `EV_TOWNS` ditemukan begitu gerbangnya ada).
 - Semua dijaga `cliftest` + `livetest` + kontrol negatif (K3.4 sempat
   lolos palsu karena karakter masih online → diberi baseline "sandi benar
   masuk" lebih dulu; `cobaMasuk` wajib memompa `Connection.proses()`).
@@ -238,11 +262,11 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 | | |
 |---|---|
 | Gerbang luring | **8/8 hijau** (`cliftest` 903, `dbtest` 234) |
-| Gerbang klien sungguhan | `livetest` **155** pemeriksaan hijau (**167** pada dua map server) |
-| Protokol RTK2 | **43 opcode masuk, 54 peristiwa keluar** (Wire v8) |
+| Gerbang klien sungguhan | `livetest` **182** pemeriksaan hijau |
+| Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v10) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#122 → `docs/PERINGATAN.md` |
+| Peringatan tercatat | #1–#127 → `docs/PERINGATAN.md` |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug
@@ -382,9 +406,36 @@ benar-benar ada — `doScript()` mengembalikan false tanpa suara bila
 namanya salah; `cliftest` memeriksa `.ID` menjawab id benda. Kontrol
 negatif membuktikan keduanya merah.
 
-**`map.log` dengan pemain sungguhan: 0 `script error`.** Sisa WARN/ERROR
-seluruhnya dipicu ujinya sendiri (sandi salah, bingkai rusak, sambung-putus
-beruntun) — itu memang yang harus dicatat.
+**`map.log` dengan pemain sungguhan: 0 `script error` di jalur yang
+diuji.** Sisa WARN/ERROR seluruhnya dipicu ujinya sendiri (sandi salah,
+bingkai rusak, sambung-putus beruntun) — itu memang yang harus dicatat.
+
+⚠️ **Satu golongan `script error` TERSISA dan bukan cacat port:** menginjak
+petak skrip Elixir/Arena memicu `attempt to index ? (a nil value)` karena
+`core` nil. `core = NPC(4294967295)` (`luascript/Developers/sys.lua:53`)
+dipakai **1.036 kali di 27 berkas** sebagai pemegang `gameRegistry`, tetapi
+tidak ada NPC ber-id itu — dan **di C pun tidak akan ada**: `map_id2npc`
+mencari id BLOCK LIST, dan id NPC di C selalu `NPC_START_NUM + NpcId − 2`
+(`NPC_START_NUM` = 3221225472), jadi 0xFFFFFFFF tak mungkin dihasilkan;
+`npcl_ctor` mengembalikan nil, persis seperti port ini. Isi acara itu
+memang mati di sumbernya. **Belum diputuskan** apakah port ini sebaiknya
+menyediakan NPC `core` sintetis (akan menghidupkan 1.036 pemakaian
+sekaligus) atau membiarkannya setia pada C.
+
+**Putaran kedua (28 Agu 2026 malam, bersama K2-lanjutan & K3-lanjutan).**
+Empat cacat lagi, semuanya lolos dari kedelapan gerbang luring:
+
+| Cacat | Akibat sebelum diperbaiki |
+|---|---|
+| `CharDb` memakai kolam koneksi char server dari dalam proses MAP (#123) | pembuatan karakter membalas dengan sopan dan **tidak pernah membuat apa pun**; kesalahannya hanya di `logs/common.log` |
+| `akunSesi` tidak dibersihkan saat putus, padahal fd dipakai ulang (#124) | sambungan baru **mewarisi akun** sesi sebelumnya dan bisa masuk ke karakternya **tanpa sandi** — lubang keamanan |
+| `NpcRegistry.runTimers` mengiterasi daftar yang diubah skrip (#125) | `ConcurrentModificationException` membatalkan **sisa tik**: NPC sesudahnya berhenti bergerak |
+| Sandi tidak diteruskan ke layar masuk klien (#126) | `--sandi` terisi tapi yang dikirim sandi kosong; hanya terlihat di gambar tangkapan |
+
+⚠️ #124 ditemukan **kontrol negatif** ("sambungan tanpa akun DITOLAK dengan
+sandi kosong"), bukan pembacaan kode — kodenya terlihat benar. #123 dan
+#125 tercatat di `logs/common.log`, yang sebelumnya tidak pernah disapu:
+disiplin "map.log 0 ERROR" ternyata buta terhadap seluruh `org.rtk.common`.
 
 **Sisa putaran berikutnya:** 7 opcode belum pernah dikirim klien
 (`profileEdit`, `dropGold`, `handItem`, `handGold`, `eat`, `throw`, dan

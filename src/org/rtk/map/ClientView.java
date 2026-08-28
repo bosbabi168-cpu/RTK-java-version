@@ -157,6 +157,16 @@ public interface ClientView {
     void boardListToPlayer(User sd, int board, int flags1, int flags2,
                            java.util.List<Clif.BoardEntry> isi);
 
+    /**
+     * Isi SATU kiriman papan (K2-lanjutan).
+     *
+     * @param bendera hak yang dihitung CHAR SERVER, bukan yang diklaim
+     *                klien: bit 1 boleh menulis, bit 2 boleh menghapus
+     */
+    void boardPostToPlayer(User sd, int board, int pos, int bendera,
+                           String penulis, String topik, int bulan, int hari,
+                           String isi);
+
     // ------------------------------------------------------------------
     // Pertukaran barang antar pemain
     // ------------------------------------------------------------------

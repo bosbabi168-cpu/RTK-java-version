@@ -1709,3 +1709,55 @@ ekor daftar dengan nomor lanjutan.
    lalu lupa mengabari klien — yang kedua terlihat seperti barang HILANG).
    Satu pemeriksaan gabungan tidak bisa membedakannya; dua pemeriksaan
    terpisah langsung menunjuk sebabnya.
+
+123. **Satu proses hanya punya kolam koneksi MILIKNYA.** `CharDb` memakai
+   `CharServer.sql` lewat static import; kolam itu hanya tersambung di
+   proses char server. Map server punya kolamnya sendiri, dan memanggil
+   `CharDb.newChar(...)` dari sana membuat setiap kueri melempar
+   `Connection pool is not initialized` — yang **ditelan dan berubah
+   menjadi `null`**, lalu diterjemahkan menjadi "gagal membuat karakter".
+   Pembuatan karakter tampak berjalan, membalas dengan sopan, dan tidak
+   pernah membuat apa pun. Sekarang ada `newChar(Sql, ...)` yang memaksa
+   pemanggil menyebut kolam mana yang dipakainya.
+   ⚠️ Kesalahannya **tidak muncul di `logs/map.log`**: `org.rtk.common.Sql`
+   jatuh ke logger Root, jadi tercatat di `logs/common.log`. Sapuan log
+   "0 ERROR di map.log" TIDAK cukup — `common.log` wajib ikut disapu.
+
+124. **fd DIPAKAI ULANG; apa pun yang diingat per-fd wajib dilupakan saat
+   putus.** `akunSesi` (fd → akun yang sudah masuk) tidak dibersihkan di
+   `handleDisconnect`. Sambungan baru yang kebetulan mendapat nomor fd
+   bekas sesi yang sudah masuk akun **mewarisi akun itu**, dan boleh masuk
+   ke karakter milik akun tersebut **tanpa sandi apa pun**. Ini lubang
+   keamanan, bukan sekadar kesalahan pembukuan. Ditemukan oleh kontrol
+   negatif livetest ("sambungan tanpa akun DITOLAK dengan sandi kosong") —
+   bukan oleh membaca kode, yang tampak benar.
+
+125. **Jangan pernah mengiterasi daftar yang boleh diubah oleh skrip yang
+   dipanggil di dalam iterasi itu.** `NpcRegistry.runTimers` berjalan di
+   atas `npcs` sambil memanggil kait Lua yang boleh memunculkan atau
+   mencabut NPC. Hasilnya `ConcurrentModificationException` yang
+   membatalkan **sisa tik**: seluruh NPC sesudah yang bersangkutan berhenti
+   bergerak sampai tik berikutnya. Gejalanya di dunia hampir tak terlihat
+   (NPC "kadang" diam), dan jejaknya ada di `logs/common.log` — lihat #123
+   soal log yang tidak disapu. Iterasi kini di atas salinan.
+
+126. **Nilai yang ada di satu lapisan belum tentu sampai ke lapisan yang
+   mengirimnya.** `--sandi` mengisi `RtkGame.sandi`, tetapi layar masuk
+   dibuat dengan konstruktor tanpa sandi — jadi ladang sandinya kosong dan
+   yang dikirim ke server adalah **sandi kosong**. Kode di kedua sisi
+   terlihat benar; yang salah adalah sambungannya. Ketahuan dari GAMBAR
+   TANGKAPAN layar masuk ("Email atau sandi akun salah" dengan ladang sandi
+   kosong), bukan dari membaca kode dan bukan dari gerbang mana pun —
+   karena livetest berbicara langsung dengan protokol dan tidak pernah
+   melewati layar masuk. Jalur antarmuka butuh buktinya sendiri.
+
+127. **Gerbang yang menyiapkan servernya sendiri hanya mematikan server yang
+   IA ketahui.** `tools/uji-dua-server.sh` memanggil `./run.sh stop`, yang
+   bekerja dari berkas PID milik `run.sh`. Map server yang dijalankan
+   dengan tangan (`java -jar dist/RTK-java.jar map`) tidak tercatat di
+   sana: ia selamat, tetap memegang port 2001, dan map server milik skrip
+   mati dengan `BindException` yang **hanya ada di `logs/map.console.log`**.
+   Livetest lalu berbicara dengan server yang salah — server yang mengira
+   peta 330 masih miliknya — jadi C3 gagal ("pemain berhenti di (21,13)
+   tanpa dialihkan") padahal kodenya benar. Sebelum menjalankan gerbang dua
+   server: `pgrep -a java | grep RTK-java` harus KOSONG.

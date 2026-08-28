@@ -65,9 +65,12 @@ public final class Mapif {
      *  + panjangNama(1) + nama[16] — tetap, seperti struct di C. */
     public static final int BOARD_SHOW_LEN = 34;
 
+    /** 0x300A / 0x300B: opcode(2)+fd(2)+papan(4)+pos(4)+bendera(4)+nama(1+16). */
+    public static final int BOARD_POST_LEN = 33;
+
     private static final int[] PACKET_LEN_TABLE = {
         72, -1, 20, 24, -1, 6, 255, -1, 28,
-        BOARD_SHOW_LEN, 0, 4, 0, 4124, 20, 4124};
+        BOARD_SHOW_LEN, BOARD_POST_LEN, BOARD_POST_LEN, -1, 4124, 20, 4124};
 
     /** Panjang tetap balasan 0x3803 sebelum blob: opcode+len+fd. */
     private static final int CHARLOAD_HEADER = 8;
@@ -110,7 +113,19 @@ public final class Mapif {
         boolean popup = s.rfifoB(16) != 0;
         int nl = s.rfifoB(17) & 0xFF;
         String nama = s.rfifoString(18, nl);
+        return kirimDaftar(s, clientFd, board, page, flags, popup, nama);
+    }
 
+    /**
+     * Susun dan kirim daftar isi papan (0x3809).
+     *
+     * <p>Dipisah dari {@link #parseShowPosts} supaya penghapusan dan
+     * penulisan bisa membalas dengan daftar TERBARU memakai penyusun yang
+     * sama — dua penyusun daftar akan berbeda persis pada hal yang paling
+     * jarang diperiksa, yaitu tata letak byte-nya.</p>
+     */
+    private static int kirimDaftar(Session s, int clientFd, int board, int page,
+                                   int flags, boolean popup, String nama) {
         int flags1 = org.rtk.map.Boards.displayFlags1(flags, popup, board);
         int flags2 = org.rtk.map.Boards.displayFlags2(board);
 
@@ -172,6 +187,152 @@ public final class Mapif {
         s.wfifoL(2, off);
         s.wfifoSet(off);
         return 0;
+    }
+
+    /**
+     * mapif_parse_readpost() (0x300A) — kirim ISI satu kiriman (K2-lanjutan).
+     *
+     * <p>⚠️ Pos dicari menurut {@code BrdPosition} DI DALAM papannya, bukan
+     * menurut {@code BrdId}: nomor yang dilihat pemain di daftar adalah
+     * posisi, dan tiap papan punya penomoran posisinya sendiri. Memakai
+     * {@code BrdId} akan membuka kiriman dari papan LAIN yang kebetulan
+     * bernomor sama.</p>
+     */
+    static int parseReadPost(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(2);
+        int board = s.rfifoL(4);
+        int pos = s.rfifoL(8);
+        int flags = s.rfifoL(12);
+        int nl = s.rfifoB(16) & 0xFF;
+        String nama = s.rfifoString(17, nl);
+
+        Object[] p = new Object[]{"", "", 0, 0, ""};
+        int rows = sql.forEachRow(
+                "SELECT `BrdChaName`,`BrdTopic`,`BrdMonth`,`BrdDay`,`BrdPost`"
+                + " FROM `Boards` WHERE `BrdBnmId` = ? AND `BrdPosition` = ?",
+                rs -> {
+                    p[0] = str(rs.getString("BrdChaName"));
+                    p[1] = str(rs.getString("BrdTopic"));
+                    p[2] = rs.getInt("BrdMonth");
+                    p[3] = rs.getInt("BrdDay");
+                    p[4] = str(rs.getString("BrdPost"));
+                }, board, pos);
+        if (rows <= 0) {
+            log.debug("[CHAR] pos {} papan {} tidak ada", pos, board);
+        }
+
+        // Boleh menghapus bila penulisnya sendiri, atau bila map server
+        // sudah menyatakan hak hapus. ⚠️ Diperiksa DI SINI, bukan dipercaya
+        // dari klien.
+        int bendera = flags & org.rtk.map.Boards.CAN_WRITE;
+        if ((flags & org.rtk.map.Boards.CAN_DEL) != 0
+                || (!nama.isEmpty() && nama.equalsIgnoreCase((String) p[0]))) {
+            bendera |= org.rtk.map.Boards.CAN_DEL;
+        }
+
+        byte[] penulis = ((String) p[0]).getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] topik = ((String) p[1]).getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] isi = ((String) p[4]).getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoW(0, 0x380A);
+        s.wfifoW(6, clientFd);
+        s.wfifoL(8, board);
+        s.wfifoL(12, pos);
+        s.wfifoL(16, bendera);
+        s.wfifoB(20, (Integer) p[2]);
+        s.wfifoB(21, (Integer) p[3]);
+        int off = 22;
+        off = tulisTeks(s, off, penulis, 1);
+        off = tulisTeks(s, off, topik, 1);
+        off = tulisTeks(s, off, isi, 2);
+        s.wfifoL(2, off);
+        s.wfifoSet(off);
+        return 0;
+    }
+
+    /** Tulis teks berawalan panjang; {@code lebarLen} 1 atau 2 byte. */
+    private static int tulisTeks(Session s, int off, byte[] teks, int lebarLen) {
+        int n = teks.length;
+        if (lebarLen == 1) {
+            n = Math.min(n, 255);
+            s.wfifoB(off, n);
+        } else {
+            n = Math.min(n, 4000);
+            s.wfifoW(off, n);
+        }
+        s.wfifoBytes(off + lebarLen, java.util.Arrays.copyOf(teks, n));
+        return off + lebarLen + n;
+    }
+
+    /**
+     * mapif_parse_deletepost() (0x300B) — hapus kiriman (K2-lanjutan).
+     *
+     * <p>⚠️ Haknya diperiksa ULANG di sini. Map server memang mengirim
+     * bendera, tetapi bendera itu berasal dari keadaan sesi yang bisa
+     * berubah; satu-satunya hal yang benar-benar mengikat adalah baris di
+     * database. Penghapusan yang tidak berhak dijawab dengan daftar yang
+     * TIDAK berubah, bukan dengan diam.</p>
+     */
+    static int parseDeletePost(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(2);
+        int board = s.rfifoL(4);
+        int pos = s.rfifoL(8);
+        int flags = s.rfifoL(12);
+        int nl = s.rfifoB(16) & 0xFF;
+        String nama = s.rfifoString(17, nl);
+
+        int hapus;
+        if ((flags & org.rtk.map.Boards.CAN_DEL) != 0) {
+            hapus = sql.update("DELETE FROM `Boards`"
+                    + " WHERE `BrdBnmId` = ? AND `BrdPosition` = ?", board, pos);
+        } else {
+            hapus = sql.update("DELETE FROM `Boards`"
+                    + " WHERE `BrdBnmId` = ? AND `BrdPosition` = ?"
+                    + " AND `BrdChaName` = ?", board, pos, nama);
+        }
+        log.debug("[CHAR] hapus pos {} papan {} oleh {}: {} baris",
+                pos, board, nama, hapus);
+        // Balas dengan daftar terbaru supaya klien tidak perlu menebak
+        // apakah penghapusannya berhasil.
+        return kirimDaftar(s, clientFd, board, 0, flags, false, nama);
+    }
+
+    /**
+     * mapif_parse_writepost() (0x300C) — tulis kiriman baru (K2-lanjutan).
+     *
+     * <p>{@code BrdPosition} adalah nomor urut PER PAPAN, jadi nomor
+     * berikutnya diambil dari maksimum papan itu — bukan dari jumlah
+     * barisnya, karena penghapusan membuat keduanya berbeda dan nomor yang
+     * dipakai ulang akan menabrak kiriman lama.</p>
+     */
+    static int parseWritePost(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(6);
+        int board = s.rfifoL(8);
+        String nama = s.rfifoString(12, 16).trim();
+        int off = 28;
+        int tl = s.rfifoW(off);
+        String topik = s.rfifoString(off + 2, tl);
+        off += 2 + tl;
+        int il = s.rfifoW(off);
+        String isi = s.rfifoString(off + 2, il);
+
+        Integer maks = sql.queryInt(
+                "SELECT COALESCE(MAX(`BrdPosition`), 0) FROM `Boards`"
+                + " WHERE `BrdBnmId` = ?", board);
+        int pos = (maks == null ? 0 : maks) + 1;
+        java.time.LocalDate hari = java.time.LocalDate.now();
+        int baris = sql.update(
+                "INSERT INTO `Boards` (`BrdBnmId`,`BrdChaName`,`BrdChaId`,"
+                + "`BrdBtlId`,`BrdHighlighted`,`BrdMonth`,`BrdDay`,`BrdTopic`,"
+                + "`BrdPost`,`BrdPosition`) VALUES (?,?,0,0,0,?,?,?,?,?)",
+                board, nama, hari.getMonthValue(), hari.getDayOfMonth(),
+                topik, isi, pos);
+        log.debug("[CHAR] tulis pos {} papan {} oleh {}: {} baris",
+                pos, board, nama, baris);
+        return kirimDaftar(s, clientFd, board, 0, org.rtk.map.Boards.CAN_WRITE,
+                false, nama);
     }
 
     private static String str(String v) {
@@ -532,6 +693,9 @@ public final class Mapif {
             case 0x3005: parseLogout(fd); break;
             case 0x3007: parseSaveChar(fd, true); break;
             case 0x3009: parseShowPosts(fd); break;
+            case 0x300A: parseReadPost(fd); break;
+            case 0x300B: parseDeletePost(fd); break;
+            case 0x300C: parseWritePost(fd); break;
             case 0x300D: parseMailWrite(fd, false); break;
             case 0x300F: parseMailWrite(fd, true); break;
             default:

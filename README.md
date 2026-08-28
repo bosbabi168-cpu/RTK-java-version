@@ -16,7 +16,7 @@ Sejak 26 Agustus 2026 project ini **tidak lagi mengejar kompatibilitas
 byte-per-byte** dengan klien RetroTK. Yang berlaku:
 
 - **Protokol sendiri (RTK2)** — dua arah, dirancang dari kebutuhan nyata
-  skrip: 43 opcode masuk, 54 peristiwa keluar. Spesifikasi:
+  skrip: 46 opcode masuk, 57 peristiwa keluar. Spesifikasi:
   [`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md).
 - **Klien sendiri (libGDX)** — dikembangkan di repo terpisah
   `../RTK-client`, belum di-commit sampai seluruh aset diganti buatan
@@ -45,9 +45,9 @@ menulis adapter baru, bukan menyentuh logika.
 - **Scripting**: 906/906 skrip termuat 0 error; celah binding **0**
   (satu-satunya sisa `testPacket`, sengaja tidak diport).
 - **Pengujian**: 8 gerbang regresi luring (903 assertion `cliftest`,
-  234 `dbtest`) + gerbang klien sungguhan `livetest` (155 pemeriksaan;
-  **167** pada setup dua map server, `./tools/uji-dua-server.sh`).
-  36 dari 43 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.
+  234 `dbtest`) + gerbang klien sungguhan `livetest` (182 pemeriksaan;
+  **194** pada setup dua map server, `./tools/uji-dua-server.sh`).
+  36 dari 46 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.
 - **Terjemahan Indonesia**: SELESAI — 0 dari 9.812 titik dialog masih
   berbahasa Inggris; `livetest` menuntut dialog yang sampai ke pemain
   berbahasa Indonesia.
@@ -170,8 +170,8 @@ aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 | `dbtest` | lapisan database ke MySQL hidup | 234 assertion; butuh MySQL |
 | `luaaudit` | pemeriksa statis 907 skrip + celah binding | `-Drtk.audit.penuh=true` untuk daftar utuh |
 | `wiresync` | `Wire.java` identik dengan salinan di repo klien | skip bila repo klien tidak ada |
-| `livetest` | **klien RTK2 sungguhan** masuk dunia + 155 pemeriksaan | dijalankan dari `../RTK-client` |
-| `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | 167 pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
+| `livetest` | **klien RTK2 sungguhan** masuk dunia + 182 pemeriksaan | dijalankan dari `../RTK-client` |
+| `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | 194 pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
 
 Delapan gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
 tidak bisa melihat "sesuatu yang tidak terjadi". Karena itu setiap
@@ -192,16 +192,17 @@ terjemahan di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 28 Agustus 2026:** 8/8 gerbang luring hijau, `livetest` 89
-pemeriksaan hijau, protokol RTK2 dua arah simetris, celah binding 0,
-`map.log` 0 ERROR/WARN. Penghambat utama sekarang ada di sisi klien
-(`../RTK-client`) — server sudah mengirim lebih banyak daripada yang bisa
-digambar klien.
+**Status 28 Agustus 2026:** 8/8 gerbang luring hijau, `livetest` 182
+pemeriksaan hijau (194 pada dua map server), protokol RTK2 dua arah
+simetris, celah binding 0, `map.log` 0 ERROR/WARN. Pemain baru kini bisa
+**mendaftar sendiri** lewat klien (masuk akun, buat karakter, pilih
+karakter) — lihat K3-lanjutan. ⚠️ Sapu `logs/common.log` juga: dua bug
+nyata bersembunyi di sana, bukan di `map.log` (Peringatan #123, #125).
 
 Roadmap menuju "server dipakai normal & lancar tanpa bug" — lengkap dengan
 tabel aksi pemain yang belum punya jalur masuk RTK2 — ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#122 di
+Jebakan & pelajaran #1–#127 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder

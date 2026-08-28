@@ -443,7 +443,7 @@ public final class MapServer {
                 return 0;   // bingkainya belum lengkap
             }
             org.rtk.map.proto.Inbound.dispatch(fd, s, onlineChars.get(fd), len,
-                    commands, MapServer::rtk2Introduce);
+                    commands, RTK2_HANDSHAKE);
         } catch (org.rtk.map.proto.Wire.Malformed e) {
             // Setelah satu bingkai rusak, batas bingkai berikutnya sudah
             // tidak diketahui — melanjutkan berarti menafsirkan sampah.
@@ -473,13 +473,193 @@ public final class MapServer {
                     name, s.clientIpString());
             return false;
         }
-        if (!org.rtk.charserver.CharDb.isPass(name, password, md5)) {
+        // K3-lanjutan: sesi yang sudah masuk AKUN boleh memilih karakter
+        // miliknya tanpa sandi karakter — itulah arti "pilih karakter".
+        // ⚠️ Kepemilikannya diperiksa ULANG di sini terhadap tabel Accounts;
+        // klien tidak pernah boleh menyebut karakter mana yang miliknya.
+        Integer akun = akunSesi.get(fd);
+        boolean lewatAkun = akun != null && akunMemiliki(akun, name);
+        if (!lewatAkun
+                && !org.rtk.charserver.CharDb.isPass(name, password, md5)) {
             log.warn("[MAP] RTK2 '{}' dari {} ditolak: sandi salah",
                     name, s.clientIpString());
             return false;
         }
         rtk2Fds.add(fd);
         return authByName(fd, s, name);
+    }
+
+    /** Akun yang sudah masuk pada tiap sesi RTK2 (K3-lanjutan). */
+    private static final java.util.Map<Integer, Integer> akunSesi =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Apakah karakter ini benar-benar milik akun tersebut. */
+    private static boolean akunMemiliki(int akunId, String nama) {
+        Integer chaId = sql.queryInt(
+                "SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", nama);
+        if (chaId == null) {
+            return false;
+        }
+        Integer ada = sql.queryInt(
+                "SELECT `AccountId` FROM `Accounts` WHERE `AccountId` = ?"
+                + " AND (`AccountCharId1` = ? OR `AccountCharId2` = ?"
+                + " OR `AccountCharId3` = ? OR `AccountCharId4` = ?"
+                + " OR `AccountCharId5` = ? OR `AccountCharId6` = ?)",
+                akunId, chaId, chaId, chaId, chaId, chaId, chaId);
+        return ada != null;
+    }
+
+    /** Penangan pra-login & perkenalan RTK2 (K3-lanjutan). */
+    private static final org.rtk.map.proto.Inbound.Handshake RTK2_HANDSHAKE =
+            new org.rtk.map.proto.Inbound.Handshake() {
+        @Override
+        public boolean playerIntroduces(int fd, Session s, String nama, String sandi) {
+            return rtk2Introduce(fd, s, nama, sandi);
+        }
+
+        @Override
+        public void accountLogs(int fd, Session s, String email, String sandi) {
+            Integer id = sql.queryInt(
+                    "SELECT `AccountId` FROM `Accounts`"
+                    + " WHERE `AccountEmail` = ? AND `AccountPassword` = MD5(?)",
+                    email, sandi);
+            if (id == null) {
+                akunSesi.remove(fd);
+                hasilAkun(s, 1, "Email atau sandi akun salah.");
+                return;
+            }
+            Integer banned = sql.queryInt(
+                    "SELECT `AccountBanned` FROM `Accounts` WHERE `AccountId` = ?", id);
+            if (banned != null && banned == 1) {
+                akunSesi.remove(fd);
+                hasilAkun(s, 2, "Akun ini diblokir.");
+                return;
+            }
+            akunSesi.put(fd, id);
+            kirimDaftarKarakter(s, id);
+        }
+
+        @Override
+        public void createsCharacter(int fd, Session s, String nama, String sandi,
+                                     int sex, int wajah, int rambut,
+                                     int warnaRambut, int warnaWajah, int negara) {
+            if (nama.length() < 3 || nama.length() > 12
+                    || !nama.matches("[A-Za-z]+")) {
+                hasilAkun(s, 3, "Nama harus 3-12 huruf, tanpa angka atau spasi.");
+                return;
+            }
+            if (sandi.length() < 3) {
+                hasilAkun(s, 4, "Sandi minimal 3 huruf.");
+                return;
+            }
+            // ⚠️ Slot akun diperiksa SEBELUM karakternya dibuat. Kalau
+            // urutannya terbalik, akun yang sudah penuh tetap mendapat baris
+            // `Character` baru yang tidak dikaitkan ke mana pun: nama itu
+            // terpakai selamanya tanpa ada yang bisa memainkannya.
+            Integer akunSesiIni = akunSesi.get(fd);
+            if (akunSesiIni != null && slotAkunKosong(akunSesiIni) == 0) {
+                hasilAkun(s, 7, "Akun ini sudah punya 6 karakter.");
+                return;
+            }
+            // ⚠️ `sql` DI SINI adalah kolam koneksi map server. Versi tanpa
+            // argumen memakai kolam char server, yang di proses ini tidak
+            // pernah tersambung — Peringatan #123.
+            int r = org.rtk.charserver.CharDb.newChar(sql, nama, sandi, 0, sex,
+                    negara, wajah, rambut, warnaRambut, warnaWajah);
+            switch (r) {
+                case 0 -> {
+                    // Kaitkan ke akun bila sesi ini sedang masuk akun, supaya
+                    // karakter barunya langsung muncul di daftarnya.
+                    Integer akun = akunSesiIni;
+                    if (akun != null) {
+                        kaitkanKeAkun(akun, nama);
+                        hasilAkun(s, 0, "Karakter '" + nama + "' dibuat.");
+                        kirimDaftarKarakter(s, akun);
+                    } else {
+                        hasilAkun(s, 0, "Karakter '" + nama + "' dibuat. "
+                                + "Masuk dengan nama dan sandi itu.");
+                    }
+                }
+                case 1 -> hasilAkun(s, 5, "Nama '" + nama + "' sudah dipakai.");
+                default -> hasilAkun(s, 6, "Gagal membuat karakter.");
+            }
+        }
+    };
+
+    /**
+     * Kirim satu bingkai RTK2 ke sesi yang BELUM punya User.
+     *
+     * <p>{@code Rtk2ClientView.kirim} bekerja dari objek pemain, dan pada
+     * tahap pra-login pemain itu belum ada — daftar karakter justru yang
+     * menentukan siapa pemainnya nanti.</p>
+     */
+    private static void kirimRtk2(Session s, org.rtk.map.proto.Wire.Writer w) {
+        if (s == null) {
+            return;
+        }
+        byte[] f = w.frame();
+        s.wfifoBytes(0, f, f.length);
+        s.wfifoSet(f.length);
+    }
+
+    /** Nomor slot akun pertama yang kosong (1..6), atau 0 bila penuh. */
+    private static int slotAkunKosong(int akunId) {
+        for (int i = 1; i <= 6; i++) {
+            Integer isi = sql.queryInt("SELECT `AccountCharId" + i + "`"
+                    + " FROM `Accounts` WHERE `AccountId` = ?", akunId);
+            if (isi == null || isi == 0) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    /** Pasang karakter ke slot akun pertama yang kosong. */
+    private static void kaitkanKeAkun(int akunId, String nama) {
+        Integer chaId = sql.queryInt(
+                "SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", nama);
+        if (chaId == null) {
+            return;
+        }
+        int slot = slotAkunKosong(akunId);
+        if (slot == 0) {
+            log.warn("[MAP] akun {} sudah punya 6 karakter; '{}' tidak dikaitkan",
+                    akunId, nama);
+            return;
+        }
+        sql.update("UPDATE `Accounts` SET `AccountCharId" + slot + "` = ?"
+                + " WHERE `AccountId` = ?", chaId, akunId);
+    }
+
+    private static void hasilAkun(Session s, int kode, String pesan) {
+        kirimRtk2(s, new org.rtk.map.proto.Wire.Writer(
+                org.rtk.map.proto.Wire.EV_ACCOUNT_RESULT).u8(kode).str(pesan));
+    }
+
+    /** Kirim daftar karakter milik satu akun. */
+    private static void kirimDaftarKarakter(Session s, int akunId) {
+        java.util.List<Object[]> daftar = new java.util.ArrayList<>();
+        sql.forEachRow(
+                "SELECT c.`ChaName`, c.`ChaLevel`, c.`ChaSex`, c.`ChaFace`,"
+                + " c.`ChaHair`, c.`ChaHairColor`, c.`ChaPthId` FROM `Character` c"
+                + " JOIN `Accounts` a ON c.`ChaId` IN (a.`AccountCharId1`,"
+                + " a.`AccountCharId2`, a.`AccountCharId3`, a.`AccountCharId4`,"
+                + " a.`AccountCharId5`, a.`AccountCharId6`)"
+                + " WHERE a.`AccountId` = ? ORDER BY c.`ChaLevel` DESC",
+                rs -> daftar.add(new Object[] {
+                    rs.getString("ChaName"), rs.getInt("ChaLevel"),
+                    rs.getInt("ChaSex"), rs.getInt("ChaFace"),
+                    rs.getInt("ChaHair"), rs.getInt("ChaHairColor"),
+                    rs.getInt("ChaPthId")}),
+                akunId);
+        org.rtk.map.proto.Wire.Writer w = new org.rtk.map.proto.Wire.Writer(
+                org.rtk.map.proto.Wire.EV_CHAR_LIST).u16(daftar.size());
+        for (Object[] c : daftar) {
+            w.str((String) c[0]).u16((Integer) c[1]).u8((Integer) c[6])
+             .u16((Integer) c[3]).u16((Integer) c[4])
+             .u8((Integer) c[5]).u8((Integer) c[2]);
+        }
+        kirimRtk2(s, w);
     }
 
     /** Satu paket RetroTK. */
@@ -567,6 +747,12 @@ public final class MapServer {
     /** Pemain terputus: simpan lalu lepaskan dari dunia. */
     static void handleDisconnect(int fd) {
         rtk2Fds.remove(fd);
+        // ⚠️ WAJIB. Nomor fd DIPAKAI ULANG oleh sambungan berikutnya: tanpa
+        // baris ini, sambungan baru yang kebetulan mendapat fd bekas sesi
+        // yang sudah masuk akun ikut mewarisi akunnya, dan boleh masuk ke
+        // karakter akun itu TANPA sandi. Ketahuan oleh kontrol negatif
+        // livetest, bukan oleh nalar. Lihat docs/PERINGATAN.md #124.
+        akunSesi.remove(fd);
         // Permintaan data karakter yang belum dijawab char server tidak lagi
         // ada tujuannya — lihat catatan `menunggu` di MapIntif.
         MapIntif.lupakanPermintaan(fd);

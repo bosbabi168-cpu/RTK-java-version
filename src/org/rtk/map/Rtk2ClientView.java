@@ -1086,6 +1086,17 @@ public final class Rtk2ClientView implements ClientView {
     }
 
     @Override
+    public void boardPostToPlayer(User sd, int board, int pos, int bendera,
+                                  String penulis, String topik, int bulan,
+                                  int hari, String isi) {
+        kirim(sd, new Wire.Writer(Wire.EV_BOARD_POST)
+                .u16(board).u32(pos).u8(bendera)
+                .str(penulis).str(topik)
+                .u8(bulan).u8(hari)
+                .str(isi));
+    }
+
+    @Override
     public void boardQuestionsToPlayer(User sd, List<String> headers,
                                        List<String> questions,
                                        List<Integer> inputLines) {

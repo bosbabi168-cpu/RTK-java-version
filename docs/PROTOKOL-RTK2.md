@@ -12,9 +12,11 @@ Hitung ulang jumlah opcodenya dengan
 `grep -c "public static final int OP_" src/org/rtk/map/proto/Wire.java` —
 jangan percaya angka yang tertulis di prosa mana pun, termasuk di sini.
 
-**Status: kedua arah berdiri.** Masuk lewat `map/proto/Inbound`, keluar
-lewat `map/Rtk2ClientView` (51 peristiwa). Keduanya hidup berdampingan
-dengan RetroTK; lihat "Hidup berdampingan" di bawah.
+**Status: kedua arah berdiri dan DIPAKAI klien sungguhan.** Masuk lewat
+`map/proto/Inbound`, keluar lewat `map/Rtk2ClientView`. Keduanya hidup
+berdampingan dengan RetroTK; lihat "Hidup berdampingan" di bawah.
+Klien libGDX di `../RTK-client` memainkan protokol ini setiap hari, dan
+gerbang `livetest` menjalankannya ujung-ke-ujung terhadap server hidup.
 
 ## Bingkai
 
@@ -63,12 +65,27 @@ Total 9 byte.
 
 | Opcode | Nama | Muatan |
 |---|---|---|
-| `0x0001` | `HELLO` | `u32 magic("RTK2"), u16 versi, str namaKarakter` |
+| `0x0001` | `HELLO` | `u32 magic("RTK2"), u16 versi, str namaKarakter, str sandi` |
 | `0x0002` | `PING` | — |
+| `0x0010` | `ACCOUNT_LOGIN` | `str email, str sandiAkun` |
+| `0x0011` | `CREATE_CHAR` | `str nama, str sandi, u8 sex, u16 wajah, u16 rambut, u8 warnaRambut, u8 warnaWajah, u8 negara` |
 
 `HELLO` **wajib bingkai pertama**. Magic atau versi yang tidak cocok →
-koneksi ditutup, bukan ditebak. Sebelum `HELLO` diterima, opcode lain
-diabaikan.
+koneksi ditutup, bukan ditebak. Sebelum `HELLO` diterima, hanya dua opcode
+pra-login di atas yang dilayani; sisanya diabaikan.
+
+**Pra-login (K3-lanjutan) menyimpang dari C dengan sengaja.** Di C pemain
+menyambung tiga kali (login → char → map). Di RTK2 map server melayani
+semuanya pada SATU sambungan: `ACCOUNT_LOGIN` dijawab `EV_CHAR_LIST`,
+`CREATE_CHAR` dijawab `EV_ACCOUNT_RESULT` (kode 0 berhasil; 1 sandi akun
+salah, 2 diblokir, 3 nama tak sah, 4 sandi pendek, 5 nama dipakai, 6 gagal
+DB, 7 akun penuh), lalu `HELLO` dikirim di sambungan yang sama.
+
+⚠️ Sesi yang sudah masuk akun boleh mengirim `HELLO` dengan **sandi
+kosong** untuk karakter MILIK akun itu — kepemilikannya diperiksa ulang ke
+tabel `Accounts` di server. Klien tidak pernah boleh menyatakan karakter
+mana miliknya. Ikatan akun→sesi dibuang saat sambungan putus (nomor fd
+dipakai ulang; lihat `docs/PERINGATAN.md` #124).
 
 ### 0x01xx — gerak & sasaran
 
@@ -284,7 +301,7 @@ Ambil nilainya dari `Wire.java`, bukan dari sini.
 | `0x83xx` | teks — obrolan, pesan, popup, teks layar, kertas, URL, benda berbicara |
 | `0x84xx` | pertukaran — terbuka, barang, emas, persetujuan |
 | `0x85xx` | benda — muncul, pindah, hilang, wujud berubah, arah hadap, animasi, gerakan, lemparan, bunyi |
-| `0x86xx` | dialog & antarmuka — dialog/menu/isian/toko, pilihan peta, daftar papan, formulir papan, daftar kekuatan |
+| `0x86xx` | dialog & antarmuka — dialog/menu/isian/toko, pilihan peta, daftar papan, isi kiriman papan, formulir papan, daftar kekuatan, **daftar karakter akun**, **hasil aksi pra-login** |
 
 ### Yang sengaja TIDAK ada di arah keluar
 
@@ -308,14 +325,18 @@ bingkainya, dan ragam jawaban yang tidak dikenal.
 
 ## Yang belum ada
 
-Aksi yang **belum punya opcode**, karena logikanya memang belum ada:
-merapal mantra, grup, teman, profil, emosi, daftar abaikan, papan & pos,
-minimap, ranking, berputar di tempat.
+Daftar lama di bagian ini (mantra, grup, teman, profil, emosi, daftar
+abaikan, papan & pos, ranking, berputar di tempat) **sudah punya opcode
+semuanya** sejak R1–R3 dan K1–K4; papan baca-tulis menyusul di
+K2-lanjutan (`OP_BOARD_WRITE` / `EV_BOARD_POST`), dan pendaftaran di
+K3-lanjutan (`OP_ACCOUNT_LOGIN` / `OP_CREATE_CHAR`).
+
+Yang benar-benar belum ada: minimap.
 
 Tambahkan opcodenya **saat logikanya dikerjakan**, bukan sebelumnya.
 Nomornya tinggal disisipkan di golongan yang sesuai — itulah sebabnya
 opcodenya dua byte dan berjarak.
 
-Arah keluar sudah berdiri (51 peristiwa). Yang **belum pernah diuji**:
-tidak satu byte pun RTK2 pernah dibaca klien sungguhan, karena kliennya
-belum ada. Itu butir terakhir roadmap, dan sengaja diletakkan di sana.
+⚠️ Jangan percaya angka jumlah opcode/peristiwa di prosa mana pun,
+termasuk di dokumen ini — hitung dari `Wire.java` seperti tertulis di
+atas.

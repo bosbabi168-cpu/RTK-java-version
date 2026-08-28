@@ -145,6 +145,14 @@ public final class ProtocolRouter implements ClientView {
     }
 
     @Override
+    public void boardPostToPlayer(User sd, int board, int pos, int bendera,
+                                  String penulis, String topik, int bulan,
+                                  int hari, String isi) {
+        tujuan.forEach(v -> v.boardPostToPlayer(sd, board, pos, bendera,
+                penulis, topik, bulan, hari, isi));
+    }
+
+    @Override
     public void exchangeOpened(User sd, User target) {
         tujuan.forEach(v -> v.exchangeOpened(sd, target));
     }
