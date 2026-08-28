@@ -295,7 +295,46 @@ public final class WorldBindings {
         void set(MapData m, int x, int y, int v);
     }
 
-    private static LuaValue bacaAtribut(MapData m, String nama) {
+    /**
+     * Atribut peta yang dibaca lewat sebuah <b>benda</b> yang berdiri di sana.
+     *
+     * <p>Cermin {@code bll_getattr} (sl.c:4350), yang meneruskan ~20 atribut
+     * dari {@code map[bl->m]} ke pemain, mob, NPC, dan barang lantai. Skrip
+     * memakainya dari sisi pemain terus-menerus — {@code player.mapTitle}
+     * saja 141×.</p>
+     *
+     * @return null bila bukan atribut peta, sehingga pencarian lanjut
+     */
+    public static LuaValue atributPeta(int m, String nama) {
+        // ⚠️ Daftar TERTUTUP, diambil persis dari `bll_getattr`. Meneruskan
+        // apa saja ke `bacaAtribut` adalah kesalahan yang sudah terjadi:
+        // `default`-nya mengembalikan `LuaValue.NIL`, BUKAN null, sehingga
+        // SETIAP atribut pemain dijawab nil dan seluruh method-nya
+        // tertutupi — gejalanya "attempt to call nil" di berkas skrip yang
+        // tidak ada hubungannya.
+        //
+        // `x`, `y`, `m`, dan `ID` sengaja TIDAK ikut: keempatnya milik
+        // bendanya sendiri, dan sudah dijawab getter di atas.
+        if (!DITERUSKAN.contains(nama)) {
+            return null;
+        }
+        MapData md = org.rtk.map.MapServer.world == null
+                ? null : org.rtk.map.MapServer.world.get(m);
+        if (md == null) {
+            return null;
+        }
+        LuaValue v = bacaAtribut(md, nama);
+        return v == null || v.isnil() ? null : v;
+    }
+
+    private static final java.util.Set<String> DITERUSKAN = java.util.Set.of(
+            "xmax", "ymax", "mapTitle", "mapFile", "bgm", "bgmType", "pvp",
+            "spell", "light", "weather", "sweepTime", "canTalk", "showGhosts",
+            "region", "indoor", "warpOut", "bind", "reqLvl", "reqVita",
+            "reqMana", "reqPath", "reqMark", "maxLvl", "maxVita", "maxMana",
+            "canSummon", "canUse", "canEat", "canSmoke", "canMount", "canGroup");
+
+    static LuaValue bacaAtribut(MapData m, String nama) {
         return switch (nama) {
             case "xmax" -> LuaValue.valueOf(m.xs - 1);
             case "ymax" -> LuaValue.valueOf(m.ys - 1);

@@ -601,15 +601,20 @@ public final class Clif {
      */
     public static void sendAddItem(User sd, int slot) {
         Session s = sessionOf(sd);
-        if (s == null || slot < 0 || slot >= sd.status.inventory.size()) {
+        // ⚠️ inventoryAt + batas maxInv, bukan indeks daftar + ukurannya.
+        // Lihat Peringatan #85.
+        if (s == null || slot < 0 || slot >= sd.status.maxInv) {
             return;
         }
-        org.rtk.common.mmo.Item it = sd.status.inventory.get(slot);
+        org.rtk.common.mmo.Item it = sd.status.inventoryAt(slot);
+        if (it == null) {
+            return;
+        }
         var info = MapServer.itemDb.info(it.id);
 
         // Penyapu data rusak: barangnya dibuang, bukan dilewati.
         if (it.id < 4 || info.id() == 0) {
-            sd.status.inventory.remove(slot);
+            sd.status.removeInventoryAt(slot);
             return;
         }
 
@@ -1031,6 +1036,187 @@ public final class Clif {
         }
         s.wfifoWBE(1, len + 9);
         s.wfifoSet(encrypt(s, sd));
+    }
+
+    // ------------------------------------------------------------------
+    // grup (clif_groupstatus / clif_grouphealth_update)
+    // ------------------------------------------------------------------
+
+    /**
+     * Urutan tampil anggota grup di jendela: perompak, ksatria, penyihir,
+     * pujangga, petani, GM.
+     *
+     * <p>⚠️ Angkanya <b>jalur</b> ({@code classdb_path}), bukan id kelas,
+     * dan bukan pula urutan jalur itu sendiri — C menyalinnya ke enam larik
+     * terpisah lalu menuangkannya dalam urutan ini.</p>
+     */
+    private static final int[] URUT_JALUR = {2, 1, 3, 4, 0};
+
+    private static java.util.List<User> anggotaTerurut(User sd) {
+        java.util.List<User> semua = Groups.anggotaOnline(sd);
+        java.util.List<User> keluar = new java.util.ArrayList<>();
+        for (int jalur : URUT_JALUR) {
+            for (User t : semua) {
+                if (MapServer.classDb.pathOf(t.status.charClass) == jalur) {
+                    keluar.add(t);
+                }
+            }
+        }
+        for (User t : semua) {          // sisanya (GM) di belakang
+            if (!keluar.contains(t)) {
+                keluar.add(t);
+            }
+        }
+        return keluar;
+    }
+
+    /**
+     * clif_groupstatus() — isi jendela grup. Opcode 0x63, subperintah 2.
+     *
+     * <p>⚠️ Ladang panjangnya <b>sengaja salah</b> seperti di C
+     * ({@code len + 3} setelah {@code len += 6}, padahal byte terakhir yang
+     * ditulis ada lima byte lebih awal). Klien RetroTK asli hidup dengan
+     * itu; membetulkannya di sini justru memberi klien panjang yang tidak
+     * pernah ia lihat.</p>
+     */
+    public static void sendGroupStatus(User sd) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        java.util.List<User> daftar = anggotaTerurut(sd);
+        head(s, 0x63, 0);
+        s.wfifoB(5, 2);
+        s.wfifoB(6, daftar.size());
+
+        int len = 0;
+        for (User tsd : daftar) {
+            byte[] nb = tsd.name().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoLBE(len + 7, (int) tsd.id);
+            s.wfifoB(len + 11, nb.length);
+            s.wfifoBytes(len + 12, nb);
+            len += 11;
+            len += nb.length + 1;
+
+            s.wfifoB(len, sd.groupLeader == tsd.status.id ? 1 : 0);
+            s.wfifoB(len + 1, tsd.status.state);
+            s.wfifoB(len + 2, tsd.status.face);
+            s.wfifoB(len + 3, tsd.status.hair);
+            s.wfifoB(len + 4, tsd.status.hairColor);
+            s.wfifoB(len + 5, 0);
+
+            int[] helm = tampilan(tsd, org.rtk.map.data.Equip.HELM);
+            boolean pakaiHelm = helm != null
+                    && (tsd.status.settingFlags
+                        & org.rtk.common.mmo.SettingFlags.HELM) != 0;
+            if (!pakaiHelm) {
+                s.wfifoB(len + 6, 0);
+                s.wfifoW(len + 7, 0xFFFF);
+                s.wfifoB(len + 9, 0);
+            } else {
+                s.wfifoB(len + 6, 1);
+                s.wfifoWBE(len + 7, helm[0]);
+                s.wfifoB(len + 9, helm[1]);
+            }
+
+            int[] muka = tampilan(tsd, org.rtk.map.data.Equip.FACEACC);
+            s.wfifoW(len + 10, muka == null ? 0xFFFF : 0);
+            if (muka != null) {
+                s.wfifoWBE(len + 10, muka[0]);
+            }
+            s.wfifoB(len + 12, muka == null ? 0 : muka[1]);
+
+            int[] mahkota = tampilan(tsd, org.rtk.map.data.Equip.CROWN);
+            if (mahkota == null) {
+                s.wfifoW(len + 13, 0xFFFF);
+                s.wfifoB(len + 15, 0);
+            } else {
+                // ⚠️ Bukan salah tulis: memakai mahkota MEMATIKAN penanda
+                // helm yang baru saja ditulis di len+6. Ditiru apa adanya.
+                s.wfifoB(len + 6, 0);
+                s.wfifoWBE(len + 13, mahkota[0]);
+                s.wfifoB(len + 15, mahkota[1]);
+            }
+
+            int[] muka2 = tampilan(tsd, org.rtk.map.data.Equip.FACEACCTWO);
+            s.wfifoW(len + 16, muka2 == null ? 0xFFFF : 0);
+            if (muka2 != null) {
+                s.wfifoWBE(len + 16, muka2[0]);
+            }
+            s.wfifoB(len + 18, muka2 == null ? 0 : muka2[1]);
+
+            len += 12;
+            s.wfifoLBE(len + 7, (int) tsd.maxHp);
+            len += 4;
+            s.wfifoLBE(len + 7, (int) tsd.status.hp);
+            len += 4;
+            s.wfifoLBE(len + 7, (int) tsd.maxMp);
+            len += 4;
+            s.wfifoLBE(len + 7, (int) tsd.status.mp);
+            len += 4;
+        }
+
+        s.wfifoB(6, daftar.size());
+        len += 6;
+        s.wfifoWBE(1, len + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * Nomor gambar dan warna satu slot perlengkapan, atau null bila slotnya
+     * kosong ataupun barangnya memang tidak bergambar
+     * ({@code itemdb_look() == -1}).
+     */
+    private static int[] tampilan(User sd, int slot) {
+        org.rtk.common.mmo.Item it = sd.status.equipAt(slot);
+        if (it == null || it.id <= 0) {
+            return null;
+        }
+        int look = it.customLook != 0
+                ? (int) it.customLook : MapServer.itemDb.lookOf((int) it.id);
+        if (look == -1) {
+            return null;
+        }
+        int warna = it.customLook != 0
+                ? (int) it.customLookColor
+                : MapServer.itemDb.lookColorOf((int) it.id);
+        return new int[] {look, warna};
+    }
+
+    /**
+     * clif_grouphealth_update() — darah &amp; mana anggota grup.
+     * Opcode 0x63, subperintah 3.
+     *
+     * <p>⚠️ <b>Satu paket per anggota</b>, bukan satu paket berisi semua.
+     * Itu juga sebabnya C memanggil {@code clif_groupstatus} di dalam
+     * perulangan — jendela grup ikut terkirim sebanyak jumlah anggota.
+     * Ditiru, karena klien memakai kedatangan pasangan itu sebagai penanda
+     * segarnya jendela.</p>
+     */
+    public static void sendGroupHealth(User sd) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        for (User tsd : Groups.anggotaOnline(sd)) {
+            byte[] nb = tsd.name().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            head(s, 0x63, 0);
+            s.wfifoB(4, 0x03);
+            s.wfifoB(5, 0x03);
+            s.wfifoLBE(6, (int) tsd.id);
+            s.wfifoB(10, nb.length);
+            s.wfifoBytes(11, nb);
+
+            int len = 10 + nb.length + 1;
+            s.wfifoLBE(len, (int) tsd.status.hp);
+            len += 4;
+            s.wfifoLBE(len, (int) tsd.status.mp);
+            len += 4;
+
+            s.wfifoWBE(1, len + 3);
+            s.wfifoSet(encrypt(s, sd));
+            sendGroupStatus(sd);
+        }
     }
 
     /**
@@ -3770,7 +3956,16 @@ public final class Clif {
     public static void sendWorldEntry(User sd) {
         Session s = sessionOf(sd);
         if (s == null) {
-            log.error("[CLIF] {} tidak punya sesi aktif — paket masuk dunia dibatalkan", sd.name());
+            // ⚠️ Diam, bukan ERROR. `ProtocolRouter` memanggil KEDUA view
+            // untuk setiap peristiwa, dan tiap view menyaring penontonnya
+            // sendiri — jadi klien RTK2 yang masuk dunia SELALU melewati
+            // jalan ini tanpa sesi RetroTK. Itu jalannya router, bukan cacat.
+            //
+            // Sebagai ERROR ia muncul di setiap login dan tampak seperti
+            // kerusakan; lebih buruk lagi, ia menenggelamkan error sungguhan
+            // di log yang sama. Idiomnya disamakan dengan seluruh method
+            // Clif lain: sesi tidak ada berarti bukan penonton kita.
+            log.debug("[CLIF] {} bukan klien RetroTK — masuk dunia dilewati", sd.name());
             return;
         }
         // Urutan ini diambil persis dari intif.c (parse_char_data): klien

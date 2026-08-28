@@ -29,6 +29,35 @@ public final class Pc {
      * @return false bila id-nya ternyata milik mob (penjaga yang sama
      *         dengan {@code bl.id >= MOB_START_NUM} di C)
      */
+    /**
+     * pc_checklevel(): panggil kait {@code onLevel} sekali untuk tiap ambang
+     * pengalaman yang sudah terlampaui.
+     *
+     * <p>⚠️ Kenaikan levelnya <b>seluruhnya sisi skrip</b> — di sini tidak
+     * ada satu pun penulisan ke {@code status.level}. Karena itu pula
+     * perulangannya berjalan sampai level tertinggi dan bisa memanggil kait
+     * itu berkali-kali dalam satu panggilan: skripnyalah yang menaikkan
+     * level satu per satu.</p>
+     *
+     * <p>⚠️ {@code path} diambil dari {@code classdb_path} hanya bila id
+     * kelasnya di atas 5 — lima id pertama <b>adalah</b> jalurnya sendiri.</p>
+     */
+    public static void checkLevel(org.rtk.map.script.ScriptEngine engine, User sd) {
+        if (engine == null || sd == null) {
+            return;
+        }
+        int path = sd.status.charClass;
+        if (path > 5) {
+            path = MapServer.classDb.pathOf(path);
+        }
+        var ref = engine.playerRef(sd.scriptPlayer());
+        for (int lv = sd.status.level; lv < org.rtk.map.data.ClassDb.MAX_LEVEL; lv++) {
+            if (sd.status.exp >= MapServer.classDb.level(path, lv)) {
+                engine.doScript("onLevel", null, ref);
+            }
+        }
+    }
+
     public static boolean setPos(User sd, int m, int x, int y) {
         if (sd.id >= User.MOB_START_NUM) {
             return false;

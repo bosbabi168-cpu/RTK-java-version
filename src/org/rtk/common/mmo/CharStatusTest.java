@@ -115,6 +115,93 @@ public final class CharStatusTest {
         check("blob yang dirusak ditolak", throwsIo(tampered));
 
         framingTest(c, blob);
+        slotBerlubangTest();
+    }
+
+    /**
+     * Kantong dengan slot BERLUBANG.
+     *
+     * <p>Ini yang dulu tidak diuji sama sekali, dan karenanya empat tempat
+     * memakai indeks daftar sebagai nomor slot selama berbulan-bulan tanpa
+     * ketahuan. Semua uji lama memakai kantong yang rapat 0..n-1, dan pada
+     * kantong rapat indeks daftar <b>kebetulan</b> sama dengan nomor slot —
+     * jadi kodenya lulus justru karena datanya terlalu jinak.</p>
+     *
+     * <p>Data nyata tidak jinak: kantong karakter uji terisi di slot
+     * <b>0–5 lalu 21–26</b>, dan seluruh karakter yang punya barang berlubang
+     * seperti itu.</p>
+     */
+    private static void slotBerlubangTest() {
+        log.info("=== kantong berlubang ===");
+
+        CharStatus c = new CharStatus();
+        c.maxInv = 27;
+        c.inventory.add(barang(101, 0));
+        c.inventory.add(barang(102, 1));
+        c.inventory.add(barang(103, 21));
+        c.inventory.add(barang(104, 26));
+
+        check("inventoryAt menemukan slot rapat", c.inventoryAt(1).id == 102);
+        // ⚠️ Inti persoalannya: slot 21 ada di indeks daftar 2.
+        check("inventoryAt menemukan slot JAUH di atas ukuran daftar",
+                c.inventoryAt(21).id == 103 && c.inventoryAt(26).id == 104);
+        check("slot kosong di tengah lubang mengembalikan null",
+                c.inventoryAt(2) == null && c.inventoryAt(20) == null);
+
+        check("slot kosong pertama = 2, bukan ukuran daftar (4)",
+                c.firstFreeInventorySlot(c.maxInv) == 2);
+
+        // Tabrakan yang dulu mungkin: barang di 0,1,2,4 → ukuran 4 → slot 4.
+        CharStatus t = new CharStatus();
+        t.maxInv = 27;
+        for (int slot : new int[] {0, 1, 2, 4}) {
+            t.inventory.add(barang(200 + slot, slot));
+        }
+        int bebas = t.firstFreeInventorySlot(t.maxInv);
+        check("slot bebas 3 dipilih, bukan 4 yang sudah terisi",
+                bebas == 3 && t.inventoryAt(4) != null);
+
+        check("removeInventoryAt membuang slot yang BENAR",
+                c.removeInventoryAt(21) && c.inventoryAt(21) == null
+                        && c.inventoryAt(26) != null && c.inventoryAt(0) != null);
+        check("removeInventoryAt pada slot kosong tidak membuang apa pun",
+                !c.removeInventoryAt(20) && c.inventory.size() == 3);
+
+        // Penuh berarti tidak ada slot bebas — bukan "ukuran daftar = maxInv".
+        CharStatus penuh = new CharStatus();
+        penuh.maxInv = 3;
+        for (int slot = 0; slot < 3; slot++) {
+            penuh.inventory.add(barang(300 + slot, slot));
+        }
+        check("kantong penuh mengembalikan -1", penuh.firstFreeInventorySlot(3) == -1);
+
+        // Putar-balik simpan/muat: slot berlubang harus bertahan, termasuk
+        // slot 0 yang bukan elemen pertama daftar.
+        CharStatus u = new CharStatus();
+        u.id = 77;
+        u.name = "Berlubang";
+        u.maxInv = 27;
+        u.inventory.add(barang(401, 5));
+        u.inventory.add(barang(402, 0));      // slot 0 SENGAJA bukan yang pertama
+        u.inventory.add(barang(403, 26));
+        try {
+            CharStatus r = CharStatusCodec.decode(CharStatusCodec.encode(u));
+            check("putar-balik: slot 0 tetap slot 0 walau bukan elemen pertama",
+                    r.inventoryAt(0) != null && r.inventoryAt(0).id == 402);
+            check("putar-balik: slot berlubang bertahan",
+                    r.inventoryAt(5) != null && r.inventoryAt(5).id == 401
+                            && r.inventoryAt(26) != null && r.inventoryAt(26).id == 403);
+        } catch (IOException e) {
+            check("putar-balik kantong berlubang: " + e.getMessage(), false);
+        }
+    }
+
+    private static Item barang(int id, int slot) {
+        Item it = new Item();
+        it.id = id;
+        it.amount = 1;
+        it.pos = slot;
+        return it;
     }
 
     /**

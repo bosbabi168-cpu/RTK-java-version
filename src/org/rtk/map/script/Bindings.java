@@ -158,6 +158,24 @@ final class Bindings {
                         p.questUdata = engine.newInstance(engine.questClass, p);
                     }
                     return p.questUdata;
+                case "group": {
+                    // ⚠️ Pemain SENDIRIAN menjawab daftar berisi dirinya
+                    // sendiri, bukan tabel kosong (sl.c:7058, cabang else).
+                    // Empat belas skrip memutari daftar ini dan `exp.lua`
+                    // membagi pengalaman lewatnya — tabel kosong membuat
+                    // pemain sendirian tidak dapat apa-apa, tanpa error.
+                    //
+                    // Disusun ulang tiap akses, seperti di C: susunan grup
+                    // bisa berubah di tengah skrip yang panjang.
+                    org.luaj.vm2.LuaTable t = new org.luaj.vm2.LuaTable();
+                    java.util.List<Long> ids = p.owner instanceof org.rtk.map.User u
+                            ? org.rtk.map.Groups.daftarSkrip(u)
+                            : java.util.List.of((long) p.id);
+                    for (int i = 0; i < ids.size(); i++) {
+                        t.rawset(i + 1, LuaValue.valueOf(ids.get(i).doubleValue()));
+                    }
+                    return t;
+                }
                 case "gameRegistry":
                     return engine.gameRegistryUdata;
                 case "mapRegistry":
@@ -170,6 +188,19 @@ final class Bindings {
                     }
                     return p.mapRegistryUdata;
                 default:
+                    // ⚠️ Atribut PETA tempat pemain berdiri, diteruskan
+                    // seperti `bll_getattr` di C (sl.c:4350) yang membaginya
+                    // ke pemain, mob, NPC, dan barang lantai. Sebelumnya
+                    // hanya objek Map yang punya, sehingga `player.mapTitle`
+                    // (141×), `player.region` (15×), dan `player.warpOut`
+                    // (6×) semuanya nil — dan mantra `gateway` gagal dengan
+                    // "attempt to compare nil with number" di berkasnya
+                    // sendiri, bukan di sini.
+                    LuaValue peta = org.rtk.map.script.WorldBindings
+                            .atributPeta(p.m, attr);
+                    if (peta != null) {
+                        return peta;
+                    }
                     // Atribut karakter yang tersimpan (money, health, ...)
                     // dijawab pemiliknya; null berarti belum diport, jadi
                     // pencarian lanjut ke prototype / data table.
@@ -584,7 +615,22 @@ final class Bindings {
             String dialog = args.optjstring(2, "");
             java.util.List<String> nama = luaListString(args.arg(3));
             java.util.List<Integer> harga = luaListInt(args.arg(4));
-            var d = new ScriptPlayer.PendingDialog("buy", dialog, nama);
+
+            // ⚠️ Skrip menyebut barang dengan IDENTIFIER, tetapi yang dikirim
+            // ke klien harus NAMA TAMPILAN — C memakai `itemdb_name()`
+            // (clif.c:12455). Bukan sekadar soal enak dibaca: `buyExtend`
+            // mencocokkan jawaban pemain dengan `Item(x).name`, yang juga
+            // nama tampilan. Mengirim identifier membuat perbandingan itu
+            // tidak pernah cocok, `x` tetap 0, dan fungsinya `return nil` —
+            // toko terbuka, pemain memilih, lalu tidak terjadi apa-apa.
+            java.util.List<String> tampil = new java.util.ArrayList<>(nama.size());
+            for (String n : nama) {
+                var info = org.rtk.map.MapServer.itemDb == null
+                        ? null : org.rtk.map.MapServer.itemDb.infoByName(n);
+                tampil.add(info == null || info.tampilan().isEmpty() ? n : info.tampilan());
+            }
+
+            var d = new ScriptPlayer.PendingDialog("buy", dialog, tampil);
             d.prices = harga;
             return engine.yieldBlocking(p, d);
         });

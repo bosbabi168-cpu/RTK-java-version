@@ -426,6 +426,406 @@ public final class MapCommands implements ClientCommands {
         Exchange.confirm(sd, claimedTarget);
     }
 
+    /** Radius mantra bersasaran; {@code CheckProximity(..., 21)} di C. */
+    private static final int RADIUS_MANTRA = 21;
+
+    /**
+     * Merapal mantra — port {@code clif_parsemagic} (clif.c:8804).
+     *
+     * <p>Urutannya mengikat dan diambil apa adanya dari C: aether lebih dulu,
+     * lalu bisu, baru bentuk muatannya. Menukar dua yang pertama membuat
+     * mantra yang sedang mendingin tetap membungkam pesannya sendiri.</p>
+     */
+    @Override
+    public void playerCastsSpell(User sd, int slot, long target, String question) {
+        var engine = MapServer.scriptEngine;
+        if (engine == null) {
+            return;
+        }
+        // ⚠️ Slot 0-basis di RTK2. RetroTK mengirim 1-basis dan penangannya
+        // mengurangi satu; di sini tidak ada pengurangan.
+        if (slot < 0 || slot >= sd.status.spells.length) {
+            return;
+        }
+        int spellId = sd.status.spells[slot];
+        if (spellId <= 0 || !MapServer.spellDb.isActive(spellId)) {
+            return;
+        }
+        LuaValue ref = engine.playerRef(sd.scriptPlayer());
+
+        // 1. aether masih mendingin
+        int aetherMs = Durations.aether(sd, spellId);
+        if (aetherMs > 0) {
+            kaitMantra(engine, spellId, "on_aethers", ref);
+            MapServer.clientView.messageToPlayer(sd, 3,
+                    "Wait " + (aetherMs / 1000) + " second(s) for aethers to settle.");
+            return;
+        }
+
+        // 2. bisu. ⚠️ Ambangnya perbandingan, bukan ya/tidak: mantra bernilai
+        // mute lebih tinggi dari tingkat bisu pemain TETAP bisa dirapal.
+        if (sd.silence > 0 && MapServer.spellDb.muteOf(spellId) <= sd.silence) {
+            kaitMantra(engine, spellId, "on_mute", ref);
+            MapServer.clientView.messageToPlayer(sd, 3, "You have been silenced.");
+            return;
+        }
+
+        sd.target = 0;
+        sd.attacker = 0;
+
+        // 3. bentuk muatan menurut jenis mantranya
+        switch (MapServer.spellDb.typeOf(spellId)) {
+            case 1 -> sd.question = question == null ? "" : question;
+            case 2 -> {
+                sd.target = target;
+                sd.attacker = target;
+            }
+            case 5 -> { /* ke diri sendiri: tanpa muatan */ }
+            default -> {
+                // ⚠️ C: `default: return 0` — mantranya TIDAK dirapal.
+                // Ditiru apa adanya; jenis yang tidak dikenal berarti datanya
+                // salah, dan merapal dengan muatan yang salah bentuk lebih
+                // buruk daripada tidak merapal.
+                return;
+            }
+        }
+
+        // 4. kait global sebelum mantranya sendiri
+        kait(engine, "onCast", null, ref);
+
+        // 5. mantranya
+        org.rtk.map.data.BlockList tbl =
+                sd.target == 0 ? null : MapServer.blockById(sd.target);
+        if (sd.target != 0 && tbl == null) {
+            return;                       // sasaran sudah tidak ada
+        }
+        if (tbl == null) {
+            kaitMantra2(engine, spellId, "cast", ref, LuaValue.NIL);
+            return;
+        }
+        if (tbl instanceof User tsd && (tsd.optFlags & User.OPT_STEALTH) != 0) {
+            return;                       // yang tak terlihat tidak bisa disasar
+        }
+        if (tbl.m != sd.m
+                || Math.abs(tbl.x - sd.x) > RADIUS_MANTRA
+                || Math.abs(tbl.y - sd.y) > RADIUS_MANTRA) {
+            return;                       // CheckProximity gagal
+        }
+
+        long nyawa;
+        int will, protection;
+        if (tbl instanceof User tsd) {
+            nyawa = tsd.status.hp;
+            will = tsd.will;
+            protection = tsd.protection;
+        } else if (tbl instanceof Mob mb) {
+            nyawa = mb.currentVita;
+            will = mb.data == null ? 0 : mb.data.will;
+            protection = mb.data == null ? 0 : mb.data.protection;
+        } else {
+            nyawa = 0;
+            will = 0;
+            protection = 0;
+        }
+
+        if (MapServer.spellDb.canFail(spellId)) {
+            int selisihWill = Math.max(will - sd.will, 0);
+            int prot = Math.max(protection + (int) (selisihWill / 10.0 + 0.5), 0);
+            if (RANDOM.nextInt(100) < prot) {
+                MapServer.clientView.messageToPlayer(sd, 3, "The magic has been deflected.");
+                return;
+            }
+        }
+
+        // ⚠️ Mob yang nyawanya habis tidak lagi bisa disasar; pemain bisa
+        // (mantra kebangkitan menyasar arwah).
+        if (nyawa > 0 || tbl instanceof User) {
+            kaitMantra2(engine, spellId, "cast", ref, engine.objectRef(tbl));
+        }
+    }
+
+    /**
+     * Daftar abaikan — port {@code clif_parseignore} (clif.c:8133).
+     *
+     * <p>⚠️ C membatasi panjang nama <b>16 huruf</b> dan mengabaikan aksi lain
+     * tanpa jawaban apa pun. Ditiru: nama panjang adalah klien yang salah,
+     * dan menjawabnya hanya memberi tahu penyerang bahwa batasnya ada.</p>
+     */
+    @Override
+    public void playerChangesIgnore(User sd, boolean tambah, String name) {
+        if (name == null || name.isEmpty() || name.length() > 16) {
+            return;
+        }
+        // ⚠️ Mengabaikan diri sendiri akan membungkam ucapan sendiri —
+        // bolehSalingDengar menyaring dua arah. C tidak menjaganya karena
+        // kliennya tidak pernah mengirimnya; di sini dijaga.
+        if (name.equalsIgnoreCase(sd.name())) {
+            return;
+        }
+        if (tambah) {
+            sd.abaikan(name);
+        } else {
+            sd.berhentiAbaikan(name);
+        }
+    }
+
+    /**
+     * Grup — port {@code clif_addgroup} / {@code clif_leavegroup} /
+     * {@code clif_groupstatus} (dispatch {@code case 0x2E} dan {@code 0x2D}
+     * di {@code clif_parse}).
+     *
+     * <p>⚠️ Batas nama 16 huruf sama dengan daftar abaikan: paket C membaca
+     * panjangnya dari satu byte dan menyalinnya ke penyangga 256 byte, jadi
+     * nama panjang di sini adalah klien yang salah, bukan pemain.</p>
+     */
+    @Override
+    public void playerChangesGroup(User sd, int aksi, String nama) {
+        switch (aksi) {
+            case 0 -> {
+                if (nama == null || nama.isEmpty() || nama.length() > 16) {
+                    return;
+                }
+                Groups.tambah(sd, nama);
+            }
+            case 1 -> Groups.keluar(sd);
+            case 2 -> Groups.kirimUlang(sd);
+            // ⚠️ Aksi lain diabaikan diam-diam, sepola daftar abaikan.
+            default -> { }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // setelan pemain (clif_changestatus)
+    // ------------------------------------------------------------------
+
+    /** Nomor ragam {@code clif_changestatus} yang bukan bendera setelan. */
+    private static final int SET_OBROLAN_KLAN = 10;
+    private static final int SET_SUARA = 13;
+    private static final int SET_HELM = 14;
+    private static final int SET_KALUNG = 15;
+
+    /**
+     * Satu baris setelan: bendera yang dibalik dan teksnya.
+     *
+     * <p>⚠️ Perataan spasinya <b>ditiru apa adanya</b>. Klien menampilkan
+     * daftar ini dengan huruf lebar tetap, jadi jumlah spasi sebelum titik
+     * dua menentukan apakah kolomnya lurus. "Show Necklace" memang punya
+     * spasi lebih banyak dari yang lain di C — salah ketik yang terlihat di
+     * layar, dan membetulkannya di sini mengubah tampilan.</p>
+     */
+    private record Setelan(int bendera, String nama) { }
+
+    private static final java.util.Map<Integer, Setelan> SETELAN =
+            java.util.Map.ofEntries(
+                java.util.Map.entry(1, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.WHISPER, "Listen to whisper")),
+                java.util.Map.entry(2, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.GROUP, "Join a group     ")),
+                java.util.Map.entry(3, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.SHOUT, "Listen to shout  ")),
+                java.util.Map.entry(4, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.ADVICE, "Listen to advice ")),
+                java.util.Map.entry(5, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.MAGIC, "Believe in magic ")),
+                java.util.Map.entry(6, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.WEATHER, "Weather change   ")),
+                java.util.Map.entry(7, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.REALM, "Realm-centered   ")),
+                java.util.Map.entry(8, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.EXCHANGE, "Exchange         ")),
+                java.util.Map.entry(9, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.FASTMOVE, "Fast Move        ")),
+                java.util.Map.entry(SET_SUARA, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.SOUND, "Hear sounds      ")),
+                java.util.Map.entry(SET_HELM, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.HELM, "Show Helmet      ")),
+                java.util.Map.entry(SET_KALUNG, new Setelan(
+                        org.rtk.common.mmo.SettingFlags.NECKLACE, "Show Necklace      ")));
+
+    /**
+     * clif_changestatus() — port lengkap ragam 1..15.
+     *
+     * <p>⚠️ <b>XOR, bukan penetapan.</b> Paketnya menyebut setelan mana,
+     * bukan nilai barunya. Sama seperti {@code player.settings} di Lua
+     * (sl.c:6881), yang juga XOR meski ditulis seperti penetapan biasa —
+     * {@code player.settings = 2} <b>membalik</b> bit grup, tidak
+     * menyetel setelan menjadi 2.</p>
+     *
+     * <p>⚠️ Urutan "kirim status" dan "kirim teks" <b>berbeda-beda</b> antar
+     * ragam di C, dan ditiru: kebanyakan teks dulu, tapi grup dan tukar
+     * mengirim status dulu. Pemain melihat bedanya kalau kliennya menyusun
+     * ulang daftar setelan saat status datang.</p>
+     */
+    @Override
+    public void playerChangesSetting(User sd, int jenis, boolean paketAwal) {
+        // ⚠️ Obrolan klan BUKAN bendera setelan: ladang tersendiri, dibalik
+        // dengan modulo bukan XOR, dan TIDAK menyusul kiriman status.
+        if (jenis == SET_OBROLAN_KLAN) {
+            sd.status.clanChat = (sd.status.clanChat + 1) % 2;
+            mini(sd, "Clan whisper     :" + (sd.status.clanChat != 0 ? "ON" : "OFF"));
+            MapServer.clientView.playerSettingsChanged(sd);
+            return;
+        }
+
+        // ⚠️ Paket suara pembuka dari klien diabaikan. Tanpa penjaga ini
+        // setiap pemain mematikan suaranya sendiri saat masuk dunia.
+        if (jenis == SET_SUARA && paketAwal) {
+            return;
+        }
+
+        Setelan st = SETELAN.get(jenis);
+        if (st == null) {
+            return;   // ragam tak dikenal: cabang `default: break` di C
+        }
+
+        sd.status.settingFlags ^= st.bendera();
+        boolean nyala = (sd.status.settingFlags & st.bendera()) != 0;
+        String teks = st.nama() + ":" + (nyala ? "ON" : "OFF");
+
+        switch (jenis) {
+            case 2 -> {
+                // Mematikan setelan grup MENGELUARKAN dari grup yang sedang
+                // diikuti — bukan sekadar menolak ajakan berikutnya.
+                if (!nyala && sd.groupId != 0) {
+                    Groups.keluar(sd);
+                }
+                status(sd);
+                mini(sd, teks);
+            }
+            case 6 -> {
+                mini(sd, teks);
+                MapData peta = MapServer.world.get(sd.m);
+                MapServer.clientView.weatherChanged(sd, peta == null ? 0 : peta.weather);
+                status(sd);
+            }
+            case 7 -> {
+                // Pusat-alam mengubah paket info peta, jadi seluruh
+                // pandangan disusun ulang — di C: quit, sendmapinfo,
+                // setpos, sendmapinfo, spawn, look, destroyold, chararea.
+                //
+                // ⚠️ Di RTK2 benderanya TIDAK ikut di EV_SELF_MAP: ia sampai
+                // ke klien lewat EV_SELF_SETTINGS di akhir method ini.
+                // Bendera di EV_SELF_MAP semuanya milik PETA (pvp, canEat,
+                // ...), dan menyelipkan setelan pemain ke sana akan membuat
+                // satu ladang berisi dua jenis kebenaran.
+                MapServer.clientView.playerViewRefreshed(sd);
+                mini(sd, teks);
+                status(sd);
+            }
+            case 8 -> {
+                status(sd);
+                mini(sd, teks);
+            }
+            case SET_HELM, SET_KALUNG -> {
+                mini(sd, teks);
+                // Registry yang dibaca skrip; ditambahkan di C 6 April 2017.
+                sd.status.registry.put(jenis == SET_HELM ? "show_helmet" : "show_necklace",
+                        nyala ? 1 : 0);
+                status(sd);
+                // clif_sendchararea + clif_getchararea: wujud saya berubah
+                // bagi sekitar DAN bagi diri sendiri.
+                MapServer.clientView.objectAppearanceChanged(sd);
+            }
+            default -> {
+                mini(sd, teks);
+                status(sd);
+            }
+        }
+        MapServer.clientView.playerSettingsChanged(sd);
+    }
+
+    private static void mini(User sd, String teks) {
+        MapServer.clientView.messageToPlayer(sd, MSG_MINI, teks);
+    }
+
+    /** clif_sendstatus(sd, NULL): seluruh blok status. */
+    private static void status(User sd) {
+        MapServer.clientView.playerStatusChanged(sd, Clif.SFLAG_ALL);
+    }
+
+    /**
+     * clif_findmount() + ragam 0 {@code clif_changestatus}.
+     *
+     * <p>⚠️ Pesan "tidak ada yang bisa dinaiki" datang dari <b>pemanggil</b>,
+     * bukan dari {@code clif_findmount}: ia dikirim kalau keadaan pemain
+     * masih 0 <b>setelah</b> kaitnya dijalankan. Jadi peta yang melarang
+     * menunggang memberi <b>dua</b> pesan — "You cannot mount here." dari
+     * pencarinya, lalu "Good try..." dari pemanggilnya. Ditiru.</p>
+     */
+    @Override
+    public void playerRides(User sd) {
+        switch (sd.status.state) {
+            case 0 -> {
+                cariTunggangan(sd);
+                if (sd.status.state == 0) {
+                    mini(sd, "Good try, but there is nothing here that you can ride.");
+                }
+            }
+            case 1 -> mini(sd, "Spirits can't do that.");
+            case 2 -> mini(sd, "Good try, but there is nothing here that you can ride.");
+            case 3 -> kaitTunggangan(sd, "onDismount", null);
+            case 4 -> mini(sd, "You cannot do that while transformed.");
+            default -> { }
+        }
+    }
+
+    private static void cariTunggangan(User sd) {
+        MapData peta = MapServer.world.get(sd.m);
+        if (peta == null) {
+            return;
+        }
+        int x = sd.x;
+        int y = sd.y;
+        switch (sd.status.side) {
+            case 0 -> y = sd.y - 1;
+            case 1 -> x = sd.x + 1;
+            case 2 -> y = sd.y + 1;
+            case 3 -> x = sd.x - 1;
+            default -> { }
+        }
+        org.rtk.map.data.BlockList sasaran = null;
+        for (org.rtk.map.data.BlockList bl : peta.objectsAt(x, y)) {
+            if (bl instanceof Mob) {
+                sasaran = bl;
+                break;
+            }
+        }
+        if (sasaran == null) {
+            return;   // map_firstincell(..., BL_MOB) kosong
+        }
+        // ⚠️ Pemeriksaan keadaan ada SETELAH pencarian mob di C, bukan
+        // sebelumnya. Urutannya tidak mengubah hasil di sini, tapi
+        // dipertahankan supaya perbandingan dengan sumbernya tetap lurus.
+        if (sd.status.state != 0) {
+            return;
+        }
+        if (peta.canMount == 0 && !sd.isGm()) {
+            mini(sd, "You cannot mount here.");
+            return;
+        }
+        kaitTunggangan(sd, "onMount", sasaran);
+    }
+
+    private static void kaitTunggangan(User sd, String kait,
+                                       org.rtk.map.data.BlockList mob) {
+        var engine = MapServer.scriptEngine;
+        if (engine == null) {
+            return;
+        }
+        try {
+            var pl = engine.playerRef(sd.scriptPlayer());
+            if (mob == null) {
+                engine.doScript(kait, null, pl);
+            } else {
+                engine.doScript(kait, null, pl, engine.objectRef(mob));
+            }
+        } catch (RuntimeException e) {
+            log.error("[CMD] kait '{}' gagal untuk {}", kait, sd.name(), e);
+        }
+    }
+
+    private static final java.util.Random RANDOM = new java.util.Random();
+
     @Override
     public void playerAnswersMenu(User sd, Answer answer) {
         lanjutkan(sd, answer, "menu/input");
@@ -580,11 +980,7 @@ public final class MapCommands implements ClientCommands {
         // "tidak ditemukan" dan memutus seluruh obrolan klan/grup/subpath.
         switch (target) {
             case "!" -> clanChat(sd, text);
-            case "!!" -> MapServer.clientView.messageToPlayer(sd, MSG_WHISPER,
-                    // Sistem grup belum ada, jadi jawabannya selalu cabang
-                    // "belum bergrup" — sama dengan yang dilihat pemain di C
-                    // ketika memang belum bergrup. Bukan pesan darurat.
-                    "You are not in a group");
+            case "!!" -> groupChat(sd, text);
             case "@" -> subpathChat(sd, text);
             case "?" -> noviceChat(sd, text);
             default -> directWhisper(sd, target, text);
@@ -609,6 +1005,42 @@ public final class MapCommands implements ClientCommands {
     }
 
     /** clif_sendclanmessage(): ke seluruh anggota klan yang menyalakan saluran. */
+    /**
+     * clif_sendgroupmessage() — saluran grup ("!!").
+     *
+     * <p>⚠️ Urutan pemeriksaannya berbeda dari saluran klan: C menyusun
+     * barisnya <b>lebih dulu</b>, lalu baru memeriksa bungkam dan peta
+     * bisu. Hasil akhirnya sama, tapi urutan pesan yang dilihat pemain
+     * ikut ditiru: yang dibungkam melihat "You are silenced.", bukan
+     * "You are not in a group", bahkan saat memang tidak bergrup.</p>
+     */
+    private static void groupChat(User sd, String text) {
+        if (sd.silence > 0) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER, "You are silenced.");
+            return;
+        }
+        MapData peta = MapServer.world.get(sd.m);
+        if (peta != null && peta.canTalk == 1 && !sd.isGm()) {
+            MapServer.clientView.messageToPlayer(sd, MSG_MINI,
+                    "Your voice is swept away by a strange wind.");
+            return;
+        }
+        if (sd.groupId == 0) {
+            MapServer.clientView.messageToPlayer(sd, MSG_WHISPER, "You are not in a group");
+            return;
+        }
+        catatObrolan("groupChatLog", sd, text);
+        String baris = "[!" + sd.name() + "] (" + gelar(sd) + ") " + text;
+        for (User tsd : Groups.anggotaOnline(sd)) {
+            // ⚠️ Penyaring abaikan dipasang di sisi PENERIMA seperti di C:
+            // yang mengabaikan tidak mendengar, tetapi tetap terhitung
+            // anggota grup.
+            if (User.bolehSalingDengar(sd, tsd)) {
+                MapServer.clientView.messageToPlayer(tsd, Groups.MSG_GRUP, baris);
+            }
+        }
+    }
+
     private static void clanChat(User sd, String text) {
         if (sd.status.clan == 0) {
             MapServer.clientView.messageToPlayer(sd, MSG_WHISPER, "You are not in a clan");

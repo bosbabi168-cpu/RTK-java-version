@@ -225,6 +225,9 @@ public final class ClifTest {
         aksiTest(map, sd);
         perlengkapanTest(map, sd);
         rtk2Test(map, sd);
+        abaikanTest();
+        grupTest();
+        setelanTest(map, sd);
         duniaTest(map, sd);
     }
 
@@ -2246,6 +2249,63 @@ public final class ClifTest {
         check("mati: tabel ancaman dibersihkan", mb.threat.isEmpty());
         check("mati: penyerang direset", mb.attacker == 0);
 
+        // --- pengalaman & hitungan bunuh (clif.c:2469-2489) ---
+        //
+        // ⚠️ Ketiganya sempat HILANG SELURUHNYA dari port ini: mob mati
+        // tanpa memberi pengalaman dan tanpa menambah hitungan bunuh, dan
+        // tidak ada satu pun error. Gerbang ini yang menjaganya kembali.
+        MobRegistry.resetStats(mb);
+        mb.state = MobData.MOB_ALIVE;
+        map.addBlock(mb);
+        MapServer.onlineChars.put(sdm.fd, sdm);
+        long expSemula = mb.data.exp;
+        mb.data.exp = 7;
+        sdm.status.killReg.clear();
+        mobEngine.globals().load(
+                "XP_DIPANGGIL = 0\n"
+              + "XP_ARG_MOB = ''\n"
+              + "onGetExp = function(pl, mob)\n"
+              + "  XP_DIPANGGIL = XP_DIPANGGIL + 1\n"
+              + "  XP_ARG_MOB = mob.yname\n"
+              + "  GRUP_N = #pl.group\n"
+              + "  GRUP_1 = pl.group[1]\n"
+              + "end\n"
+              + "LEVEL_DIPANGGIL = 0\n"
+              + "onLevel = function(pl) LEVEL_DIPANGGIL = LEVEL_DIPANGGIL + 1 end\n").call();
+        mobEngine.globals().get("ANCAM").call(mobEngine.playerRef(pm),
+                org.luaj.vm2.LuaValue.valueOf(4));
+        mb.currentVita = 0;
+        reg.runTimers(mobEngine, MapServer.world);
+        check("mati: kait onGetExp DIPANGGIL",
+                mobEngine.globals().get("XP_DIPANGGIL").toint() == 1);
+        check("mati: onGetExp menerima mob sebagai argumen kedua",
+                "squirrel".equals(mobEngine.globals().get("XP_ARG_MOB").tojstring()));
+        check("mati: player.group di dalam kait berisi pemain sendiri",
+                mobEngine.globals().get("GRUP_N").toint() == 1
+                        && (long) mobEngine.globals().get("GRUP_1").todouble()
+                                == sdm.status.id);
+        check("mati: hitungan bunuh bertambah untuk jenis mob itu",
+                sdm.status.killReg.getOrDefault(mb.data.id, 0L) == 1L);
+        check("mati: pc_checklevel ikut dipanggil",
+                mobEngine.globals().get("LEVEL_DIPANGGIL").toint() >= 1);
+
+        // Mob tanpa pengalaman TIDAK masuk hitungan bunuh saat sendirian —
+        // syarat `if (mob->exp)` yang hanya ada di cabang solo.
+        MobRegistry.resetStats(mb);
+        mb.state = MobData.MOB_ALIVE;
+        map.addBlock(mb);
+        mb.data.exp = 0;
+        sdm.status.killReg.clear();
+        mobEngine.globals().get("ANCAM").call(mobEngine.playerRef(pm),
+                org.luaj.vm2.LuaValue.valueOf(4));
+        mb.currentVita = 0;
+        reg.runTimers(mobEngine, MapServer.world);
+        check("mati: mob tanpa pengalaman tidak masuk hitungan bunuh",
+                sdm.status.killReg.isEmpty());
+        check("mati: kait onGetExp tetap dipanggil untuk mob tanpa pengalaman",
+                mobEngine.globals().get("XP_DIPANGGIL").toint() == 2);
+        mb.data.exp = expSemula;
+
         MapServer.onlineChars.remove(sdm.fd);
 
         // --- addNPC: skrip melahirkan NPC sementara ---
@@ -2266,7 +2326,14 @@ public final class ClifTest {
         check("kait on_spawn terpanggil",
                 mobEngine.globals().get("SPAWN_DIPANGGIL").toint() == 1);
 
-        Npc temp = MapServer.npcs.byName("TrapNpc");
+        // ⚠️ BUKAN byName("TrapNpc"). `map_name2npc` di C mencocokkan
+        // `npc_name`, yaitu nama TAMPILAN — dan `bll_addnpc` mengisinya
+        // "nothing" bila skrip tidak menyebutkannya (sl.c:3950). Jadi mencari
+        // NPC sementara lewat nama skripnya memang tidak seharusnya berhasil;
+        // uji ini dulu lulus hanya karena indeks Java salah kolom.
+        Npc temp = MapServer.npcs.all().stream()
+                .filter(n -> "TrapNpc".equals(n.name))
+                .findFirst().orElse(null);
         check("NPC sementara memakai rentang id terpisah",
                 temp != null && temp.id >= Npc.NPCT_START_NUM);
         check("NPC sementara ditandai temporary", temp != null && temp.temporary);
@@ -3722,6 +3789,304 @@ public final class ClifTest {
     }
 
     /** Perintah yang mencatat panggilannya alih-alih menjalankan logikanya. */
+    /**
+     * Daftar abaikan: sifat DUA ARAH-nya.
+     *
+     * <p>⚠️ Diuji di sini, bukan lewat klien hidup. Jangkauan ucapan di
+     * server tidak simetris — area pandang persegi yang <b>digeser</b> di
+     * tepi peta membuat pemain di pojok mendengar yang di tengah tanpa
+     * sebaliknya. Uji hidup yang mencoba membuktikan dua arah karena itu
+     * "lulus" tanpa arti, dan sempat menyembunyikan penyaring yang dipasang
+     * di jalur yang salah.</p>
+     */
+    private static void abaikanTest() {
+        log.info("=== daftar abaikan ===");
+        // Dua pemain buatan: ujinya tentang aturan daftar abaikan, bukan
+        // tentang dunia. Membuatnya sendiri membuat uji ini tidak bergantung
+        // pada siapa yang kebetulan online.
+        User a = pemainUji(9001, "AbaikanA");
+        User b = pemainUji(9002, "AbaikanB");
+
+        check("tanpa abaikan keduanya saling dengar",
+                User.bolehSalingDengar(a, b) && User.bolehSalingDengar(b, a));
+
+        check("menambah nama mengembalikan true sekali", a.abaikan(b.name()));
+        check("menambah nama yang sama lagi mengembalikan false", !a.abaikan(b.name()));
+        check("tidak peka besar-kecil",
+                a.mengabaikan(b.name().toUpperCase(java.util.Locale.ROOT)));
+
+        // ⚠️ Inti sifatnya: yang MENGABAIKAN tidak mendengar, DAN yang
+        // diabaikan juga tidak. Satu arah saja bukan perilaku C.
+        check("yang mengabaikan tidak mendengar", !User.bolehSalingDengar(b, a));
+        check("yang DIABAIKAN juga tidak mendengar", !User.bolehSalingDengar(a, b));
+
+        check("mencabut mengembalikan true", a.berhentiAbaikan(b.name()));
+        check("setelah dicabut keduanya saling dengar lagi",
+                User.bolehSalingDengar(a, b) && User.bolehSalingDengar(b, a));
+        check("mencabut nama yang tidak ada mengembalikan false",
+                !a.berhentiAbaikan("SiapaPunTidakAda"));
+
+        check("pemain selalu mendengar dirinya sendiri",
+                User.bolehSalingDengar(a, a));
+        check("null tidak pernah menyaring", User.bolehSalingDengar(a, null));
+    }
+
+    private static void setelanTest(MapData map, User sd) {
+        log.info("=== setelan pemain ===");
+        var engineLama = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;   // kait tunggangan diuji terpisah
+        ClientCommands cmd = MapServer.commands;
+        final int F = org.rtk.common.mmo.SettingFlags.WHISPER;
+        final int GRUP = org.rtk.common.mmo.SettingFlags.GROUP;
+
+        long semula = sd.status.settingFlags;
+        int klanSemula = sd.status.clanChat;
+
+        // --- baseline "terjadi": satu balikan benar-benar mengubah bit ---
+        sd.status.settingFlags = 0;
+        cmd.playerChangesSetting(sd, 1, false);
+        check("setelan: balikan pertama MENYALAKAN bitnya",
+                (sd.status.settingFlags & F) != 0);
+
+        // ⚠️ Inti sifatnya: XOR, bukan penetapan.
+        cmd.playerChangesSetting(sd, 1, false);
+        check("setelan: balikan kedua MEMATIKANNYA lagi (XOR, bukan set)",
+                (sd.status.settingFlags & F) == 0);
+
+        // Bit lain tidak ikut tersentuh.
+        sd.status.settingFlags = GRUP;
+        cmd.playerChangesSetting(sd, 1, false);
+        check("setelan: bit lain tidak ikut berubah",
+                (sd.status.settingFlags & GRUP) != 0
+                        && (sd.status.settingFlags & F) != 0);
+
+        // --- ragam tak dikenal tidak mengubah apa pun ---
+        long sebelum = sd.status.settingFlags;
+        cmd.playerChangesSetting(sd, 11, false);
+        cmd.playerChangesSetting(sd, 12, false);
+        cmd.playerChangesSetting(sd, 99, false);
+        check("setelan: ragam tak dikenal (11, 12, 99) diabaikan diam-diam",
+                sd.status.settingFlags == sebelum);
+
+        // --- paket suara pembuka diabaikan; yang biasa tidak ---
+        sd.status.settingFlags = org.rtk.common.mmo.SettingFlags.SOUND;
+        cmd.playerChangesSetting(sd, 13, true);
+        check("setelan: paket suara PEMBUKA tidak mematikan suara",
+                (sd.status.settingFlags & org.rtk.common.mmo.SettingFlags.SOUND) != 0);
+        cmd.playerChangesSetting(sd, 13, false);
+        check("setelan: paket suara biasa tetap membalik",
+                (sd.status.settingFlags & org.rtk.common.mmo.SettingFlags.SOUND) == 0);
+        // ⚠️ Penjaganya HANYA untuk suara: ragam lain tidak punya keanehan
+        // itu di C, jadi paketAwal tidak boleh membungkam semuanya.
+        sd.status.settingFlags = 0;
+        cmd.playerChangesSetting(sd, 1, true);
+        check("setelan: penanda pembuka tidak membungkam ragam selain suara",
+                (sd.status.settingFlags & F) != 0);
+
+        // --- obrolan klan: ladang tersendiri, bukan bendera ---
+        sd.status.settingFlags = 0;
+        sd.status.clanChat = 0;
+        cmd.playerChangesSetting(sd, 10, false);
+        check("setelan: obrolan klan menyala", sd.status.clanChat == 1);
+        check("setelan: obrolan klan TIDAK menyentuh settingFlags",
+                sd.status.settingFlags == 0);
+        cmd.playerChangesSetting(sd, 10, false);
+        check("setelan: obrolan klan mati lagi", sd.status.clanChat == 0);
+
+        // --- helm & kalung menulis registry yang dibaca skrip ---
+        sd.status.settingFlags = 0;
+        sd.status.registry.remove("show_helmet");
+        cmd.playerChangesSetting(sd, 14, false);
+        check("setelan: helm menyala menulis registry show_helmet=1",
+                sd.status.registry.getOrDefault("show_helmet", -1) == 1);
+        cmd.playerChangesSetting(sd, 14, false);
+        check("setelan: helm mati menulis registry show_helmet=0",
+                sd.status.registry.getOrDefault("show_helmet", -1) == 0);
+        sd.status.registry.remove("show_necklace");
+        cmd.playerChangesSetting(sd, 15, false);
+        check("setelan: kalung menulis registry show_necklace=1",
+                sd.status.registry.getOrDefault("show_necklace", -1) == 1);
+
+        // --- mematikan setelan grup MENGELUARKAN dari grup ---
+        Groups.bersihkanUntukUji();
+        java.util.Map<Integer, User> onlineSemula =
+                new java.util.HashMap<>(MapServer.onlineChars);
+        MapServer.onlineChars.clear();
+        User a = pemainUji(9201, "SetelanA");
+        User b = pemainUji(9202, "SetelanB");
+        for (User u : java.util.List.of(a, b)) {
+            u.m = -1;
+            u.status.settingFlags = GRUP;
+            MapServer.onlineChars.put(u.fd, u);
+        }
+        Groups.tambah(a, "SetelanB");
+        check("setelan: baseline — keduanya bergrup lebih dulu",
+                a.groupId != 0 && a.groupId == b.groupId);
+        cmd.playerChangesSetting(a, 2, false);
+        check("setelan: mematikan setelan grup melepas grup yang sedang diikuti",
+                a.groupId == 0 && (a.status.settingFlags & GRUP) == 0);
+        check("setelan: anggota lain ikut lepas karena grupnya bubar",
+                b.groupId == 0);
+        // Menyalakannya kembali tidak boleh diam-diam memasukkan ke grup.
+        cmd.playerChangesSetting(a, 2, false);
+        check("setelan: menyalakannya kembali tidak membentuk grup apa pun",
+                a.groupId == 0 && (a.status.settingFlags & GRUP) != 0);
+        Groups.bersihkanUntukUji();
+        MapServer.onlineChars.clear();
+        MapServer.onlineChars.putAll(onlineSemula);
+
+        // --- jembatan Lua: player.settings juga XOR ---
+        sd.status.settingFlags = 0;
+        check("setelan: player.settings terbaca skrip",
+                sd.scriptGetAttr("settings") != null
+                        && sd.scriptGetAttr("settings") == 0L);
+        sd.scriptSetAttr("settings", GRUP);
+        check("setelan: tulis player.settings MEMBALIK bit, bukan menyetel",
+                sd.status.settingFlags == GRUP);
+        sd.scriptSetAttr("settings", GRUP);
+        check("setelan: tulis kedua kalinya membalik kembali ke nol",
+                sd.status.settingFlags == 0);
+
+        sd.status.settingFlags = semula;
+        sd.status.clanChat = klanSemula;
+        MapServer.scriptEngine = engineLama;
+    }
+
+    private static void grupTest() {
+        log.info("=== grup ===");
+        Groups.bersihkanUntukUji();
+        java.util.Map<Integer, User> semula =
+                new java.util.HashMap<>(MapServer.onlineChars);
+        MapServer.onlineChars.clear();
+
+        final int GRUP = org.rtk.common.mmo.SettingFlags.GROUP;
+        User a = pemainUji(9101, "GrupA");
+        User b = pemainUji(9102, "GrupB");
+        User c = pemainUji(9103, "GrupC");
+        for (User u : java.util.List.of(a, b, c)) {
+            u.m = -1;                       // peta tak dikenal: canGroup bebas
+            u.status.settingFlags = GRUP;
+            MapServer.onlineChars.put(u.fd, u);
+        }
+
+        // --- baseline "terjadi" DULU: tanpa ini, tiap uji "tidak terjadi"
+        // di bawah bisa lulus hanya karena grupnya memang tak pernah jadi.
+        Groups.tambah(a, "GrupB");
+        check("mengajak membentuk grup", a.groupId != 0 && a.groupId == b.groupId);
+        check("grup baru beranggota dua", a.groupCount == 2 && b.groupCount == 2);
+        check("pengajak jadi pemimpin",
+                a.groupLeader == a.status.id && b.groupLeader == a.status.id);
+        check("pemimpin adalah anggota indeks 0",
+                Groups.anggota(a.groupId).get(0) == a.status.id);
+        check("id grup bukan 0 — 0 berarti tidak bergrup", a.groupId >= 1);
+        check("keduanya saling mengenali segrup",
+                Groups.seGrup(a, b) && Groups.seGrup(b, a));
+
+        // --- penolakan ---
+        int gidA = a.groupId;
+        Groups.tambah(a, "GrupA");
+        check("tidak bisa mengajak diri sendiri", a.groupCount == 2);
+        Groups.tambah(c, "GrupB");
+        check("yang sudah bergrup tidak bisa diajak orang lain",
+                c.groupId == 0 && b.groupId == gidA);
+        b.status.settingFlags = 0;
+        User d = pemainUji(9104, "GrupD");
+        d.m = -1;
+        MapServer.onlineChars.put(d.fd, d);
+        Groups.tambah(c, "GrupD");
+        check("setelan grup mati menolak ajakan", c.groupId == 0 && d.groupId == 0);
+        d.status.settingFlags = GRUP;
+        d.status.state = 1;                 // hantu
+        Groups.tambah(c, "GrupD");
+        check("hantu tidak bisa diajak", c.groupId == 0 && d.groupId == 0);
+        d.status.state = 0;
+        b.status.settingFlags = GRUP;
+
+        // --- tumbuh, lalu keluar ---
+        Groups.tambah(a, "GrupC");
+        check("pemimpin bisa menambah anggota ketiga",
+                c.groupId == gidA && a.groupCount == 3);
+        check("hitungan tersebar ke semua anggota",
+                b.groupCount == 3 && c.groupCount == 3);
+
+        // ⚠️ Saklar: mengajak anggota grup sendiri justru MENGELUARKAN dia,
+        // dan hanya pemimpin yang bisa.
+        Groups.tambah(b, "GrupC");
+        check("bukan pemimpin tidak bisa mengeluarkan anggota",
+                c.groupId == gidA && a.groupCount == 3);
+        Groups.tambah(a, "GrupC");
+        check("pemimpin mengeluarkan anggota lewat opcode yang sama",
+                c.groupId == 0 && c.groupCount == 0 && a.groupCount == 2);
+        check("yang dikeluarkan tidak lagi terdaftar",
+                !Groups.anggota(gidA).contains(c.status.id));
+
+        // --- pemimpin keluar: kepemimpinan pindah, lalu grup bubar ---
+        Groups.tambah(a, "GrupC");
+        check("bisa diajak kembali setelah dikeluarkan", c.groupId == gidA);
+        Groups.keluar(a);
+        check("pemimpin keluar: dirinya lepas",
+                a.groupId == 0 && a.groupCount == 0 && a.groupLeader == 0);
+        check("kepemimpinan pindah ke anggota berikutnya",
+                b.groupLeader == b.status.id && c.groupLeader == b.status.id);
+        check("sisa anggota tetap bergrup",
+                b.groupId == gidA && c.groupId == gidA && b.groupCount == 2);
+
+        Groups.keluar(c);
+        check("tinggal satu orang: grupnya BUBAR, bukan grup beranggota satu",
+                b.groupId == 0 && b.groupCount == 0);
+        check("slot grup dilepas kembali", Groups.anggota(gidA).isEmpty());
+        check("tidak ada grup tersisa", Groups.jumlahGrup() == 0);
+
+        // --- keluar saat tidak bergrup harus aman: jalur putus sambungan
+        // memanggilnya tanpa syarat ---
+        Groups.keluar(a);
+        check("keluar tanpa grup tidak melempar", a.groupId == 0);
+
+        // --- daftar untuk skrip ---
+        check("player.group pemain sendirian berisi DIRINYA, bukan kosong",
+                Groups.daftarSkrip(a).equals(java.util.List.of(a.status.id)));
+        Groups.tambah(a, "GrupB");
+        check("player.group bergrup berisi seluruh anggota",
+                Groups.daftarSkrip(a).size() == 2
+                        && Groups.daftarSkrip(a).get(0) == a.status.id);
+        check("anggota membaca daftar yang sama",
+                Groups.daftarSkrip(b).equals(Groups.daftarSkrip(a)));
+
+        // --- peta yang melarang grup ---
+        Groups.keluar(a);
+        if (MapServer.world.get(0) != null) {
+            MapData nyata = MapServer.world.get(0);
+            int simpan = nyata.canGroup;
+            nyata.canGroup = 0;
+            a.m = 0;
+            Groups.tambah(a, "GrupB");
+            check("peta yang melarang grup menolak ajakan", a.groupId == 0);
+            nyata.canGroup = 1;
+            Groups.tambah(a, "GrupB");
+            check("peta yang mengizinkan grup menerima ajakan", a.groupId != 0);
+            Groups.keluar(a);
+            nyata.canGroup = simpan;
+            a.m = -1;
+        }
+
+        Groups.bersihkanUntukUji();
+        for (User u : java.util.List.of(a, b, c, d)) {
+            u.groupId = 0;
+            u.groupCount = 0;
+            u.groupLeader = 0;
+        }
+        MapServer.onlineChars.clear();
+        MapServer.onlineChars.putAll(semula);
+    }
+
+    /** Pemain buatan sekadar pembawa nama dan daftar abaikan. */
+    private static User pemainUji(int fd, String nama) {
+        org.rtk.common.mmo.CharStatus st = new org.rtk.common.mmo.CharStatus();
+        st.id = fd;
+        st.name = nama;
+        return new User(fd, st);
+    }
+
     private static final class Rekam implements ClientCommands {
         String terakhir = "";
         final java.util.List<Object> arg = new java.util.ArrayList<>();
@@ -3740,6 +4105,31 @@ public final class ClifTest {
         @Override
         public void playerClicks(User sd, long id) {
             catat("click", id);
+        }
+
+        @Override
+        public void playerCastsSpell(User sd, int slot, long target, String question) {
+            catat("cast", slot, target, question);
+        }
+
+        @Override
+        public void playerChangesIgnore(User sd, boolean tambah, String name) {
+            catat("ignore", tambah, name);
+        }
+
+        @Override
+        public void playerChangesGroup(User sd, int aksi, String nama) {
+            catat("group", aksi, nama);
+        }
+
+        @Override
+        public void playerChangesSetting(User sd, int jenis, boolean paketAwal) {
+            catat("setting", jenis, paketAwal);
+        }
+
+        @Override
+        public void playerRides(User sd) {
+            catat("ride");
         }
 
         @Override
@@ -3990,11 +4380,17 @@ public final class ClifTest {
                 && rekam.terakhir.equals("attack") && rekam.arg.isEmpty());
 
         // ---- jawaban dialog: enam ragam, dua pintu terpisah ----
-        check("proto: jawaban ragam 1 jadi pilihan menu",
+        // ⚠️ Dikirim 3, diharapkan 4. Di kabel RTK2 pilihan menu 0-BASIS;
+        // lapisan logika 1-BASIS karena Lua-nya begitu (`options[selection]`,
+        // dan tabel Lua mulai dari 1). Penyesuaiannya di `Inbound.jawaban`.
+        // Tanpa itu pilihan pertama jadi `options[0]` = nil dan skripnya
+        // berhenti tanpa satu pun cabang cocok — NPC bicara sekali lalu
+        // membisu, tanpa error. Lihat Peringatan #88.
+        check("proto: jawaban ragam 1 jadi pilihan menu, digeser ke 1-basis",
                 kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ANSWER_MENU).u8(1).u16(3),
                         sd, rekam)
                 && rekam.terakhir.equals("menu")
-                && ((ClientCommands.Answer) rekam.arg.get(0)).choice == 3);
+                && ((ClientCommands.Answer) rekam.arg.get(0)).choice == 4);
         check("proto: jawaban ragam 2 jadi teks",
                 kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ANSWER_MENU).u8(2).str("budi"),
                         sd, rekam)
@@ -5272,6 +5668,9 @@ public final class ClifTest {
         @Override public void playerEquipmentCleared(User a, int b) { sunyi.playerEquipmentCleared(a, b); }
         @Override public void mapTilesChanged(User a) { sunyi.mapTilesChanged(a); }
         @Override public void weatherChanged(User a, int b) { sunyi.weatherChanged(a, b); }
+        @Override public void groupStatusChanged(User a) { sunyi.groupStatusChanged(a); }
+        @Override public void groupHealthChanged(User a) { sunyi.groupHealthChanged(a); }
+        @Override public void playerSettingsChanged(User a) { sunyi.playerSettingsChanged(a); }
     }
 
 }

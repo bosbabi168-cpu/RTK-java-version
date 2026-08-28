@@ -118,6 +118,16 @@ public final class Wire {
     /** {@code u64 idBenda} — 0 berarti "yang terakhir diklik". */
     public static final int OP_CLICK = 0x0110;
 
+    /**
+     * Tanpa muatan — naiki (atau turuni) tunggangan di petak yang dihadapi.
+     *
+     * <p>⚠️ Di C ini <b>bukan</b> opcode tersendiri: ia ragam 0 dari paket
+     * setelan {@code 0x1B}, dengan byte penanda di offset 7. Dipisah di
+     * sini karena ia satu-satunya ragam yang mengubah <b>dunia</b>, bukan
+     * setelan — dan menyatukannya berarti satu ladang dengan dua arti.</p>
+     */
+    public static final int OP_RIDE = 0x0120;
+
     // ------------------------------------------------------------------
     // 0x02xx — barang
     // ------------------------------------------------------------------
@@ -168,6 +178,63 @@ public final class Wire {
     /** {@code str tujuan, str teks} — tujuan bisa "!" / "!!" / "@" / "?". */
     public static final int OP_WHISPER = 0x0301;
 
+    /**
+     * {@code u8 aksi, str nama} — daftar abaikan. Aksi <b>2 tambah</b>,
+     * <b>3 hapus</b>, mengikuti {@code iCmd} di {@code clif_parseignore}.
+     *
+     * <p>⚠️ Daftarnya <b>tidak disimpan</b> dan hilang saat pemain keluar —
+     * itu memang perilaku C, bukan yang belum dikerjakan. Tabel
+     * {@code Friends} adalah hal yang berbeda meski namanya mirip.</p>
+     */
+    public static final int OP_IGNORE = 0x0302;
+
+    // ------------------------------------------------------------------
+    // 0x07xx — setelan pemain
+    // ------------------------------------------------------------------
+
+    /**
+     * {@code u8 jenis, u8 paketAwal} — balik satu setelan
+     * ({@code clif_changestatus}).
+     *
+     * <p>Jenis: 1 bisik, 2 grup, 3 teriak, 4 nasihat, 5 sihir, 6 cuaca,
+     * 7 pusat-alam, 8 tukar, 9 gerak cepat, 10 obrolan klan, 13 suara,
+     * 14 helm, 15 kalung. Jenis lain diabaikan tanpa jawaban, seperti
+     * cabang {@code default} di C.</p>
+     *
+     * <p>⚠️ <b>Ini SAKLAR, bukan penetapan.</b> Muatannya menyebut setelan
+     * <b>mana</b>, bukan nilai barunya; server yang membalik bitnya
+     * ({@code settingFlags ^= FLAG_x}). Klien yang mengirim "nyalakan"
+     * dua kali akan mematikannya lagi. Sama dengan
+     * {@code player.settings} di Lua, yang juga XOR (sl.c:6881) meski
+     * terbaca seperti penetapan biasa.</p>
+     *
+     * <p>⚠️ {@code paketAwal} ada semata untuk mempertahankan satu keanehan
+     * C: paket suara yang dikirim klien <b>sekali saat masuk</b> diabaikan
+     * server ({@code if (RFIFOB(fd,4) == 3) return 0}) — di sana penandanya
+     * kebetulan nomor urut paket. Tanpa penanda ini, setiap pemain yang
+     * masuk akan mematikan suaranya sendiri.</p>
+     */
+    public static final int OP_SETTING = 0x0700;
+
+    // ------------------------------------------------------------------
+    // 0x03Fx — grup (party)
+    // ------------------------------------------------------------------
+
+    /**
+     * {@code u8 aksi, str nama} — grup. Aksi <b>0 ajak/keluarkan</b>
+     * ({@code clif_addgroup}), <b>1 keluar sendiri</b>
+     * ({@code clif_leavegroup}), <b>2 minta kiriman ulang jendela grup</b>
+     * ({@code clif_groupstatus}).
+     *
+     * <p>⚠️ Aksi 0 adalah <b>saklar</b>, bukan "ajak" saja: mengirimkannya
+     * atas nama anggota grup yang saya pimpin justru mengeluarkan dia.
+     * Itu perilaku C, dan satu-satunya cara mengeluarkan anggota lain.</p>
+     *
+     * <p>Nama diabaikan untuk aksi 1 dan 2, tetapi ladangnya tetap ada —
+     * bingkai yang tidak habis terbaca ditolak {@code Inbound}.</p>
+     */
+    public static final int OP_GROUP = 0x03F0;
+
     // ------------------------------------------------------------------
     // 0x04xx — pertukaran antar pemain
     // ------------------------------------------------------------------
@@ -193,6 +260,23 @@ public final class Wire {
 
     /** Tanpa muatan — ayunkan senjata yang sedang dipegang. */
     public static final int OP_ATTACK = 0x0500;
+
+    /**
+     * {@code u8 slot} + muatan menurut ragam mantranya:
+     * ragam 2 (bersasaran) {@code u64 idSasaran}, ragam 1 (bertanya)
+     * {@code str jawaban}, ragam 5 (ke diri sendiri) tanpa muatan.
+     *
+     * <p>⚠️ <b>Slot buku mantra 0-BASIS</b>, seperti seluruh nomor lain di
+     * RTK2. RetroTK mengirimnya 1-basis dan setiap penangannya diawali
+     * {@code RFIFOB(fd,5) - 1}; di sini pengurangan itu tidak ada, dan tidak
+     * boleh ditambahkan "supaya cocok".</p>
+     *
+     * <p>⚠️ Ragam tidak ikut di kabel — <b>server yang menentukannya</b> dari
+     * {@code SplType} mantra di slot itu. Klien tidak boleh memilih bentuk
+     * muatannya sendiri: kalau ia salah mengaku, server akan membaca ladang
+     * yang tidak ada.</p>
+     */
+    public static final int OP_CAST = 0x0501;
 
     // ------------------------------------------------------------------
     // 0x06xx — jawaban dialog
@@ -443,6 +527,19 @@ public final class Wire {
     public static final int EV_SELF_AETHER = EV | 0x010C;
     /** {@code u8 cuaca} — pemain yang mematikan setelannya tidak menerimanya. */
     public static final int EV_WEATHER = EV | 0x010D;
+    /**
+     * {@code u32 setelan, u8 obrolanKlan} — seluruh kata setelan pemain.
+     *
+     * <p>⚠️ <b>Terpisah dari {@link #EV_SELF_STATUS}</b>, yang ladang
+     * benderanya adalah "bagian mana yang berubah", bukan setelan. Di
+     * RetroTK setelan menumpang paket status; di sini ia berdiri sendiri
+     * supaya klien tidak perlu menebak dari paket yang artinya lain.</p>
+     *
+     * <p>⚠️ {@code obrolanKlan} ikut di sini walau <b>bukan</b> bagian dari
+     * {@code settingFlags} — di C ia ladang {@code status.clan_chat}
+     * tersendiri, tetapi dibalik lewat paket setelan yang sama.</p>
+     */
+    public static final int EV_SELF_SETTINGS = EV | 0x010E;
 
     // 0x82xx — barang & perlengkapan
     /** {@code u8 slot} + blok barang */
@@ -521,6 +618,34 @@ public final class Wire {
     public static final int EV_BOARD_QUESTIONS = EV | 0x0603;
     /** {@code u16 n, (str nama, u32 kekuatan)[]} */
     public static final int EV_POWER_BOARD = EV | 0x0604;
+
+    // 0x87xx — grup
+    /**
+     * Isi jendela grup ({@code clif_groupstatus}).
+     *
+     * <p>{@code u64 idPemimpin, u16 n,} lalu tiap anggota:
+     * {@code u64 id, str nama, u8 pemimpin, u8 jalur, u8 keadaan,}
+     * {@code u8 wajah, u8 rambut, u8 warnaRambut, u8 s,}
+     * {@code (u8 slot, u16 gambar, u8 warna)[s],}
+     * {@code u32 maxHp, u32 hp, u32 maxMp, u32 mp}.</p>
+     *
+     * <p>⚠️ <b>{@code n == 0} berarti "tutup jendela"</b>, dan itu satu-
+     * satunya pemberitahuan bahwa grup bubar — tidak ada peristiwa
+     * "grup bubar" tersendiri. Di RetroTK pun begitu.</p>
+     */
+    public static final int EV_GROUP = EV | 0x0700;
+
+    /**
+     * Darah &amp; mana anggota grup ({@code clif_grouphealth_update}).
+     *
+     * <p>{@code u16 n, (u64 id, u32 maxHp, u32 hp, u32 maxMp, u32 mp)[n]}</p>
+     *
+     * <p>⚠️ Di RetroTK ini <b>satu paket per anggota</b> dan menyeret satu
+     * {@code clif_groupstatus} penuh di belakang setiap paketnya. Di RTK2
+     * satu peristiwa memuat seluruh anggota dan tidak menyeret apa-apa —
+     * jendela grup dikirim hanya saat susunannya berubah.</p>
+     */
+    public static final int EV_GROUP_HEALTH = EV | 0x0701;
 
     /**
      * Penyusun bingkai keluar — pasangan {@link Reader}.

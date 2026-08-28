@@ -350,6 +350,9 @@ public final class MapServer {
         for (User sd : new java.util.ArrayList<>(onlineChars.values())) {
             try {
                 Durations.tick(scriptEngine, sd);
+                // pc.c:648 — darah grup ikut disegarkan tiap tik selama
+                // pemain bergrup; pemain sendirian langsung pulang.
+                Groups.detak(sd);
             } catch (RuntimeException e) {
                 log.error("[DURASI] tik gagal untuk '{}'", sd.status.name, e);
             }
@@ -529,10 +532,18 @@ public final class MapServer {
     /** Pemain terputus: simpan lalu lepaskan dari dunia. */
     static void handleDisconnect(int fd) {
         rtk2Fds.remove(fd);
+        // Permintaan data karakter yang belum dijawab char server tidak lagi
+        // ada tujuannya — lihat catatan `menunggu` di MapIntif.
+        MapIntif.lupakanPermintaan(fd);
         User sd = onlineChars.remove(fd);
         if (sd == null) {
             return;
         }
+        // clif_leavegroup() di jalur putus sambungan (clif.c:10949).
+        // ⚠️ Dipanggil SETELAH onlineChars.remove supaya pemain yang pergi
+        // tidak ikut terdaftar saat anggota sisanya disegarkan, dan
+        // SEBELUM despawn supaya petanya masih diketahui.
+        Groups.keluar(sd);
         Pc.despawn(world, sd);
         // simpan + tandai offline lewat char server (0x3007); penyegaran
         // posisi & samaran dilakukan saveChar sendiri
@@ -614,6 +625,19 @@ public final class MapServer {
                             }
                         }
                         return null;
+                    }
+                });
+                // map_id2npc / map_name2npc untuk konstruktor NPC(id|nama).
+                scriptEngine.setNpcLookup(
+                        new org.rtk.map.script.ScriptEngine.NpcLookup() {
+                    @Override
+                    public Object byId(long id) {
+                        return npcs == null ? null : npcs.byId(id);
+                    }
+
+                    @Override
+                    public Object byName(String name) {
+                        return npcs == null ? null : npcs.byName(name);
                     }
                 });
                 int errors = scriptEngine.init(luaPath);

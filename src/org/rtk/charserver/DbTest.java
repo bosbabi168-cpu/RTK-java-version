@@ -837,9 +837,22 @@ public final class DbTest {
             eq("id mantra di slot 0", c.spells[0], r.spells[0]);
         }
 
-        if (!c.inventory.isEmpty() && !r.inventory.isEmpty()) {
-            Item a = c.inventory.get(0);
-            Item b = r.inventory.get(0);
+        // ⚠️ Dibandingkan menurut SLOT, bukan indeks daftar. Membandingkan
+        // get(0) dengan get(0) melintasi simpan/muat adalah kekeliruan yang
+        // sama dengan yang sedang diuji: pemuatan mengurutkan ORDER BY
+        // InvPosition, jadi urutan daftarnya berubah.
+        check("slot 0 bertahan walau bukan elemen pertama saat disimpan",
+                r.inventoryAt(0) != null && r.inventoryAt(0).id == 43);
+        check("slot berlubang bertahan utuh (5 dan 26)",
+                r.inventoryAt(5) != null && r.inventoryAt(5).id == 42
+                        && r.inventoryAt(26) != null && r.inventoryAt(26).id == 44);
+        check("tidak ada slot yang bertabrakan setelah putar-balik",
+                r.inventory.stream().map(x -> x.pos).distinct().count()
+                        == r.inventory.size());
+
+        if (c.inventoryAt(5) != null && r.inventoryAt(5) != null) {
+            Item a = c.inventoryAt(5);
+            Item b = r.inventoryAt(5);
             eq("barang: id", a.id, b.id);
             eq("barang: jumlah", a.amount, b.amount);
             eq("barang: daya tahan", a.dura, b.dura);
@@ -890,14 +903,31 @@ public final class DbTest {
         CharStatus r2 = CharPersistence.load(sql, id);
         eq("simpan dua kali tidak menggandakan inventaris",
                 r.inventory.size(), r2 == null ? -1 : r2.inventory.size());
-        int invRows = sql.rowCount("SELECT COUNT(*) FROM `Inventory` WHERE `InvChaId` = ?", id);
-        eq("baris Inventory di database sesuai jumlah barang", c.inventory.size(), invRows);
+        // ⚠️ queryInt, BUKAN rowCount. `Sql.rowCount` menghitung berapa BARIS
+        // HASIL yang dikembalikan kueri, dan `SELECT COUNT(*)` selalu
+        // mengembalikan tepat satu baris — jadi bentuk lamanya selalu bernilai
+        // 1, apa pun isi tabelnya. Ia lulus bertahun-tahun hanya karena
+        // contoh ujinya kebetulan berisi tepat SATU barang. Pemeriksaan yang
+        // jawabannya tidak pernah bergantung pada yang diperiksa bukan
+        // pemeriksaan.
+        Integer invRows = sql.queryInt("SELECT COUNT(*) FROM `Inventory` WHERE `InvChaId` = ?", id);
+        eq("baris Inventory di database sesuai jumlah barang",
+                c.inventory.size(), invRows == null ? -1 : invRows);
         scriptRegistryTest(sql, id);
         scriptItemTest(sql, id);
         bindingTest(sql, id);
 
-        int regRows = sql.rowCount("SELECT COUNT(*) FROM `Registry` WHERE `RegChaId` = ?", id);
-        eq("baris Registry di database sesuai jumlah entri", c.registry.size(), regRows);
+        // Sama seperti di atas: rowCount atas COUNT(*) selalu 1.
+        //
+        // ⚠️ Dibandingkan dengan karakter yang DIMUAT ULANG, bukan dengan
+        // contoh `c`. `scriptRegistryTest` di atas menambah entri registry ke
+        // database, jadi jumlah barisnya memang sudah bukan jumlah entri
+        // contohnya lagi. Yang sahih dibandingkan adalah dua pembacaan atas
+        // keadaan database yang SAMA.
+        Integer regRows = sql.queryInt("SELECT COUNT(*) FROM `Registry` WHERE `RegChaId` = ?", id);
+        CharStatus r3 = CharPersistence.load(sql, id);
+        eq("baris Registry di database sesuai jumlah entri yang dimuat",
+                r3 == null ? -1 : r3.registry.size(), regRows == null ? -1 : regRows);
     }
 
     /**
@@ -1249,6 +1279,12 @@ public final class DbTest {
         c.lastPos = new Point(1, 12, 34);
         c.destPos = new Point(1, 12, 34);
 
+        // ⚠️ Kantong sengaja BERLUBANG, dan barang slot 0 sengaja BUKAN
+        // elemen pertama daftar. Contoh lama cuma satu barang di slot 0 —
+        // data terlalu jinak, dan pada data seperti itu indeks daftar
+        // kebetulan selalu sama dengan nomor slot. Empat tempat yang
+        // memperlakukan keduanya sebagai hal yang sama lolos berbulan-bulan
+        // karena tidak ada uji yang membedakannya. Lihat Peringatan #85.
         Item it = new Item();
         it.id = 42;
         it.amount = 5;
@@ -1256,7 +1292,29 @@ public final class DbTest {
         it.owner = 12345;
         it.note = "catatan uji";
         it.realName = "ukiran uji";
+        it.pos = 5;
         c.inventory.add(it);
+
+        Item it0 = new Item();
+        it0.id = 43;
+        it0.amount = 1;
+        it0.dura = 900;
+        it0.pos = 0;
+        // ⚠️ InvNote dan InvEngrave NOT NULL. Membiarkannya null membuat
+        // seluruh batch INSERT gagal dan barangnya hilang tanpa pesan yang
+        // menunjuk ke sini — gejalanya cuma "baris Inventory tidak sesuai".
+        it0.note = "";
+        it0.realName = "";
+        c.inventory.add(it0);
+
+        Item it26 = new Item();
+        it26.id = 44;
+        it26.amount = 2;
+        it26.dura = 800;
+        it26.pos = 26;
+        it26.note = "";
+        it26.realName = "";
+        c.inventory.add(it26);
 
         Item eq0 = new Item();
         eq0.id = 7;

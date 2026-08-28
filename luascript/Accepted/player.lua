@@ -14,7 +14,12 @@ function Player.addHealthExtend(player, amount, sleep, deduction, ac, ds, print)
 
 	--ded = 1 * string.format("%.2f", player.armor / (player.armor + 400 + 95 * (healer.level + healer.tier^2 + healer.mark^3)))
 
-	if (healer:hasDuration("blossom")) then
+	-- healer bisa nil: kalau player.attacker masih 0 (belum pernah dilukai
+	-- sejak masuk), kedua cabang di atas tidak berjalan. Baris ded di atas
+	-- yang dulu memakai healer sudah dikomentari, tetapi baris ini tidak ikut
+	-- — jadi memakan makanan sebelum pernah bertarung menggagalkan seluruh
+	-- fungsi ini. Penjaga nil, bukan perubahan aturan permainan.
+	if (healer ~= nil and healer:hasDuration("blossom")) then
 		amount = amount * 2
 	end
 
@@ -77,7 +82,10 @@ function Player.addHealthExtend(player, amount, sleep, deduction, ac, ds, print)
 
 	amount = -amount
 
-	if (player.gfxDye ~= healer.gfxDye) then
+	-- Sama seperti di atas: healer boleh nil. Baris `if (healer ~= nil)` tepat
+	-- di bawah membuktikan penulisnya memang menyiapkan kemungkinan itu —
+	-- baris ini saja yang terlewat.
+	if (healer ~= nil and player.gfxDye ~= healer.gfxDye) then
 		if (player.m == 33 or player.m == 3011 or player.m == 3017) then
 			amount = 0
 		end
@@ -102,8 +110,17 @@ function Player.addHealthExtend(player, amount, sleep, deduction, ac, ds, print)
 	elseif (print == 2) then
 		return amount
 	else
-		player.attacker = healer.ID
-		player:sendHealth(math.floor(healer.damage), healer.critChance)
+		-- healer boleh nil, dan cabang `if (healer ~= nil)` beberapa baris di
+		-- atas sudah menyiapkan jalurnya: saat penyembuhnya diri sendiri,
+		-- angkanya ditulis ke player.damage/critChance. Yang dipakai di sini
+		-- mengikuti cabang yang sama, dan player.attacker tidak diubah —
+		-- tidak ada penyerang untuk dicatat.
+		if (healer ~= nil) then
+			player.attacker = healer.ID
+			player:sendHealth(math.floor(healer.damage), healer.critChance)
+		else
+			player:sendHealth(math.floor(player.damage), player.critChance)
+		end
 		player:sendStatus()
 	end
 end

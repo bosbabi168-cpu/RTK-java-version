@@ -97,6 +97,20 @@ public final class Rtk2ClientView implements ClientView {
      * karena kuncinya per-sesi.</p>
      */
     private static void siarkan(BlockList dari, Wire.Writer w, boolean termasukDiri) {
+        siarkan(dari, w, termasukDiri, false);
+    }
+
+    /**
+     * @param saringAbaikan hormati daftar abaikan kedua belah pihak
+     *
+     * <p>⚠️ Penyaring abaikan hanya berlaku untuk <b>ucapan</b>. Di C ia
+     * dipasang di {@code clif_send_sub} dengan syarat
+     * {@code RBUFB(buf,3) == 0x0D} — yaitu paket obrolan saja. Memasangnya di
+     * semua siaran akan menyembunyikan gerak, serangan, dan kemunculan benda
+     * dari orang yang diabaikan: ia jadi tak terlihat, bukan tak terdengar.</p>
+     */
+    private static void siarkan(BlockList dari, Wire.Writer w, boolean termasukDiri,
+                                boolean saringAbaikan) {
         MapData map = MapServer.world.get(dari.m);
         if (map == null) {
             return;
@@ -104,6 +118,10 @@ public final class Rtk2ClientView implements ClientView {
         byte[] f = w.frame();
         map.foreachInArea(dari.x, dari.y, BlockList.Type.PC, bl -> {
             if (!(bl instanceof User to) || (!termasukDiri && bl == dari)) {
+                return;
+            }
+            if (saringAbaikan && dari instanceof User pembicara
+                    && !User.bolehSalingDengar(pembicara, to)) {
                 return;
             }
             Session ts = sesi(to);
@@ -117,12 +135,21 @@ public final class Rtk2ClientView implements ClientView {
 
     /** Siarkan ke seluruh pemain RTK2 di peta yang sama. */
     private static void siarkanPeta(BlockList dari, Wire.Writer w) {
+        siarkanPeta(dari, w, false);
+    }
+
+    /** @param saringAbaikan hormati daftar abaikan — hanya untuk ucapan. */
+    private static void siarkanPeta(BlockList dari, Wire.Writer w, boolean saringAbaikan) {
         byte[] f = dari == null ? null : w.frame();
         if (f == null) {
             return;
         }
         for (User to : MapServer.onlineChars.values()) {
             if (to.m != dari.m) {
+                continue;
+            }
+            if (saringAbaikan && dari instanceof User pembicara
+                    && !User.bolehSalingDengar(pembicara, to)) {
                 continue;
             }
             Session ts = sesi(to);
@@ -334,9 +361,39 @@ public final class Rtk2ClientView implements ClientView {
         identitas(sd);
         petaSendiri(sd);
         playerStatusChanged(sd, Clif.SFLAG_ALL);
+        bawaan(sd);
         kirim(sd, new Wire.Writer(Wire.EV_SELF_POSITION)
                 .u16(sd.x).u16(sd.y).u8(sd.status.side));
         playerViewRefreshed(sd);
+    }
+
+    /**
+     * Isi kantong dan perlengkapan yang dibawa pemain saat masuk dunia.
+     *
+     * <p>Versi pertama {@link #playerEnteredWorld} berhenti setelah posisi dan
+     * refresh, sehingga klien RTK2 <b>tidak pernah tahu</b> pemain membawa
+     * apa: karakter uji punya 12 barang dan kliennya menerima nol. Tidak ada
+     * yang gagal — kantongnya cuma kosong selamanya, dan itu tampak seperti
+     * masalah di sisi klien.</p>
+     *
+     * <p>Hanya slot yang <b>terisi</b> yang dikirim. Klien memulai dengan
+     * kantong kosong, jadi slot kosong tidak perlu dikirim untuk
+     * mengosongkannya — dan pada {@code maxInv} 27 slot itu menghemat dua
+     * pertiga bingkai pada kantong yang biasa.</p>
+     */
+    private void bawaan(User sd) {
+        for (int slot = 0; slot < sd.status.maxInv; slot++) {
+            Item it = sd.status.inventoryAt(slot);
+            if (it != null && it.id > 0) {
+                playerInventorySlotChanged(sd, slot);
+            }
+        }
+        for (int slot = 0; slot < Equip.COUNT; slot++) {
+            Item it = sd.status.equipAt(slot);
+            if (it != null && it.id > 0) {
+                playerEquipmentChanged(sd, slot);
+            }
+        }
     }
 
     private void identitas(User sd) {
@@ -481,13 +538,32 @@ public final class Rtk2ClientView implements ClientView {
     // barang & perlengkapan
     // ==================================================================
 
+    /**
+     * Satu slot kantong.
+     *
+     * <p>⚠️ <b>Indeks daftar BUKAN nomor slot.</b> {@code status.inventory}
+     * adalah {@code List}, dan nomor slotnya ada di {@code Item.pos} —
+     * {@link org.rtk.common.mmo.CharStatus#inventoryAt} yang ada justru untuk
+     * itu. Versi pertama method ini memakai {@code inventory.get(slot)} dan
+     * membatasi dengan {@code inventory.size()}, yang salah dua kali sekaligus
+     * begitu ada slot berlubang.</p>
+     *
+     * <p>Dan slot berlubang bukan kasus langka: pada data nyata, kantong
+     * Adrielle terisi di slot <b>0–5 lalu 21–26</b>, dan <b>keenam</b>
+     * karakter yang punya barang berlubang seperti itu. Dengan pembacaan
+     * lama, slot 6 mengirim barang milik slot 21, dan slot 12 ke atas ditolak
+     * mentah-mentah karena daftarnya cuma 12 panjang. Tidak ada yang melempar
+     * error — barangnya cuma muncul di kotak yang salah, atau tidak muncul.</p>
+     *
+     * <p>Batasnya {@code maxInv} (27 pada data ini), bukan panjang daftar.</p>
+     */
     @Override
     public void playerInventorySlotChanged(User sd, int slot) {
-        if (sesi(sd) == null || slot < 0 || slot >= sd.status.inventory.size()) {
+        if (sesi(sd) == null || slot < 0 || slot >= sd.status.maxInv) {
             return;
         }
         Wire.Writer w = new Wire.Writer(Wire.EV_INV_SLOT).u8(slot);
-        blokBarang(w, sd.status.inventory.get(slot));
+        blokBarang(w, sd.status.inventoryAt(slot));
         kirim(sd, w);
     }
 
@@ -554,19 +630,28 @@ public final class Rtk2ClientView implements ClientView {
     public void playerSpoke(User sd, String text, int type) {
         // Ragam 1 menyiarkan ke SELURUH peta, bukan hanya sekitar — itu yang
         // membedakan berteriak dari berbicara.
+        // ⚠️ INILAH jalur ucapan pemain — bukan objectSpoke. Skrip
+        // `speech.lua` memanggil `player:speak()`, yang sampai ke sini;
+        // `player:talk()` (objectSpoke) dipakai untuk benda dan pesan
+        // khusus. Penyaring abaikan sempat dipasang HANYA di objectSpoke,
+        // dan hasilnya: ucapan biasa lolos tanpa disaring sama sekali,
+        // sementara ujinya "lulus" untuk arah yang kebetulan tidak pernah
+        // diucapkan.
         Wire.Writer w = new Wire.Writer(Wire.EV_OBJECT_SPOKE)
                 .u64(sd.id).u8(type).str(text);
         if (type == 1) {
-            siarkanPeta(sd, w);
+            siarkanPeta(sd, w, true);
         } else {
-            siarkan(sd, w, true);
+            siarkan(sd, w, true, true);
         }
     }
 
     @Override
     public void objectSpoke(BlockList speaker, int type, String text) {
+        // ⚠️ true terakhir: ucapan DISARING daftar abaikan. Lihat catatan di
+        // siarkan() untuk alasan penyaringnya tidak dipasang di siaran lain.
         siarkan(speaker, new Wire.Writer(Wire.EV_OBJECT_SPOKE)
-                .u64(speaker.id).u8(type).str(text), true);
+                .u64(speaker.id).u8(type).str(text), true, true);
     }
 
     @Override
@@ -885,5 +970,59 @@ public final class Rtk2ClientView implements ClientView {
             return;
         }
         kirim(sd, new Wire.Writer(Wire.EV_WEATHER).u8(weather));
+    }
+
+    @Override
+    public void groupStatusChanged(User sd) {
+        if (sesi(sd) == null) {
+            return;
+        }
+        java.util.List<User> daftar = Groups.anggotaOnline(sd);
+        Wire.Writer w = new Wire.Writer(Wire.EV_GROUP)
+                .u64(sd.groupLeader).u16(daftar.size());
+        for (User t : daftar) {
+            w.u64(t.id).str(t.name())
+             .u8(sd.groupLeader == t.status.id ? 1 : 0)
+             .u8(MapServer.classDb.pathOf(t.status.charClass))
+             .u8(t.status.state)
+             .u8(t.status.face).u8(t.status.hair).u8(t.status.hairColor);
+
+            // Cukup untuk menggambar potret di jendela grup. Perlengkapan
+            // badan sengaja tidak ikut: anggota di peta lain tidak tergambar
+            // di dunia, jadi kliennya memang belum pernah melihatnya.
+            java.util.List<int[]> slot = new java.util.ArrayList<>();
+            if ((t.status.settingFlags & SettingFlags.HELM) != 0) {
+                tambahSlot(slot, t.status, Equip.HELM, 0);
+            }
+            tambahSlot(slot, t.status, Equip.FACEACC, 0);
+            tambahSlot(slot, t.status, Equip.CROWN, 0);
+            tambahSlot(slot, t.status, Equip.FACEACCTWO, 0);
+            w.u8(slot.size());
+            for (int[] e : slot) {
+                w.u8(e[0]).u16(e[1]).u8(e[2]);
+            }
+
+            w.u32(t.maxHp).u32(t.status.hp).u32(t.maxMp).u32(t.status.mp);
+        }
+        kirim(sd, w);
+    }
+
+    @Override
+    public void groupHealthChanged(User sd) {
+        if (sesi(sd) == null) {
+            return;
+        }
+        java.util.List<User> daftar = Groups.anggotaOnline(sd);
+        Wire.Writer w = new Wire.Writer(Wire.EV_GROUP_HEALTH).u16(daftar.size());
+        for (User t : daftar) {
+            w.u64(t.id).u32(t.maxHp).u32(t.status.hp).u32(t.maxMp).u32(t.status.mp);
+        }
+        kirim(sd, w);
+    }
+
+    @Override
+    public void playerSettingsChanged(User sd) {
+        kirim(sd, new Wire.Writer(Wire.EV_SELF_SETTINGS)
+                .u32(sd.status.settingFlags).u8(sd.status.clanChat));
     }
 }

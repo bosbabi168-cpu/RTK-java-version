@@ -320,4 +320,19 @@ public final class ProtocolRouter implements ClientView {
     public void weatherChanged(User sd, int weather) {
         tujuan.forEach(v -> v.weatherChanged(sd, weather));
     }
+
+    @Override
+    public void groupStatusChanged(User sd) {
+        tujuan.forEach(v -> v.groupStatusChanged(sd));
+    }
+
+    @Override
+    public void groupHealthChanged(User sd) {
+        tujuan.forEach(v -> v.groupHealthChanged(sd));
+    }
+
+    @Override
+    public void playerSettingsChanged(User sd) {
+        tujuan.forEach(v -> v.playerSettingsChanged(sd));
+    }
 }

@@ -301,7 +301,7 @@ public interface ClientCommands {
      * masing-masing melanjutkan primitif skrip yang berbeda dan tipe
      * jawabannya pun berbeda:</p>
      * <ul>
-     *   <li>{@link Answer#choice} — nomor pilihan menu;</li>
+     *   <li>{@link Answer#choice} — nomor pilihan menu, <b>1-BASIS</b>;</li>
      *   <li>{@link Answer#text} — teks yang diketik;</li>
      *   <li>{@link Answer#itemName} — <b>nama</b> barang yang dibeli
      *       (daftar beli dijawab dengan nama, bukan indeks);</li>
@@ -311,6 +311,61 @@ public interface ClientCommands {
      * <p>{@code null} berarti pemain membatalkan — coroutine skripnya
      * dilepas, bukan dilanjutkan dengan nilai kosong.</p>
      */
+    /**
+     * Pemain merapal mantra dari slot buku mantranya.
+     *
+     * <p>⚠️ {@code slot} <b>0-basis</b>. RetroTK mengirim 1-basis dan setiap
+     * penangannya diawali {@code RFIFOB(fd,5) - 1}; jangan menambahkan
+     * pengurangan itu di sini.</p>
+     *
+     * <p>Bentuk {@code muatan} ditentukan {@code SplType} mantranya, bukan
+     * klien: ragam 2 membawa id sasaran, ragam 1 membawa teks jawaban, ragam
+     * 5 tidak membawa apa-apa. Ragam lain <b>tidak dirapal sama sekali</b> —
+     * itu yang dilakukan C ({@code clif_parsemagic} default: {@code return
+     * 0}).</p>
+     *
+     * @param target id benda sasaran; 0 bila mantranya bukan ragam 2
+     * @param question teks jawaban; null bila mantranya bukan ragam 1
+     */
+    void playerCastsSpell(User sd, int slot, long target, String question);
+
+    /**
+     * Pemain menambah atau menghapus nama dari daftar abaikannya.
+     *
+     * @param tambah true menambah, false menghapus
+     */
+    void playerChangesIgnore(User sd, boolean tambah, String name);
+
+    /**
+     * Pemain mengubah grupnya ({@code clif_addgroup} /
+     * {@code clif_leavegroup} / {@code clif_groupstatus}).
+     *
+     * @param aksi 0 ajak-atau-keluarkan {@code nama}, 1 keluar sendiri,
+     *             2 minta kiriman ulang jendela grup
+     * @param nama nama pemain yang diajak; diabaikan untuk aksi 1 dan 2
+     */
+    void playerChangesGroup(User sd, int aksi, String nama);
+
+    /**
+     * Pemain membalik satu setelan ({@code clif_changestatus}).
+     *
+     * <p>⚠️ <b>Saklar, bukan penetapan</b> — lihat {@code Wire.OP_SETTING}.
+     * Pemanggil hanya menyebut setelan mana; nilai barunya dihitung di
+     * sini.</p>
+     *
+     * @param jenis     nomor setelan, penomoran C
+     * @param paketAwal true bila ini paket pembuka klien yang harus
+     *                  diabaikan untuk setelan suara
+     */
+    void playerChangesSetting(User sd, int jenis, boolean paketAwal);
+
+    /**
+     * Pemain menaiki tunggangan di petak yang dihadapinya, atau turun bila
+     * sedang menunggang ({@code clif_findmount} + ragam 0
+     * {@code clif_changestatus}).
+     */
+    void playerRides(User sd);
+
     void playerAnswersMenu(User sd, Answer answer);
 
     /**
@@ -348,6 +403,16 @@ public interface ClientCommands {
             this.step = step;
         }
 
+        /**
+         * Pilihan menu, <b>1-BASIS</b>.
+         *
+         * <p>⚠️ Basisnya ditentukan Lua, bukan protokol: {@code player.lua}
+         * mengembalikan {@code options[selection]} dan tabel Lua mulai dari
+         * 1. Klien RetroTK memang mengirim 1-basis; jalur RTK2 yang 0-basis
+         * menambahkan satu di {@code Inbound}. Melewatkan penyesuaian itu
+         * membuat pilihan pertama jadi {@code nil} — skripnya berhenti tanpa
+         * satu pun cabang cocok, dan tanpa error.</p>
+         */
         public static Answer choice(int n) {
             return new Answer(n, null, null, null, null);
         }

@@ -51,8 +51,34 @@ public final class NpcRegistry {
         byId.remove(bl.id);
     }
 
+    /**
+     * map_name2npc(): NPC menurut namanya.
+     *
+     * <p>⚠️ <b>Yang dicocokkan {@code NpcDescription}, bukan
+     * {@code NpcIdentifier}</b>, dan <b>tanpa peka besar-kecil</b>. Keduanya
+     * mengikuti C: {@code npc.c:280} mengisi {@code npc_name} dari kolom
+     * ke-2 ({@code NpcDescription}), dan {@code map_name2npc} membandingkan
+     * dengan {@code strcmpi}.</p>
+     *
+     * <p>Versi sebelumnya memakai {@code NpcIdentifier} dan cocok persis
+     * huruf. Akibatnya {@code NPC("Tower")} di skrip mengembalikan
+     * <b>nil</b> — dan karena nil di Lua baru meledak saat dipakai,
+     * gejalanya muncul jauh dari sebabnya:
+     * {@code onScriptedTilesArena.lua} gagal di dalam {@code convertGraphic},
+     * bukan di baris pencariannya. NPC bersangkutan ada di database dengan
+     * {@code NpcIdentifier} "ArenaMasterNpc" dan {@code NpcDescription}
+     * "Tower".</p>
+     */
     public Npc byName(String name) {
-        return byName.get(name);
+        return name == null ? null
+                : byName.get(name.toLowerCase(java.util.Locale.ROOT));
+    }
+
+    /** Kunci pencarian nama: {@code NpcDescription} huruf kecil. */
+    private static String kunciNama(Npc nd) {
+        String n = nd.displayName != null && !nd.displayName.isEmpty()
+                ? nd.displayName : nd.name;
+        return n == null ? "" : n.toLowerCase(java.util.Locale.ROOT);
     }
 
     public List<Npc> all() {
@@ -130,7 +156,7 @@ public final class NpcRegistry {
 
         for (Npc nd : npcs) {
             byId.put(nd.id, nd);
-            byName.putIfAbsent(nd.name, nd);
+            byName.putIfAbsent(kunciNama(nd), nd);
 
             if (!nd.occupiesTile()) {
                 stat[0]++;
@@ -248,7 +274,7 @@ public final class NpcRegistry {
         }
         npcs.add(nd);
         byId.put(nd.id, nd);
-        byName.putIfAbsent(nd.name, nd);
+        byName.putIfAbsent(kunciNama(nd), nd);
 
         if (engine != null) {
             fire(engine, nd, "on_spawn");

@@ -163,10 +163,26 @@ public final class NetServer {
 
     /** session_eof(): tutup socket dan bebaskan slot. */
     public void sessionEof(int fd) {
-        Session s = session(fd);
-        if (s == null) {
+        sessionEof(session(fd));
+    }
+
+    /**
+     * session_eof() versi <b>beridentitas</b>: hanya menutup bila slot itu
+     * memang masih milik {@code s}.
+     *
+     * <p>⚠️ Inilah bedanya dengan versi ber-fd, dan bedanya penting.
+     * Nomor fd <b>dipakai ulang</b> begitu slotnya bebas, sedangkan objek
+     * {@code Session} yang lama masih bisa tersimpan di antrean logika.
+     * Menutup "fd 3" dari entri antrean yang basi akan menutup sambungan
+     * <b>pemain lain</b> yang kebetulan sudah menempati fd 3 — pemain itu
+     * lalu duduk diam tanpa menerima satu byte pun, tanpa error di mana
+     * pun. Persis gejala Peringatan #96, satu lapisan lebih bawah.</p>
+     */
+    public void sessionEof(Session s) {
+        if (s == null || sessions.get(s.fd) != s) {
             return;
         }
+        int fd = s.fd;
         try {
             if (s.channel != null) {
                 SelectionKey key = s.channel.keyFor(selector);
@@ -272,12 +288,34 @@ public final class NetServer {
                             key.cancel();
                             continue;
                         }
-                        if (key.isReadable()) {
+                        // ⚠️ readyOps() dibaca SEKALI, bukan lewat
+                        // isReadable()/isWritable() berturut-turut. Keduanya
+                        // memeriksa keabsahan key masing-masing, jadi key yang
+                        // dibatalkan di antara dua pemeriksaan melempar
+                        // CancelledKeyException dari pemeriksaan kedua.
+                        int siap = key.readyOps();
+                        if ((siap & SelectionKey.OP_READ) != 0) {
                             readSession(s);
                         }
-                        if (key.isValid() && key.isWritable()) {
+                        if ((siap & SelectionKey.OP_WRITE) != 0 && key.isValid()) {
                             writeSession(s, key);
                         }
+                    } catch (java.nio.channels.CancelledKeyException e) {
+                        // ⚠️ BUKAN kesalahan, dan tidak boleh menghentikan
+                        // apa pun. `sessionEof()` dipanggil dari utas
+                        // permainan saat pemain keluar; ia membatalkan key
+                        // dan menutup channel. Utas IO ini bisa sedang berada
+                        // tepat di antara `key.isValid()` di atas dan
+                        // pembacaan kesiapannya — dan key yang batal di sela
+                        // itu adalah jalannya dunia, bukan cacat.
+                        //
+                        // Sebelumnya pengecualian ini lolos ke penangkap
+                        // RuntimeException di luar lingkaran, sehingga
+                        // SELURUH sisa key pada putaran itu ikut terlewat:
+                        // satu pemain keluar menunda IO pemain lain sampai
+                        // putaran berikutnya. Log ERROR-nya muncul di setiap
+                        // logout dan tampak seperti kerusakan.
+                        continue;
                     } catch (IOException e) {
                         Session s = session(fd);
                         if (s != null) {
@@ -303,8 +341,22 @@ public final class NetServer {
                 continue;
             }
             SelectionKey key = s.channel.keyFor(selector);
-            if (key != null && key.isValid()) {
+            if (key == null) {
+                continue;
+            }
+            try {
                 key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+            } catch (java.nio.channels.CancelledKeyException e) {
+                // ⚠️ `key.isValid()` lebih dulu TIDAK menutup balapan ini,
+                // hanya mempersempitnya: key bisa dibatalkan utas permainan
+                // tepat setelah pemeriksaan dan sebelum interestOps.
+                // Pemain yang keluar tidak lagi butuh dikirimi apa pun, jadi
+                // ini bukan kesalahan.
+                //
+                // Letaknya di LUAR lingkaran per-key, jadi sebelumnya satu
+                // pengecualian di sini membuang seluruh putaran select —
+                // termasuk `selector.select()` itu sendiri.
+                continue;
             }
         }
     }
@@ -370,7 +422,11 @@ public final class NetServer {
 
     /** Jalankan handler accept/parse untuk session yang baru diambil dari antrean. */
     public void handle(Session s) {
-        if (s == null || session(s.fd) == null) {
+        // ⚠️ Dibandingkan per OBJEK, bukan sekadar "ada isinya". Entri
+        // antrean yang basi membawa fd yang sudah dipakai ulang sambungan
+        // lain; menjalankan parser atasnya berarti menjalankan logika
+        // pemain lama pada sambungan pemain baru.
+        if (s == null || session(s.fd) != s) {
             return;
         }
         synchronized (s) {
@@ -386,14 +442,12 @@ public final class NetServer {
             while (true) {
                 int before = s.roff();
                 int r = s.funcParse.parse(s.fd);
-                if (session(s.fd) == null) {
-                    return; // parser menutup session
+                if (session(s.fd) != s) {
+                    return; // parser menutup session (atau fd sudah dipakai ulang)
                 }
                 if (s.eof) {
                     s.funcParse.parse(s.fd); // beri kesempatan menangani eof
-                    if (session(s.fd) != null) {
-                        sessionEof(s.fd);
-                    }
+                    sessionEof(s);
                     return;
                 }
                 if (r != 0 || s.roff() == before || s.rfifoRest() <= 0) {

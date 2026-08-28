@@ -96,6 +96,75 @@ public final class User extends BlockList
     public boolean blind;
     public boolean drunk;
 
+    /**
+     * Tingkat bisu ({@code sd->silence}).
+     *
+     * <p>⚠️ Bukan boolean, dan itu penting: mantra dibungkam hanya bila
+     * {@code SplMute <= silence} ({@code clif_parsemagic}). Jadi bisu tingkat
+     * rendah masih menyisakan mantra bernilai mute tinggi — menyederhanakannya
+     * jadi ya/tidak membungkam semuanya sekaligus.</p>
+     */
+    public int silence;
+
+    /**
+     * Jawaban yang dibawa mantra bertanya ({@code sd->question}).
+     *
+     * <p>Diisi saat merapal mantra ragam 1, lalu dibaca skripnya lewat
+     * {@code player.question} — dipakai 41× oleh konten.</p>
+     */
+    public String question = "";
+
+    /**
+     * Daftar abaikan ({@code sd->IgnoreList}).
+     *
+     * <p>⚠️ <b>Tidak pernah disimpan ke database</b>, dan itu bukan
+     * kelalaian port: di C ia rantai di memori yang hanya diisi
+     * {@code clif_parseignore} dan lenyap saat pemain keluar. Tabel
+     * {@code Friends} <b>bukan</b> penyimpanannya — itu tabel berbeda yang
+     * dipakai binding {@code getFriends}, meski namanya mirip.</p>
+     *
+     * <p>Disimpan huruf kecil karena C membandingkan dengan
+     * {@code strcmpi}.</p>
+     */
+    public final java.util.Set<String> daftarAbaikan = new java.util.LinkedHashSet<>();
+
+    /** {@code ignorelist_add()}; false bila namanya sudah ada. */
+    public boolean abaikan(String nama) {
+        return nama != null && !nama.isEmpty()
+                && daftarAbaikan.add(nama.toLowerCase(java.util.Locale.ROOT));
+    }
+
+    /** {@code ignorelist_remove()}. */
+    public boolean berhentiAbaikan(String nama) {
+        return nama != null
+                && daftarAbaikan.remove(nama.toLowerCase(java.util.Locale.ROOT));
+    }
+
+    public boolean mengabaikan(String nama) {
+        return nama != null
+                && daftarAbaikan.contains(nama.toLowerCase(java.util.Locale.ROOT));
+    }
+
+    /**
+     * {@code clif_isignore(a, b)}: bolehkah pesan {@code a} sampai ke
+     * {@code b}?
+     *
+     * <p>⚠️ <b>Namanya di C menyesatkan.</b> {@code clif_isignore}
+     * mengembalikan <b>0 bila salah satu mengabaikan yang lain</b> dan 1 bila
+     * boleh lewat — kebalikan dari yang dikira namanya. Di sini namanya
+     * dibuat menyebutkan apa yang dijawabnya, supaya pemakainya tidak perlu
+     * mengingat pembalikan itu.</p>
+     *
+     * <p>Penyaringnya <b>dua arah</b>: yang mengabaikan tidak mendengar, dan
+     * yang diabaikan juga tidak. Itu memang perilaku C.</p>
+     */
+    public static boolean bolehSalingDengar(User a, User b) {
+        if (a == null || b == null || a == b) {
+            return true;
+        }
+        return !b.mengabaikan(a.name()) && !a.mengabaikan(b.name());
+    }
+
     /** Penanda kotak masuk: 1 = paket baru, 16 = pesan baru, 17 = keduanya. */
     public int flags;
 
@@ -104,6 +173,16 @@ public final class User extends BlockList
 
     /** Id grup pemain ({@code sd->groupid}); 0 berarti tidak bergrup. */
     public int groupId;
+
+    /**
+     * Id karakter pemimpin grup ({@code sd->group_leader}); 0 bila sendirian.
+     *
+     * <p>⚠️ Di C ladang ini disalin ke setiap anggota oleh
+     * {@code clif_updategroup} dan karenanya bisa melenceng. Di sini ia
+     * cuma <b>cermin</b> dari {@code Groups.pemimpin(groupId)}, ditulis
+     * lewat {@link Groups} saja supaya tidak ada dua sumber kebenaran.</p>
+     */
+    public long groupLeader;
 
     /**
      * Daftar lawan PK: id pemain -&gt; detik epoch saat ditandai
@@ -770,6 +849,8 @@ public final class User extends BlockList
     public Long scriptGetAttr(String name) {
         return switch (name) {
             case "money" -> status.money;
+            // ⚠️ Baca biasa; TULISNYA yang XOR — lihat scriptSetAttr.
+            case "settings" -> status.settingFlags;
             case "bankMoney" -> status.bankMoney;
             case "maxInv" -> (long) status.maxInv;
             case "health" -> status.hp;
@@ -793,6 +874,12 @@ public final class User extends BlockList
             case "boardCanDel" -> (long) boardCanDel;
             /** Id jenis barang yang paling akhir hancur ({@code sd->breakid}). */
             case "breakId" -> breakId;
+            // ⚠️ `attacker` dipakai skrip 289 kali — antara lain
+            // `player.lua:9` (addHealthExtend) yang dipanggil setiap barang
+            // penyembuh. Sebelumnya hanya Mob yang menyediakannya, jadi
+            // `player.attacker` bernilai nil dan skripnya gagal dengan
+            // "attempt to compare nil with number" — jauh dari sebabnya.
+            case "attacker" -> attacker;
             // nilai turunan hasil calcStat — dibaca skrip pertarungan
             case "maxHealth" -> maxHp;
             case "maxMagic" -> maxMp;
@@ -823,6 +910,9 @@ public final class User extends BlockList
             case "flank" -> org.luaj.vm2.LuaValue.valueOf(flank);
             case "backstab" -> org.luaj.vm2.LuaValue.valueOf(backstab);
             case "enchant" -> org.luaj.vm2.LuaValue.valueOf(enchanted);
+            // ⚠️ Lewat scriptGetSpecial, bukan scriptGetAttr: jembatan angka
+            // di sana tidak bisa membawa String. Dipakai skrip 41×.
+            case "question" -> org.luaj.vm2.LuaValue.valueOf(question == null ? "" : question);
             default -> null;
         };
     }
@@ -834,6 +924,7 @@ public final class User extends BlockList
             case "flank" -> flank = v.toboolean();
             case "backstab" -> backstab = v.toboolean();
             case "enchant" -> enchanted = (float) v.todouble();
+            case "question" -> question = v.isnil() ? "" : v.tojstring();
             default -> {
                 return false;
             }
@@ -846,12 +937,20 @@ public final class User extends BlockList
     public boolean scriptSetAttr(String name, long v) {
         switch (name) {
             case "money" -> status.money = v;
+            // ⚠️ **XOR, bukan penetapan** (sl.c:6881). `player.settings = 2`
+            // MEMBALIK bit grup; ia tidak menyetel setelan menjadi 2.
+            // Terbaca persis seperti penetapan biasa di skrip, dan itulah
+            // yang membuatnya berbahaya kalau diport begitu saja.
+            case "settings" -> status.settingFlags ^= v;
             // Papan ber-BnmScripted memakai ini dari kait `check`; nilai 6
             // bukan sekadar "boleh", lihat Boards.WRITE_ASK_SCRIPT.
             case "boardCanWrite" -> boardCanWrite = (int) v;
             case "boardCanDel" -> boardCanDel = (int) v;
             case "bankMoney" -> status.bankMoney = v;
             case "maxInv" -> status.maxInv = (int) v;
+            // Pasangan tulis dari `attacker` di scriptGetAttr: skrip
+            // pertarungan menyetelnya sendiri sebelum memanggil penyembuh.
+            case "attacker" -> attacker = v;
             case "health" -> status.hp = v;
             case "magic" -> status.mp = v;
             case "baseHealth" -> status.baseHp = v;
@@ -913,8 +1012,11 @@ public final class User extends BlockList
      * baru; sekarang pemberitahuan dan keadaannya dipisah.</p>
      */
     public void clearInventorySlot(int slot) {
-        if (slot >= 0 && slot < status.inventory.size()) {
-            status.inventory.remove(slot);
+        // ⚠️ removeInventoryAt, BUKAN inventory.remove(slot): yang kedua
+        // membuang menurut indeks daftar, yang pada kantong berlubang adalah
+        // barang milik slot lain. Lihat Peringatan #85.
+        if (slot >= 0) {
+            status.removeInventoryAt(slot);
         }
     }
 
@@ -940,14 +1042,19 @@ public final class User extends BlockList
         }
 
         while (sisa > 0) {
-            if (status.inventory.size() >= status.maxInv) {
+            // ⚠️ Slot diambil dari slot KOSONG pertama, bukan dari
+            // inventory.size(). Kantong berlubang membuat keduanya berbeda,
+            // dan ukuran daftar bisa menunjuk slot yang SUDAH terisi —
+            // dua barang di satu slot, tanpa error. Lihat Peringatan #85.
+            int slot = status.firstFreeInventorySlot(status.maxInv);
+            if (slot < 0) {
                 return false;   // inventaris penuh; sebagian mungkin sudah masuk
             }
             org.rtk.common.mmo.Item baru = new org.rtk.common.mmo.Item();
             baru.id = info.id();
             baru.amount = Math.min(stack, sisa);
             baru.dura = dura >= 0 ? dura : info.durability();
-            baru.pos = status.inventory.size();
+            baru.pos = slot;
             status.inventory.add(baru);
             sisa -= baru.amount;
         }
@@ -997,21 +1104,24 @@ public final class User extends BlockList
      *             hanya ikut dicatat, tidak mengubah apa yang dibuang
      */
     public boolean scriptRemoveItemSlot(int slot, int amount, int type) {
-        if (slot < 0 || slot >= status.inventory.size() || amount <= 0) {
+        // ⚠️ Dibatasi maxInv dan dicari lewat inventoryAt — bukan indeks
+        // daftar. Dengan pembacaan lama, slot di atas jumlah barang ditolak
+        // mentah-mentah walau benar-benar terisi. Lihat Peringatan #85.
+        if (slot < 0 || slot >= status.maxInv || amount <= 0) {
             return false;
         }
-        org.rtk.common.mmo.Item it = status.inventory.get(slot);
-        if (it.id <= 0) {
+        org.rtk.common.mmo.Item it = status.inventoryAt(slot);
+        if (it == null || it.id <= 0) {
             return false;
         }
         if (it.amount < amount && it.amount > 0) {
-            status.inventory.remove(slot);
+            status.removeInventoryAt(slot);
             return false;   // lihat catatan di atas
         }
         if (it.amount >= amount) {
             it.amount -= amount;
             if (it.amount <= 0) {
-                status.inventory.remove(slot);
+                status.removeInventoryAt(slot);
             }
             return true;
         }

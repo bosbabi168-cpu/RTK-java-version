@@ -427,4 +427,31 @@ public interface ClientView {
      * mantra pada {@link #objectAnimationSeenBy}.</p>
      */
     void weatherChanged(User sd, int weather);
+
+    /**
+     * Jendela grup pemain berubah — anggota masuk, keluar, atau grupnya
+     * bubar ({@code clif_groupstatus}).
+     *
+     * <p>Dikirim juga saat grup baru saja bubar: daftar kosong adalah cara
+     * memberi tahu klien untuk menutup jendelanya.</p>
+     */
+    void groupStatusChanged(User sd);
+
+    /**
+     * Darah dan mana anggota grup berubah ({@code clif_grouphealth_update}).
+     *
+     * <p>⚠️ Terpisah dari {@link #groupStatusChanged} karena dipanggil tiap
+     * detak selama pemain bergrup, sedangkan susunan grup jarang berubah.</p>
+     */
+    void groupHealthChanged(User sd);
+
+    /**
+     * Setelan pemain berubah ({@code clif_changestatus}).
+     *
+     * <p>⚠️ Hanya RTK2 yang mengirim apa pun untuk ini. Di RetroTK kata
+     * setelan <b>menumpang</b> paket status ({@code clif_sendstatus} menulis
+     * {@code settingFlags} di offset 22 dan 51), jadi peristiwa ini tidak
+     * punya paket sendiri di sana — bukan karena terlewat.</p>
+     */
+    void playerSettingsChanged(User sd);
 }

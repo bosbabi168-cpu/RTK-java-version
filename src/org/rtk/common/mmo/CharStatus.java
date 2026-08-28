@@ -169,6 +169,47 @@ public final class CharStatus {
         return null;
     }
 
+    /**
+     * Buang barang yang menempati slot tertentu.
+     *
+     * <p>⚠️ Pasangan wajib dari {@link #inventoryAt}. {@code inventory} adalah
+     * {@code List}, jadi {@code inventory.remove(slot)} membuang menurut
+     * <b>indeks daftar</b> — barang milik slot lain. Pada data nyata slot
+     * kantong berlubang (0–5 lalu 21–26 pada karakter uji, dan begitu pula
+     * seluruh karakter yang punya barang), sehingga keduanya hampir tidak
+     * pernah sama.</p>
+     *
+     * @return true bila memang ada yang dibuang
+     */
+    public boolean removeInventoryAt(int slot) {
+        for (int i = 0; i < inventory.size(); i++) {
+            Item it = inventory.get(i);
+            if (it != null && it.pos == slot) {
+                inventory.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Slot kantong kosong dengan nomor terkecil, atau {@code -1} bila penuh.
+     *
+     * <p>⚠️ Dipakai untuk memberi slot pada barang baru. Memakai
+     * {@code inventory.size()} sebagai gantinya <b>bisa menabrak slot yang
+     * sudah terisi</b>: barang di slot 0, 1, 2, dan 4 membuat ukurannya 4,
+     * sehingga barang baru diberi slot 4 yang sudah ada isinya. Dua barang di
+     * satu slot, tanpa satu pun error.</p>
+     */
+    public int firstFreeInventorySlot(int maks) {
+        for (int slot = 0; slot < maks; slot++) {
+            if (inventoryAt(slot) == null) {
+                return slot;
+            }
+        }
+        return -1;
+    }
+
     @Override
     public String toString() {
         return "CharStatus{id=" + id + ", name='" + name + "', level=" + level

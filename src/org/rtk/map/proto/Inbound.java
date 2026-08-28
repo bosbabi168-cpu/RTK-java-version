@@ -81,6 +81,23 @@ public final class Inbound {
             }
             case Wire.OP_CLICK -> cmd.playerClicks(sd, r.u64());
 
+            case Wire.OP_CAST -> {
+                int slot = r.u8();
+                // ⚠️ Bentuk muatan ditentukan SERVER dari SplType mantra di
+                // slot itu, bukan diakui klien. Klien yang mengaku salah ragam
+                // akan membuat server membaca ladang yang tidak ada — dan
+                // dengan Wire.Reader itu berarti bingkainya ditolak, bukan
+                // sampah yang lolos. Slot yang tidak berisi mantra dibaca
+                // sebagai ragam 5 (tanpa muatan) supaya bingkainya tetap
+                // habis; logikanya yang menolak.
+                int spellId = slot >= 0 && slot < sd.status.spells.length
+                        ? sd.status.spells[slot] : 0;
+                int ragam = spellId > 0 ? org.rtk.map.MapServer.spellDb.typeOf(spellId) : 5;
+                long sasaran = ragam == 2 ? r.u64() : 0;
+                String tanya = ragam == 1 ? r.str() : null;
+                cmd.playerCastsSpell(sd, slot, sasaran, tanya);
+            }
+
             case Wire.OP_PICKUP -> cmd.playerPicksUp(sd, r.u8());
             case Wire.OP_DROP_ITEM -> {
                 int slot = r.u8();
@@ -125,11 +142,59 @@ public final class Inbound {
 
             case Wire.OP_ATTACK -> cmd.playerAttacks(sd);
 
+            case Wire.OP_IGNORE -> {
+                int aksi = r.u8();
+                String nama = r.str();
+                // ⚠️ Aksi selain 2/3 DIABAIKAN, bukan ditolak — C hanya punya
+                // dua cabang dan tidak menjawab yang lain. Bingkainya tetap
+                // habis terbaca, jadi pemeriksaan sisa di bawah tetap lulus.
+                if (aksi == 2 || aksi == 3) {
+                    cmd.playerChangesIgnore(sd, aksi == 2, nama);
+                }
+            }
+
+            case Wire.OP_GROUP -> {
+                int aksi = r.u8();
+                String nama = r.str();
+                cmd.playerChangesGroup(sd, aksi, nama);
+            }
+
+            case Wire.OP_SETTING -> {
+                int jenis = r.u8();
+                boolean paketAwal = r.u8() != 0;
+                cmd.playerChangesSetting(sd, jenis, paketAwal);
+            }
+
+            case Wire.OP_RIDE -> cmd.playerRides(sd);
+
             case Wire.OP_ANSWER_MENU -> cmd.playerAnswersMenu(sd, jawaban(r));
             case Wire.OP_ANSWER_DIALOG -> cmd.playerAnswersDialog(sd, jawaban(r));
 
-            default -> log.debug("[RTK2] opcode 0x{} tidak dikenal (dari {})",
-                    String.format("%04X", op), sd.name());
+            default -> {
+                log.debug("[RTK2] opcode 0x{} tidak dikenal (dari {})",
+                        String.format("%04X", op), sd.name());
+                return;   // opcode asing: sisanya memang tidak dibaca
+            }
+        }
+
+        // ⚠️ Bingkai harus HABIS terbaca.
+        //
+        // Tanpa pemeriksaan ini, klien yang mengirim ladang tambahan diterima
+        // diam-diam: panjang bingkainya tetap benar, jadi byte berlebih cuma
+        // dilewati dan tidak ada yang mengeluh. Itu persis yang terjadi pada
+        // ladang kata sandi hantu di OP_HELLO — klien mengirimnya berbulan,
+        // server tidak pernah membacanya, dan tidak ada satu pun tanda.
+        //
+        // Yang lebih berbahaya: pada OP_CAST bentuk muatannya ditentukan
+        // SERVER dari jenis mantranya. Klien yang mengirim bentuk lain akan
+        // menyisakan byte, dan tanpa pemeriksaan ini perbedaan paham itu
+        // berlanjut tanpa gejala sampai suatu saat ladangnya penting.
+        //
+        // Sisa byte berarti kedua sisi sudah tidak sepaham — dan setelah itu
+        // menebak lebih buruk daripada menutup.
+        if (r.rest() != 0) {
+            throw new Wire.Malformed(String.format(
+                    "opcode 0x%04X menyisakan %d byte yang tidak terbaca", op, r.rest()));
         }
     }
 
@@ -190,7 +255,16 @@ public final class Inbound {
         int ragam = r.u8();
         return switch (ragam) {
             case 0 -> null;
-            case 1 -> ClientCommands.Answer.choice(r.u16());
+            // ⚠️ +1: di kabel RTK2 pilihan menu 0-BASIS (seperti seluruh
+            // nomor lain di protokol ini), sedangkan lapisan logika memakai
+            // 1-BASIS karena Lua-nya begitu — `player.lua` mengembalikan
+            // `options[selection]`, dan tabel Lua mulai dari 1.
+            //
+            // Tanpa +1, pilihan pertama jadi `options[0]` = nil: skripnya
+            // berhenti tanpa mencocokkan satu cabang pun, NPC-nya bicara
+            // sekali lalu membisu, dan TIDAK ADA yang melempar error. Klien
+            // RetroTK lama tidak terkena karena ia memang mengirim 1-basis.
+            case 1 -> ClientCommands.Answer.choice(r.u16() + 1);
             case 2 -> ClientCommands.Answer.text(r.str());
             case 3 -> ClientCommands.Answer.itemName(r.str());
             case 4 -> ClientCommands.Answer.slot(r.u8());

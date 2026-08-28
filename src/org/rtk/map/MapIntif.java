@@ -91,12 +91,47 @@ public final class MapIntif {
      *
      * Tata letak: W(0)=0x3003, W(2)=fd klien, L(4)=id karakter, nama[16]@8.
      */
+    /**
+     * Permintaan data karakter yang sedang menunggu jawaban, per fd klien.
+     *
+     * <p>⚠️ Ini yang menutup satu lubang serius. Balasan char server hanya
+     * membawa <b>nomor fd</b>, dan nomor fd <b>dipakai ulang</b>: begitu
+     * sebuah sesi ditutup, {@code newFd()} memberikan slot terkecil yang
+     * kosong ke sambungan berikutnya. Kalau pemain memutus tepat setelah
+     * memperkenalkan diri, balasannya tiba saat fd itu <b>sudah milik orang
+     * lain</b> — dan tanpa penjaga, karakter pemain pertama dipasang ke
+     * sambungan pemain kedua.</p>
+     *
+     * <p>Yang disimpan bukan hanya namanya melainkan <b>objek sesinya</b>:
+     * sambungan baru selalu objek {@link Session} yang berbeda, jadi
+     * perbandingan identitas menutup kasus "orang yang sama menyambung
+     * ulang" sekalipun.</p>
+     */
+    private record Menunggu(String nama, Session sesi) {
+    }
+
+    private static final java.util.Map<Integer, Menunggu> menunggu =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Lupakan permintaan yang menggantung saat pemain memutus.
+     *
+     * <p>Tanpa ini, entri untuk fd yang sudah mati menumpuk sampai fd itu
+     * dipakai ulang. Bukan kebocoran besar — jumlah fd terbatas — tetapi
+     * entri basi membuat penjaga di {@code parseCharLoad} menilai keadaan
+     * yang sudah tidak ada.</p>
+     */
+    public static void lupakanPermintaan(int clientFd) {
+        menunggu.remove(clientFd);
+    }
+
     public static int requestChar(int clientFd, long charId, String name) {
         Session s = net.session(charFd);
         if (s == null) {
             log.error("[MAP] tidak bisa minta karakter: belum terhubung ke char server");
             return -1;
         }
+        menunggu.put(clientFd, new Menunggu(name, net.session(clientFd)));
         s.wfifoW(0, 0x3003);
         s.wfifoW(2, clientFd);
         s.wfifoL(4, (int) charId);
@@ -127,6 +162,31 @@ public final class MapIntif {
             log.error("[MAP] blob karakter rusak / tidak dikenal", e);
             return 0;
         }
+
+        // ⚠️ Pastikan fd ini MASIH milik sesi yang meminta. Lihat catatan di
+        // `menunggu`: fd dipakai ulang, dan balasan yang terlambat bisa
+        // memasang karakter orang lain ke sambungan yang sedang hidup.
+        // ⚠️ LIHAT dulu, baru hapus — dan hanya hapus kalau memang COCOK.
+        //
+        // Versi pertama penjaga ini memakai `remove()` di baris pertama, dan
+        // itu bug yang lebih halus daripada yang diperbaikinya: balasan BASI
+        // untuk fd yang sama (dari sambungan sebelumnya yang sudah mati)
+        // ikut menghapus entri milik permintaan yang MASIH HIDUP di fd itu.
+        // Balasan basinya ditolak dengan benar, lalu balasan yang sah tiba
+        // dan tidak menemukan entri apa pun — sehingga ikut dibuang.
+        //
+        // Gejalanya: pemain kedua menyambung, server mencatat perkenalannya,
+        // dan setelah itu ia tidak pernah menerima satu byte pun. Nol error.
+        // Itu Peringatan #96, dan sebabnya ada di sini.
+        Menunggu m = menunggu.get(clientFd);
+        Session cs0 = net.session(clientFd);
+        if (m == null || cs0 == null || cs0 != m.sesi()
+                || !c.name.equalsIgnoreCase(m.nama())) {
+            log.warn("[MAP] data karakter {} untuk fd {} dibuang: bukan jawaban bagi "
+                    + "permintaan yang sedang menunggu di fd itu", c.name, clientFd);
+            return 0;
+        }
+        menunggu.remove(clientFd);
 
         // bangun pemain runtime lalu tempatkan di dunia (pc_setpos + clif_spawn)
         org.rtk.map.User sd = new org.rtk.map.User(clientFd, c);

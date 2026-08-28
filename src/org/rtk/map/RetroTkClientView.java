@@ -309,4 +309,21 @@ public final class RetroTkClientView implements ClientView {
     public void weatherChanged(User sd, int weather) {
         Clif.sendWeather(sd, weather);
     }
+
+    @Override
+    public void groupStatusChanged(User sd) {
+        Clif.sendGroupStatus(sd);
+    }
+
+    @Override
+    public void groupHealthChanged(User sd) {
+        Clif.sendGroupHealth(sd);
+    }
+
+    @Override
+    public void playerSettingsChanged(User sd) {
+        // Sengaja kosong: di RetroTK kata setelan menumpang paket status
+        // (`clif_sendstatus` offset 22 & 51), yang sudah dikirim pemanggil
+        // lewat playerStatusChanged. Tidak ada paket tersendiri untuknya.
+    }
 }

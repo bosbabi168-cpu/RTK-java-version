@@ -203,6 +203,25 @@ public final class ScriptEngine {
         this.playerLookup = lookup;
     }
 
+    /**
+     * map_id2npc() / map_name2npc(): cara mesin skrip menemukan NPC.
+     *
+     * <p>Disuntik map server; null pada uji unit sehingga {@code NPC(x)}
+     * mengembalikan nil alih-alih meledak — persis seperti {@link
+     * PlayerLookup}.</p>
+     */
+    public interface NpcLookup {
+        Object byId(long id);
+
+        Object byName(String name);
+    }
+
+    private NpcLookup npcLookup;
+
+    public void setNpcLookup(NpcLookup lookup) {
+        this.npcLookup = lookup;
+    }
+
     /** typel_pushinst(): wrap a Java object for Lua. */
     public ScriptInstance newInstance(ScriptClass klass, Object self) {
         return new ScriptInstance(klass, self, instanceMeta);
@@ -258,7 +277,33 @@ public final class ScriptEngine {
         };
         registerClass(playerClass);
 
-        npcClass.ctor = args -> new GameObject("NPC", args);
+        /*
+         * npcl_ctor: NPC(id) / NPC(nama) MENCARI NPC yang benar-benar ada
+         * (map_id2npc / map_name2npc di sl.c:4598), dan mengembalikan nil
+         * bila tidak ketemu.
+         *
+         * ⚠️ Versi sebelumnya hanya membungkus argumennya jadi GameObject
+         * tanpa pernah mencari apa pun. Akibatnya SETIAP ladang NPC hasil
+         * konstruktor bernilai nil — dan karena nil di Lua baru meledak saat
+         * dipakai berhitung, gejalanya muncul jauh dari sebabnya:
+         * `onScriptedTilesArena.lua` gagal dengan "attempt to perform
+         * arithmetic __add on number and nil" di dalam `convertGraphic`,
+         * bukan di baris `NPC("Tower")` yang sebenarnya salah.
+         *
+         * 28 berkas skrip memakai bentuk `= NPC(...)` ini.
+         */
+        npcClass.ctor = args -> {
+            if (npcLookup == null) {
+                return null;
+            }
+            if (args.isnumber(1)) {
+                return npcLookup.byId((long) args.todouble(1));
+            }
+            if (args.isstring(1)) {
+                return npcLookup.byName(args.tojstring(1));
+            }
+            return null;
+        };
         Bindings.defineBlockList(this, npcClass);
         registerClass(npcClass);
 
@@ -324,9 +369,51 @@ public final class ScriptEngine {
                 self instanceof ScriptAttrs a && a.scriptSetAttr(attr, value);
         registerClass(boundItemClass);
 
+        /*
+         * iteml_ctor (sl.c:3434): Item(id) / Item(nama) MENCARI jenis barang
+         * di itemdb (itemdb_search / itemdb_searchname), dan mengembalikan
+         * nil bila tidak ketemu.
+         *
+         * ⚠️ Sebelumnya "Item" ikut daftar placeholder di bawah: konstruktor
+         * yang membungkus argumennya, TANPA getter. Akibatnya SETIAP ladang
+         * `Item(...)` bernilai nil — dan skrip memakainya 2.192 kali di 409
+         * berkas, `Item(x).id` sendiri 1.163 kali.
+         *
+         * Gejalanya tidak pernah berupa error di tempat yang salah. Contoh
+         * nyata: `buyExtend` mengisi harga toko dengan
+         * `table.insert(prices, Item(items[i]).price)` — nil tidak menyisipkan
+         * apa pun, jadi daftar harganya kosong dan toko NPC menampilkan
+         * barang tanpa harga. Tidak ada yang gagal.
+         */
+        ScriptClass itemClass = new ScriptClass("Item");
+        itemClass.ctor = args -> {
+            long id;
+            if (args.isnumber(1)) {
+                id = (long) args.todouble(1);
+            } else if (args.isstring(1)) {
+                id = org.rtk.map.MapServer.itemDb == null
+                        ? 0 : org.rtk.map.MapServer.itemDb.idOf(args.tojstring(1));
+            } else {
+                return null;
+            }
+            if (id <= 0 || org.rtk.map.MapServer.itemDb == null
+                    || org.rtk.map.MapServer.itemDb.info(id).id() == 0) {
+                return null;      // C: lua_pushnil, bukan error
+            }
+            // ScriptItem menjawab ladang JENIS barang dari id-nya; slot
+            // kosong ini cuma pembawa id, tidak pernah masuk kantong siapa pun.
+            org.rtk.common.mmo.Item pembawa = new org.rtk.common.mmo.Item();
+            pembawa.id = id;
+            pembawa.amount = 1;
+            return new ScriptItem(pembawa);
+        };
+        itemClass.getter = (self, attr) ->
+                self instanceof ScriptAttrs a ? a.scriptAttr(attr) : null;
+        registerClass(itemClass);
+
         // remaining typel classes: constructible placeholders until their
         // engine subsystems are ported
-        for (String name : new String[]{"Item", "FloorItem", "BankItem",
+        for (String name : new String[]{"FloorItem", "BankItem",
                 "Parcel", "Recipe", "Accountregistry"}) {
             ScriptClass klass = new ScriptClass(name);
             klass.ctor = args -> new GameObject(name, args);
