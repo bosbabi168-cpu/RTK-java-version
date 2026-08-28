@@ -211,7 +211,7 @@ The roadmap toward "a server that runs normally and smoothly with no
 bugs" — including the table of player actions that still lack an RTK2
 inbound path — is in
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Traps & lessons #1–#130 are in
+Traps & lessons #1–#133 are in
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)** (Indonesian).
 
 ## Folder structure

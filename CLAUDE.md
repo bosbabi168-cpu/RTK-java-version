@@ -266,7 +266,7 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 | Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v10) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#130 → `docs/PERINGATAN.md` |
+| Peringatan tercatat | #1–#133 → `docs/PERINGATAN.md` |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug

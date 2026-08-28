@@ -1798,3 +1798,38 @@ ekor daftar dengan nomor lanjutan.
    `1..1` di `Part.tbl` adalah penanda "tanpa ember" — memperlakukannya
    sebagai ember membuat helm ber-look 1 menjadi wujud 0, yaitu helm yang
    SALAH, bukan helm yang hilang.
+
+131. **Slot perlengkapan tidak selalu menentukan keluarga gambarnya —
+   kadang NILAINYA yang menentukan.** Zirah dan mantel berbagi SATU ladang
+   di paket wujud (di C keduanya ditulis ke offset yang sama), jadi klien
+   tidak bisa membedakannya dari slotnya. Aturannya sama seperti ember
+   senjata: nilai < 10000 berarti garmen itu **mengganti badan**
+   (`body`), nilai ≥ 10000 berarti ia **lapisan di atas badan**
+   (`coat`, indeks nilai − 10000).
+   ⚠️ Sebaliknya, mahkota dan helm adalah dua LADANG terpisah di paket,
+   jadi di sana slotnya yang menentukan: helm → `helmet`, mahkota →
+   `hairdec`. Barang slot mahkota bernama `black_highlights` (419) adalah
+   hiasan rambut, dan `helmet` hanya punya 152 wujud — memetakannya ke helm
+   berarti sebagian mahkota menggambar helm yang SALAH dan sisanya tidak
+   menggambar apa pun.
+   Cara membuktikannya bukan menalar melainkan **mencocokkan nama barang
+   dengan gambarnya**: `black_male_kimono` (10033) = `coat` ke-33 memang
+   kimono; `scale_mail` (210) = `body` ke-210 memang zirah sisik. Alat
+   `--bagian keluarga:indeks` di klien ada untuk itu.
+
+132. **Menimpa badan dengan wujud yang tidak ada = pemain LENYAP.** Zirah
+   mengganti sosok badan, jadi zirah ber-wujud tak dikenal membuat karakter
+   tidak tergambar sama sekali — bukan "tidak terlihat memakainya".
+   Fallback-nya wajib: pertahankan badan jenis kelamin bila wujud zirahnya
+   tidak ada.
+
+133. **Peristiwa yang diterima tetapi tidak ada yang mengimplementasikan
+   sama dengan peristiwa yang hilang.** `EV_OBJECT_ACTED` sampai ke klien
+   dan dibongkar dengan benar, tetapi `World` tidak meng-override
+   `bendaBergerak` — dan karena antarmuka Java memberi badan kosong bawaan,
+   tidak ada error apa pun. Akibatnya 39 gambar `Emotion.dsc` tidak pernah
+   tergambar oleh siapa pun. Antarmuka peristiwa ber-metode bawaan kosong
+   itu nyaman untuk pemakainya dan berbahaya bagi yang lupa.
+   ⚠️ `waktu` pada peristiwa itu bersatuan **tik 1/10 detik** (C memakai
+   0x4E = 78 tik ≈ 7,8 detik). Menganggapnya milidetik membuat emosi
+   berkedip sekejap dan praktis tak pernah terlihat.

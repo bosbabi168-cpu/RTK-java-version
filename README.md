@@ -206,7 +206,7 @@ nyata bersembunyi di sana, bukan di `map.log` (Peringatan #123, #125).
 Roadmap menuju "server dipakai normal & lancar tanpa bug" — lengkap dengan
 tabel aksi pemain yang belum punya jalur masuk RTK2 — ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#130 di
+Jebakan & pelajaran #1–#133 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder
