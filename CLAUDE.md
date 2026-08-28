@@ -70,7 +70,7 @@ Project mandiri — data game ada di dalamnya: `maps/` (3.544 `.map`),
 `meta/`, `db/`. Rantai konfigurasi: `resources/rtk-server.properties` →
 `conf/*.conf` (menimpa) → argumen CLI. Jangan menanam path di kode.
 
-## Build & uji — SEPULUH gerbang
+## Build & uji — SEBELAS gerbang
 
 Build: NetBeans (*Clean and Build*) → `dist/RTK-java-version.jar`, atau
 `./build.sh` → `dist/RTK-java.jar`. Menjalankan:
@@ -90,10 +90,12 @@ selesai:
 ./run.sh luaaudit     # pemeriksa statis 907 skrip Lua
 ./run.sh wiresync     # Wire.java sinkron dengan repo klien
 ./run.sh elixirtest   # SATU PERTANDINGAN ELIXIR penuh — 34 pemeriksaan
+./run.sh carnagetest  # SATU PERTANDINGAN CARNAGE penuh — 28 pemeriksaan
 ```
 
-⚠️ `elixirtest` memakai **penyalaan server yang sama** dengan `./run.sh map`
-(`MapServer.boot`), jadi map server lain harus MATI — portnya bentrok.
+⚠️ `elixirtest` dan `carnagetest` memakai **penyalaan server yang sama**
+dengan `./run.sh map` (`MapServer.boot`), jadi map server lain harus MATI —
+portnya bentrok. Perkakas bersamanya di `AcaraUji`.
 
 **Gerbang KESEMBILAN — yang paling banyak menemukan bug.** Gerbang luring
 menguji kode terhadap dirinya sendiri dan **tidak bisa melihat "sesuatu
@@ -265,12 +267,12 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 
 | | |
 |---|---|
-| Gerbang luring | **9/9 hijau** (`cliftest` 903, `dbtest` 234, `elixirtest` 34) |
+| Gerbang luring | **10/10 hijau** (`cliftest` 903, `dbtest` 234, `elixirtest` 34, `carnagetest` 28) |
 | Gerbang klien sungguhan | `livetest` **182** pemeriksaan hijau |
 | Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v10) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#137 → `docs/PERINGATAN.md` |
+| Peringatan tercatat | #1–#139 → `docs/PERINGATAN.md` |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug
@@ -508,6 +510,27 @@ menuntut `hasItem` menjumlahkan lintas slot, `scripttest` memakai
 `hasItem(...) + 39`. Keduanya ditulis dari perilaku port, bukan dari sumber
 C, jadi keduanya membela bugnya (keluarga yang sama dengan gerbang helm
 #130). Sudah ditulis ulang ke kontrak C.
+
+**Carnage juga terbukti berjalan (29 Agu 2026).** `./run.sh carnagetest`
+(28 pemeriksaan) memainkan pertandingan Carnage penuh: pintu dibuka →
+8 pemain berempat jalur kelas → regu dibagi menurut jalur lalu diwarnai
+berselang-seling jadi kubu → arena 3017 → dua ronde dimenangi → pintu
+keluar kubu juara dibuka. Bentuknya berbeda dari Elixir dan itulah
+gunanya: rondenya dimenangi bukan dengan menyerahkan barang, melainkan
+dengan menjadi **satu-satunya warna yang masih hidup** — jadi ujinya
+mematikan kubu lain (`state = 1`) dan **skripnya sendiri** yang menghitung
+lalu menaikkan skor.
+
+Satu binding lagi yang ternyata hilang: **`baseClass`** (jalur kelas,
+`classdb_path` di sl.c:7601) dipakai konten **183×** dan tidak pernah
+dijawab — tanpa itu Carnage menaruh seluruh pemain di kubu 0 dan tidak ada
+ronde yang bisa dimenangi. Keluarga yang sama dengan #136.
+
+⚠️ **Carnage TIDAK menutup dirinya sendiri** seperti Elixir: keadaan 101
+adalah keadaan terakhirnya, dan yang membereskan adalah `closeGame()` —
+dipanggil skrip hanya bila pesertanya kurang, atau oleh acara berikutnya
+lewat `init`. Itu rancangan skripnya, bukan cacat; gerbangnya memanggil
+penutupnya apa adanya lalu memeriksa akibatnya.
 
 **Sisa putaran berikutnya:** 7 opcode belum pernah dikirim klien
 (`profileEdit`, `dropGold`, `handItem`, `handGold`, `eat`, `throw`, dan

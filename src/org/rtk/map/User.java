@@ -924,6 +924,13 @@ public final class User extends BlockList
             // `luaaudit` buta terhadapnya — ia memeriksa nama METHOD, bukan
             // ATRIBUT (keluarga yang sama dengan `.ID`, Peringatan #120).
             // Padanan C: `pcl_getattr` sl.c:7617.
+            // pcl_getattr: `baseClass` adalah JALUR kelasnya
+            // (`classdb_path`, sl.c:7601), bukan nomor kelas mentah —
+            // `class`/`path` yang menjawab nomor mentah. Dipakai 183× di
+            // konten, terutama acara yang membagi regu per jalur.
+            case "baseClass" -> (long) (status.charClass > 5
+                    ? MapServer.classDb.pathOf(status.charClass)
+                    : status.charClass);
             case "face" -> (long) status.face;
             case "faceColor" -> (long) status.faceColor;
             case "hair" -> (long) status.hair;

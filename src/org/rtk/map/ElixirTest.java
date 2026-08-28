@@ -1,14 +1,18 @@
 package org.rtk.map;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.luaj.vm2.LuaValue;
 
-import org.rtk.common.mmo.CharStatus;
 import org.rtk.map.data.MapData;
+
+import static org.rtk.map.AcaraUji.check;
+import static org.rtk.map.AcaraUji.jumlahDiPeta;
+import static org.rtk.map.AcaraUji.reg;
+import static org.rtk.map.AcaraUji.setReg;
+import static org.rtk.map.AcaraUji.tik;
 
 /**
  * Gerbang acara Elixir: satu pertandingan penuh, dari pintu dibuka sampai
@@ -58,36 +62,28 @@ public final class ElixirTest {
     /** Jumlah pemain minimum yang dituntut skrip acara. */
     private static final int PEMAIN = 6;
 
-    private static int gagal;
-    private static int lulus;
-
     private ElixirTest() {
     }
 
     public static void main(String[] args) {
         MapServer.boot(args);
 
-        java.util.Map<String, Integer> simpanan = new java.util.LinkedHashMap<>();
-        List<User> pemain = new ArrayList<>();
+        java.util.Map<String, Integer> simpanan = java.util.Map.of();
+        List<User> pemain = List.of();
         try {
-            simpanRegistry(simpanan);
+            simpanan = AcaraUji.simpanRegistry(KUNCI);
             pemain = isiAula();
             jalankanPertandingan(pemain);
         } catch (RuntimeException e) {
-            gagal++;
-            log.error("gerbang elixir berhenti karena pengecualian", e);
+            check("gerbang elixir berjalan tanpa pengecualian", false);
+            log.error("gerbang elixir berhenti", e);
         } finally {
-            bersihkan(pemain, simpanan);
+            AcaraUji.bersihkanPemain(pemain);
+            AcaraUji.pulihkanRegistry(simpanan);
+            check("tidak ada pemain uji yang tertinggal di dunia",
+                    jumlahDiPeta(PETA_AULA) == 0 && jumlahDiPeta(PETA_ARENA) == 0);
         }
-
-        log.info("");
-        if (gagal == 0) {
-            log.info("ALL ELIXIR TESTS PASSED ({} pemeriksaan)", lulus);
-        } else {
-            log.error("{} dari {} pemeriksaan GAGAL", gagal, lulus + gagal);
-            System.exit(1);
-        }
-        System.exit(0);
+        AcaraUji.ringkas("ELIXIR");
     }
 
     // ------------------------------------------------------------------
@@ -101,13 +97,6 @@ public final class ElixirTest {
         "elixirRoundWinner", "elixirWinner", "elixirGameClose",
         "minigameEventId", "stalemateCounter",
     };
-
-    private static void simpanRegistry(java.util.Map<String, Integer> ke) {
-        for (String k : KUNCI) {
-            ke.put(k, MapServer.scriptEngine.gameRegGet(k));
-        }
-        log.info("[elixir] registry sebelum uji: {}", ke);
-    }
 
     /**
      * Isi Aula Elixir dengan pemain uji.
@@ -130,56 +119,10 @@ public final class ElixirTest {
             throw new IllegalStateException("peta " + PETA_AULA + " tidak dimuat");
         }
 
-        List<User> keluar = new ArrayList<>();
-        int[] petak = titikAman(aula, PEMAIN);
-        for (int i = 0; i < PEMAIN; i++) {
-            CharStatus st = new CharStatus();
-            st.id = 900_001 + i;
-            st.name = "UjiElixir" + (i + 1);
-            st.level = 50;
-            st.maxInv = 20;
-            User sd = new User(9000 + i, st);
-            sd.m = PETA_AULA;
-            sd.x = petak[i * 2];
-            sd.y = petak[i * 2 + 1];
-            sd.id = st.id;
-            aula.addBlock(sd);
-            MapServer.onlineChars.put(sd.fd, sd);
-            keluar.add(sd);
-        }
+        List<User> keluar = AcaraUji.isiPeta(PETA_AULA, PEMAIN, "UjiElixir", null);
         check(PEMAIN + " pemain uji berdiri di Aula Elixir",
                 jumlahDiPeta(PETA_AULA) == PEMAIN);
         return keluar;
-    }
-
-    /** Petak yang bisa dilalui di peta itu, sebanyak yang diminta. */
-    private static int[] titikAman(MapData m, int berapa) {
-        int[] keluar = new int[berapa * 2];
-        int n = 0;
-        for (int y = 1; y < 60 && n < berapa; y++) {
-            for (int x = 1; x < 30 && n < berapa; x++) {
-                if (m.walkable(x, y)) {
-                    keluar[n * 2] = x;
-                    keluar[n * 2 + 1] = y;
-                    n++;
-                }
-            }
-        }
-        if (n < berapa) {
-            throw new IllegalStateException("peta " + PETA_AULA
-                    + " tidak punya " + berapa + " petak yang bisa dilalui");
-        }
-        return keluar;
-    }
-
-    private static int jumlahDiPeta(int m) {
-        int n = 0;
-        for (User u : MapServer.onlineChars.values()) {
-            if (u.m == m) {
-                n++;
-            }
-        }
-        return n;
     }
 
     // ------------------------------------------------------------------
@@ -190,7 +133,7 @@ public final class ElixirTest {
         log.info("=== membuka acara Elixir ===");
         // Bersihkan sisa jalan sebelumnya supaya ujinya berangkat dari nol.
         for (String k : KUNCI) {
-            MapServer.scriptEngine.gameRegSet(k, 0);
+            setReg(k, 0);
         }
         boolean adaInit = MapServer.scriptEngine.doScript("elixir", "init",
                 LuaValue.valueOf(30));
@@ -205,7 +148,7 @@ public final class ElixirTest {
         // ⚠️ Tenggatnya diperiksa dengan `os.time() == mulai + 900` — SAMA
         // DENGAN, bukan lebih besar. Memundurkan jamnya harus mendarat tepat
         // di detik itu, jadi nilainya dihitung dari waktu sekarang.
-        majukanKe(900);
+        AcaraUji.majukanKe("elixirStart", 900);
         tik();
         log.info("[elixir] sesudah satu tik: elixirStart={} epoch={} keadaan={}",
                 reg("elixirStart"), System.currentTimeMillis() / 1000L,
@@ -218,7 +161,7 @@ public final class ElixirTest {
                 MapServer.objectsInMap(PETA_AULA,
                         org.rtk.map.data.BlockList.BL_PC).size(),
                 MapServer.onlineChars.size());
-        int keadaan = putarSampai(5, 200);
+        int keadaan = AcaraUji.putarSampai("elixirState", "elixirStart", 5, 200);
         check("keadaan berjalan sampai regu siap (5)", keadaan == 5);
         int merah = 0;
         int biru = 0;
@@ -235,7 +178,7 @@ public final class ElixirTest {
         check("regunya seimbang", Math.abs(merah - biru) <= 1);
 
         log.info("=== arena disiapkan ===");
-        keadaan = putarSampai(13, 400);
+        keadaan = AcaraUji.putarSampai("elixirState", "elixirStart", 13, 400);
         check("keadaan sampai RONDE BERJALAN (13)", keadaan == 13);
         check("arena yang dipilih skrip adalah peta " + PETA_ARENA,
                 reg("elixirMap") == PETA_ARENA);
@@ -244,10 +187,7 @@ public final class ElixirTest {
         // mereka berjalan sendiri. ⚠️ Tanpa langkah ini tahap hadiah
         // menutup seketika: keadaan 101 berakhir begitu `#pcs == 0` di peta
         // arena, dan ujinya hanya sempat melihat acara yang sudah bubar.
-        int[] petak = titikAman(MapServer.world.get(PETA_ARENA), PEMAIN);
-        for (int i = 0; i < pemain.size(); i++) {
-            pindahkan(pemain.get(i), PETA_ARENA, petak[i * 2], petak[i * 2 + 1]);
-        }
+        AcaraUji.pindahSemua(pemain, PETA_ARENA);
         check("seluruh pemain berada di arena", jumlahDiPeta(PETA_ARENA) == PEMAIN);
 
         log.info("=== ronde 1: satu pemain menyerahkan acorn ke gawang ===");
@@ -260,14 +200,14 @@ public final class ElixirTest {
         check("keadaan pindah ke penutupan ronde (14)", reg("elixirState") == 14);
 
         log.info("=== ronde 2 ===");
-        keadaan = putarSampai(13, 400);
+        keadaan = AcaraUji.putarSampai("elixirState", "elixirStart", 13, 400);
         check("ronde berikutnya dimulai lagi (13)", keadaan == 13);
         cetakGol(pemain);
         check("satu regu mencapai 2 poin",
                 reg("elixirRedScore") >= 2 || reg("elixirBlueScore") >= 2);
 
         log.info("=== pertandingan selesai ===");
-        keadaan = putarSampai(101, 400);
+        keadaan = AcaraUji.putarSampai("elixirState", "elixirStart", 101, 400);
         log.info("[elixir] keadaan akhir {} skor {}/{} pemenang {} peta {}",
                 keadaan, reg("elixirRedScore"), reg("elixirBlueScore"),
                 reg("elixirWinner"), reg("elixirMap"));
@@ -284,12 +224,10 @@ public final class ElixirTest {
 
         log.info("=== penutupan ===");
         // Skrip menutup sendiri begitu tak ada pemain lagi di arena.
-        for (User u : pemain) {
-            pindahkan(u, PETA_AULA, 5, 5);
-        }
+        AcaraUji.pindahSemua(pemain, PETA_AULA);
         int batas = 0;
         while (reg("elixirState") != 0 && batas++ < 400) {
-            tidur(60);
+            AcaraUji.tidur(60);
             tik();
         }
         check("acara menutup dirinya sendiri: keadaan kembali 0",
@@ -343,119 +281,7 @@ public final class ElixirTest {
     // alat
     // ------------------------------------------------------------------
 
-    private static int reg(String nama) {
-        return MapServer.scriptEngine.gameRegGet(nama);
-    }
-
-    /** Satu tik cronjob — persis yang dipanggil timer server tiap detik. */
-    private static void tik() {
-        MapServer.scriptEngine.doScript("cronJobSec", "cronJobSec");
-    }
-
-    /**
-     * Mundurkan {@code elixirStart} sehingga tenggat {@code detik} lewat.
-     *
-     * <p>⚠️ Hanya JAMNYA yang dimundurkan. Peralihan keadaannya tetap
-     * diputuskan skrip acara pada tik berikutnya.</p>
-     */
-    private static void majukanKe(int detik) {
-        long sekarang = System.currentTimeMillis() / 1000L;
-        MapServer.scriptEngine.gameRegSet("elixirStart",
-                (int) (sekarang - detik));
-    }
-
-    /**
-     * Tik sampai keadaan yang dituju tercapai, memundurkan jamnya tiap kali
-     * keadaannya tidak berubah.
-     *
-     * @return keadaan terakhir yang terlihat
-     */
-    private static int putarSampai(int tujuan, int batasTik) {
-        int sebelum = reg("elixirState");
-        for (int i = 0; i < batasTik; i++) {
-            // ⚠️ Jeda kecil DIPERLUKAN, bukan kemalasan: pembentukan regu
-            // hanya berjalan pada tik yang jatuh di detik kelipatan lima
-            // (`os.time() % 5 == 0` di skrip). Menembakkan ratusan tik dalam
-            // satu detik yang sama tidak pernah menyentuh syarat itu, dan
-            // ujinya gagal karena JAM, bukan karena logikanya.
-            tidur(120);
-            tik();
-            int kini = reg("elixirState");
-            if (kini == tujuan) {
-                return kini;
-            }
-            if (kini == sebelum) {
-                // Fase ini sedang menunggu jam: majukan sedikit demi sedikit
-                // supaya tenggat "sama dengan" maupun "lebih besar" terkena.
-                majukanKe(31 + i);
-            } else {
-                sebelum = kini;
-            }
-        }
-        return reg("elixirState");
-    }
-
-    private static void tidur(long ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    private static void pindahkan(User sd, int m, int x, int y) {
-        MapData lama = MapServer.world.get(sd.m);
-        if (lama != null) {
-            lama.delBlock(sd);
-        }
-        MapData baru = MapServer.world.get(m);
-        sd.m = m;
-        sd.x = x;
-        sd.y = y;
-        if (baru != null) {
-            baru.addBlock(sd);
-        }
-    }
-
     // ------------------------------------------------------------------
     // pembersihan
     // ------------------------------------------------------------------
-
-    private static void bersihkan(List<User> pemain,
-                                  java.util.Map<String, Integer> simpanan) {
-        for (User u : pemain) {
-            MapData m = MapServer.world.get(u.m);
-            if (m != null) {
-                m.delBlock(u);
-            }
-            MapServer.onlineChars.remove(u.fd);
-        }
-        // ⚠️ Registry TULIS-TERUS ke `GameRegistry0`; tanpa pemulihan ini
-        // gerbangnya meninggalkan acara setengah jalan di basis data, dan
-        // server berikutnya menyalakannya lagi saat start.
-        for (java.util.Map.Entry<String, Integer> e : simpanan.entrySet()) {
-            MapServer.scriptEngine.gameRegSet(e.getKey(), e.getValue());
-        }
-        log.info("[elixir] registry dikembalikan: {}", simpanan);
-
-        boolean pulih = true;
-        for (java.util.Map.Entry<String, Integer> e : simpanan.entrySet()) {
-            if (reg(e.getKey()) != e.getValue()) {
-                pulih = false;
-            }
-        }
-        check("registry sedunia kembali seperti sebelum uji", pulih);
-        check("tidak ada pemain uji yang tertinggal di dunia",
-                jumlahDiPeta(PETA_AULA) == 0 && jumlahDiPeta(PETA_ARENA) == 0);
-    }
-
-    private static void check(String apa, boolean ok) {
-        if (ok) {
-            lulus++;
-            log.info("PASS: {}", apa);
-        } else {
-            gagal++;
-            log.error("FAIL: {}", apa);
-        }
-    }
 }

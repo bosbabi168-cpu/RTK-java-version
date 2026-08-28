@@ -59,6 +59,7 @@ public final class RtkLauncher {
             case "worldtest" -> MapWorldTest.main(rest);
             case "cliftest" -> ClifTest.main(rest);
             case "elixirtest" -> org.rtk.map.ElixirTest.main(rest);
+            case "carnagetest" -> org.rtk.map.CarnageTest.main(rest);
             case "dbtest" -> org.rtk.charserver.DbTest.main(rest);
             case "luaaudit" -> org.rtk.map.script.LuaAudit.main(rest);
             case "wiresync" -> org.rtk.map.proto.WireSyncTest.main(rest);

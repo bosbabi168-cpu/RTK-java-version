@@ -44,7 +44,7 @@ writing a new adapter, not touching the logic.
   mutable at runtime.
 - **Scripting**: 906/906 scripts load with 0 errors; binding gaps **0**
   (the only remainder is `testPacket`, deliberately not ported).
-- **Testing**: 9 offline regression gates (903 `cliftest` assertions,
+- **Testing**: 10 offline regression gates (903 `cliftest` assertions,
   234 `dbtest`) + the real-client gate `livetest` (182 checks; **194** on a
   two-map-server setup, `./tools/uji-dua-server.sh`).
   36 of 46 RTK2 opcodes have now actually been sent by a real client.
@@ -175,10 +175,11 @@ scripts are identifiers. The dialogue text itself is **fully translated**
 | `luaaudit` | static checker for 907 scripts + binding gaps | `-Drtk.audit.penuh=true` for the full list |
 | `wiresync` | `Wire.java` identical to the client repo copy | skips itself if the client repo is absent |
 | `elixirtest` | **a full Elixir match** on the real server boot | 34 checks; other map servers must be stopped |
+| `carnagetest` | **a full Carnage match** (teams by class path, four colours) | 28 checks; other map servers must be stopped |
 | `livetest` | a **real RTK2 client** enters the world + 182 checks | run from `../RTK-client` |
 | `tools/uji-dua-server.sh` | player transfer between map servers (R3/C3) | 194 checks; sets up and restores its own fixture |
 
-The first nine gates are offline — they test the code against itself and
+The first ten gates are offline — they test the code against itself and
 cannot see "something that did not happen". That is why every new
 subsystem must get checks in both `cliftest` **and** `livetest`, and then
 the code must be deliberately broken once to prove the gate can turn red.
@@ -197,7 +198,7 @@ terminology in [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 29 August 2026:** 9/9 offline gates green, `livetest` 182 checks
+**Status 29 August 2026:** 10/10 offline gates green, `livetest` 182 checks
 green (194 on two map servers), RTK2 protocol symmetric in both directions,
 binding gaps 0, `map.log` 0 ERROR/WARN. New players can now **sign
 themselves up** through the client (account login, character creation,
@@ -205,19 +206,22 @@ character picking) — see K3-lanjutan. Since 29 Aug 2026 the **periodic
 event engine runs**: `map_cronjob()` (a 1-second timer driving
 `cronJobSec`…`cronJobDay`) and the world registry
 `GameRegistry<serverid>` had never been ported, so no event, boss spawn,
-map lighting, or item spawner had ever run. Since 29 Aug 2026 **a full
-Elixir match is proven to run** (`./run.sh elixirtest`) — and running it
-uncovered three silent script-engine defects: a fractional `os.time()`,
-`hasItem` returning a count instead of `true`/shortfall (used 419× with
-`== true`, so **every item requirement in every quest failed**), and
-character appearance attributes that scripts could never read. ⚠️ Sweep `logs/common.log` too: two
+map lighting, or item spawner had ever run. Since 29 Aug 2026 **two events
+are proven to run end to end** — Elixir (`./run.sh elixirtest`) and Carnage
+(`./run.sh carnagetest`) — and running them uncovered four silent
+script-engine defects: a fractional `os.time()` that broke every
+`os.time() == x`; `hasItem` returning a count instead of `true`/shortfall
+(used 419× with `== true`, so **every item requirement in every quest
+failed**); character appearance attributes scripts could never read, which
+killed the whole clone system; and a missing `baseClass`, without which
+Carnage cannot form its teams. ⚠️ Sweep `logs/common.log` too: two
 real bugs hid there rather than in `map.log` (Peringatan #123, #125).
 
 The roadmap toward "a server that runs normally and smoothly with no
 bugs" — including the table of player actions that still lack an RTK2
 inbound path — is in
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Traps & lessons #1–#137 are in
+Traps & lessons #1–#139 are in
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)** (Indonesian).
 
 ## Folder structure

@@ -1890,3 +1890,22 @@ ekor daftar dengan nomor lanjutan.
    di peta ARENA, jadi pemainnya harus benar-benar dipindah ke sana;
    (c) registry sedunia kini tulis-terus ke basis data, jadi gerbangnya
    wajib menyimpan dan mengembalikan nilai awalnya.
+
+138. **`baseClass` bukan `class`.** Di C `baseClass` adalah **jalur** kelas
+   (`classdb_path(sd->status.class)`, sl.c:7601), sedangkan `class`/`path`
+   menjawab nomor kelas mentah. Port ini tidak menjawab `baseClass` sama
+   sekali — 183 pemakaian di konten mendapat nil. Akibat paling jelas:
+   Carnage membagi regu menurut jalur, jadi seluruh pemain jatuh ke kubu 0
+   dan tidak ada ronde yang bisa dimenangi. Keluarga yang sama dengan #136
+   (atribut, bukan method — `luaaudit` tidak melihatnya).
+
+139. **Tidak semua acara menutup dirinya sendiri.** Elixir berakhir dengan
+   `closeGame()` otomatis begitu arenanya kosong; **Carnage berhenti di
+   keadaan 101** (pintu keluar dibuka) dan menunggu — `closeGame()` hanya
+   dipanggil skrip bila pesertanya kurang, atau oleh acara berikutnya lewat
+   `init`. Gerbang yang menuntut "keadaan kembali 0" pada Carnage menuntut
+   sesuatu yang memang tidak terjadi. Periksa dulu akhir hidup tiap acara
+   sebelum menulis pemeriksaannya.
+   ⚠️ Begitu juga keadaan yang **numpang lewat**: Carnage 100 mengumumkan
+   juara lalu langsung pindah ke 101 pada tik yang sama, jadi menunggu
+   "tepat 100" berarti menunggu tik yang tidak pernah menetap.

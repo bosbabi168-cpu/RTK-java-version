@@ -44,7 +44,7 @@ menulis adapter baru, bukan menyentuh logika.
   papan pesan, peta yang bisa diubah saat berjalan.
 - **Scripting**: 906/906 skrip termuat 0 error; celah binding **0**
   (satu-satunya sisa `testPacket`, sengaja tidak diport).
-- **Pengujian**: 9 gerbang regresi luring (903 assertion `cliftest`,
+- **Pengujian**: 10 gerbang regresi luring (903 assertion `cliftest`,
   234 `dbtest`) + gerbang klien sungguhan `livetest` (182 pemeriksaan;
   **194** pada setup dua map server, `./tools/uji-dua-server.sh`).
   36 dari 46 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.
@@ -171,10 +171,11 @@ aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 | `luaaudit` | pemeriksa statis 907 skrip + celah binding | `-Drtk.audit.penuh=true` untuk daftar utuh |
 | `wiresync` | `Wire.java` identik dengan salinan di repo klien | skip bila repo klien tidak ada |
 | `elixirtest` | **satu pertandingan Elixir penuh** di atas penyalaan server sungguhan | 34 pemeriksaan; map server lain harus mati |
+| `carnagetest` | **satu pertandingan Carnage penuh** (regu per jalur kelas, empat kubu) | 28 pemeriksaan; map server lain harus mati |
 | `livetest` | **klien RTK2 sungguhan** masuk dunia + 182 pemeriksaan | dijalankan dari `../RTK-client` |
 | `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | 194 pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
 
-Sembilan gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
+Sepuluh gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
 tidak bisa melihat "sesuatu yang tidak terjadi". Karena itu setiap
 subsistem baru wajib dapat pemeriksaan `cliftest` **dan** `livetest`, lalu
 kodenya dirusak sengaja untuk membuktikan gerbangnya bisa merah.
@@ -193,7 +194,7 @@ terjemahan di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 29 Agustus 2026:** 9/9 gerbang luring hijau, `livetest` 182
+**Status 29 Agustus 2026:** 10/10 gerbang luring hijau, `livetest` 182
 pemeriksaan hijau (194 pada dua map server), protokol RTK2 dua arah
 simetris, celah binding 0, `map.log` 0 ERROR/WARN. Pemain baru kini bisa
 **mendaftar sendiri** lewat klien (masuk akun, buat karakter, pilih
@@ -201,18 +202,21 @@ karakter) — lihat K3-lanjutan. Sejak 29 Agu 2026 **mesin acara berkala
 hidup**: `map_cronjob()` (timer 1 detik: `cronJobSec`…`cronJobDay`) dan
 registry sedunia `GameRegistry<serverid>` keduanya belum pernah diport,
 sehingga tidak ada acara, kelahiran bos, penerangan peta, atau pemunculan
-barang yang pernah berjalan. Sejak 29 Agu 2026 **satu pertandingan Elixir
-terbukti berjalan penuh** (`./run.sh elixirtest`) — dan menjalankannya
-membongkar tiga cacat mesin skrip yang diam total: `os.time()` berpecahan,
-`hasItem` yang dikembalikan sebagai jumlah alih-alih `true`/kekurangan
-(dipakai 419× dengan `== true`, jadi **setiap syarat barang di quest
-gagal**), dan wujud karakter yang tidak pernah terbaca skrip. ⚠️ Sapu `logs/common.log` juga: dua bug
+barang yang pernah berjalan. Sejak 29 Agu 2026 **dua acara terbukti
+berjalan penuh** — Elixir (`./run.sh elixirtest`) dan Carnage
+(`./run.sh carnagetest`) — dan menjalankannya membongkar empat cacat mesin
+skrip yang diam total: `os.time()` berpecahan sehingga setiap
+`os.time() == x` gagal; `hasItem` dikembalikan sebagai jumlah alih-alih
+`true`/kekurangan (dipakai 419× dengan `== true`, jadi **setiap syarat
+barang di quest gagal**); wujud karakter yang tidak pernah terbaca skrip
+sehingga seluruh sistem klon mati; dan `baseClass` yang hilang sehingga
+Carnage tidak bisa membentuk kubu. ⚠️ Sapu `logs/common.log` juga: dua bug
 nyata bersembunyi di sana, bukan di `map.log` (Peringatan #123, #125).
 
 Roadmap menuju "server dipakai normal & lancar tanpa bug" — lengkap dengan
 tabel aksi pemain yang belum punya jalur masuk RTK2 — ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#137 di
+Jebakan & pelajaran #1–#139 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder
