@@ -110,8 +110,9 @@ public final class Pc {
      *         sekali — barulah perpindahannya benar-benar gagal
      */
     private static boolean transferKeServerLain(User sd, int m, int x, int y) {
-        Integer server = MapServer.sql == null ? null : MapServer.sql.queryInt(
-                "SELECT `MapServer` FROM `Maps` WHERE `MapId` = ?", m);
+        Integer server = MapServer.sql == null || !MapServer.sql.siap() ? null
+                : MapServer.sql.queryInt(
+                        "SELECT `MapServer` FROM `Maps` WHERE `MapId` = ?", m);
         if (server == null) {
             log.warn("[PC] {} minta pindah ke peta {} yang tidak dikenal tabel Maps",
                     sd.name(), m);

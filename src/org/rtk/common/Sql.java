@@ -62,6 +62,19 @@ public final class Sql {
         }
     }
 
+    /**
+     * Apakah kolam koneksinya sudah tersambung.
+     *
+     * <p>Dipakai kode yang boleh berjalan TANPA basis data — gerbang luring
+     * salah satunya. Tanpa penjaga ini setiap gerbang yang menyentuh jalur
+     * ber-SQL menulis satu ERROR bertumpuk-jejak ke `logs/common.log`, dan
+     * sapuan "0 ERROR" jadi tidak bisa dipakai justru karena berisiknya
+     * ujinya sendiri (Peringatan #123).</p>
+     */
+    public boolean siap() {
+        return dataSource != null;
+    }
+
     private Connection getConnection() throws SQLException {
         if (dataSource == null) {
             throw new SQLException("Connection pool is not initialized");
