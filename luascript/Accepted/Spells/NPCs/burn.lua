@@ -5,13 +5,13 @@ burn = {
 		if player.blType == BL_PC then
 			local magicCost = 200
 			if (player.magic < magicCost) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
 			if (target.blType == BL_MOB) then
 				if target:checkIfCast(venoms) then
-					player:sendMinitext("Another spell of this type is already cast.")
+					player:sendMinitext("Mantra lain sejenis ini sudah dirapal.")
 					return
 				end
 				target:setDuration("burn", duration)
@@ -19,7 +19,7 @@ burn = {
 				target.attacker = player.ID
 			elseif (target.blType == BL_PC and player:canPK(target)) then
 				if target:checkIfCast(venoms) then
-					player:sendMinitext("Another spell of this type is already cast.")
+					player:sendMinitext("Mantra lain sejenis ini sudah dirapal.")
 					return
 				end
 				target:setDuration("burn", duration)
@@ -29,7 +29,7 @@ burn = {
 			player:sendAction(6, 35)
 			player:playSound(24)
 			player.magic = player.magic - magicCost
-			player:sendMinitext("You cast Burn.")
+			player:sendMinitext("Kau merapal Burn.")
 			player:sendMinitext("Calling Burn.")
 			player:sendStatus()
 		elseif player.blType == BL_MOB then

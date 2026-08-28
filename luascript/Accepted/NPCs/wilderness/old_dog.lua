@@ -16,12 +16,12 @@ OldDogNpc = {
 			if not player:hasSpell("magis_bane") and player.baseClass == 3 then
 				player:addSpell("magis_bane")
 			end
-			player:dialogSeq({t, "You have already avenged us."}, 0)
+			player:dialogSeq({t, "Kau sudah membalaskan dendam kami."}, 0)
 		end
 
 		if player.baseClass == 4 and player:hasSpell("restore_poet") and not player:hasLegend("avenged_treachery_against_the_dogs") then
 			player:addLegend(
-				"Avenged treachery against the dogs (" .. curT() .. ")",
+				"Membalas pengkhianatan terhadap para anjing (" .. curT() .. ")",
 				"avenged_treachery_against_the_dogs",
 				5,
 				128
@@ -31,7 +31,7 @@ OldDogNpc = {
 
 		if player.baseClass == 3 and player:hasSpell("magis_bane") and not player:hasLegend("empowered_by_the_dogs") then
 			player:addLegend(
-				"Empowered by the dogs (" .. curT() .. ")",
+				"Dikuatkan oleh para anjing (" .. curT() .. ")",
 				"empowered_by_the_dogs",
 				5,
 				128
@@ -47,16 +47,16 @@ OldDogNpc = {
 					player:giveXP(50000000)
 					player.quest["poet_restore"] = 0
 					player:addLegend(
-						"Avenged treachery against the dogs (" .. curT() .. ")",
+						"Membalas pengkhianatan terhadap para anjing (" .. curT() .. ")",
 						"avenged_treachery_against_the_dogs",
 						5,
 						128
 					)
-					player:dialogSeq({t, "Thank you for avenging us."}, 0)
+					player:dialogSeq({t, "Terima kasih sudah membalaskan dendam kami."}, 0)
 					return
 				else
 					player:dialogSeq(
-						{t, "Return to me after you have slain Storm"},
+						{t, "Temui aku lagi setelah kau membunuh Storm"},
 						0
 					)
 					return
@@ -71,7 +71,7 @@ OldDogNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"In the Rose palace, you will find Storm. Please slay him and return to me."
+					"Di istana Rose kau akan menemukan Storm. Bunuh dia lalu kembalilah kepadaku."
 				},
 				0
 			)
@@ -84,16 +84,16 @@ OldDogNpc = {
 					player:giveXP(75000000)
 					player.quest["magis_bane"] = 0
 					player:addLegend(
-						"Empowered by the dogs (" .. curT() .. ")",
+						"Dikuatkan oleh para anjing (" .. curT() .. ")",
 						"empowered_by_the_dogs",
 						5,
 						128
 					)
-					player:dialogSeq({t, "Thank you for avenging us."}, 0)
+					player:dialogSeq({t, "Terima kasih sudah membalaskan dendam kami."}, 0)
 					return
 				else
 					player:dialogSeq(
-						{t, "Return to me after you have slain Summit"},
+						{t, "Temui aku lagi setelah kau membunuh Summit"},
 						0
 					)
 					return
@@ -108,13 +108,13 @@ OldDogNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Deep within the tiger palace, you will find a powerful foe, Summit. Slay him and return to me."
+					"Jauh di dalam istana harimau kau akan menemukan musuh yang kuat, Summit. Bunuh dia lalu kembalilah kepadaku."
 				},
 				0
 			)
 			return
 		else
-			player:dialogSeq({t, "The dog doesn't seem interested in you."}, 0)
+			player:dialogSeq({t, "Anjing itu tampak tidak tertarik padamu."}, 0)
 			return
 		end
 	end),

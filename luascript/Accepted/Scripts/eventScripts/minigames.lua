@@ -407,7 +407,7 @@ minigames = {
 
 					if pcs[i].registry["carnagePart"] > 0 then
 						pcs[i]:addLegend(
-							"Participated in " .. pcs[i].registry["carnagePart"] .. " Carnages",
+							"Ikut serta dalam " .. pcs[i].registry["carnagePart"] .. " Carnages",
 							"carnagePart",
 							1,
 							128
@@ -423,7 +423,7 @@ minigames = {
 
 					if pcs[i].registry["participated_in_elixir_wars"] > 0 then
 						pcs[i]:addLegend(
-							"Participated in " .. pcs[i].registry[
+							"Ikut serta dalam " .. pcs[i].registry[
 								"participated_in_elixir_wars"
 							] .. " Elixir Wars",
 							"participated_in_elixir_wars",

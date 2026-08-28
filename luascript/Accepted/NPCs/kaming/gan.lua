@@ -9,16 +9,16 @@ GanNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local options = {"Buy", "Sell"}
+		local options = {"Beli", "Jual"}
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			options
 		)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			GanNpc.buy(player, npc)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			GanNpc.sell(player, npc)
 		end
 	end),
@@ -97,7 +97,7 @@ GanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Uhh... I really have no idea what you are talking about."
+						"Ehh... aku sungguh tidak paham apa yang kau bicarakan."
 					},
 					0
 				)
@@ -110,11 +110,11 @@ GanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You're here to pick up KaMing's armor? Why would he send - and please forgive the phrase - a townie to pick it up?",
-						"Ahhh... wait... I think I know. You are the only way he could get it without raising suspicion!",
-						"Am I right? Huh? I know it! I may not be the sharpest blade, but I know how to slice the enemy's wrists.",
-						"Well, yeah, the armor is almost ready to be picked up, but I need a few more things.",
-						"The first thing I need is 4 of the best metal in the land, go get that for me and come back quickly."
+						"Kau datang mengambil zirah KaMing? Kenapa ia mengutus - maafkan ungkapanku - orang kota untuk mengambilnya?",
+						"Ahhh... tunggu... kurasa aku tahu. Hanya lewat kau ia bisa mengambilnya tanpa menimbulkan curiga!",
+						"Benar, kan? Hah? Sudah kuduga! Aku mungkin bukan bilah paling tajam, tetapi aku tahu cara menyayat pergelangan musuh.",
+						"Yah, zirahnya hampir siap diambil, tetapi aku masih butuh beberapa hal.",
+						"Yang pertama kubutuhkan adalah 4 logam terbaik di negeri ini. Ambilkan untukku dan cepat kembali."
 					},
 					0
 				)
@@ -124,7 +124,7 @@ GanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"I am still waiting on those 4 fine metal to finish repairing KaMing's armor."
+							"Aku masih menunggu 4 fine metal itu untuk merampungkan perbaikan zirah KaMing."
 						},
 						0
 					)
@@ -136,10 +136,10 @@ GanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Thanks for the metal. That will fix this section of the armor. But I will still need a few more things.",
-						"The magic in this armor is getting worn out, and it's healing nature is not as strong as it should be.",
-						"Bring me something to replenish the energy in it.",
-						"Make sure it has healing powers!"
+						"Terima kasih logamnya. Itu akan memperbaiki bagian ini. Tapi aku masih butuh beberapa hal lagi.",
+						"Sihir dalam zirah ini mulai aus, dan daya sembuhnya tidak sekuat seharusnya.",
+						"Bawakan aku sesuatu untuk mengisi kembali tenaganya.",
+						"Pastikan benda itu punya daya menyembuhkan!"
 					},
 					0
 				)
@@ -149,7 +149,7 @@ GanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"I still need the titanium lance for KaMing's armor."
+							"Aku masih butuh titanium lance untuk zirah KaMing."
 						},
 						0
 					)
@@ -161,10 +161,10 @@ GanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ahhh.... this Titanium lance looks good. Has some great healing properties, and not to powerful that I can't work it into the armor.",
-						"This will take a while to work into the armor.",
-						"While I am working on this you will need to go to the Sonhi hideout in Kugnae, and get some leather straps.",
-						"Go quickly, and get them. That should be the last thing I need."
+						"Ahhh.... Titanium lance ini bagus. Daya sembuhnya hebat, dan tidak terlalu kuat sehingga masih bisa kutanamkan ke zirahnya.",
+						"Menanamkannya ke zirah akan makan waktu.",
+						"Selagi aku mengerjakan ini, pergilah ke persembunyian Sonhi di Kugnae dan ambil beberapa tali kulit.",
+						"Pergilah cepat dan ambil. Itu semestinya yang terakhir kubutuhkan."
 					},
 					0
 				)
@@ -173,28 +173,28 @@ GanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Why are you still here? Get going... you do know where the Sonhi hideout is... don't you?",
-						"OH! I know... sorry... I told you I could figure these things out eventually.",
-						"You wouldn't get in the hideout, not as a townie. Don't you have a pass from KaMing?",
-						"I guess you wouldn't need one just to pick up the Armor, you should go back and get one from KaMing.",
-						"Oh... but I am sure if KaMing sent for the armor he needs it right away... but without a pass you would never get in.",
-						"Tell you what... and keep this a secret, OK?",
-						"KaMing left a seal here last time he visited me. I suppose I could stamp a pass for you",
-						"Fine... just don't tell anybody I did this, just get back quickly.",
-						"And DO NOT disappear on me like the last guy did!"
+						"Kenapa kau masih di sini? Pergilah... kau tahu di mana persembunyian Sonhi... kan?",
+						"OH! Aku tahu... maaf... sudah kubilang lama-lama aku bisa memikirkan hal-hal begini.",
+						"Kau tidak akan bisa masuk ke persembunyian itu sebagai orang kota. Tidak punya surat jalan dari KaMing?",
+						"Kurasa untuk sekadar mengambil Zirah kau memang tidak butuh, tetapi sebaiknya kau kembali dan minta satu dari KaMing.",
+						"Oh... tapi aku yakin kalau KaMing menyuruh mengambil zirah itu, ia membutuhkannya segera... sedangkan tanpa surat jalan kau tidak akan pernah bisa masuk.",
+						"Begini saja... dan rahasiakan ini, ya?",
+						"KaMing meninggalkan segel di sini saat terakhir menemuiku. Kurasa aku bisa mencapkan surat jalan untukmu",
+						"Baiklah... jangan bilang siapa pun aku melakukan ini, dan cepat kembali.",
+						"Dan JANGAN menghilang begitu saja seperti orang sebelumnya!"
 					},
 					1
 				)
 
 				player.quest["gan_metal"] = 4
 				player:addItem("sonhi_pass", 1)
-				player:dialogSeq({t, "Go now, and be quick about it."}, 0)
+				player:dialogSeq({t, "Pergilah sekarang, dan cepat."}, 0)
 				return
 			elseif player.quest["gan_metal"] == 4 then
 				player:dialogSeq(
 					{
 						t,
-						"I gave you the pass. Get going to KaMing's encampment, I need those leather scraps for KaMing's armor."
+						"Surat jalannya sudah kuberikan. Berangkatlah ke perkemahan KaMing; aku butuh potongan kulit itu untuk zirahnya."
 					},
 					0
 				)
@@ -206,9 +206,9 @@ GanNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ahhh, at times I do miss the desert.",
-					"Life was hard in the desert, many inexperienced people die within the first few minutes when it gets really hot.",
-					"My back still aches thinking of all the water skins we had to carry."
+					"Ahhh, kadang aku merindukan gurun.",
+					"Hidup di gurun itu keras; banyak orang yang belum berpengalaman mati dalam beberapa menit pertama ketika udara benar-benar panas.",
+					"Punggungku masih terasa nyeri kalau ingat semua kantong air yang harus kami panggul."
 				},
 				0
 			)
@@ -218,8 +218,8 @@ GanNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Oh no, I don't have any left. Gosh that was a long time ago.",
-					"You would have to find somebody use to dealing with skins and cloths to help you with that."
+					"Oh tidak, aku tidak punya sisa. Ya ampun, itu sudah lama sekali.",
+					"Kau harus mencari orang yang terbiasa mengurus kulit dan kain untuk membantumu soal itu."
 				},
 				0
 			)

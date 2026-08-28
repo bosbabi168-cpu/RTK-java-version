@@ -22,7 +22,7 @@ BlackbirdNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"\"I had asked an old furtune teller if he knew what I needed but all he said was that the answer would drop from the stars. If you could help me, I would return the acorn to you.\""
+							"\"Aku pernah bertanya kepada peramal tua apakah ia tahu apa yang kubutuhkan, tetapi ia hanya berkata bahwa jawabannya akan jatuh dari bintang. Kalau kau bisa menolongku, akan kukembalikan acorn itu kepadamu.\""
 						},
 						0
 					)
@@ -36,7 +36,7 @@ BlackbirdNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The crow's eyes widen. \"GIMME THAT!\" he squawks and plucks a Stardrop from you."
+						"Mata gagak itu membelalak. \"BERIKAN ITU!\" ia mengoceh dan menyambar Stardrop darimu."
 					},
 					1
 				)
@@ -44,7 +44,7 @@ BlackbirdNpc = {
 				player:dialogSeq(
 					{
 						smallboy,
-						"\"Thank you! My mom must be so worried. Here's your Acorn back. Oh, and don't mind the other crow, he's just a good friend.\""
+						"\"Terima kasih! Ibuku pasti sangat khawatir. Ini Acorn-mu kembali. Oh, jangan hiraukan gagak yang satunya, ia cuma kawan baik.\""
 					},
 					0
 				)
@@ -57,11 +57,11 @@ BlackbirdNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The crow sits there watching you approach. When you get close enough it squawks, \"Please don't harm me!\"",
-					"\"I am actually a small boy who once thought he was smarter than a Tiger,\" the crow says. \"But the Tiger turned out to be an evil spirit.\"",
-					"\"'So you think you are smarter than me?'\" said the Tiger and he changed into this bird. \"'There! Now you'll remain this dull bird until you find something bright enough to free you!'\"",
-					"\"I have been searching for something bright enough and hoped that the acorn would work. But alas, I am still a Crow. I do not know what I need!\"",
-					"\"I had asked an old furtune teller if he knew what I needed but all he said was that the answer would drop from the stars. If you could help me, I would return the acorn to you.\""
+					"Gagak itu duduk memperhatikanmu mendekat. Begitu kau cukup dekat ia mengoceh, \"Tolong jangan sakiti aku!\"",
+					"\"Sebenarnya aku bocah kecil yang dulu mengira dirinya lebih pintar daripada seekor Harimau,\" kata gagak itu. \"Tetapi Harimau itu ternyata roh jahat.\"",
+					"\"'Jadi kau pikir kau lebih pintar dariku?'\" kata Harimau itu, lalu ia mengubahku menjadi burung ini. \"'Nah! Sekarang kau akan tetap jadi burung kusam ini sampai kau menemukan sesuatu yang cukup terang untuk membebaskanmu!'\"",
+					"\"Aku terus mencari sesuatu yang cukup terang dan berharap acorn itu berhasil. Sayangnya aku masih Gagak. Aku tidak tahu apa yang kubutuhkan!\"",
+					"\"Aku pernah bertanya kepada peramal tua apakah ia tahu apa yang kubutuhkan, tetapi ia hanya berkata bahwa jawabannya akan jatuh dari bintang. Kalau kau bisa menolongku, akan kukembalikan acorn itu kepadamu.\""
 				},
 				0
 			)

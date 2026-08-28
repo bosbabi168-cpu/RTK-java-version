@@ -65,9 +65,9 @@ itemCreation = async(function(player)
 		end
 
 		player:addItem(giveItem, 1)
-		player:sendMinitext("You were successful!")
+		player:sendMinitext("Kau berhasil!")
 	else
-		player:sendMinitext("You were unsuccessful.")
+		player:sendMinitext("Kau tidak berhasil.")
 	end
 end)
 

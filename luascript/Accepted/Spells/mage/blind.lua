@@ -8,22 +8,22 @@ blind_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType ~= BL_MOB) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(blinds) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -31,7 +31,7 @@ blind_mage = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(70)
-		player:sendMinitext("You cast Blind.")
+		player:sendMinitext("Kau merapal Blind.")
 		target:setDuration("blind_mage", duration)
 		target:sendAnimation(75, 0)
 		target.blind = true
@@ -65,22 +65,22 @@ dark_veil_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType ~= BL_MOB) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(blinds) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -88,7 +88,7 @@ dark_veil_mage = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(70)
-		player:sendMinitext("You cast Dark Veil.")
+		player:sendMinitext("Kau merapal Dark Veil.")
 		target:setDuration("dark_veil_mage", duration)
 		target:sendAnimation(136, 0)
 		target.blind = true
@@ -122,22 +122,22 @@ winters_shadow_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType ~= BL_MOB) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(blinds) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -145,7 +145,7 @@ winters_shadow_mage = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(70)
-		player:sendMinitext("You cast Winter's Shadow.")
+		player:sendMinitext("Kau merapal Winter's Shadow.")
 		target:setDuration("winters_shadow_mage", duration)
 		target:sendAnimation(123, 0)
 		target.blind = true
@@ -179,22 +179,22 @@ ice_glare_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType ~= BL_MOB) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(blinds) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -202,7 +202,7 @@ ice_glare_mage = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(70)
-		player:sendMinitext("You cast Ice Glare.")
+		player:sendMinitext("Kau merapal Ice Glare.")
 		target:setDuration("ice_glare_mage", duration)
 		target:sendAnimation(52, 0)
 		target.blind = true

@@ -12,7 +12,7 @@ reveal_fate = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		player:dialogSeq({t, "Complete but disabled."}, 0)
+		player:dialogSeq({t, "Selesai tetapi dimatikan."}, 0)
 
 		local aethers = 7500000
 
@@ -20,7 +20,7 @@ reveal_fate = {
 		local magicCost = 100
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -28,16 +28,16 @@ reveal_fate = {
 			aethers = 0
 		end
 
-		local input = player:inputLetterCheck(player:input("Whom would you like to reveal their fate?"))
+		local input = player:inputLetterCheck(player:input("Siapa yang ingin kau singkap takdirnya?"))
 
 		local target = Player(input)
 
 		if target == nil then
-			player:dialogSeq({t, "That player is currently not online."}, 0)
+			player:dialogSeq({t, "Pemain itu sedang tidak daring."}, 0)
 			return
 		end
 		if target.ID == player.ID then
-			player:dialogSeq({t, "You cannot reveal your own fate."}, 0)
+			player:dialogSeq({t, "Kau tidak bisa menyingkap takdirmu sendiri."}, 0)
 			return
 		end
 
@@ -49,8 +49,8 @@ reveal_fate = {
 		player:setAether("reveal_fate", aethers)
 
 		local choice = player:menuSeq(
-			"Greetings Geomancer. How is the Chi aligned here?",
-			{"It is disrupted", "It flows well"},
+			"Salam, Geomancer. Bagaimana Chi tertata di sini?",
+			{"Ia terganggu", "Ia mengalir baik"},
 			{}
 		)
 
@@ -127,7 +127,7 @@ reveal_fate = {
 		elseif chosenOutcome == "Your coinpurse feels heavier." then
 			player.money = player.money + 10000
 			player:sendStatus()
-			player:sendMinitext("10,000 gold added.")
+			player:sendMinitext("10.000 emas ditambahkan.")
 		elseif chosenOutcome == "Your coinpurse feels lighter." then
 			if player.money < 10000 then
 				player.money = 0
@@ -135,7 +135,7 @@ reveal_fate = {
 				player.money = player.money - 10000
 			end
 			player:sendStatus()
-			player:sendMinitext("10,000 gold removed.")
+			player:sendMinitext("10.000 emas diambil.")
 		elseif chosenOutcome == "The gods smile upon you." then
 			player:addKarma(0.25)
 		elseif chosenOutcome == "The gods frown upon you." then
@@ -161,7 +161,7 @@ reveal_fate = {
 				for i = 1, #skills do
 					if target.registry[skills[i]] > 0 then
 						target.registry[skills[i]] = target.registry[skills[i]] + 5
-						target:sendMinitext("You have gained some progress in " .. skills[i])
+						target:sendMinitext("Kau memperoleh sedikit kemajuan dalam " .. skills[i])
 						break
 					end
 				end
@@ -169,7 +169,7 @@ reveal_fate = {
 				for i = 1, #skills do
 					if target.registry[skills[i]] > 10 then
 						target.registry[skills[i]] = target.registry[skills[i]] - 5
-						target:sendMinitext("You have lost some progress in " .. skills[i])
+						target:sendMinitext("Kau kehilangan sedikit kemajuan dalam " .. skills[i])
 						break
 					end
 				end
@@ -187,7 +187,7 @@ reveal_fate = {
 				add = math.ceil(player.exp *.25)
 				player:giveXP(add)
 			end
-			player:sendMinitext("You have gained some experience!")
+			player:sendMinitext("Kau memperoleh sedikit pengalaman!")
 			player:sendStatus()
 		elseif chosenOutcome == "You lose knowledge towards the next level." then
 			if player.level < 99 then
@@ -212,7 +212,7 @@ reveal_fate = {
 				end
 			end
 			player:sendStatus()
-			player:sendMinitext("You have lost some experience!")
+			player:sendMinitext("Kau kehilangan sedikit pengalaman!")
 		elseif chosenOutcome == "You are able to endure more." then
 			player.baseHealth = player.baseHealth + 25
 			player.registry["baseHealth"] = player.baseHealth
@@ -228,7 +228,7 @@ reveal_fate = {
 			player:removeLegendbyName("needs_to_work_on_relationships")
 			player:removeLegendbyName("proven_to_be_good_friend")
 			player:addLegend(
-				"Proven to be a good friend",
+				"Terbukti menjadi kawan yang baik",
 				"proven_to_be_good_friend",
 				6,
 				1
@@ -237,35 +237,35 @@ reveal_fate = {
 			player:removeLegendbyName("needs_to_work_on_relationships")
 			player:removeLegendbyName("proven_to_be_good_friend")
 			player:addLegend(
-				"Needs to work on relationships",
+				"Perlu memperbaiki hubungan",
 				"needs_to_work_on_relationships",
 				1,
 				1
 			)
-		elseif chosenOutcome == "Married for love" then
+		elseif chosenOutcome == "Menikah karena cinta" then
 			player:removeLegendbyName("married_for_items")
 			player:removeLegendbyName("married_for_power")
 			player:removeLegendbyName("married_for_money")
 			player:removeLegendbyName("married_for_love")
-			player:addLegend("Married for love", "married_for_love", 6, 1)
-		elseif chosenOutcome == "Married for items" then
+			player:addLegend("Menikah karena cinta", "married_for_love", 6, 1)
+		elseif chosenOutcome == "Menikah demi barang" then
 			player:removeLegendbyName("married_for_items")
 			player:removeLegendbyName("married_for_power")
 			player:removeLegendbyName("married_for_money")
 			player:removeLegendbyName("married_for_love")
-			player:addLegend("Married for items", "married_for_items", 6, 1)
-		elseif chosenOutcome == "Married for power" then
+			player:addLegend("Menikah demi barang", "married_for_items", 6, 1)
+		elseif chosenOutcome == "Menikah demi kekuasaan" then
 			player:removeLegendbyName("married_for_items")
 			player:removeLegendbyName("married_for_power")
 			player:removeLegendbyName("married_for_money")
 			player:removeLegendbyName("married_for_love")
-			player:addLegend("Married for power", "married_for_power", 6, 1)
-		elseif chosenOutcome == "Married for money" then
+			player:addLegend("Menikah demi kekuasaan", "married_for_power", 6, 1)
+		elseif chosenOutcome == "Menikah demi uang" then
 			player:removeLegendbyName("married_for_items")
 			player:removeLegendbyName("married_for_power")
 			player:removeLegendbyName("married_for_money")
 			player:removeLegendbyName("married_for_love")
-			player:addLegend("Married for money", "married_for_money", 6, 1)
+			player:addLegend("Menikah demi uang", "married_for_money", 6, 1)
 		end
 
 		player.registry["performed_ba_gua_experiences"] = player.registry[
@@ -284,7 +284,7 @@ reveal_fate = {
 		] + 1
 		target:removeLegendbyName("experienced_the_ba_gua")
 		target:addLegend(
-			"Experienced the Ba Gua " .. player.registry[
+			"Mengalami Ba Gua " .. player.registry[
 				"experienced_the_ba_gua"
 			] .. " times, assisted by $player (" .. curT() .. ")",
 			"experienced_the_ba_gua",

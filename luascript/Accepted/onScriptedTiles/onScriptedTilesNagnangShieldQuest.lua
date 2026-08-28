@@ -159,7 +159,7 @@ onScriptedTilesNagnangShieldQuest = async(function(player)
 			if player.quest["used_compass"] == 1 then
 				player.quest["used_compass"] = 0
 				player:warp(baseMap + 10, math.random(27, 29), 58)
-				player:sendMinitext("You break out of the forest at last!")
+				player:sendMinitext("Akhirnya kau keluar dari hutan!")
 			elseif player.quest["used_compass"] == 0 then
 				eastExit = true
 			end
@@ -233,14 +233,14 @@ onScriptedTilesNagnangShieldQuest = async(function(player)
 				player:dialogSeq(
 					{
 						t,
-						"You place the lockpick in the hole, and jiggle it a bit."
+						"Kau memasukkan pencongkel kunci ke lubangnya dan menggoyangkannya sedikit."
 					},
 					1
 				)
 				player:warp(baseMap + 11, 9, 58)
 			else
 				player:dialogSeq(
-					{t, "You try to pick the lock, but it doesn't work."},
+					{t, "Kau mencoba mencongkel kuncinya, tetapi gagal."},
 					0
 				)
 			end
@@ -248,7 +248,7 @@ onScriptedTilesNagnangShieldQuest = async(function(player)
 		if player.x == 45 and (player.y == 30 or player.y == 31) then
 			if player:hasItem("lockpick", 1) == true then
 				player:dialogSeq(
-					{t, "You try to pick the lock, but it doesn't work."},
+					{t, "Kau mencoba mencongkel kuncinya, tetapi gagal."},
 					0
 				)
 			end
@@ -256,7 +256,7 @@ onScriptedTilesNagnangShieldQuest = async(function(player)
 		if player.x >= 23 and player.x <= 26 and player.y == 42 then
 			if player:hasItem("lockpick", 1) == true then
 				player:dialogSeq(
-					{t, "You try to pick the lock, but it doesn't work."},
+					{t, "Kau mencoba mencongkel kuncinya, tetapi gagal."},
 					0
 				)
 			end
@@ -316,8 +316,8 @@ onScriptedTilesNagnangShieldQuest = async(function(player)
 			player:dialogSeq(
 				{
 					t,
-					"You find the drain hole Benitnath talked about.",
-					"It's pitch black down there, you would have to be crazy to go in."
+					"Kau menemukan lubang saluran yang disebut Benitnath.",
+					"Di bawah sana gelap gulita; hanya orang gila yang mau masuk."
 				},
 				1
 			)
@@ -326,7 +326,7 @@ onScriptedTilesNagnangShieldQuest = async(function(player)
 				player:dialogSeq(
 					{
 						t,
-						"With the lantern in your hand, you feel it is safe to enter."
+						"Dengan lentera di tangan, kau merasa aman untuk masuk."
 					},
 					1
 				)
@@ -335,8 +335,8 @@ onScriptedTilesNagnangShieldQuest = async(function(player)
 			end
 
 			local choice = player:menuSeq(
-				"Do you want to go in anyways?",
-				{"Yes", "No"},
+				"Kau tetap ingin masuk?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -360,9 +360,9 @@ onScriptedTilesNagnangShieldQuest = async(function(player)
 			player:dialogSeq(
 				{
 					t,
-					"You approach the waters edge, and slowly place the stilts in the water.",
-					"You grab a hold of them, and quickly stand up, just like Majhum told you.",
-					"You're a little wobbly, but you slowly get the hang of the stilts, and start your way across."
+					"Kau mendekati tepi air dan perlahan menancapkan egrangnya ke dalam air.",
+					"Kau berpegangan lalu cepat berdiri, persis seperti yang diajarkan Majhum.",
+					"Kau agak goyah, tetapi lama-lama kau menguasai egrangnya dan mulai menyeberang."
 				},
 				1
 			)

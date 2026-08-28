@@ -13,15 +13,15 @@ HaussonMayorNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Greetings, I would love to let you live here, but only people who are Koguryan may live in this town."
+					"Salam. Aku ingin sekali mengizinkanmu tinggal di sini, tetapi hanya orang Koguryo yang boleh tinggal di kota ini."
 				},
 				1
 			)
 		else
 			if player.registry["home"] == 11 then
 				local confirm = player:menuSeq(
-					"You already live in my towns tavern... do you wish to leave already?",
-					{"Yes, I do.", "No, I wish to stay."},
+					"Kau sudah tinggal di kedai kotaku... apa kau mau pergi secepat ini?",
+					{"Ya, aku mau.", "Tidak, aku ingin tinggal."},
 					{}
 				)
 
@@ -31,7 +31,7 @@ HaussonMayorNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Well, nothing lasts forever. Good luck in the future."
+							"Yah, tidak ada yang abadi. Semoga beruntung di kemudian hari."
 						},
 						0
 					)
@@ -40,7 +40,7 @@ HaussonMayorNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Ah, that is good to hear. I hope you like my service here."
+							"Ah, senang mendengarnya. Semoga kau menyukai layananku di sini."
 						},
 						0
 					)
@@ -50,13 +50,13 @@ HaussonMayorNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"So you wish to live in my humble tavern, eh? Well, I can spare you some room. But remember, you will always return here, and not the taverns in the city if you do this."
+						"Jadi kau ingin tinggal di kedaiku yang sederhana ini? Baiklah, ada kamar untukmu. Tapi ingat, kalau begitu kau akan selalu kembali ke sini, bukan ke kedai-kedai di kota."
 					},
 					1
 				)
 				local confirm = player:menuSeq(
-					"Are you sure you want to do this?",
-					{"Yes, I wish to.", "No, I do not."},
+					"Kau yakin ingin melakukan ini?",
+					{"Ya, aku mau.", "Tidak, aku tidak mau."},
 					{}
 				)
 
@@ -65,7 +65,7 @@ HaussonMayorNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Welcome to my tavern, I hope you enjoy your time here."
+							"Selamat datang di kedaiku, semoga kau betah di sini."
 						},
 						0
 					)
@@ -74,7 +74,7 @@ HaussonMayorNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"That is your choice, plenty of room if you wish to come back later."
+							"Itu pilihanmu. Kamarnya masih banyak kalau nanti kau berubah pikiran."
 						},
 						0
 					)

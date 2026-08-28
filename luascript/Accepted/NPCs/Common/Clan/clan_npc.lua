@@ -11,42 +11,42 @@ ClanNpc = {
 		player.lastClick = npc.ID
 
 		local opts = {
-			"Buy",
-			"Sell",
-			"Deposit clan item",
-			"Withdraw clan item",
-			"Banking",
-			"Transport",
-			"Date & Time"
+			"Beli",
+			"Jual",
+			"Titipkan barang klan",
+			"Ambil barang klan",
+			"Simpanan",
+			"Perjalanan",
+			"Tanggal & Waktu"
 		}
 
 		if os.time() >= player.registry["gave_fragile_orb_of_world_shout_time"] then
-			table.insert(opts, "Free World Shout")
+			table.insert(opts, "World Shout Gratis")
 		end
 
-		local choice = player:menuString("Hello! How can I help you today?", opts)
+		local choice = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				InnNpc.buyItems()
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				InnNpc.sellItems()
 			)
-		elseif choice == "Deposit clan item" then
+		elseif choice == "Titipkan barang klan" then
 			player:showClanBankDeposit(npc)
-		elseif choice == "Withdraw clan item" then
+		elseif choice == "Ambil barang klan" then
 			player:showClanBankWithdraw(npc)
-		elseif choice == "Banking" then
+		elseif choice == "Simpanan" then
 			bank.show_main_menu(player, npc)
-		elseif choice == "Transport" then
+		elseif choice == "Perjalanan" then
 			Waypoint.click(player, npc)
-		elseif choice == "Date & Time" then
+		elseif choice == "Tanggal & Waktu" then
 			general_npc_funcs.time(player)
-		elseif choice == "Free World Shout" then
+		elseif choice == "World Shout Gratis" then
 			general_npc_funcs.freeWorldShout(player, npc)
 		end
 	end),

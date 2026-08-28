@@ -7,10 +7,10 @@ ignite_rogue = {
 		end
 		local worked = global_zap.cast(player, target, damage, 30, 250)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -32,10 +32,10 @@ spirit_strike_rogue = {
 		local damage = 260
 		local worked = global_zap.cast(player, target, damage, 30, 251)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -57,10 +57,10 @@ wrath_of_nature_rogue = {
 		local damage = 260
 		local worked = global_zap.cast(player, target, damage, 30, 252)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -82,10 +82,10 @@ thunderclap_rogue = {
 		local damage = 260
 		local worked = global_zap.cast(player, target, damage, 30, 253)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 

@@ -62,6 +62,40 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void playerSpellSlotChanged(User sd, int slot) {
+        Clif.sendMagic(sd, slot);
+    }
+
+    @Override
+    public void playerProfile(User sd) {
+        // Di RetroTK profil menumpang clif_mystaytus (0x39), yang sengaja
+        // dibiarkan TAHAP 1 karena protokolnya memang akan diganti.
+        Clif.sendMyStatus(sd);
+    }
+
+    @Override
+    public void playerTransferred(User sd, String host, int port,
+                                  int m, int x, int y) {
+        Clif.transfer(sd, host, port);
+    }
+
+    @Override
+    public void worldTimeChanged(User sd) {
+        Clif.sendTime(sd);
+    }
+
+    @Override
+    public void townListToPlayer(User sd, java.util.List<String> kota) {
+        Clif.sendTowns(sd, kota);
+    }
+
+    @Override
+    public void rankingToPlayer(User sd, String judul, java.util.List<Object[]> baris) {
+        // clif_parseranking menyusun jendela teks 0x7D; belum diport dan
+        // nilainya rendah karena format kabelnya akan diganti.
+    }
+
+    @Override
     public void objectSideChanged(BlockList bl) {
         Clif.sendSide(bl);
     }
@@ -93,6 +127,31 @@ public final class RetroTkClientView implements ClientView {
     public void boardListToPlayer(User sd, int board, int flags1, int flags2,
                                   java.util.List<Clif.BoardEntry> isi) {
         Clif.sendBoardList(sd, board, flags1, flags2, isi);
+    }
+
+    @Override
+    public void exchangeOpened(User sd, User target) {
+        Clif.exchangeOpen(sd, target);
+    }
+
+    @Override
+    public void exchangeItemOffered(User sd, User target,
+                                    org.rtk.common.mmo.Item item, int slotInList) {
+        Clif.exchangeAddItem(sd, target, item, slotInList);
+    }
+
+    @Override
+    public void exchangeGoldOffered(User sd, User target, long gold) {
+        Clif.exchangeGold(sd, target, gold);
+    }
+
+    @Override
+    public void exchangeConfirmed(User sd, User target, boolean completed) {
+        String pesan = "Kamu bertukar, dan menyerahkan kepemilikan barangnya.";
+        Clif.exchangeMessage(sd, pesan, 5, completed ? 0 : 1);
+        if (target != null) {
+            Clif.exchangeMessage(target, pesan, 5, completed ? 0 : 1);
+        }
     }
 
     @Override
@@ -232,5 +291,73 @@ public final class RetroTkClientView implements ClientView {
     public void objectThrown(BlockList from, int toX, int toY,
                              int icon, int color, int action) {
         Clif.throwAnimation(from, toX, toY, icon, color, action);
+    }
+
+    @Override
+    public void scriptDialogReady(User sd, org.rtk.map.script.ScriptPlayer p) {
+        Clif.flushDialog(sd, p);
+    }
+
+    @Override
+    public void npcSaidTo(User sd, long npcId, String text) {
+        Clif.sendScriptMes(sd, npcId, text, false, false);
+    }
+
+    @Override
+    public void playerStepRejected(User sd) {
+        Clif.snapBack(sd);
+    }
+
+    @Override
+    public void playerStepped(User sd, int direction, int fromX, int fromY) {
+        Clif.sendWalkConfirm(sd, direction, fromX, fromY);
+    }
+
+    @Override
+    public void playerStepSeen(User sd, int direction, int fromX, int fromY) {
+        Clif.broadcastWalk(sd, direction, fromX, fromY);
+    }
+
+    @Override
+    public void areaRedrawRequested(User sd, MapData map, int x, int y,
+                                    int width, int height, int checksum) {
+        Clif.redrawArea(sd, map, x, y, width, height, checksum);
+    }
+
+    @Override
+    public void playerEquipmentChanged(User sd, int slot) {
+        Clif.equipIt(sd, slot);
+    }
+
+    @Override
+    public void playerEquipmentCleared(User sd, int slot) {
+        Clif.unequipIt(sd, slot);
+    }
+
+    @Override
+    public void mapTilesChanged(User sd) {
+        Clif.redrawAround(sd);
+    }
+
+    @Override
+    public void weatherChanged(User sd, int weather) {
+        Clif.sendWeather(sd, weather);
+    }
+
+    @Override
+    public void groupStatusChanged(User sd) {
+        Clif.sendGroupStatus(sd);
+    }
+
+    @Override
+    public void groupHealthChanged(User sd) {
+        Clif.sendGroupHealth(sd);
+    }
+
+    @Override
+    public void playerSettingsChanged(User sd) {
+        // Sengaja kosong: di RetroTK kata setelan menumpang paket status
+        // (`clif_sendstatus` offset 22 & 51), yang sudah dikirim pemanggil
+        // lewat playerStatusChanged. Tidak ada paket tersendiri untuknya.
     }
 }

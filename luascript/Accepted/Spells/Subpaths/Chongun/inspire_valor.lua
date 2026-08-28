@@ -8,7 +8,7 @@ inspire_valor = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 		player.magic = player.magic - magic
@@ -17,7 +17,7 @@ inspire_valor = {
 		player:sendAction(6, 30)
 		player:setAether("inspire_valor", aether)
 
-		player:sendMinitext("You cast Inspire valor.")
+		player:sendMinitext("Kau merapal Inspire valor.")
 
 		local targets = player:getObjectsInArea(BL_PC)
 
@@ -27,7 +27,7 @@ inspire_valor = {
 					targets[i]:removeDuras(mights)
 					targets[i]:setDuration("inspire_valor", duration)
 					targets[i]:sendAnimation(11, 30)
-					targets[i]:sendMinitext(player.name .. " cast Inspire valor on you.")
+					targets[i]:sendMinitext(player.name .. " merapal Inspire valor padamu.")
 					targets[i]:calcStat()
 				end
 			end

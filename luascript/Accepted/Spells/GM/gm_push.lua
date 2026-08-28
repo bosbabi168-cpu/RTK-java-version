@@ -23,7 +23,7 @@ gm_push = {
 			if player.ID ~= 2 then
 				anim(player)
 				pushBack(player)
-				player:sendMinitext("Do not disturb!")
+				player:sendMinitext("Jangan ganggu!")
 			end
 			return
 		else

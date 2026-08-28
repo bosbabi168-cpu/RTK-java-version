@@ -12,7 +12,7 @@ watchful_eye_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -47,7 +47,7 @@ spirits_whisper_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -82,7 +82,7 @@ creatures_guidance_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -117,7 +117,7 @@ spot_unbalance_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 

@@ -6,7 +6,7 @@ engrave = {
 		player.dialogType = 0
 
 		if os.time() < player.registry["engrave_timer"] then
-			player:dialogSeq({t, "You have engraved too recently."}, 0)
+			player:dialogSeq({t, "Kau baru saja mengukir."}, 0)
 			return
 		end
 
@@ -29,8 +29,8 @@ engrave = {
 		engravee.dialogType = 0
 
 		local choice = engravee:menuSeq(
-			engraver.name .. " is offering you their engraving services for " .. Tools.formatValue(cost) .. " gold. Are you willing to pay this amount?",
-			{"Yes", "No"},
+			engraver.name .. " menawarkan jasa ukirnya kepadamu seharga " .. Tools.formatValue(cost) .. " emas. Bersediakah kau membayar sejumlah itu?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -120,13 +120,13 @@ engrave = {
 		end
 
 		if (proposedName:match("[^%a%s%']")) then
-			engravee:dialog("You can only enter letters and spaces.", {})
+			engravee:dialog("Kau hanya boleh memasukkan huruf dan spasi.", {})
 			return
 		end
 
 		if string.len(proposedName) > 18 then
 			engravee:dialogSeq(
-				{t, "The proposed name is too long. Maximum of 18 characters."},
+				{t, "Nama yang diajukan terlalu panjang. Paling banyak 18 huruf."},
 				1
 			)
 			return
@@ -150,8 +150,8 @@ engrave = {
 		engraver.lastClick = engravee.ID
 
 		local choice = engraver:menuSeq(
-			engravee.name .. " has accepted your offer.\n\nProposed name: ** " .. proposedName .. " **\n\nDoes this name meet the Acceptable naming policy set forth in the Terms of Service?",
-			{"Yes", "No"},
+			engravee.name .. " menerima tawaranmu.\n\nNama yang diajukan: ** " .. proposedName .. " **\n\nApakah nama ini memenuhi kebijakan penamaan yang ditetapkan dalam Ketentuan Layanan?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -162,15 +162,15 @@ engrave = {
 		end
 
 		local confirm = engraver:menuSeq(
-			"Are you sure you want to engrave the item?",
-			{"Yes", "No"},
+			"Kau yakin ingin mengukir barang itu?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
 		if confirm == 1 then
 			if Player(engravee.name) == nil then
 				engraver:dialogSeq(
-					{t, "That character is no longer online."},
+					{t, "Karakter itu sudah tidak daring."},
 					0
 				)
 				return
@@ -180,7 +180,7 @@ engrave = {
 				engraver:dialogSeq(
 					{
 						t,
-						"That character no longer has enough gold to cover your cost."
+						"Emas karakter itu sudah tidak cukup untuk menutup biayamu."
 					},
 					0
 				)

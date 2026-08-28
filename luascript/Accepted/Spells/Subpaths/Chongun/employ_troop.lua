@@ -13,13 +13,13 @@ employ_troop = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		player:sendAction(6, 25)
 		player:playSound(22)
-		player:sendMinitext("You cast Employ troop.")
+		player:sendMinitext("Kau merapal Employ troop.")
 
 		player.magic = player.magic - magicCost
 		player:sendStatus()
@@ -30,7 +30,7 @@ employ_troop = {
 			table.insert(opts, "Master")
 		end
 
-		local choice = player:menuString("Summon what?", opts)
+		local choice = player:menuString("Panggil apa?", opts)
 
 		if choice == "Scout" then
 			mobID = 699

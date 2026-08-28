@@ -9,7 +9,7 @@ invoke = {
 		end
 
 		if (player.magic < minMagic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -25,6 +25,6 @@ invoke = {
 		player:sendAnimation(11)
 		player.magic = player.maxMagic
 		player:sendStatus()
-		player:sendMinitext("You cast Invoke.")
+		player:sendMinitext("Kau merapal Invoke.")
 	end
 }

@@ -32,7 +32,7 @@ warp_trap_revenge = {
 			block:warp(4105, 15, 14)
 		end
 
-		block:sendMinitext("You fall into a steep winding passage.")
+		block:sendMinitext("Kau terjatuh ke lorong curam yang berkelok.")
 		removeTrapItem(npc)
 		npc:delete()
 	end,

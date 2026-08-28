@@ -110,7 +110,27 @@ public final class MapServer {
      * <p>⚠️ Kode logika <b>jangan</b> memanggil {@code Clif.*} langsung —
      * lewat sini. Lihat {@link ClientView} untuk alasannya.</p>
      */
-    public static ClientView clientView = new RetroTkClientView();
+    /**
+     * Lapisan protokol arah keluar — <b>kedua</b> implementasi sekaligus.
+     *
+     * <p>Bukan "pilih salah satu": tiap implementasi menyaring penerimanya
+     * sendiri, karena separuh peristiwa menyiarkan ke sekitar sebuah benda
+     * yang bisa berisi pemain dari kedua protokol. Lihat
+     * {@link ProtocolRouter}.</p>
+     */
+    public static ClientView clientView =
+            new ProtocolRouter(new RetroTkClientView(), new Rtk2ClientView());
+
+    /**
+     * fd yang sudah memperkenalkan diri lewat RTK2, menunggu datanya tiba
+     * dari char server.
+     *
+     * <p>Perlu ada karena perkenalan dan lahirnya {@code User} terpisah oleh
+     * perjalanan bolak-balik ke char server — protokolnya sudah diketahui
+     * saat bingkai pertama datang, pemainnya belum.</p>
+     */
+    static final java.util.Set<Integer> rtk2Fds =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /**
      * Jembatan klien -&gt; logika permainan: apa yang <b>diminta</b> pemain.
@@ -149,6 +169,20 @@ public final class MapServer {
                 | ((Integer.parseInt(p[3]) & 0xFF) << 24);
     }
 
+    /**
+     * Port map server pertama; server ke-N memakai {@code PORT_MAP_DASAR + N}
+     * (R3/C3).
+     *
+     * <p>⚠️ Aturan ini diambil apa adanya dari {@code clif_transfer}, yang
+     * memetakan id server 0/1/2 ke port 2001/2002/2003 secara <b>hardcode</b>.
+     * Selama itu belum ada di konfigurasi, dua map server hanya bisa
+     * bertetangga di host yang sama dengan port berurutan.</p>
+     */
+    public static final int PORT_MAP_DASAR = 2001;
+
+    /** Nama kota dari baris {@code town:} di map.conf ({@code towns[]} di C). */
+    public static final java.util.List<String> towns = new java.util.ArrayList<>();
+
     static void configRead(String cfgFile) {
         Config.read(cfgFile, (key, value) -> {
             switch (key.toLowerCase()) {
@@ -163,6 +197,8 @@ public final class MapServer {
                 case "db_path": dbPath = value; break;
                 case "lua_enable": luaEnable = Integer.parseInt(value); break;
                 case "lua_path": luaPath = value; break;
+                // map_town_add(): daftar kota, urut sesuai berkas (R1).
+                case "town": towns.add(value.trim()); break;
                 case "map_log": ServerLog.setLogfile(value); break;
                 case "dump_log": ServerLog.setDmpfile(value); break;
                 case "sql_ip": sqlIp = value; break;
@@ -330,6 +366,9 @@ public final class MapServer {
         for (User sd : new java.util.ArrayList<>(onlineChars.values())) {
             try {
                 Durations.tick(scriptEngine, sd);
+                // pc.c:648 — darah grup ikut disegarkan tiap tik selama
+                // pemain bergrup; pemain sendirian langsung pulang.
+                Groups.detak(sd);
             } catch (RuntimeException e) {
                 log.error("[DURASI] tik gagal untuk '{}'", sd.status.name, e);
             }
@@ -364,6 +403,20 @@ public final class MapServer {
      * pemain terautentikasi ({@code session_data} masih kosong), hanya
      * opcode 0x10 yang dilayani — persis seperti versi C.
      */
+    /**
+     * Loop paket klien — <b>dua protokol berdampingan</b>.
+     *
+     * <p>RetroTK ({@code Clif.parse*}) dan RTK2
+     * ({@code org.rtk.map.proto.Inbound}) dilayani di port yang sama, dan
+     * pembedanya <b>tanpa keadaan</b>: paket RetroTK selalu diawali
+     * {@code 0xAA}. Lihat {@code Wire.isRetroTk} untuk kenapa bingkai RTK2
+     * tidak akan pernah bisa disalahtebak.</p>
+     *
+     * <p>Keduanya hidup bersama karena arah project sudah final — protokol
+     * dan kliennya diganti — tetapi klien penggantinya belum ada. Menghapus
+     * jalur RetroTK sekarang berarti tidak ada apa pun yang bisa terhubung
+     * sampai Trek B selesai; membiarkannya tidak menghalangi apa pun.</p>
+     */
     static int clientParse(int fd) {
         Session s = net.session(fd);
         if (s == null) {
@@ -374,13 +427,63 @@ public final class MapServer {
             net.sessionEof(fd);
             return 0;
         }
+        if (s.rfifoRest() < 1) {
+            return 0;
+        }
+        return org.rtk.map.proto.Wire.isRetroTk(org.rtk.map.proto.Inbound.bytesOf(s))
+                ? retroTkParse(fd, s) : rtk2Parse(fd, s);
+    }
 
-        // buang byte sampah sampai penanda paket ditemukan
-        if (s.rfifoRest() > 0 && s.rfifoB(0) != 0xAA) {
-            log.warn("[MAP] byte tak dikenal dari {} — koneksi ditutup", s.clientIpString());
+    /** Satu bingkai RTK2. */
+    private static int rtk2Parse(int fd, Session s) {
+        int len;
+        try {
+            len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
+            if (len == 0) {
+                return 0;   // bingkainya belum lengkap
+            }
+            org.rtk.map.proto.Inbound.dispatch(fd, s, onlineChars.get(fd), len,
+                    commands, MapServer::rtk2Introduce);
+        } catch (org.rtk.map.proto.Wire.Malformed e) {
+            // Setelah satu bingkai rusak, batas bingkai berikutnya sudah
+            // tidak diketahui — melanjutkan berarti menafsirkan sampah.
+            log.warn("[RTK2] bingkai rusak dari {}: {}", s.clientIpString(), e.getMessage());
             s.eof = true;
             return 0;
         }
+        if (net.session(fd) != null && s.rfifoRest() >= len) {
+            s.rfifoSkip(len);
+        }
+        return 0;
+    }
+
+    /**
+     * Perkenalan RTK2: sama jalurnya dengan 0x10 RetroTK, tanpa byte-nya —
+     * plus verifikasi sandi (K3.4). RetroTK memercayai login server untuk
+     * itu; RTK2 belum punya login server sendiri, jadi map server yang
+     * memeriksa sandi terhadap {@code ChaPassword} sebelum meminta data
+     * karakter. Sandi salah = penolakan sambungan, bukan karakter hantu.
+     */
+    private static boolean rtk2Introduce(int fd, Session s, String name,
+                                         String password) {
+        String md5 = sql.queryString(
+                "SELECT `ChaPassword` FROM `Character` WHERE `ChaName` = ?", name);
+        if (md5 == null) {
+            log.warn("[MAP] RTK2 '{}' dari {} ditolak: nama tidak ada",
+                    name, s.clientIpString());
+            return false;
+        }
+        if (!org.rtk.charserver.CharDb.isPass(name, password, md5)) {
+            log.warn("[MAP] RTK2 '{}' dari {} ditolak: sandi salah",
+                    name, s.clientIpString());
+            return false;
+        }
+        rtk2Fds.add(fd);
+        return authByName(fd, s, name);
+    }
+
+    /** Satu paket RetroTK. */
+    private static int retroTkParse(int fd, Session s) {
         if (s.rfifoRest() < 3) {
             return 0;
         }
@@ -436,26 +539,46 @@ public final class MapServer {
             s.eof = true;
             return;
         }
-        String name = s.rfifoString(16, nameLen);
+        if (!authByName(fd, s, s.rfifoString(16, nameLen))) {
+            s.eof = true;
+        }
+    }
 
+    /**
+     * Bagian {@code clif_accept2} yang <b>bukan</b> pembacaan byte: cari
+     * nama karakternya, lalu minta datanya ke char server lewat 0x3003.
+     *
+     * <p>Dipakai kedua protokol. Dipisah karena isinya sama persis —
+     * yang berbeda hanya dari mana namanya datang.</p>
+     */
+    static boolean authByName(int fd, Session s, String name) {
         Integer charId = sql.queryInt("SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", name);
         if (charId == null || charId == 0) {
             log.warn("[MAP] karakter '{}' dari {} tidak ada di database", name, s.clientIpString());
-            s.eof = true;
-            return;
+            return false;
         }
         s.name = name;
         log.info("[MAP] klien {} memperkenalkan diri sebagai '{}' (id {})",
                 s.clientIpString(), name, charId);
         MapIntif.requestChar(fd, charId, name);
+        return true;
     }
 
     /** Pemain terputus: simpan lalu lepaskan dari dunia. */
     static void handleDisconnect(int fd) {
+        rtk2Fds.remove(fd);
+        // Permintaan data karakter yang belum dijawab char server tidak lagi
+        // ada tujuannya — lihat catatan `menunggu` di MapIntif.
+        MapIntif.lupakanPermintaan(fd);
         User sd = onlineChars.remove(fd);
         if (sd == null) {
             return;
         }
+        // clif_leavegroup() di jalur putus sambungan (clif.c:10949).
+        // ⚠️ Dipanggil SETELAH onlineChars.remove supaya pemain yang pergi
+        // tidak ikut terdaftar saat anggota sisanya disegarkan, dan
+        // SEBELUM despawn supaya petanya masih diketahui.
+        Groups.keluar(sd);
         Pc.despawn(world, sd);
         // simpan + tandai offline lewat char server (0x3007); penyegaran
         // posisi & samaran dilakukan saveChar sendiri
@@ -491,6 +614,10 @@ public final class MapServer {
         configRead(confFile);
         configRead(interFile);
         configRead("conf/char.conf"); // sql settings
+        // lang_read(): pesan penolakan map server. Punya bawaan, jadi
+        // berkasnya yang hilang tidak membuat pemain ditolak dengan pesan
+        // kosong — lihat MapMsg.
+        org.rtk.map.data.MapMsg.load("conf/lang.conf");
 
         if (!sql.connect(sqlId, sqlPw, sqlIp, sqlPort, sqlDb)) {
             log.warn("[MAP] WARNING: no database connection; running with map 0 only.");
@@ -535,6 +662,19 @@ public final class MapServer {
                         return null;
                     }
                 });
+                // map_id2npc / map_name2npc untuk konstruktor NPC(id|nama).
+                scriptEngine.setNpcLookup(
+                        new org.rtk.map.script.ScriptEngine.NpcLookup() {
+                    @Override
+                    public Object byId(long id) {
+                        return npcs == null ? null : npcs.byId(id);
+                    }
+
+                    @Override
+                    public Object byName(String name) {
+                        return npcs == null ? null : npcs.byName(name);
+                    }
+                });
                 int errors = scriptEngine.init(luaPath);
                 if (errors < 0) {
                     log.warn("[MAP] Lua scripting disabled: rtklua not found at {} (set lua_path in map.conf)", luaPath);
@@ -556,6 +696,10 @@ public final class MapServer {
         net.setDefaultParse(MapServer::clientParse);
         mapFd = net.makeListenPort(mapPort);
 
+        // R2: kalender dunia — dibaca dari tabel Time lalu berjalan sendiri.
+        WorldTime.load(sql);
+        timers.insert(WorldTime.TICK_MS, WorldTime.TICK_MS,
+                (a, b) -> WorldTime.tick(), 0, 0);
         timers.insert(1000, RECONNECT_MS, (a, b) -> checkConnectChar(), 0, 0);
         // npc_runtimers(): tik 100 ms untuk kait `move` dan `action` milik NPC
         timers.insert(NpcRegistry.TICK_MS, NpcRegistry.TICK_MS,

@@ -7,7 +7,7 @@ sacred_water = {
 				if mob.yname == "the_infected" then
 					player.quest["destroyed_infected"] = 1
 
-					mob:talk(0, mob.name .. ": NUUUGHHH! I shall be reborn...")
+					mob:talk(0, mob.name .. ": NUUUGHHH! Aku akan terlahir kembali...")
 					mob.attacker = player.ID
 					mob:removeHealthExtend(mob.maxHealth, 0, 0, 0, 0, 0)
 					player:removeItem("sacred_water", 1, 1)

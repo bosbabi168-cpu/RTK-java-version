@@ -15,6 +15,45 @@ public final class Mob extends BlockList
         implements org.rtk.map.script.ScriptAttrs,
                    org.rtk.map.script.ScriptCallBase {
 
+    /**
+     * Barang yang diserahkan pemain kepada mob ini ({@code mob->inventory}).
+     *
+     * <p>⚠️ Ini <b>bukan</b> lubang tempat barang hilang, walau terlihat
+     * begitu: isinya <b>dijatuhkan kembali saat mob mati</b>
+     * ({@code mobdb_drops}, mob.c:730). Membuang bagian itu berarti setiap
+     * barang yang diserahkan ke mob lenyap selamanya.</p>
+     *
+     * <p>Kosong untuk hampir semua mob, jadi daftarnya tumbuh sesuai
+     * kebutuhan alih-alih memesan {@code MAX_INVENTORY} slot untuk tiap
+     * satu dari 1.175 mob yang hidup.</p>
+     */
+    public final java.util.List<org.rtk.common.mmo.Item> inventory =
+            new java.util.ArrayList<>();
+
+    /**
+     * Terima barang dari pemain. Digabung bila <b>empat</b> atribut sama —
+     * id, ketahanan, pemilik, dan perlindungan; itu daftar yang dipakai C di
+     * {@code clif_handitem}, lebih longgar daripada sepuluh atribut pada
+     * penggabungan bank maupun jatuhan inventaris (Peringatan #31 dan #49).
+     */
+    public void receiveItem(org.rtk.common.mmo.Item src, int amount) {
+        for (org.rtk.common.mmo.Item it : inventory) {
+            if (it.id == src.id && it.dura == src.dura
+                    && it.owner == src.owner && it.protectedFlag == src.protectedFlag) {
+                it.amount += amount;
+                return;
+            }
+        }
+        org.rtk.common.mmo.Item baru = new org.rtk.common.mmo.Item();
+        baru.id = src.id;
+        baru.amount = amount;
+        baru.dura = src.dura;
+        baru.owner = src.owner;
+        baru.protectedFlag = src.protectedFlag;
+        inventory.add(baru);
+    }
+
+
     /** Awal rentang id blok milik mob (MOB_START_NUM di map.h). */
     public static final long MOB_START_NUM = 1073741823L;
 

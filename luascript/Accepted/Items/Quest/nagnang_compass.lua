@@ -4,23 +4,23 @@ nagnang_compass = {
 
 		local t = {graphic = convertGraphic(715, "item"), color = 0}
 
-		player:sendMinitext("You cast Find path.")
+		player:sendMinitext("Kau merapal Find path.")
 
 		if player.m == baseMap then
-			player:dialogSeq({t, "The needle points to the east."}, 0)
+			player:dialogSeq({t, "Jarumnya menunjuk ke timur."}, 0)
 		elseif player.m == baseMap + 1 then
 			player.quest["used_compass"] = 1
-			player:dialogSeq({t, "The needle points to the east."}, 0)
+			player:dialogSeq({t, "Jarumnya menunjuk ke timur."}, 0)
 		elseif player.m == baseMap + 2 then
-			player:dialogSeq({t, "The needle points to the west."}, 0)
+			player:dialogSeq({t, "Jarumnya menunjuk ke barat."}, 0)
 		elseif player.m == baseMap + 3 then
-			player:dialogSeq({t, "The needle points to the west."}, 0)
+			player:dialogSeq({t, "Jarumnya menunjuk ke barat."}, 0)
 		elseif player.m == baseMap + 4 then
-			player:dialogSeq({t, "The needle points to the south."}, 0)
+			player:dialogSeq({t, "Jarumnya menunjuk ke selatan."}, 0)
 		elseif player.m == baseMap + 5 then
-			player:dialogSeq({t, "The needle points to the north."}, 0)
+			player:dialogSeq({t, "Jarumnya menunjuk ke utara."}, 0)
 		else
-			player:dialogSeq({t, "The needle points to Nagnang."}, 0)
+			player:dialogSeq({t, "Jarumnya menunjuk ke Nagnang."}, 0)
 		end
 	end
 }

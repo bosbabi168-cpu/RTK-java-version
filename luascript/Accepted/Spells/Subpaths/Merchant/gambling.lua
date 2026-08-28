@@ -12,7 +12,7 @@ gambling = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -35,19 +35,19 @@ gambling = {
 		local target = Player(input)
 
 		if target == nil then
-			player:dialogSeq({t, "That player is not online."}, 0)
+			player:dialogSeq({t, "Pemain itu sedang tidak daring."}, 0)
 			return
 		end
 
 		if not distanceSquare(player, target, 6) then
-			player:dialogSeq({t, "That player is not close enough to you."}, 0)
+			player:dialogSeq({t, "Pemain itu tidak cukup dekat denganmu."}, 0)
 			return
 		end
 
 		local goldAmounts = {1000, 10000, 100000}
-		local goldChoices = {"1,000 Gold", "10,000 Gold", "100,000 Gold"}
+		local goldChoices = {"1.000 Emas", "10.000 Emas", "100.000 Emas"}
 		local goldChoice = player:menuSeq(
-			"They will wager the amount of",
+			"Mereka akan mempertaruhkan sejumlah",
 			goldChoices,
 			{}
 		)
@@ -65,14 +65,14 @@ gambling = {
 		player.dialogType = 0
 
 		local confirm = player:menuSeq(
-			"A merchant is willing to assist you in your gamble of " .. Tools.formatValue(amount) .. " Gold. You and your opponent will each put in that amount and the winner will receive double back. Do you accept?",
-			{"Yes", "No"},
+			"Seorang pedagang bersedia membantumu bertaruh sebesar " .. Tools.formatValue(amount) .. " Emas. Kau dan lawanmu masing-masing menyetor jumlah itu, dan pemenangnya menerima dua kali lipat. Kau setuju?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
 		if confirm == 1 then
 			if player.money < amount then
-				player:dialogSeq({t, "You do not have enough gold."}, 0)
+				player:dialogSeq({t, "Emasmu tidak cukup."}, 0)
 				return
 			end
 			merchant:freeAsync()
@@ -99,18 +99,18 @@ gambling = {
 		local target2 = Player(input)
 
 		if target2 == nil then
-			player:dialogSeq({t, "That player is not online."}, 0)
+			player:dialogSeq({t, "Pemain itu sedang tidak daring."}, 0)
 			return
 		end
 
 		if not distanceSquare(player, target2, 6) then
-			player:dialogSeq({t, "That player is not close enough to you."}, 0)
+			player:dialogSeq({t, "Pemain itu tidak cukup dekat denganmu."}, 0)
 			return
 		end
 
 		if target1.ID == target2.ID then
 			player:dialogSeq(
-				{t, "The person cannot gamble against themselves."},
+				{t, "Orang itu tidak bisa bertaruh melawan dirinya sendiri."},
 				0
 			)
 			return
@@ -128,14 +128,14 @@ gambling = {
 		player.dialogType = 0
 
 		local confirm = player:menuSeq(
-			"A merchant is willing to assist you in your gamble of " .. Tools.formatValue(amount) .. " Gold. You and your opponent will each put in that amount and the winner will receive double back. Do you accept?",
-			{"Yes", "No"},
+			"Seorang pedagang bersedia membantumu bertaruh sebesar " .. Tools.formatValue(amount) .. " Emas. Kau dan lawanmu masing-masing menyetor jumlah itu, dan pemenangnya menerima dua kali lipat. Kau setuju?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
 		if confirm == 1 then
 			if player.money < amount then
-				player:dialogSeq({t, "You do not have enough gold."}, 0)
+				player:dialogSeq({t, "Emasmu tidak cukup."}, 0)
 				return
 			end
 			merchant:freeAsync()
@@ -153,12 +153,12 @@ gambling = {
 		player.dialogType = 0
 
 		player:dialogSeq(
-			{t, "Both parties agreed to this gamble. Proceed to finish."},
+			{t, "Kedua pihak menyetujui taruhan ini. Lanjutkan sampai selesai."},
 			1
 		)
 
 		if target1 == nil or target2 == nil then
-			player:dialogSeq({t, "One of the parties logged."}, 0)
+			player:dialogSeq({t, "Salah satu pihak keluar dari permainan."}, 0)
 			return
 		end
 
@@ -166,7 +166,7 @@ gambling = {
 			player:dialogSeq(
 				{
 					t,
-					target1.name .. " tried to cheat, they no longer have the money they were offering to gamble."
+					target1.name .. " mencoba curang; uang yang ia tawarkan untuk bertaruh sudah tidak ada."
 				},
 				0
 			)
@@ -176,7 +176,7 @@ gambling = {
 			player:dialogSeq(
 				{
 					t,
-					target2.name .. " tried to cheat, they no longer have the money they were offering to gamble."
+					target2.name .. " mencoba curang; uang yang ia tawarkan untuk bertaruh sudah tidak ada."
 				},
 				0
 			)
@@ -188,21 +188,21 @@ gambling = {
 
 		if roll1 > roll2 then
 			target1:sendAnimation(2, 3)
-			target1:sendMinitext("You win.")
-			target2:sendMinitext("You lose.")
+			target1:sendMinitext("Kau menang.")
+			target2:sendMinitext("Kau kalah.")
 			target1:addGold(amount)
 			target2:removeGold(amount)
 		elseif roll2 > roll1 then
 			target2:sendAnimation(2, 3)
-			target1:sendMinitext("You lose.")
-			target2:sendMinitext("You win.")
+			target1:sendMinitext("Kau kalah.")
+			target2:sendMinitext("Kau menang.")
 			target1:removeGold(amount)
 			target2:addGold(amount)
 		else
-			target1:sendMinitext("There was a tie, so no gold removed.")
-			target2:sendMinitext("There was a tie, so no gold removed.")
+			target1:sendMinitext("Hasilnya seri, jadi tidak ada emas yang diambil.")
+			target2:sendMinitext("Hasilnya seri, jadi tidak ada emas yang diambil.")
 			player:dialogSeq(
-				{t, "There was a tie. No gold removed from either party."},
+				{t, "Hasilnya seri. Tidak ada emas yang diambil dari kedua pihak."},
 				0
 			)
 		end

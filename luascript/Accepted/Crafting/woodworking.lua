@@ -11,7 +11,7 @@ woodworking = {
 
 		if speech == "kayu" then
 			local choices = {
-				"Melee Weapons",
+				"Senjata Jarak Dekat",
 				"Arrows",
 				"Weaving Tools",
 				"Water jug"
@@ -20,7 +20,7 @@ woodworking = {
 			local titem = {graphic = convertGraphic(723, "item"), color = 0}
 
 			local choice = player:menuSeq(
-				"What would you like to craft?",
+				"Apa yang ingin kau buat?",
 				choices,
 				{}
 			)
@@ -79,7 +79,7 @@ woodworking = {
 										graphic = convertGraphic(2, "item"),
 										color = 0
 									},
-									"Your efforts were successful!"
+									"Usahamu berhasil!"
 								},
 								0
 							)
@@ -91,7 +91,7 @@ woodworking = {
 										graphic = convertGraphic(2, "item"),
 										color = 0
 									},
-									"Your efforts were unsuccessful."
+									"Usahamu tidak berhasil."
 								},
 								0
 							)
@@ -103,7 +103,7 @@ woodworking = {
 										graphic = convertGraphic(2, "item"),
 										color = 0
 									},
-									"Your efforts were successful!"
+									"Usahamu berhasil!"
 								},
 								0
 							)
@@ -112,7 +112,7 @@ woodworking = {
 						player:dialogSeq(
 							{
 								titem,
-								"You need 2 units of Ginko Wood to make this."
+								"Kau butuh 2 unit Ginko Wood untuk membuat ini."
 							},
 							0
 						)
@@ -120,7 +120,7 @@ woodworking = {
 					end
 				else
 					local weaponChoice = player:menuSeq(
-						"What would you like to craft?",
+						"Apa yang ingin kau buat?",
 						craftable,
 						{}
 					)
@@ -146,7 +146,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -158,7 +158,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were unsuccessful."
+										"Usahamu tidak berhasil."
 									},
 									0
 								)
@@ -170,7 +170,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -179,7 +179,7 @@ woodworking = {
 							player:dialogSeq(
 								{
 									titem,
-									"You need 2 units of Ginko Wood to make this."
+									"Kau butuh 2 unit Ginko Wood untuk membuat ini."
 								},
 								0
 							)
@@ -207,7 +207,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -219,7 +219,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were unsuccessful."
+										"Usahamu tidak berhasil."
 									},
 									0
 								)
@@ -231,7 +231,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -240,7 +240,7 @@ woodworking = {
 							player:dialogSeq(
 								{
 									titem,
-									"You need 2 units of Ginko Wood to make this."
+									"Kau butuh 2 unit Ginko Wood untuk membuat ini."
 								},
 								0
 							)
@@ -273,7 +273,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -285,7 +285,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were unsuccessful."
+										"Usahamu tidak berhasil."
 									},
 									0
 								)
@@ -297,7 +297,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -306,7 +306,7 @@ woodworking = {
 							player:dialogSeq(
 								{
 									titem,
-									"You need 3 units of Ginko Wood to make this."
+									"Kau butuh 3 unit Ginko Wood untuk membuat ini."
 								},
 								0
 							)
@@ -339,7 +339,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -351,7 +351,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were unsuccessful."
+										"Usahamu tidak berhasil."
 									},
 									0
 								)
@@ -363,7 +363,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -372,7 +372,7 @@ woodworking = {
 							player:dialogSeq(
 								{
 									titem,
-									"You need 3 units of Ginko Wood to make this."
+									"Kau butuh 3 unit Ginko Wood untuk membuat ini."
 								},
 								0
 							)
@@ -410,7 +410,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -422,7 +422,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were unsuccessful."
+										"Usahamu tidak berhasil."
 									},
 									0
 								)
@@ -434,7 +434,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -443,7 +443,7 @@ woodworking = {
 							player:dialogSeq(
 								{
 									titem,
-									"You need 4 units of Ginko Wood to make this."
+									"Kau butuh 4 unit Ginko Wood untuk membuat ini."
 								},
 								0
 							)
@@ -455,7 +455,7 @@ woodworking = {
 							player:dialogSeq(
 								{
 									t,
-									"Ah, the Juk-do! This is a masterful weapon that takes TIME to create! You need to wait a while before you can attempt another. ((6 hour cooldown))"
+									"Ah, Juk-do! Ini senjata adiluhung yang butuh WAKTU untuk dibuat! Kau harus menunggu sebentar sebelum bisa mencoba lagi. ((jeda 6 jam))"
 								},
 								1
 							)
@@ -504,7 +504,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -516,7 +516,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were unsuccessful."
+										"Usahamu tidak berhasil."
 									},
 									0
 								)
@@ -531,7 +531,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -540,7 +540,7 @@ woodworking = {
 							player:dialogSeq(
 								{
 									titem,
-									"You need 20 units of Ginko Wood to make this."
+									"Kau butuh 20 unit Ginko Wood untuk membuat ini."
 								},
 								0
 							)
@@ -593,7 +593,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -605,7 +605,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were unsuccessful."
+										"Usahamu tidak berhasil."
 									},
 									0
 								)
@@ -617,7 +617,7 @@ woodworking = {
 											graphic = convertGraphic(2, "item"),
 											color = 0
 										},
-										"Your efforts were successful!"
+										"Usahamu berhasil!"
 									},
 									0
 								)
@@ -626,7 +626,7 @@ woodworking = {
 							player:dialogSeq(
 								{
 									titem,
-									"You need 6 units of Ginko Wood to make this."
+									"Kau butuh 6 unit Ginko Wood untuk membuat ini."
 								},
 								0
 							)
@@ -704,7 +704,7 @@ woodworking = {
 									graphic = convertGraphic(312, "item"),
 									color = 0
 								},
-								"Your efforts were unsuccessful."
+								"Usahamu tidak berhasil."
 							},
 							0
 						)
@@ -717,7 +717,7 @@ woodworking = {
 									graphic = convertGraphic(312, "item"),
 									color = 0
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -725,7 +725,7 @@ woodworking = {
 					end
 				else
 					player:dialogSeq(
-						{titem, "You need 5 units of Ginko Wood to make this."},
+						{titem, "Kau butuh 5 unit Ginko Wood untuk membuat ini."},
 						0
 					)
 					return
@@ -827,7 +827,7 @@ woodworking = {
 										graphic = convertGraphic(36, "item"),
 										color = 0
 									},
-									"Your efforts were successful!"
+									"Usahamu berhasil!"
 								},
 								0
 							)
@@ -839,7 +839,7 @@ woodworking = {
 										graphic = convertGraphic(36, "item"),
 										color = 0
 									},
-									"Your efforts were successful!"
+									"Usahamu berhasil!"
 								},
 								0
 							)
@@ -852,7 +852,7 @@ woodworking = {
 									graphic = convertGraphic(36, "item"),
 									color = 0
 								},
-								"Your efforts were unsuccessful."
+								"Usahamu tidak berhasil."
 							},
 							0
 						)
@@ -860,7 +860,7 @@ woodworking = {
 					end
 				else
 					player:dialogSeq(
-						{titem, "You need 1 units of Ginko Wood to make this."},
+						{titem, "Kau butuh 1 unit Ginko Wood untuk membuat ini."},
 						0
 					)
 					return
@@ -881,7 +881,7 @@ woodworking = {
 				player:dialogSeq(
 					{
 						titem,
-						"Had you enough scraps, you might be able to salvage something."
+						"Andai potonganmu cukup, mungkin ada yang bisa diselamatkan."
 					},
 					0
 				)
@@ -892,7 +892,7 @@ woodworking = {
 
 			player:removeItem("wood_scraps", 4)
 			if roll ~= 1 then
-				player:dialogSeq({titem, "No luck this time."}, 0)
+				player:dialogSeq({titem, "Belum beruntung kali ini."}, 0)
 				return
 			end
 

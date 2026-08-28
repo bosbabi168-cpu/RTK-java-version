@@ -3,7 +3,7 @@ push = {
 		local magicCost = 600
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -51,8 +51,8 @@ push = {
 			if objCheck == 0 and passCheck == 0 and not warpCheck and #blockCheck == 0 and targetX >= 0 and targetX < maxX and targetY >= 0 and targetY < maxY then
 				target:warp(targetM, targetX, targetY)
 				target:sendAnimation(10, 25)
-				player:sendMinitext("You cast Push.")
-				target:sendMinitext(player.name .. " casts Push spell on you.")
+				player:sendMinitext("Kau merapal Push.")
+				target:sendMinitext(player.name .. " merapal mantra Push padamu.")
 				return
 			else
 				if player.side == 0 then
@@ -78,11 +78,11 @@ push = {
 				if objCheck == 0 and passCheck == 0 and not warpCheck and #blockCheck == 0 and targetX >= 0 and targetX < maxX and targetY >= 0 and targetY < maxY then
 					target:warp(targetM, targetX, targetY)
 					target:sendAnimation(10, 25)
-					player:sendMinitext("You cast Push.")
-					target:sendMinitext(player.name .. " casts Push spell on you.")
+					player:sendMinitext("Kau merapal Push.")
+					target:sendMinitext(player.name .. " merapal mantra Push padamu.")
 					return
 				else
-					player:sendMinitext("You can't push it.")
+					player:sendMinitext("Kau tidak bisa mendorongnya.")
 				end
 			end
 		end

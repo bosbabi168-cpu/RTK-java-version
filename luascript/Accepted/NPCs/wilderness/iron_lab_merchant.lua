@@ -12,18 +12,18 @@ IronLabMerchantNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Hail Adventurer, welcome to the depths of this cavern.",
-				"You can find many treasures inside these boxes if you open them with your Iron Key."
+				"Salam, Petualang, selamat datang di kedalaman gua ini.",
+				"Kau bisa menemukan banyak harta di dalam kotak-kotak ini kalau kau membukanya dengan Iron Key-mu."
 			},
 			1
 		)
 		if player:hasItem("iron_key", 1) == true then
 			local opts = {
-				"Yes, I am willing to sell you the key.",
-				"No, I wish to keep my key."
+				"Ya, aku bersedia menjual kuncinya kepadamu.",
+				"Tidak, kunciku mau kusimpan."
 			}
 			local menu = player:menuString(
-				"Do you want to sell me the key you have for 300 gold?",
+				"Kau mau menjual kunci yang kau punya kepadaku seharga 300 emas?",
 				opts
 			)
 
@@ -31,12 +31,12 @@ IronLabMerchantNpc = {
 				player:removeItem("iron_key", 1, 9)
 				player.money = player.money + 300
 				player:sendStatus()
-				player:dialogSeq({t, "Thank you, here you go."}, 0)
+				player:dialogSeq({t, "Terima kasih, ini dia."}, 0)
 			else
 				player:dialogSeq(
 					{
 						t,
-						"Farewell then my friend, good luck on your adventures."
+						"Selamat jalan kalau begitu, kawan. Semoga petualanganmu lancar."
 					},
 					0
 				)
@@ -45,7 +45,7 @@ IronLabMerchantNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You can find them spread out amongst the creatures that live here."
+					"Kau bisa menemukannya tersebar di antara makhluk yang tinggal di sini."
 				},
 				0
 			)

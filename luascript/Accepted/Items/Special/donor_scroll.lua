@@ -8,32 +8,32 @@ donor_scroll = {
 		end
 
 		if player.state == 1 then
-			player:sendMinitext("How can you open this with no hands?")
+			player:sendMinitext("Bagaimana kau bisa membukanya tanpa tangan?")
 			return
 		end
 
 		if player:hasLegend("donor_tierone") then
-			player:sendMinitext("Thanks for your contribution, but you already have the legend mark!")
+			player:sendMinitext("Terima kasih atas sumbanganmu, tetapi tanda legenda itu sudah kau miliki!")
 			player:removeItemSlot(player.invSlot, 1, 9)
 			return
 		end
 		if player:hasLegend("donor_tiertwo") then
-			player:sendMinitext("Thanks for your contribution, but you already have the legend mark!")
+			player:sendMinitext("Terima kasih atas sumbanganmu, tetapi tanda legenda itu sudah kau miliki!")
 			player:removeItemSlot(player.invSlot, 1, 9)
 			return
 		end
 		if player:hasLegend("donor_tierthree") then
-			player:sendMinitext("Thanks for your contribution, but you already have the legend mark!")
+			player:sendMinitext("Terima kasih atas sumbanganmu, tetapi tanda legenda itu sudah kau miliki!")
 			player:removeItemSlot(player.invSlot, 1, 9)
 			return
 		end
 		if player:hasLegend("donor_tierfour") then
-			player:sendMinitext("Thanks for your contribution, but you already have the legend mark!")
+			player:sendMinitext("Terima kasih atas sumbanganmu, tetapi tanda legenda itu sudah kau miliki!")
 			player:removeItemSlot(player.invSlot, 1, 9)
 			return
 		end
 		if player:hasLegend("donor_tierfive") then
-			player:sendMinitext("Thanks for your contribution, but you already have the legend mark!")
+			player:sendMinitext("Terima kasih atas sumbanganmu, tetapi tanda legenda itu sudah kau miliki!")
 			player:removeItemSlot(player.invSlot, 1, 9)
 			return
 		end
@@ -48,7 +48,7 @@ donor_scroll = {
 				"[RTK Team] A huge thank you to " .. player.name .. " for their donation!"
 			)
 			player:addLegend(
-				"Supporter of the Kingdoms (" .. curT() .. ")",
+				"Pendukung Kerajaan (" .. curT() .. ")",
 				"donor_tierone",
 				20,
 				9
@@ -66,7 +66,7 @@ donor_scroll = {
 				"[RTK Team] A huge thank you to " .. player.name .. " for their great donation!"
 			)
 			player:addLegend(
-				"Patron of the Kingdoms (" .. curT() .. ")",
+				"Penyokong Kerajaan (" .. curT() .. ")",
 				"donor_tiertwo",
 				20,
 				9
@@ -84,7 +84,7 @@ donor_scroll = {
 				"[RTK Team] A huge thank you to " .. player.name .. " for their amazing donation!"
 			)
 			player:addLegend(
-				"Benefactor of the Kingdoms (" .. curT() .. ")",
+				"Dermawan Kerajaan (" .. curT() .. ")",
 				"donor_tierthree",
 				20,
 				9
@@ -102,7 +102,7 @@ donor_scroll = {
 				"[RTK Team] A huge thank you to " .. player.name .. " for their fantastic donation!"
 			)
 			player:addLegend(
-				"Curator of the Kingdoms (" .. curT() .. ")",
+				"Kurator Kerajaan (" .. curT() .. ")",
 				"donor_tierfour",
 				20,
 				9
@@ -120,7 +120,7 @@ donor_scroll = {
 				"[RTK Team] A huge thank you to " .. player.name .. " for their astounding donation!"
 			)
 			player:addLegend(
-				"Saviour of the Kingdoms (" .. curT() .. ")",
+				"Penyelamat Kerajaan (" .. curT() .. ")",
 				"donor_tierfive",
 				20,
 				9

@@ -54,7 +54,7 @@ pc_timer = {
 			local random = math.random(1, 15)
 
 			if random == 1 then
-				player:sendMinitext("The winds blow fast and furious overhead.")
+				player:sendMinitext("Angin bertiup kencang dan ganas di atas kepala.")
 			end
 		end
 

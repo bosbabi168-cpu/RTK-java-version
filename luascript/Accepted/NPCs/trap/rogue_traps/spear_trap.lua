@@ -12,7 +12,7 @@ SpearTrapNpc = {
 			if not block:canPK(block) then
 				return
 			end
-			block:sendMinitext("You stepped on a trap!")
+			block:sendMinitext("Kau menginjak jebakan!")
 		end
 
 		if (block.health < damage and block.health > 1) then

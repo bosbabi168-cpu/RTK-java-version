@@ -14,7 +14,7 @@ endear_poet = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -22,7 +22,7 @@ endear_poet = {
 
 		if mob ~= nil then
 			if mob.isBoss == 1 then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 			if mob.owner ~= 0 then
@@ -30,7 +30,7 @@ endear_poet = {
 			end
 
 			if mob:checkIfCast(endears) then
-				player:sendMinitext("A spell of this type is already cast.")
+				player:sendMinitext("Mantra sejenis ini sudah dirapal.")
 				return
 			end
 
@@ -43,7 +43,7 @@ endear_poet = {
 			player:sendAction(6, 35)
 			player.magic = player.magic - magicCost
 			player:sendStatus()
-			player:sendMinitext("You cast Endear.")
+			player:sendMinitext("Kau merapal Endear.")
 			player:playSound(34)
 			player:setAether(spellName, aether)
 		end
@@ -79,7 +79,7 @@ possess_soul_poet = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -87,7 +87,7 @@ possess_soul_poet = {
 
 		if mob ~= nil then
 			if mob.isBoss == 1 then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 			if mob.owner ~= 0 then
@@ -95,7 +95,7 @@ possess_soul_poet = {
 			end
 
 			if mob:checkIfCast(endears) then
-				player:sendMinitext("A spell of this type is already cast.")
+				player:sendMinitext("Mantra sejenis ini sudah dirapal.")
 				return
 			end
 
@@ -108,7 +108,7 @@ possess_soul_poet = {
 			player:sendAction(6, 35)
 			player.magic = player.magic - magicCost
 			player:sendStatus()
-			player:sendMinitext("You cast Possess soul.")
+			player:sendMinitext("Kau merapal Possess soul.")
 			player:playSound(34)
 			player:setAether(spellName, aether)
 		end
@@ -144,7 +144,7 @@ charm_life_poet = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -152,7 +152,7 @@ charm_life_poet = {
 
 		if mob ~= nil then
 			if mob.isBoss == 1 then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 			if mob.owner ~= 0 then
@@ -160,7 +160,7 @@ charm_life_poet = {
 			end
 
 			if mob:checkIfCast(endears) then
-				player:sendMinitext("A spell of this type is already cast.")
+				player:sendMinitext("Mantra sejenis ini sudah dirapal.")
 				return
 			end
 
@@ -173,7 +173,7 @@ charm_life_poet = {
 			player:sendAction(6, 35)
 			player.magic = player.magic - magicCost
 			player:sendStatus()
-			player:sendMinitext("You cast Charm life.")
+			player:sendMinitext("Kau merapal Charm life.")
 			player:playSound(34)
 			player:setAether(spellName, aether)
 		end
@@ -209,7 +209,7 @@ align_follower_poet = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -217,7 +217,7 @@ align_follower_poet = {
 
 		if mob ~= nil then
 			if mob.isBoss == 1 then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 			if mob.owner ~= 0 then
@@ -225,7 +225,7 @@ align_follower_poet = {
 			end
 
 			if mob:checkIfCast(endears) then
-				player:sendMinitext("A spell of this type is already cast.")
+				player:sendMinitext("Mantra sejenis ini sudah dirapal.")
 				return
 			end
 
@@ -238,7 +238,7 @@ align_follower_poet = {
 			player:sendAction(6, 35)
 			player.magic = player.magic - magicCost
 			player:sendStatus()
-			player:sendMinitext("You cast Align follower.")
+			player:sendMinitext("Kau merapal Align follower.")
 			player:playSound(34)
 			player:setAether(spellName, aether)
 		end

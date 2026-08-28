@@ -23,27 +23,27 @@ ZephyrNpc = {
 		end
 
 		if (Config.bossDropSalesEnabled) then
-			table.insert(opts, "Sell")
+			table.insert(opts, "Jual")
 		end
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Sell" then
+		if menu == "Jual" then
 			ZephyrNpc.sellItems(player)
 		elseif menu == "Waypoint" then
 			Waypoint.add(player, npc, _waypointId)
 		elseif menu == "Wind" then
 			player:dialogSeq(
 				{
-					"Welcome, welcome, to the highest place in the Nexus where mortals can tread. It is not far from here that the winds themselves originate.",
-					"Indeed, the legends are true. A pure soul can capture some of the winds essence, and combine it with clooth to form magical garments.",
-					"Now, do not be mistaken. Armor formed from the winds is not the most protective. Still, it is a symbol of accomplishment and very battle capable apparel."
+					"Selamat datang, selamat datang di tempat tertinggi di Nexus yang bisa dijejak manusia fana. Tidak jauh dari sini angin itu sendiri bermula.",
+					"Memang, legendanya benar. Jiwa yang murni bisa menangkap sebagian sari angin dan memadukannya dengan kain menjadi busana bersihir.",
+					"Tapi jangan keliru. Zirah yang dibentuk dari angin bukan yang paling melindungi. Meski begitu, ia lambang pencapaian dan busana yang sangat tangguh dalam pertempuran."
 				},
 				1
 			)
 
 			if player:karmaCheck("spirit") ~= true then
-				player:dialogSeq({"Return to me when your soul is more noble."}, 0)
+				player:dialogSeq({"Kembalilah kepadaku kalau jiwamu lebih mulia."}, 0)
 				return
 			end
 
@@ -51,10 +51,10 @@ ZephyrNpc = {
 
 			player:dialogSeq(
 				{
-					"A noble soul you have. Perhaps you will triumph over the clever winds. Though first you must find them.",
-					"I hear that the Legends contain a tale of another who succeeded. Perhaps from that Legend you will find the answers you seek.",
-					"Be warned, not all the legend has been found, and never will be. Such a powerful item was never to fall into the hands of evil.",
-					"You will need to find one who knows of the lost legend if you ever hope to wear the armor of the winds!"
+					"Jiwamu mulia. Mungkin kau akan menang atas angin yang cerdik itu. Tetapi lebih dulu kau harus menemukannya.",
+					"Kudengar Legends memuat kisah seseorang lain yang berhasil. Mungkin dari Legenda itu kau menemukan jawaban yang kau cari.",
+					"Ingatlah, tidak seluruh legendanya sudah ditemukan, dan tidak akan pernah. Benda sekuat itu tidak boleh jatuh ke tangan kejahatan.",
+					"Kau harus menemukan orang yang tahu tentang legenda yang hilang itu kalau kau berharap bisa mengenakan zirah angin!"
 				},
 				0
 			)
@@ -76,20 +76,20 @@ ZephyrNpc = {
 		Tools.checkKarma(player)
 
 		if player:hasLegend("captured_the_wind") then
-			player:dialogSeq({"Hail, servant of the Winds!"}, 0)
+			player:dialogSeq({"Salam, pelayan Angin!"}, 0)
 			return
 		end
 
 		if player.quest["wind_armor"] == 0 or player.quest["min_kawlana"] == 0 or not player:karmaCheck("spirit") then
-			player:dialogSeq({"I really have no idea what you are talking about."}, 0)
+			player:dialogSeq({"Aku sungguh tidak paham apa yang kau bicarakan."}, 0)
 			return
 		end
 
 		local choice = player:dialogSeq(
 			{
-				"So, you think you are ready to take on the winds?",
-				"It is not as easy as you may think. The beast you seek to capture is not an easy foe.",
-				"I shall let you pass, and I wish you the best of luck."
+				"Jadi kau merasa siap menghadapi angin?",
+				"Ini tidak semudah yang kau kira. Makhluk yang hendak kau tangkap bukan lawan yang mudah.",
+				"Kau kuizinkan lewat, dan kudoakan kau beruntung."
 			},
 			1
 		)
@@ -99,7 +99,7 @@ ZephyrNpc = {
 			player.quest["kawlana_used"] = 0
 			player.quest["kawlana_dropped"] = 0
 			player:warp(1457, 8, 7)
-			player:sendMinitext("Kawlana is the source of your power.")
+			player:sendMinitext("Kawlana adalah sumber kekuatanmu.")
 		end
 	end,
 
@@ -107,18 +107,18 @@ ZephyrNpc = {
 		Tools.configureDialog(player, npc)
 
 		if (player.level < 25) then
-			player:dialogSeq({"You are not ready to devote to a craft yet, come back later."}, 0)
+			player:dialogSeq({"Kau belum siap menekuni satu kerajinan. Kembalilah nanti."}, 0)
 			return
 		end
 
 		if crafting.checkSkillLegend(player, "scribing") then
-			player:dialogSeq({"You have already devoted yourself to the study of Scribing."}, 0)
+			player:dialogSeq({"Kau sudah menekuni ilmu Scribing."}, 0)
 			return
 		end
 
 		crafting.checkMentalSkill(player, npc, "potion making")
 
-		player:dialogSeq({"Scribes can make magical scrolls that anyone can use. Typically these scrolls have defensive rituals inscribed upon them."}, 1)
+		player:dialogSeq({"Juru tulis bisa membuat gulungan bersihir yang bisa dipakai siapa saja. Biasanya gulungan itu bertuliskan ritual pertahanan."}, 1)
 
 		crafting.addMentalSkill(player, npc, "scribing")
 	end,
@@ -127,18 +127,18 @@ ZephyrNpc = {
 		Tools.configureDialog(player, npc)
 
 		if (player.level < 25) then
-			player:dialogSeq({"You are not ready to devote to a craft yet, come back later."}, 0)
+			player:dialogSeq({"Kau belum siap menekuni satu kerajinan. Kembalilah nanti."}, 0)
 			return
 		end
 
 		if crafting.checkSkillLegend(player, "potion making") then
-			player:dialogSeq({"You have already devoted yourself to the study of potion making."}, 0)
+			player:dialogSeq({"Kau sudah menekuni ilmu peramuan."}, 0)
 			return
 		end
 
 		crafting.checkMentalSkill(player, npc, "scribing")
 
-		player:dialogSeq({"Alchemists can make poisons for darts and a few different potions with unique effects."}, 1)
+		player:dialogSeq({"Ahli ramuan bisa membuat racun untuk panah sumpit dan beberapa ramuan dengan khasiat khas."}, 1)
 
 		crafting.addMentalSkill(player, npc, "potion making")
 	end,
@@ -183,15 +183,15 @@ ZephyrNpc = {
 				player.quest["instance"] = 1
 				player:dialogSeq(
 					{
-						"Why must you always come to me when you find a new document?",
-						"What is this? It's unlike anything I have ever seen.",
-						"I would suggest seeking out another historian who might have more information about this."
+						"Kenapa kau selalu mendatangiku setiap menemukan dokumen baru?",
+						"Apa ini? Tidak seperti apa pun yang pernah kulihat.",
+						"Kusarankan kau mencari sejarawan lain yang mungkin punya lebih banyak keterangan tentang ini."
 					},
 					1
 				)
 			end
 			if player.quest["instance"] == 1 then
-				player:dialogSeq({"Did you find anyone with information?"}, 1)
+				player:dialogSeq({"Apakah kau menemukan orang yang punya keterangannya?"}, 1)
 			end
 		end
 

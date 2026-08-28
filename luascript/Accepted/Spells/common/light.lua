@@ -29,9 +29,9 @@ light = {
 			player:setAether("light", aether)
 			target:setDuration("light", duration)
 			target:calcStat()
-			player:sendMinitext("You cast Light on " .. target.name)
+			player:sendMinitext("Kau merapal Light on " .. target.name)
 			if target.ID ~= player.ID then
-				target:sendMinitext(player.name .. " cast Light on you")
+				target:sendMinitext(player.name .. " merapal Light padamu")
 			end
 		end
 	end,

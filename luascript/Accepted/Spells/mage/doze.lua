@@ -8,17 +8,17 @@ doze_mage = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("You can't do that.")
+			player:sendMinitext("Kau tidak bisa melakukan itu.")
 			return
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if (target.sleep > 1) then
-			player:sendMinitext("This spell is already in effect.")
+			player:sendMinitext("Mantra ini sedang bekerja.")
 			return
 		end
 
@@ -34,14 +34,14 @@ doze_mage = {
 			target.sleep = 1.3
 		elseif (target.blType == BL_PC and player:canPK(target)) then
 			target:setDuration("doze_mage", duration)
-			target:sendMinitext(player.name .. " cast Doze on you.")
+			target:sendMinitext(player.name .. " merapal Doze padamu.")
 			target:calcStat()
 		else
 			return
 		end
 
 		target:sendAnimation(2)
-		player:sendMinitext("You cast Doze.")
+		player:sendMinitext("Kau merapal Doze.")
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 	end,
@@ -85,17 +85,17 @@ voids_touch_mage = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("You can't do that.")
+			player:sendMinitext("Kau tidak bisa melakukan itu.")
 			return
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if (target.sleep > 1) then
-			player:sendMinitext("This spell is already in effect.")
+			player:sendMinitext("Mantra ini sedang bekerja.")
 			return
 		end
 
@@ -113,14 +113,14 @@ voids_touch_mage = {
 			target.sleep = 1.3
 		elseif (target.blType == BL_PC and player:canPK(target)) then
 			target:setDuration("voids_touch_mage", duration)
-			target:sendMinitext(player.name .. " cast Void's Touch on you.")
+			target:sendMinitext(player.name .. " merapal Void's Touch padamu.")
 			target:calcStat()
 		else
 			return
 		end
 
 		target:sendAnimation(2)
-		player:sendMinitext("You cast Void's Touch.")
+		player:sendMinitext("Kau merapal Void's Touch.")
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 	end,
@@ -164,17 +164,17 @@ still_ethers_mage = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("You can't do that.")
+			player:sendMinitext("Kau tidak bisa melakukan itu.")
 			return
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if (target.sleep > 1) then
-			player:sendMinitext("This spell is already in effect.")
+			player:sendMinitext("Mantra ini sedang bekerja.")
 			return
 		end
 
@@ -192,14 +192,14 @@ still_ethers_mage = {
 			target.sleep = 1.3
 		elseif (target.blType == BL_PC and player:canPK(target)) then
 			target:setDuration("still_ethers_mage", duration)
-			target:sendMinitext(player.name .. " cast Still Ethers on you.")
+			target:sendMinitext(player.name .. " merapal Still Ethers padamu.")
 			target:calcStat()
 		else
 			return
 		end
 
 		target:sendAnimation(2)
-		player:sendMinitext("You cast Still Ethers.")
+		player:sendMinitext("Kau merapal Still Ethers.")
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 	end,
@@ -243,17 +243,17 @@ still_waters_mage = {
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("You can't do that.")
+			player:sendMinitext("Kau tidak bisa melakukan itu.")
 			return
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if (target.sleep > 1) then
-			player:sendMinitext("This spell is already in effect.")
+			player:sendMinitext("Mantra ini sedang bekerja.")
 			return
 		end
 
@@ -271,14 +271,14 @@ still_waters_mage = {
 			target.sleep = 1.3
 		elseif (target.blType == BL_PC and player:canPK(target)) then
 			target:setDuration("still_waters_mage", duration)
-			target:sendMinitext(player.name .. " cast Still Waters on you.")
+			target:sendMinitext(player.name .. " merapal Still Waters padamu.")
 			target:calcStat()
 		else
 			return
 		end
 
 		target:sendAnimation(2)
-		player:sendMinitext("You cast Still Waters.")
+		player:sendMinitext("Kau merapal Still Waters.")
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 	end,

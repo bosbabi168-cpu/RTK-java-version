@@ -114,7 +114,7 @@ verbalScriptCheckBank = function(player, npc, speech)
 					else
 						npc:talk(
 							0,
-							npc.name .. ": Your item has to be at full durability to deposit."
+							npc.name .. ": Barangmu harus utuh sepenuhnya untuk bisa dititipkan."
 						)
 					end
 				end
@@ -255,11 +255,11 @@ verbalScriptCheckBank = function(player, npc, speech)
 		local bankItemTable, bankCountTable, bankOwnerTable, bankEngraveTable, bankTimerTable, bankItemTableNames = player:bankItemsList()
 
 		if #bankItemTable == 0 then
-			npc:talk(0, npc.name .. ": I am not keeping any of your things.")
+			npc:talk(0, npc.name .. ": Aku tidak menyimpan barangmu satu pun.")
 		else
 			npc:talk(
 				0,
-				npc.name .. ": I am keeping " .. #bankItemTable .. " of your things."
+				npc.name .. ": I am keeping " .. #bankItemTable .. " barangmu."
 			)
 		end
 

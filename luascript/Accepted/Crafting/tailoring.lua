@@ -128,7 +128,7 @@ tailoring = {
 
 			local quality = {}
 			local choice = player:menuSeq(
-				"What type of clothing are you trying to tailor?",
+				"Pakaian jenis apa yang hendak kau jahit?",
 				opts,
 				{}
 			)
@@ -268,7 +268,7 @@ tailoring = {
 				player:dialogSeq(
 					{
 						tcloth,
-						"You need " .. matsAmts .. " bolts of cloth to tailor."
+						"Kau butuh " .. matsAmts .. " gulung kain untuk dijahit."
 					},
 					0
 				)
@@ -311,7 +311,7 @@ tailoring = {
 							graphic = Item(itemstable[rand]).icon,
 							color = Item(itemstable[rand]).iconC
 						},
-						"You were successful."
+						"Kau berhasil."
 					},
 					0
 				)
@@ -329,7 +329,7 @@ tailoring = {
 								graphic = Item(itemstable[rand]).icon,
 								color = Item(itemstable[rand]).iconC
 							},
-							"You were successful."
+							"Kau berhasil."
 						},
 						0
 					)
@@ -340,7 +340,7 @@ tailoring = {
 								graphic = Item(clothtaken).icon,
 								color = Item(clothtaken).iconC
 							},
-							"You failed your attempt."
+							"Percobaanmu gagal."
 						},
 						0
 					)
@@ -356,7 +356,7 @@ tailoring = {
 							graphic = Item(itemstable[rand]).icon,
 							color = Item(itemstable[rand]).iconC
 						},
-						"You were successful."
+						"Kau berhasil."
 					},
 					0
 				)
@@ -370,7 +370,7 @@ tailoring = {
 								graphic = Item(itemstable[rand]).icon,
 								color = Item(itemstable[rand]).iconC
 							},
-							"You were successful."
+							"Kau berhasil."
 						},
 						0
 					)
@@ -381,7 +381,7 @@ tailoring = {
 								graphic = Item(clothtaken).icon,
 								color = Item(clothtaken).iconC
 							},
-							"You failed your attempt."
+							"Percobaanmu gagal."
 						},
 						0
 					)

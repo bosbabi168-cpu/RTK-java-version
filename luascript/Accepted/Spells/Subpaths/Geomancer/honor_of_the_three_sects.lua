@@ -11,7 +11,7 @@ honor_of_the_three_sects = {
 		local magicCost = 100
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -33,17 +33,17 @@ honor_of_the_three_sects = {
 		local target = Player(input)
 
 		if target == nil then
-			player:dialogSeq({t, "That player is currently not online."}, 0)
+			player:dialogSeq({t, "Pemain itu sedang tidak daring."}, 0)
 			return
 		end
 		if target.ID == player.ID then
-			player:dialogSeq({t, "You cannot provide your own recognition."}, 0)
+			player:dialogSeq({t, "Kau tidak bisa memberi pengakuan untuk dirimu sendiri."}, 0)
 			return
 		end
 
 		local opts = {
 			"Elemental Arts recognition",
-			"Flow of Qi recognition",
+			"Pengakuan Aliran Qi",
 			"Sage Study recognition",
 			"Remove recognition"
 		}
@@ -58,7 +58,7 @@ honor_of_the_three_sects = {
 			"Studied with the Sages"
 		}
 		local choice = player:menuString(
-			"What do you wish to bestow on them?",
+			"Apa yang ingin kau anugerahkan kepadanya?",
 			opts
 		)
 
@@ -68,7 +68,7 @@ honor_of_the_three_sects = {
 			] + 1
 			target:removeLegendbyName("practiced_the_elemental_arts")
 			target:addLegend(
-				"Practiced the Elemental Arts " .. player.registry[
+				"Mempraktikkan Seni Unsur " .. player.registry[
 					"practiced_the_elemental_arts"
 				] .. " times, recognized by $player",
 				"practiced_the_elemental_arts",
@@ -79,18 +79,18 @@ honor_of_the_three_sects = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has been recognized for \"Practiced the Elemental Arts\""
+					target.name .. " telah diakui atas \"Mempraktikkan Seni Unsur\""
 				},
 				0
 			)
 			return
-		elseif choice == "Flow of Qi recognition" then
+		elseif choice == "Pengakuan Aliran Qi" then
 			target.registry["balanced_the_flow_of_qi"] = target.registry[
 				"balanced_the_flow_of_qi"
 			] + 1
 			target:removeLegendbyName("balanced_the_flow_of_qi")
 			target:addLegend(
-				"Balanced the flow of Qi " .. target.registry[
+				"Menyeimbangkan aliran Qi " .. target.registry[
 					"balanced_the_flow_of_qi"
 				] .. " times, recognized by $player",
 				"balanced_the_flow_of_qi",
@@ -101,7 +101,7 @@ honor_of_the_three_sects = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has been recognized for \"Balanced the flow of Qi\""
+					target.name .. " telah diakui atas \"Menyeimbangkan aliran Qi\""
 				},
 				0
 			)
@@ -112,7 +112,7 @@ honor_of_the_three_sects = {
 			] + 1
 			target:removeLegendbyName("studied_with_the_sages")
 			target:addLegend(
-				"Studied with the Sages " .. target.registry[
+				"Berguru pada para Bijak " .. target.registry[
 					"studied_with_the_sages"
 				] .. " times, recognized by $player",
 				"studied_with_the_sages",
@@ -123,7 +123,7 @@ honor_of_the_three_sects = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has been recognized for \"Studied with the Sages\""
+					target.name .. " telah diakui atas \"Berguru pada para Bijak\""
 				},
 				0
 			)
@@ -137,7 +137,7 @@ honor_of_the_three_sects = {
 			end
 
 			local lmChoice = player:menuString(
-				"Which recognition would you like to remove?",
+				"Pengakuan mana yang ingin kau hapus?",
 				foundLegendMarks
 			)
 
@@ -151,7 +151,7 @@ honor_of_the_three_sects = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has had their recognition removed for " .. lmChoice
+					target.name .. " kehilangan pengakuannya karena " .. lmChoice
 				},
 				0
 			)

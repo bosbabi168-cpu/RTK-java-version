@@ -8,17 +8,17 @@ static_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.paralyzed) then
-			player:sendMinitext("A more powerful spell is in effect.")
+			player:sendMinitext("Ada mantra yang lebih kuat sedang bekerja.")
 			return
 		end
 
@@ -27,12 +27,12 @@ static_mage = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(7)
-			player:sendMinitext("You cast Static.")
+			player:sendMinitext("Kau merapal Static.")
 			target:setDuration("static_mage", duration)
 			target:sendAnimation(2, 0)
 			target.paralyzed = true
 		elseif (target.blType == BL_PC and player:canPK(target)) then
-			player:sendMinitext("This cannot be cast on others.")
+			player:sendMinitext("Ini tidak bisa dirapal pada orang lain.")
 			return
 		end
 	end,

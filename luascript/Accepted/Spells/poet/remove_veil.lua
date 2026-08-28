@@ -7,13 +7,13 @@ remove_veil_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(blinds)
-		target:sendMinitext(player.name .. " casts Remove Veil on you.")
-		player:sendMinitext("You cast Remove Veil.")
+		target:sendMinitext(player.name .. " merapal Remove Veil padamu.")
+		player:sendMinitext("Kau merapal Remove Veil.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -42,14 +42,14 @@ clear_darkness_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(blinds)
 
-		target:sendMinitext(player.name .. " casts Clear Darkness on you.")
-		player:sendMinitext("You cast Clear Darkness.")
+		target:sendMinitext(player.name .. " merapal Clear Darkness padamu.")
+		player:sendMinitext("Kau merapal Clear Darkness.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -78,14 +78,14 @@ restore_sight_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(blinds)
 
-		target:sendMinitext(player.name .. " casts Restore Sight on you.")
-		player:sendMinitext("You cast Restore Sight.")
+		target:sendMinitext(player.name .. " merapal Restore Sight padamu.")
+		player:sendMinitext("Kau merapal Restore Sight.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
@@ -113,14 +113,14 @@ purge_darkness_poet = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		target:removeDuras(blinds)
 
-		target:sendMinitext(player.name .. " casts Purge Darkness on you.")
-		player:sendMinitext("You cast Purge Darkness.")
+		target:sendMinitext(player.name .. " merapal Purge Darkness padamu.")
+		player:sendMinitext("Kau merapal Purge Darkness.")
 
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic

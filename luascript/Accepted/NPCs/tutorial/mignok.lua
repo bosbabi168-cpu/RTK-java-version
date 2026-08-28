@@ -10,7 +10,7 @@ MignokNpc = {
 		player.lastClick = npc.ID
 
 		if player:hasSpell("soothe") then
-			player:dialogSeq({t, "You already have the spell Soothe."}, {})
+			player:dialogSeq({t, "Kau sudah punya mantra Soothe."}, {})
 			return
 		end
 
@@ -18,7 +18,7 @@ MignokNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Thank you young one. You have shown me that you are of sound mind and conscience. I will teach you your first spell."
+					"Terima kasih, anak muda. Kau menunjukkan bahwa pikiran dan nuranimu waras. Akan kuajarkan mantra pertamamu."
 				},
 				1
 			)
@@ -34,12 +34,12 @@ MignokNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Use this spell Soothe with great wisdom.",
-					"Once you learn a spell you will be able to see it on your spell list ((Press + or click on the Spell tab to see this list)).",
-					"((You will see that each of the spells will have a letter next to them. These letters will be important to remember when casting the spell.))",
-					"((To cast a spell press shift z or Z and then the letter of the spell. You can also just double-click it.))",
-					"As you grow, so will the amount you will be able to control the aethers, allowing you to cast more powerful spells. Some spells will consume a great deal of your energy, and you will need to allow the aethers around you to settle before you can cast them again.",
-					"This is all I will teach you for now. Good luck young one and remember to use your spells wisely."
+					"Pakailah mantra Soothe ini dengan bijaksana.",
+					"Setelah kau mempelajari sebuah mantra, ia akan tampak di daftar mantramu ((Tekan + atau klik tab Spell untuk melihat daftarnya)).",
+					"((Kau akan melihat tiap mantra punya huruf di sebelahnya. Huruf itu penting diingat saat merapal.))",
+					"((Untuk merapal, tekan shift z atau Z lalu huruf mantranya. Kau juga bisa sekadar mengklik gandanya.))",
+					"Seiring kau tumbuh, makin besar pula aether yang bisa kau kendalikan, sehingga kau bisa merapal mantra yang lebih kuat. Sebagian mantra menyedot banyak tenagamu, dan kau harus membiarkan aether di sekitarmu mengendap sebelum bisa merapalnya lagi.",
+					"Hanya ini yang kuajarkan untuk sekarang. Semoga berhasil, anak muda, dan ingatlah memakai mantramu dengan bijak."
 				},
 				1
 			)
@@ -49,9 +49,9 @@ MignokNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"The magical forces in this world are controlled by what are called aetheers. If you can learn to control and use them, you too will be able to harness the power of casting magical spells.",
-				"If this is knowledge which you seek to attain, you must show me that your mind carries the diligence and patience required to control the aethers.",
-				"Slay the creatures in this area to gather five acorns and five rabbit meat. Once you have done this, return to me and I will teach you."
+				"Kekuatan sihir di dunia ini dikendalikan oleh yang disebut aether. Kalau kau bisa belajar mengendalikan dan memakainya, kau pun akan mampu menguasai kekuatan merapal mantra.",
+				"Kalau itu pengetahuan yang ingin kau raih, tunjukkan padaku bahwa pikiranmu punya ketekunan dan kesabaran yang dibutuhkan untuk mengendalikan aether.",
+				"Bunuh makhluk-makhluk di daerah ini untuk mengumpulkan lima acorn dan lima rabbit meat. Setelah itu kembalilah kepadaku dan akan kuajari kau."
 			},
 			1
 		)

@@ -6,10 +6,10 @@ maros_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 1500, 1000, 0)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			player:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			player:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -30,10 +30,10 @@ kwisin_maros_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 1500, 1000, 1)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			player:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			player:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -54,10 +54,10 @@ mingken_maros_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 1500, 1000, 2)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			player:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			player:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -78,10 +78,10 @@ ohaeng_maros_remedy_rogue = {
 		end
 		local worked = global_heal.cast(player, player, 1500, 1000, 3)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			player:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			player:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 

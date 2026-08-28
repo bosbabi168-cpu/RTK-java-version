@@ -5,7 +5,7 @@ scroll_of_immortality = {
 		end
 
 		if player:checkIfCast(hardBodies) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -30,7 +30,7 @@ scroll_of_immortality = {
 
 		player:sendAction(6, 20)
 		player:playSound(5)
-		player:sendMinitext("You cast Harden Body.")
+		player:sendMinitext("Kau merapal Harden Body.")
 		player:setDuration("harden_body", 16000)
 		player:sendAnimation(11, 3)
 

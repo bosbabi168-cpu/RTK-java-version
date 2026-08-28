@@ -27,7 +27,7 @@ MontyPvpPrizesNpc = {
 				1,
 				128
 			)
-			player:dialogSeq({t, "You may only receive one prize a day."}, 1)
+			player:dialogSeq({t, "Kau hanya boleh menerima satu hadiah per hari."}, 1)
 			return
 		end
 
@@ -96,7 +96,7 @@ MontyPvpPrizesNpc = {
 		local dialog = "See you next time."
 
 		local menu = player:menuString(
-			"You are victorious, choose your spoils.",
+			"Kau menang; pilihlah rampasanmu.",
 			opts
 		)
 
@@ -128,7 +128,7 @@ MontyPvpPrizesNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You cannot claim a prize until you have room in your inventory."
+						"Kau tidak bisa mengambil hadiah sampai ada ruang di kantongmu."
 					},
 					0
 				)

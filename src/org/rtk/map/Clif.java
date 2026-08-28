@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import org.rtk.common.Crypt;
 import org.rtk.common.Session;
+import org.rtk.common.mmo.SettingFlags;
 import org.rtk.map.data.Equip;
 import org.rtk.map.data.MapData;
 
@@ -63,15 +64,16 @@ public final class Clif {
     // setting flags (common/mmo.h)
     private static final int FLAG_WEATHER = 32;
     private static final int FLAG_REALM = 64;
-    /** mmo.h: FLAG_GROUP = 2, FLAG_EXCHANGE = 128. */
-    private static final int FLAG_GROUP = 2;
-    private static final int FLAG_EXCHANGE = 128;
-    private static final int FLAG_HELM = 8192;
-    private static final int FLAG_NECKLACE = 16384;
+    // Setelan pemain: satu sumber di org.rtk.common.mmo.SettingFlags.
+    private static final int FLAG_GROUP = SettingFlags.GROUP;
+    private static final int FLAG_EXCHANGE = SettingFlags.EXCHANGE;
+    private static final int FLAG_HELM = SettingFlags.HELM;
+    private static final int FLAG_NECKLACE = SettingFlags.NECKLACE;
 
     /** Waktu & tahun dalam permainan; nanti diisi kalender dunia (map.c). */
-    public static int curTime = 0;
-    public static int curYear = 0;
+    // ⚠️ Jam dan tahun dunia kini milik WorldTime (R2); dulu dua statik
+    // ini tetap 0 sehingga paket waktu selalu mengabarkan tengah malam
+    // tahun nol.
 
     private Clif() {
     }
@@ -191,8 +193,18 @@ public final class Clif {
         s.wfifoB(4, s.nextIncrement());
     }
 
+    /**
+     * Sesi milik pemain, atau <b>null bila ia memakai RTK2</b>.
+     *
+     * <p>⚠️ Penjaga protokol ada di sini, <b>satu tempat</b>, dan itu yang
+     * membuatnya bisa dipercaya: setiap paket di kelas ini — per-pemain
+     * maupun siaran ke area — mengambil sesinya lewat method ini, sehingga
+     * {@code RetroTkClientView} tidak perlu satu pun penjaga tambahan dan
+     * tidak ada jalur yang bisa terlewat. Jangan memanggil
+     * {@code MapServer.net.session()} langsung dari kelas ini.</p>
+     */
     private static Session sessionOf(User sd) {
-        return MapServer.net.session(sd.fd);
+        return sd.rtk2 ? null : MapServer.net.session(sd.fd);
     }
 
     // ------------------------------------------------------------------
@@ -309,8 +321,8 @@ public final class Clif {
         }
         head(s, 0x20, 0x04);
         s.wfifoB(4, 0x03);
-        s.wfifoB(5, curTime);
-        s.wfifoB(6, curYear);
+        s.wfifoB(5, WorldTime.hour);
+        s.wfifoB(6, WorldTime.year);
         s.wfifoSet(encrypt(s, sd));
     }
 
@@ -347,7 +359,7 @@ public final class Clif {
             return;
         }
         java.util.function.Consumer<User> tulis = to -> {
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -424,7 +436,7 @@ public final class Clif {
             if (!(bl instanceof User to)) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -590,15 +602,20 @@ public final class Clif {
      */
     public static void sendAddItem(User sd, int slot) {
         Session s = sessionOf(sd);
-        if (s == null || slot < 0 || slot >= sd.status.inventory.size()) {
+        // ⚠️ inventoryAt + batas maxInv, bukan indeks daftar + ukurannya.
+        // Lihat Peringatan #85.
+        if (s == null || slot < 0 || slot >= sd.status.maxInv) {
             return;
         }
-        org.rtk.common.mmo.Item it = sd.status.inventory.get(slot);
+        org.rtk.common.mmo.Item it = sd.status.inventoryAt(slot);
+        if (it == null) {
+            return;
+        }
         var info = MapServer.itemDb.info(it.id);
 
         // Penyapu data rusak: barangnya dibuang, bukan dilewati.
         if (it.id < 4 || info.id() == 0) {
-            sd.status.inventory.remove(slot);
+            sd.status.removeInventoryAt(slot);
             return;
         }
 
@@ -682,8 +699,12 @@ public final class Clif {
      * clif_senddelitem() — kosongkan satu slot inventaris di layar pemain.
      * Opcode 0x10, panjang tetap.
      *
-     * <p>⚠️ <b>Paket ini juga mengosongkan slotnya di server</b>, bukan
-     * sekadar memberi tahu klien — begitu di C, dan skrip mengandalkannya.</p>
+     * <p>⚠️ Di C paket ini <b>juga</b> mengosongkan slotnya di server.
+     * Di sini tidak lagi: pengosongannya pindah ke
+     * {@code User.clearInventorySlot} di sisi logika, karena dengan dua
+     * protokol hidup berdampingan efek samping di dalam fungsi paket akan
+     * berjalan <b>dua kali</b>. Perilaku yang dilihat skrip tidak berubah —
+     * pemanggilnya yang sekarang mengosongkannya.</p>
      *
      * @param type alasan hilangnya, yang menentukan kalimat di layar klien:
      *             0 dibuang, 1 dijatuhkan, 2 dimakan, 3 dihisap, 4 dilempar,
@@ -691,9 +712,6 @@ public final class Clif {
      *             10 dijual, 11 dicabut, 12 nama barangnya, 13 patah
      */
     public static void sendDelItem(User sd, int slot, int type) {
-        if (slot >= 0 && slot < sd.status.inventory.size()) {
-            sd.status.inventory.remove(slot);
-        }
         Session s = sessionOf(sd);
         if (s == null) {
             return;
@@ -941,7 +959,7 @@ public final class Clif {
             if (to.m != from.m) {
                 continue;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 continue;
             }
@@ -1021,6 +1039,187 @@ public final class Clif {
         s.wfifoSet(encrypt(s, sd));
     }
 
+    // ------------------------------------------------------------------
+    // grup (clif_groupstatus / clif_grouphealth_update)
+    // ------------------------------------------------------------------
+
+    /**
+     * Urutan tampil anggota grup di jendela: perompak, ksatria, penyihir,
+     * pujangga, petani, GM.
+     *
+     * <p>⚠️ Angkanya <b>jalur</b> ({@code classdb_path}), bukan id kelas,
+     * dan bukan pula urutan jalur itu sendiri — C menyalinnya ke enam larik
+     * terpisah lalu menuangkannya dalam urutan ini.</p>
+     */
+    private static final int[] URUT_JALUR = {2, 1, 3, 4, 0};
+
+    private static java.util.List<User> anggotaTerurut(User sd) {
+        java.util.List<User> semua = Groups.anggotaOnline(sd);
+        java.util.List<User> keluar = new java.util.ArrayList<>();
+        for (int jalur : URUT_JALUR) {
+            for (User t : semua) {
+                if (MapServer.classDb.pathOf(t.status.charClass) == jalur) {
+                    keluar.add(t);
+                }
+            }
+        }
+        for (User t : semua) {          // sisanya (GM) di belakang
+            if (!keluar.contains(t)) {
+                keluar.add(t);
+            }
+        }
+        return keluar;
+    }
+
+    /**
+     * clif_groupstatus() — isi jendela grup. Opcode 0x63, subperintah 2.
+     *
+     * <p>⚠️ Ladang panjangnya <b>sengaja salah</b> seperti di C
+     * ({@code len + 3} setelah {@code len += 6}, padahal byte terakhir yang
+     * ditulis ada lima byte lebih awal). Klien RetroTK asli hidup dengan
+     * itu; membetulkannya di sini justru memberi klien panjang yang tidak
+     * pernah ia lihat.</p>
+     */
+    public static void sendGroupStatus(User sd) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        java.util.List<User> daftar = anggotaTerurut(sd);
+        head(s, 0x63, 0);
+        s.wfifoB(5, 2);
+        s.wfifoB(6, daftar.size());
+
+        int len = 0;
+        for (User tsd : daftar) {
+            byte[] nb = tsd.name().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            s.wfifoLBE(len + 7, (int) tsd.id);
+            s.wfifoB(len + 11, nb.length);
+            s.wfifoBytes(len + 12, nb);
+            len += 11;
+            len += nb.length + 1;
+
+            s.wfifoB(len, sd.groupLeader == tsd.status.id ? 1 : 0);
+            s.wfifoB(len + 1, tsd.status.state);
+            s.wfifoB(len + 2, tsd.status.face);
+            s.wfifoB(len + 3, tsd.status.hair);
+            s.wfifoB(len + 4, tsd.status.hairColor);
+            s.wfifoB(len + 5, 0);
+
+            int[] helm = tampilan(tsd, org.rtk.map.data.Equip.HELM);
+            boolean pakaiHelm = helm != null
+                    && (tsd.status.settingFlags
+                        & org.rtk.common.mmo.SettingFlags.HELM) != 0;
+            if (!pakaiHelm) {
+                s.wfifoB(len + 6, 0);
+                s.wfifoW(len + 7, 0xFFFF);
+                s.wfifoB(len + 9, 0);
+            } else {
+                s.wfifoB(len + 6, 1);
+                s.wfifoWBE(len + 7, helm[0]);
+                s.wfifoB(len + 9, helm[1]);
+            }
+
+            int[] muka = tampilan(tsd, org.rtk.map.data.Equip.FACEACC);
+            s.wfifoW(len + 10, muka == null ? 0xFFFF : 0);
+            if (muka != null) {
+                s.wfifoWBE(len + 10, muka[0]);
+            }
+            s.wfifoB(len + 12, muka == null ? 0 : muka[1]);
+
+            int[] mahkota = tampilan(tsd, org.rtk.map.data.Equip.CROWN);
+            if (mahkota == null) {
+                s.wfifoW(len + 13, 0xFFFF);
+                s.wfifoB(len + 15, 0);
+            } else {
+                // ⚠️ Bukan salah tulis: memakai mahkota MEMATIKAN penanda
+                // helm yang baru saja ditulis di len+6. Ditiru apa adanya.
+                s.wfifoB(len + 6, 0);
+                s.wfifoWBE(len + 13, mahkota[0]);
+                s.wfifoB(len + 15, mahkota[1]);
+            }
+
+            int[] muka2 = tampilan(tsd, org.rtk.map.data.Equip.FACEACCTWO);
+            s.wfifoW(len + 16, muka2 == null ? 0xFFFF : 0);
+            if (muka2 != null) {
+                s.wfifoWBE(len + 16, muka2[0]);
+            }
+            s.wfifoB(len + 18, muka2 == null ? 0 : muka2[1]);
+
+            len += 12;
+            s.wfifoLBE(len + 7, (int) tsd.maxHp);
+            len += 4;
+            s.wfifoLBE(len + 7, (int) tsd.status.hp);
+            len += 4;
+            s.wfifoLBE(len + 7, (int) tsd.maxMp);
+            len += 4;
+            s.wfifoLBE(len + 7, (int) tsd.status.mp);
+            len += 4;
+        }
+
+        s.wfifoB(6, daftar.size());
+        len += 6;
+        s.wfifoWBE(1, len + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * Nomor gambar dan warna satu slot perlengkapan, atau null bila slotnya
+     * kosong ataupun barangnya memang tidak bergambar
+     * ({@code itemdb_look() == -1}).
+     */
+    private static int[] tampilan(User sd, int slot) {
+        org.rtk.common.mmo.Item it = sd.status.equipAt(slot);
+        if (it == null || it.id <= 0) {
+            return null;
+        }
+        int look = it.customLook != 0
+                ? (int) it.customLook : MapServer.itemDb.lookOf((int) it.id);
+        if (look == -1) {
+            return null;
+        }
+        int warna = it.customLook != 0
+                ? (int) it.customLookColor
+                : MapServer.itemDb.lookColorOf((int) it.id);
+        return new int[] {look, warna};
+    }
+
+    /**
+     * clif_grouphealth_update() — darah &amp; mana anggota grup.
+     * Opcode 0x63, subperintah 3.
+     *
+     * <p>⚠️ <b>Satu paket per anggota</b>, bukan satu paket berisi semua.
+     * Itu juga sebabnya C memanggil {@code clif_groupstatus} di dalam
+     * perulangan — jendela grup ikut terkirim sebanyak jumlah anggota.
+     * Ditiru, karena klien memakai kedatangan pasangan itu sebagai penanda
+     * segarnya jendela.</p>
+     */
+    public static void sendGroupHealth(User sd) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        for (User tsd : Groups.anggotaOnline(sd)) {
+            byte[] nb = tsd.name().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            head(s, 0x63, 0);
+            s.wfifoB(4, 0x03);
+            s.wfifoB(5, 0x03);
+            s.wfifoLBE(6, (int) tsd.id);
+            s.wfifoB(10, nb.length);
+            s.wfifoBytes(11, nb);
+
+            int len = 10 + nb.length + 1;
+            s.wfifoLBE(len, (int) tsd.status.hp);
+            len += 4;
+            s.wfifoLBE(len, (int) tsd.status.mp);
+            len += 4;
+
+            s.wfifoWBE(1, len + 3);
+            s.wfifoSet(encrypt(s, sd));
+            sendGroupStatus(sd);
+        }
+    }
+
     /**
      * clif_mapselect() — daftar peta yang bisa dipilih pemain (peta rumah,
      * teleporter). Opcode 0x2E.
@@ -1082,6 +1281,123 @@ public final class Clif {
 
     private static int at(java.util.List<Integer> l, int i) {
         return i < l.size() ? l.get(i) : 0;
+    }
+
+    // ------------------------------------------------------------------
+    // pertukaran barang (0x42)
+    // ------------------------------------------------------------------
+
+    /**
+     * Paket pertukaran memakai <b>satu opcode 0x42</b> untuk seluruh
+     * jendelanya; yang membedakan ragamnya ladang [5]:
+     * 0 buka, 1 tanya jumlah, 2 daftar barang, 3 emas, 4 pesan.
+     */
+    private static void headExchange(Session s, int ragam) {
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x42);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, ragam);
+    }
+
+    /** clif_startexchange(): buka jendela pertukaran di layar {@code sd}. */
+    public static void exchangeOpen(User sd, User target) {
+        Session s = sessionOf(sd);
+        if (s == null || target == null) {
+            return;
+        }
+        String jalur = MapServer.classDb.pathName(target.status.charClass,
+                target.status.mark);
+        String label = target.status.name + "(" + jalur + ")";
+        byte[] raw = label.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        headExchange(s, 0x00);
+        s.wfifoLBE(6, (int) target.id);
+        int len = 4;
+        s.wfifoB(len + 6, raw.length);
+        s.wfifoBytes(len + 7, raw);
+        len += raw.length + 1;
+        s.wfifoWBE(len + 6, target.status.level);
+        len += 2;
+        s.wfifoWBE(1, len + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /**
+     * clif_exchange_additem(): barang masuk ke daftar titipan.
+     *
+     * <p>⚠️ Dua paket dengan isi <b>berbeda</b> dikirim sekaligus: yang
+     * menitipkan melihat nama <b>beserta jumlahnya</b>, lawannya hanya
+     * melihat namanya — jumlah sengaja disembunyikan darinya di C.</p>
+     */
+    public static void exchangeAddItem(User sd, User target,
+                                       org.rtk.common.mmo.Item item, int slotInList) {
+        String nama = potong(MapServer.itemDb.info(item.id).tampilan(), 15);
+
+        Session s = sessionOf(sd);
+        if (s != null) {
+            String teks = item.amount > 1 ? nama + "(" + item.amount + ")" : nama;
+            byte[] raw = teks.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            headExchange(s, 0x02);
+            s.wfifoB(6, 0x00);
+            s.wfifoB(7, slotInList);
+            s.wfifoWBE(8, MapServer.itemDb.look(item.id).icon());
+            s.wfifoB(10, MapServer.itemDb.look(item.id).iconColor());
+            s.wfifoB(11, raw.length);
+            s.wfifoBytes(12, raw);
+            s.wfifoWBE(1, raw.length + 8 + 3);
+            s.wfifoSet(encrypt(s, sd));
+        }
+
+        Session ts = target == null ? null : sessionOf(target);
+        if (ts != null) {
+            byte[] raw = nama.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            headExchange(ts, 0x02);
+            ts.wfifoB(6, 0x01);
+            ts.wfifoB(7, slotInList);
+            ts.wfifoWBE(8, 0xFFFF);
+            ts.wfifoB(10, 0);
+            ts.wfifoB(11, raw.length);
+            ts.wfifoBytes(12, raw);
+            ts.wfifoWBE(1, raw.length + 8 + 3);
+            ts.wfifoSet(encrypt(ts, target));
+        }
+    }
+
+    /** clif_exchange_money(): jumlah emas yang ditawarkan. */
+    public static void exchangeGold(User sd, User target, long gold) {
+        for (User to : new User[]{sd, target}) {
+            Session s = to == null ? null : sessionOf(to);
+            if (s == null) {
+                continue;
+            }
+            headExchange(s, 0x03);
+            s.wfifoB(6, to == sd ? 0x00 : 0x01);
+            s.wfifoLBE(7, (int) gold);
+            s.wfifoWBE(1, 8 + 3);
+            s.wfifoSet(encrypt(s, to));
+        }
+    }
+
+    /** clif_exchange_message(): baris pesan di jendela pertukaran. */
+    public static void exchangeMessage(User sd, String text, int type, int flag) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] raw = (text == null ? "" : text)
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        headExchange(s, 0x04);
+        s.wfifoB(6, type);
+        s.wfifoB(7, flag);
+        s.wfifoB(8, raw.length);
+        s.wfifoBytes(9, raw);
+        s.wfifoWBE(1, raw.length + 6 + 3);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /** stringTruncate(): potong ke panjang maksimum, seperti di C. */
+    private static String potong(String s, int max) {
+        return s.length() <= max ? s : s.substring(0, max);
     }
 
     /**
@@ -1209,7 +1525,7 @@ public final class Clif {
             if (!(bl instanceof User to)) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -1230,6 +1546,35 @@ public final class Clif {
             ts.wfifoB(22, 0);
             ts.wfifoSet(encrypt(ts, to));
         });
+    }
+
+    /**
+     * clif_sendmagic() — satu entri buku mantra. Opcode 0x17.
+     *
+     * <p>Tata letak C (clif.c:8768): {@code [5]=pos+1, [6]=SplType,
+     * [7]=len(nama), nama, [len+8]=len(pertanyaan), pertanyaan}; panjang
+     * isi {@code len+5} dengan {@code len = nama + pertanyaan + 1}.
+     * ⚠️ Slot dikirim <b>+1</b>, seperti {@link #removeSpell}.</p>
+     */
+    public static void sendMagic(User sd, int slot) {
+        Session s = sessionOf(sd);
+        if (s == null || slot < 0 || slot >= sd.status.spells.length) {
+            return;
+        }
+        int id = sd.status.spells[slot];
+        if (id <= 0) {
+            return;
+        }
+        String nama = MapServer.spellDb.displayNameOf(id);
+        String tanya = MapServer.spellDb.questionOf(id);
+        head(s, 0x17, nama.length() + tanya.length() + 1 + 5);
+        s.wfifoB(5, slot + 1);
+        s.wfifoB(6, MapServer.spellDb.typeOf(id));
+        s.wfifoB(7, nama.length());
+        s.wfifoStringRaw(8, nama);
+        s.wfifoB(nama.length() + 8, tanya.length());
+        s.wfifoStringRaw(nama.length() + 9, tanya);
+        s.wfifoSet(encrypt(s, sd));
     }
 
     /**
@@ -1356,7 +1701,7 @@ public final class Clif {
             if (!includeSelf && bl == from) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -1447,96 +1792,8 @@ public final class Clif {
         });
     }
 
-    /**
-     * Petak yang baru diinjak mungkin portal. Port dari ekor
-     * {@code clif_parsewalk}: syarat masuk peta tujuan diperiksa dulu, dan
-     * bila gagal pemain didorong mundur disertai pesan penolakan.
-     */
-    static void checkWarpTile(User sd, MapData map) {
-        // C menjepit koordinat dulu sebelum menelusuri daftar portal
-        int fx = Math.min(sd.x, map.xs - 1);
-        int fy = Math.min(sd.y, map.ys - 1);
-        MapData.Warp w = map.warpAt(fx, fy);
-        if (w == null) {
-            return;
-        }
 
-        MapData dest = MapServer.world.get(w.tm());
-        if (dest == null) {
-            // portal ke peta milik map server lain — roadmap C3
-            log.warn("[CLIF] {} menginjak portal ke peta {} yang tidak dimuat di server ini",
-                    sd.name(), w.tm());
-            return;
-        }
 
-        if (!sd.isGm()) {
-            String reject = entryRejection(sd, dest);
-            if (reject != null) {
-                pushBack(sd);
-                sendMiniText(sd, dest.rejectMsg.isEmpty() ? reject : dest.rejectMsg);
-                return;
-            }
-        }
-        Pc.warp(MapServer.world, sd, w.tm(), w.tx(), w.ty());
-    }
-
-    /**
-     * Alasan pemain ditolak masuk sebuah peta, atau null bila boleh masuk.
-     * Urutan pemeriksaan dan bunyi pesannya ditiru persis dari C — teks ini
-     * dilihat pemain, jadi jangan diparafrasekan.
-     */
-    private static String entryRejection(User sd, MapData dest) {
-        var st = sd.status;
-        boolean tooWeak = st.level < dest.reqLvl
-                || (st.baseHp < dest.reqVita && st.baseMp < dest.reqMana)
-                || st.mark < dest.reqMark
-                || (dest.reqPath > 0 && st.charClass != dest.reqPath);
-        if (tooWeak) {
-            long gap = Math.abs(dest.reqLvl - st.level);
-            if (gap >= 10) {
-                return "Nightmarish visions of your own death repel you.";
-            }
-            if (gap >= 5) {
-                return "You're not quite ready to enter yet.";
-            }
-            if (gap < 5) {
-                return "You almost understand the secrets to this entrance.";
-            }
-            // Tiga cabang di bawah TIDAK PERNAH tercapai — sama seperti di C,
-            // karena tiga syarat di atas sudah mencakup semua nilai gap.
-            // Sengaja dipertahankan: pemain melihat pesan level walau yang
-            // kurang sebenarnya mark atau path. Jangan "diperbaiki" tanpa
-            // memutuskan bahwa perubahan perilaku itu memang diinginkan.
-            if (st.mark < dest.reqMark) {
-                return "You do not understand the secrets to enter.";
-            }
-            if (dest.reqPath > 0 && st.charClass != dest.reqPath) {
-                return "Your path forbids it.";
-            }
-            return "A powerful force repels you.";
-        }
-        if (st.level > dest.lvlMax
-                || (st.baseHp > dest.vitaMax && st.baseMp > dest.manaMax)) {
-            // C memakai pesan tetap di sini, mengabaikan MapRejectMsg
-            return "A magical barrier prevents you from entering.";
-        }
-        return null;
-    }
-
-    /**
-     * clif_pushback(): dorong pemain dua petak ke belakang, berdasarkan
-     * arah hadapnya ({@code status.side}).
-     */
-    public static void pushBack(User sd) {
-        switch (sd.status.side) {
-            case 0 -> Pc.warp(MapServer.world, sd, sd.m, sd.x, sd.y + 2);
-            case 1 -> Pc.warp(MapServer.world, sd, sd.m, sd.x - 2, sd.y);
-            case 2 -> Pc.warp(MapServer.world, sd, sd.m, sd.x, sd.y - 2);
-            case 3 -> Pc.warp(MapServer.world, sd, sd.m, sd.x + 2, sd.y);
-            default -> {
-            }
-        }
-    }
 
     // ------------------------------------------------------------------
     // dialog NPC (clif_scriptmes / clif_scriptmenuseq)
@@ -1807,6 +2064,167 @@ public final class Clif {
         s.wfifoSet(encrypt(s, sd));
     }
 
+    /**
+     * sl_updatepeople(): kirim ulang petak peta di sekitar pemain.
+     *
+     * <p>Dipakai saat skrip mengubah lantai, objek, atau penghalang. Jendela
+     * 19x17 dijepit ke tepi peta persis seperti C — <b>digeser</b>, bukan
+     * dipotong, supaya lebarnya tetap penuh.</p>
+     */
+    public static void redrawAround(User sd) {
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        int x;
+        int y;
+        if (sd.x - 9 < 0) {
+            x = 9;
+        } else if (sd.x - 9 + 19 >= map.xs) {
+            x = map.xs - 10;
+        } else {
+            x = sd.x;
+        }
+        if (sd.y - 8 < 0) {
+            y = 8;
+        } else if (sd.y - 8 + 17 >= map.ys) {
+            y = map.ys - 9;
+        } else {
+            y = sd.y;
+        }
+        sendMapData(sd, x - 9, y - 8, 19, 17, 0);
+    }
+
+    /**
+     * clif_sendweather(): cuaca peta — opcode 0x1F.
+     *
+     * <p>⚠️ Pemain yang mematikan setelan cuaca tetap menerima paketnya,
+     * hanya isinya <b>0</b>. Di C begitu; mengirim paketnya tetap penting
+     * karena itu yang menghentikan cuaca sebelumnya.</p>
+     */
+    public static void sendWeather(User sd, int weather) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        headSeq(s, 0x1F, 3);
+        s.wfifoB(5, SettingFlags.on(sd.status.settingFlags, SettingFlags.WEATHER)
+                ? weather : 0);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    // ------------------------------------------------------------------
+    // perlengkapan (clif_equipit / clif_unequipit)
+    // ------------------------------------------------------------------
+
+    /**
+     * Kode panel klien per slot ({@code clif_getequiptype}).
+     *
+     * <p>⚠️ Ini <b>bukan</b> indeks {@code EQ_*} — ia penomoran milik
+     * antarmuka klien RetroTK, dengan lubang di 5, 9..12, 15, 17..19.
+     * Paket lepas-perlengkapan yang masuk ({@code 0x1F}) memakai penomoran
+     * yang sama, jadi tabel ini dipakai dua arah. Protokol RTK2 tidak
+     * memakainya sama sekali: di sana slotnya indeks {@code EQ_*} apa
+     * adanya.</p>
+     *
+     * <p>{@code EQ_FACEACCTWO} tidak punya kode, sama seperti di C yang
+     * jatuh ke {@code default}.</p>
+     */
+    private static final int[] KODE_PANEL = {
+        1, 2, 3, 4, 7, 8, 20, 21, 22, 23, 14, 6, 13, 16, -1
+    };
+
+    /** Kode panel klien untuk slot EQ_*, atau -1 bila tidak ada. */
+    public static int panelCode(int slotEq) {
+        return slotEq >= 0 && slotEq < KODE_PANEL.length ? KODE_PANEL[slotEq] : -1;
+    }
+
+    /** Slot EQ_* untuk kode panel klien, atau -1 bila tidak dikenal. */
+    public static int slotFromPanelCode(int kode) {
+        for (int i = 0; i < KODE_PANEL.length; i++) {
+            if (KODE_PANEL[i] == kode) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * clif_equipit(): isi satu slot panel perlengkapan — opcode 0x37.
+     *
+     * <p>Membawa <b>dua</b> nama seperti paket inventaris 0x0F: yang
+     * pertama nama yang dilihat pemain (ukiran bila ada), yang kedua nama
+     * jenisnya untuk mencocokkan gambar (Peringatan #36).</p>
+     */
+    public static void equipIt(User sd, int slotEq) {
+        Session s = sessionOf(sd);
+        int kode = panelCode(slotEq);
+        if (s == null || kode < 0) {
+            return;
+        }
+        org.rtk.common.mmo.Item it = sd.status.equipAt(slotEq);
+        if (it == null || it.id <= 0) {
+            return;
+        }
+        var info = MapServer.itemDb.info(it.id);
+        byte[] tampil = (it.realName != null && !it.realName.isEmpty()
+                ? it.realName : info.tampilan())
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] jenis = info.name().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        s.wfifoB(5, kode);
+        if (it.customIcon != 0) {
+            s.wfifoWBE(6, (int) it.customIcon + 49152);
+            s.wfifoB(8, (int) it.customIconColor);
+        } else {
+            s.wfifoWBE(6, info.look().icon());
+            s.wfifoB(8, info.look().iconColor());
+        }
+
+        // ⚠️ Penghitung `len` di C bergerak "panjang + 1" per nama padahal
+        // yang ditulis hanya panjang + isinya, dan offsetnya selalu
+        // `len + 9`. Ditiru apa adanya; merapikannya menggeser dua ladang
+        // terakhir.
+        int len = 0;
+        s.wfifoB(9, tampil.length);
+        int pos = 10;
+        for (byte b : tampil) {
+            s.wfifoB(pos++, b);
+        }
+        len += tampil.length + 1;
+
+        s.wfifoB(len + 9, jenis.length);
+        pos = len + 10;
+        for (byte b : jenis) {
+            s.wfifoB(pos++, b);
+        }
+        len += jenis.length + 1;
+
+        s.wfifoLBE(len + 9, it.dura);
+        len += 4;
+        s.wfifoWBE(len + 9, 0);
+        len += 2;
+
+        headSeq(s, 0x37, len + 6);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
+    /** clif_unequipit(): kosongkan satu slot panel — opcode 0x38. */
+    public static void unequipIt(User sd, int slotEq) {
+        Session s = sessionOf(sd);
+        int kode = panelCode(slotEq);
+        if (s == null || kode < 0) {
+            return;
+        }
+        s.wfifoB(0, 0xAA);
+        s.wfifoWBE(1, 4);
+        s.wfifoB(3, 0x38);
+        s.wfifoB(4, 0x03);
+        s.wfifoB(5, kode);
+        s.wfifoB(6, 0x00);
+        s.wfifoSet(encrypt(s, sd));
+    }
+
     // ------------------------------------------------------------------
     // toko (clif_buydialog / clif_selldialog)
     // ------------------------------------------------------------------
@@ -2018,45 +2436,6 @@ public final class Clif {
         MapServer.commands.playerClicks(sd, s.rfifoLBE(6) & 0xFFFFFFFFL);
     }
 
-    /**
-     * Jalankan skrip {@code click} milik NPC.
-     *
-     * <p>Penjaga karma ditiru dari C: pemain berkarma sangat buruk ditolak
-     * bicara oleh hampir semua NPC — kecuali NPC F1 dan NPC totem, karena
-     * keduanya jalur keluar yang tidak boleh ikut tertutup.</p>
-     */
-    static void clickNpc(User sd, Npc nd) {
-        if (MapServer.scriptEngine == null) {
-            return;
-        }
-        if (sd.status.karma <= -3.0f
-                && !"F1Npc".equals(nd.name) && !"TotemNpc".equals(nd.name)) {
-            sendScriptMes(sd, nd.id, "Go away scum!", false, false);
-            return;
-        }
-
-        sd.npcGraphic = (int) nd.graphicId;
-        sd.npcGraphicColor = (int) nd.graphicColor;
-        sd.dialogType = 0;
-
-        var p = sd.scriptPlayer();
-        // Setiap klik memulai interaksi dari nol (sl_async_freeco di C):
-        // tanpa ini, dialog lama yang menggantung membuat klik berikutnya
-        // ditolak dengan alasan "sedang sibuk".
-        MapServer.scriptEngine.cancel(p);
-        try {
-            // C memanggil dengan DUA argumen: pemain dan NPC-nya
-            // (`sl_doscript_blargs(nd->name, "click", 2, &sd->bl, &nd->bl)`).
-            // Banyak skrip memakai parameter kedua untuk membaca
-            // npc.yname / npc.bankNPC — tanpa ini mereka menerima nil.
-            MapServer.scriptEngine.doScript(nd.name, "click",
-                    MapServer.scriptEngine.playerRef(p),
-                    MapServer.scriptEngine.objectRef(nd));
-            flushDialog(sd, p);
-        } catch (RuntimeException e) {
-            log.error("[CLIF] skrip click '{}' gagal untuk {}", nd.name, sd.name(), e);
-        }
-    }
 
     /**
      * Kirim paket untuk dialog yang sedang ditunggu skrip, bila ada.
@@ -3126,7 +3505,7 @@ public final class Clif {
             if (!(bl instanceof User to)) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -3299,7 +3678,7 @@ public final class Clif {
      * mati — rumusnya berganti. Tanpa tabel level (db/level_db.txt hilang)
      * hasilnya 0, jadi barnya kosong, bukan angka ngawur.</p>
      */
-    static float xpBarPercent(User sd) {
+    public static float xpBarPercent(User sd) {
         int level = sd.status.level;
         int path = sd.status.charClass;
 
@@ -3319,6 +3698,82 @@ public final class Clif {
         }
         long tnl = thisLevel - sd.status.exp;
         return (float) ((double) (expInLevel - tnl) / expInLevel * 100.0);
+    }
+
+    /**
+     * clif_transfer() — alihkan klien ke map server lain. Opcode 0x03.
+     *
+     * <p>Tata letak C: alamat IP di [4], port di [8], lalu panjang blok di
+     * [10], kunci handshake {@code "KruIn7inc"} berprefiks panjang, dan
+     * nama karakter berprefiks panjang.</p>
+     *
+     * <p>⚠️ Ladang [10] ditulis DUA KALI di C: mula-mula 0x16, lalu ditimpa
+     * panjang sebenarnya setelah namanya diketahui. Yang berlaku yang
+     * kedua.</p>
+     */
+    public static void transfer(User sd, String host, int port) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        byte[] kunci = org.rtk.common.Props.get("crypt.handshake_key", "KruIn7inc")
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        s.wfifoB(0, 0xAA);
+        s.wfifoB(3, 0x03);
+        s.wfifoLBE(4, ipAsInt(host));
+        s.wfifoWBE(8, port);
+        s.wfifoWBE(11, kunci.length);
+        s.wfifoBytes(13, kunci);
+        int len = 11;
+        s.wfifoB(len + 11, nama.length);
+        s.wfifoStringRaw(len + 12, sd.status.name);
+        len += nama.length + 1 + 4;
+        s.wfifoB(10, len);
+        s.wfifoWBE(1, len + 8);
+        s.wfifoSet(len + 11);
+    }
+
+    /** Alamat IPv4 titik-desimal jadi int; 0 bila tidak terbaca. */
+    private static int ipAsInt(String host) {
+        try {
+            byte[] b = java.net.InetAddress.getByName(host).getAddress();
+            return ((b[0] & 0xFF) << 24) | ((b[1] & 0xFF) << 16)
+                    | ((b[2] & 0xFF) << 8) | (b[3] & 0xFF);
+        } catch (java.net.UnknownHostException | RuntimeException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * clif_sendtowns() — daftar kota. Opcode 0x59.
+     *
+     * <p>Tata letak C: {@code [5]=64, [6..7]=0, [8]=34, [9]=jumlah}, lalu
+     * per kota {@code u8 indeks, u8 panjangNama, nama}.</p>
+     */
+    public static void sendTowns(User sd, java.util.List<String> kota) {
+        Session s = sessionOf(sd);
+        if (s == null) {
+            return;
+        }
+        int len = 0;
+        for (String k : kota) {
+            len += k.length() + 2;
+        }
+        head(s, 0x59, len + 6);
+        s.wfifoB(5, 64);
+        s.wfifoWBE(6, 0);
+        s.wfifoB(8, 34);
+        s.wfifoB(9, kota.size());
+        int off = 0;
+        for (int i = 0; i < kota.size(); i++) {
+            String nama = kota.get(i);
+            s.wfifoB(off + 10, i);
+            s.wfifoB(off + 11, nama.length());
+            s.wfifoStringRaw(off + 12, nama);
+            off += nama.length() + 2;
+        }
+        s.wfifoSet(encrypt(s, sd));
     }
 
     /** clif_sendminitext(): pesan status baris tunggal (tipe 3). */
@@ -3353,77 +3808,7 @@ public final class Clif {
         s.wfifoSet(encrypt(s, sd));
     }
 
-    /**
-     * clif_canmove_sub(): apakah benda ini menghalangi langkah {@code sd}?
-     *
-     * Cermin dari versi C, termasuk pengecualiannya:
-     * <ul>
-     *   <li><b>diri sendiri tidak pernah menghalangi</b> — penting di tepi
-     *       peta, karena koordinat tujuan dijepit sehingga bisa sama dengan
-     *       posisi sekarang;</li>
-     *   <li>hantu hanya menghalangi pemain yang bisa melihatnya;</li>
-     *   <li>pemain tersembunyi dan GM ber-stealth tidak menghalangi;</li>
-     *   <li>NPC bertipe 2 (dekorasi) tidak menghalangi.</li>
-     * </ul>
-     */
-    static boolean blocksMovement(User sd, org.rtk.map.data.BlockList bl, MapData map) {
-        if (bl.id == sd.id) {
-            return false;
-        }
-        if (bl.type == org.rtk.map.data.BlockList.Type.NPC && bl.subtype == 2) {
-            return false;
-        }
-        if (bl instanceof User tsd) {
-            boolean hantuTakTerlihat = map.showGhosts != 0
-                    && tsd.status.state == User.STATE_GHOST
-                    && sd.status.state != User.STATE_GHOST
-                    && (sd.optFlags & User.OPT_GHOSTS) == 0;
-            boolean disembunyikan = tsd.status.state == User.STATE_HIDDEN
-                    || (tsd.isGm() && (tsd.optFlags & User.OPT_STEALTH) != 0);
-            if (hantuTakTerlihat || disembunyikan) {
-                return false;
-            }
-        }
-        // TODO(A5): mob yang sudah mati tidak menghalangi (MOB_DEAD di C).
-        return true;
-    }
 
-    /**
-     * Geser kamera klien mengikuti langkah, dengan aturan tepi yang sama
-     * seperti versi C: kamera hanya ikut bergerak bila pemain belum berada
-     * di zona tepi peta.
-     */
-    static void updateCamera(User sd, MapData map, int direction, int nx, int ny) {
-        switch (direction) {
-            case 0 -> {
-                if (ny <= sd.viewY || ((map.ys - 1 - ny) < 7 && sd.viewY > 7)) {
-                    sd.viewY--;
-                }
-            }
-            case 1 -> {
-                if ((nx < 8 && sd.viewX < 8) || 16 - (map.xs - 1 - nx) <= sd.viewX) {
-                    sd.viewX++;
-                }
-            }
-            case 2 -> {
-                if ((ny < 7 && sd.viewY < 7) || 14 - (map.ys - 1 - ny) <= sd.viewY) {
-                    sd.viewY++;
-                }
-            }
-            case 3 -> {
-                if (nx <= sd.viewX || ((map.xs - 1 - nx) < 8 && sd.viewX > 8)) {
-                    sd.viewX--;
-                }
-            }
-            // C memakai empat `if (direction == n)` terpisah, jadi arah di
-            // luar 0..3 tidak menyentuh kamera sama sekali. Jangan jadikan
-            // cabang arah 3 sebagai `default`.
-            default -> {
-            }
-        }
-        sd.viewX = Math.max(0, Math.min(sd.viewX, 16));
-        sd.viewY = Math.max(0, Math.min(sd.viewY, 14));
-    }
 
     /** Konfirmasi langkah ke pemain yang bergerak. Opcode 0x26. */
     static void sendWalkConfirm(User sd, int direction, int oldX, int oldY) {
@@ -3457,10 +3842,10 @@ public final class Clif {
     }
 
     /**
-     * FLAG_MAGIC (mmo.h): bendera setelan pemain "tampilkan efek sihir".
-     * Pemain yang mematikannya tidak menerima paket animasi sama sekali.
+     * Pemain yang mematikan {@code SettingFlags.MAGIC} tidak menerima paket
+     * animasi mantra sama sekali.
      */
-    private static final int FLAG_MAGIC = 16;
+    private static final int FLAG_MAGIC = SettingFlags.MAGIC;
 
     /**
      * clif_sendanimation(): mainkan animasi <b>pada sebuah benda</b>
@@ -3499,7 +3884,7 @@ public final class Clif {
         if ((viewer.status.settingFlags & FLAG_MAGIC) == 0) {
             return;
         }
-        Session ts = MapServer.net.session(viewer.fd);
+        Session ts = sessionOf(viewer);
         if (ts == null) {
             return;
         }
@@ -3530,7 +3915,7 @@ public final class Clif {
             if (!(bl instanceof User to)) {
                 return;
             }
-            Session ts = MapServer.net.session(to.fd);
+            Session ts = sessionOf(to);
             if (ts == null) {
                 return;
             }
@@ -3599,22 +3984,6 @@ public final class Clif {
         b[o + 3] = (byte) (v & 0xFF);
     }
 
-    /**
-     * Kaitan skrip saat melangkah. Versi C juga memanggil {@code on_walk}
-     * per perlengkapan dan {@code on_walk_passive} per mantra — menyusul
-     * setelah subsistem barang & mantra diport.
-     */
-    static void fireWalkScripts(User sd) {
-        if (MapServer.scriptEngine == null) {
-            return;
-        }
-        try {
-            MapServer.scriptEngine.doScript("onScriptedTile", "onScriptedTile",
-                    MapServer.scriptEngine.playerRef(Pc.scriptPlayerOf(sd)));
-        } catch (RuntimeException e) {
-            log.error("[CLIF] kaitan skrip onScriptedTile gagal untuk {}", sd.name(), e);
-        }
-    }
 
     /**
      * clif_mystaytus() — panel profil milik pemain sendiri. Opcode 0x39.
@@ -3693,7 +4062,16 @@ public final class Clif {
     public static void sendWorldEntry(User sd) {
         Session s = sessionOf(sd);
         if (s == null) {
-            log.error("[CLIF] {} tidak punya sesi aktif — paket masuk dunia dibatalkan", sd.name());
+            // ⚠️ Diam, bukan ERROR. `ProtocolRouter` memanggil KEDUA view
+            // untuk setiap peristiwa, dan tiap view menyaring penontonnya
+            // sendiri — jadi klien RTK2 yang masuk dunia SELALU melewati
+            // jalan ini tanpa sesi RetroTK. Itu jalannya router, bukan cacat.
+            //
+            // Sebagai ERROR ia muncul di setiap login dan tampak seperti
+            // kerusakan; lebih buruk lagi, ia menenggelamkan error sungguhan
+            // di log yang sama. Idiomnya disamakan dengan seluruh method
+            // Clif lain: sesi tidak ada berarti bukan penonton kita.
+            log.debug("[CLIF] {} bukan klien RetroTK — masuk dunia dilewati", sd.name());
             return;
         }
         // Urutan ini diambil persis dari intif.c (parse_char_data): klien

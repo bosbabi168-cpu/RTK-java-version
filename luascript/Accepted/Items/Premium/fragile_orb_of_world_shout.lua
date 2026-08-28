@@ -9,7 +9,7 @@ fragile_orb_of_world_shout = {
 
 		if player.spell == 0 then
 			-- map spells disabled
-			player:sendMinitext("That doesn't work here.")
+			player:sendMinitext("Itu tidak berlaku di sini.")
 			return
 		end
 
@@ -17,10 +17,10 @@ fragile_orb_of_world_shout = {
 			player:dialogSeq(
 				{
 					t,
-					"You have " .. playerTimerValues(
+					"Kau punya " .. playerTimerValues(
 						player,
 						"orb_world_shout_timer"
-					) .. " remaining until you can shout again."
+					) .. " lagi sampai kau bisa berseru kembali."
 				},
 				0
 			)
@@ -39,7 +39,7 @@ fragile_orb_of_world_shout = {
 		)
 
 		if string.len(message) == 0 then
-			player:dialogSeq({t, "You have not entered anything."}, 0)
+			player:dialogSeq({t, "Kau tidak memasukkan apa-apa."}, 0)
 			return
 		end
 
@@ -55,7 +55,7 @@ fragile_orb_of_world_shout = {
 
 		if string.len(message2) > 38 then
 			player:dialogSeq(
-				{t, "Your second part of your message is too long."},
+				{t, "Bagian kedua pesanmu terlalu panjang."},
 				0
 			)
 			return

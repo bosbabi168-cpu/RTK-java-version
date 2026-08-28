@@ -8,7 +8,7 @@ slumbering_hwan = {
 			player:freeAsync()
 			hwan.interrogate(player)
 		else
-			player:sendMinitext("This does not look like a suitable place for an interrogation.")
+			player:sendMinitext("Tempat ini tampaknya tidak cocok untuk interogasi.")
 		end
 	end
 }

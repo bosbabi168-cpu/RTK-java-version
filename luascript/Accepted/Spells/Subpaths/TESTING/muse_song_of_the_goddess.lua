@@ -15,15 +15,15 @@ song_of_the_goddess = {
 		end
 
 		if (player.magic < manacost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return 0
 		end
 		if (target.state == 1) then
-			player:sendMinitext("You need a different type of cure.")
+			player:sendMinitext("Kau butuh jenis penawar yang lain.")
 			return 0
 		end
 
-		target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+		target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		target:setDuration("song_of_the_goddess", 24000, player.ID, 1)
 		target:playSound(4)
 		player:sendAction(6, 35)

@@ -9,12 +9,12 @@ valor_poet = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if target:checkIfCast(mights) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -22,8 +22,8 @@ valor_poet = {
 		player.magic = player.magic - magic
 		player:sendStatus()
 		target:setDuration("valor_poet", duration)
-		player:sendMinitext("You cast Valor")
-		target:sendMinitext(player.name .. " cast Valor on you.")
+		player:sendMinitext("Kau merapal Valor")
+		target:sendMinitext(player.name .. " merapal Valor padamu.")
 		player:playSound(12)
 		target:sendAnimation(11)
 		target:calcStat()
@@ -56,12 +56,12 @@ strengthen_poet = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if target:checkIfCast(mights) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -69,8 +69,8 @@ strengthen_poet = {
 		player.magic = player.magic - magic
 		player:sendStatus()
 		target:setDuration("strengthen_poet", duration)
-		player:sendMinitext("You cast Strengthen")
-		target:sendMinitext(player.name .. " cast Strengthen on you.")
+		player:sendMinitext("Kau merapal Strengthen")
+		target:sendMinitext(player.name .. " merapal Strengthen padamu.")
 		player:playSound(31)
 		target:sendAnimation(117)
 		target:calcStat()
@@ -103,12 +103,12 @@ bless_muscles_poet = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if target:checkIfCast(mights) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -116,8 +116,8 @@ bless_muscles_poet = {
 		player.magic = player.magic - magic
 		player:sendStatus()
 		target:setDuration("bless_muscles_poet", duration)
-		player:sendMinitext("You cast Bless muscles")
-		target:sendMinitext(player.name .. " cast Bless muscles on you.")
+		player:sendMinitext("Kau merapal Bless muscles")
+		target:sendMinitext(player.name .. " merapal Bless muscles padamu.")
 		player:playSound(31)
 		target:sendAnimation(117)
 		target:calcStat()
@@ -150,12 +150,12 @@ power_burst_poet = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if target:checkIfCast(mights) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -163,8 +163,8 @@ power_burst_poet = {
 		player.magic = player.magic - magic
 		player:sendStatus()
 		target:setDuration("power_burst_poet", duration)
-		player:sendMinitext("You cast Power burst")
-		target:sendMinitext(player.name .. " cast Power burst on you.")
+		player:sendMinitext("Kau merapal Power burst")
+		target:sendMinitext(player.name .. " merapal Power burst padamu.")
 		player:playSound(31)
 		target:sendAnimation(117)
 		target:calcStat()

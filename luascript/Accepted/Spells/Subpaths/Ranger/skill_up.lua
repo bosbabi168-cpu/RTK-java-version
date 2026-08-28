@@ -17,7 +17,7 @@ skill_up_ranger = {
 		if (player:hasDuration("skill_up_ranger") == true and player.rage == 6) then
 			-- cast cunning 2
 			if (player.magic < 4711) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.rage = 7
@@ -25,13 +25,13 @@ skill_up_ranger = {
 			player:setAether("skill_up_ranger", aethers)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Skill up 2] You hone your skills.")
+			player:sendMinitext("[Skill up 2] Kau mengasah keahlianmu.")
 			player:sendAction(6, 35)
 			player:sendStatus()
 		elseif (player:hasDuration("skill_up_ranger") == true and player.rage == 7) then
 			-- cast cunning 3
 			if (player.magic < 17960) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.rage = 9
@@ -39,13 +39,13 @@ skill_up_ranger = {
 			player:setAether("skill_up_ranger", aethers)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Skill up 3] Agility becomes your strongest suit..")
+			player:sendMinitext("[Skill up 3] Kegesitan jadi keunggulan terbesarmu..")
 			player:sendAction(6, 35)
 			player:sendStatus()
 		elseif (player:hasDuration("skill_up_ranger") == true and player.rage == 9) then
 			-- cast cunning 4
 			if (player.magic < 53646) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.rage = 10
@@ -53,13 +53,13 @@ skill_up_ranger = {
 			player:setAether("skill_up_ranger", aethers)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Skill up 4] Acquiring cat-like reflex.")
+			player:sendMinitext("[Skill up 4] Refleksmu menjadi seperti kucing.")
 			player:sendAction(6, 35)
 			player:sendStatus()
 		elseif (player:hasDuration("skill_up_ranger") == true and player.rage == 10) then
 			-- cast cunning 5
 			if (player.magic < 135327) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.rage = 12
@@ -67,13 +67,13 @@ skill_up_ranger = {
 			player:setAether("skill_up_ranger", aethers)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Skill up 5] Incredible skill!")
+			player:sendMinitext("[Skill up 5] Kecakapan yang luar biasa!")
 			player:sendAction(6, 35)
 			player:sendStatus()
 		elseif (player:hasDuration("skill_up_ranger") == true and player.rage == 12) then
 			-- cast cunning 6 TESTING ONLY
 			if (player.magic < 269420) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.rage = 14
@@ -81,12 +81,12 @@ skill_up_ranger = {
 			player:setAether("skill_up_ranger", aethers)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Skill up 6] Sagat would be jealous.")
+			player:sendMinitext("[Skill up 6] Sagat pun akan iri.")
 			player:sendAction(6, 35)
 			player:sendStatus()
 		elseif (player:hasDuration("skill_up_ranger") == false) then
 			if (player.magic < 3000) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player:setDuration("tigers_fury_rogue", 0)
@@ -100,11 +100,11 @@ skill_up_ranger = {
 			player:playSound(705)
 			player:setDuration("skill_up_ranger", duration)
 			player:setAether("skill_up_ranger", aethers)
-			player:sendMinitext("[Skill up 1] Your senses sharpen.")
+			player:sendMinitext("[Skill up 1] Inderamu menajam.")
 			player:sendAction(6, 35)
 			player:sendStatus()
 		else
-			player:sendMinitext("You have reached your max potential.")
+			player:sendMinitext("Kau sudah mencapai potensi tertinggimu.")
 		end
 	end,
 

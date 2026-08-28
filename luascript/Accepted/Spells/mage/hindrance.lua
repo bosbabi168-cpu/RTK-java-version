@@ -8,22 +8,22 @@ hindrance_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if target:checkIfCast(curses) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is already protected.")
+			player:sendMinitext("Sasaran itu sudah terlindungi.")
 			return
 		end
 
@@ -32,7 +32,7 @@ hindrance_mage = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(5)
-			player:sendMinitext("You cast Hindrance.")
+			player:sendMinitext("Kau merapal Hindrance.")
 			target:setDuration("hindrance_mage", duration)
 			target:sendAnimation(1, 0)
 			target.armor = target.armor + 40
@@ -41,10 +41,10 @@ hindrance_mage = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(5)
-			player:sendMinitext("You cast Hindrance.")
+			player:sendMinitext("Kau merapal Hindrance.")
 			target:setDuration("hindrance_mage", duration)
 			target:sendAnimation(1, 0)
-			target:sendMinitext(player.name .. " casts Hindrance on you.")
+			target:sendMinitext(player.name .. " merapal Hindrance padamu.")
 			target:calcStat()
 		end
 	end,

@@ -9,24 +9,24 @@ venom_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.blType == BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(venoms) then
-			player:sendMinitext("Another spell of this type is already cast.")
+			player:sendMinitext("Mantra lain sejenis ini sudah dirapal.")
 			return
 		end
 
 		player:sendAction(6, 35)
 		player:playSound(24)
 		player.magic = player.magic - magicCost
-		player:sendMinitext("You cast Venom.")
+		player:sendMinitext("Kau merapal Venom.")
 		player:sendStatus()
 
 		if (target.blType == BL_MOB) then
@@ -96,16 +96,16 @@ spirits_leech_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 		if (target.blType == BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(venoms) then
-			player:sendMinitext("Another spell of this type is already cast.")
+			player:sendMinitext("Mantra lain sejenis ini sudah dirapal.")
 			return
 		end
 
@@ -178,23 +178,23 @@ snake_bite_mage = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 		if (target.blType == BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(venoms) then
-			player:sendMinitext("Another spell of this type is already cast.")
+			player:sendMinitext("Mantra lain sejenis ini sudah dirapal.")
 			return
 		end
 
 		player:sendAction(6, 35)
 		player:playSound(24)
 		player.magic = player.magic - magicCost
-		player:sendMinitext("You cast Snake bite.")
+		player:sendMinitext("Kau merapal Snake bite.")
 		player:sendStatus()
 		if (target.blType == BL_MOB) then
 			target:setDuration("snake_bite_mage", 1 + math.random(1500, 30000))
@@ -257,23 +257,23 @@ corruption_mage = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 		if (target.blType == BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(venoms) then
-			player:sendMinitext("Another spell of this type is already cast.")
+			player:sendMinitext("Mantra lain sejenis ini sudah dirapal.")
 			return
 		end
 
 		player:sendAction(6, 35)
 		player:playSound(24)
 		player.magic = player.magic - magicCost
-		player:sendMinitext("You cast Corruption.")
+		player:sendMinitext("Kau merapal Corruption.")
 		player:sendStatus()
 		if (target.blType == BL_MOB) then
 			target:setDuration("corruption_mage", 1 + math.random(1500, 30000))

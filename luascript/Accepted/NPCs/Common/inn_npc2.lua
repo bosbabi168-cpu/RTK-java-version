@@ -3,18 +3,18 @@ InnNpc2 = {
 		Tools.configureDialog(player, npc)
 
 		local opts = {
-			"RetroTK for Novices",
-			"Transport",
-			"Date & Time"
+			"RetroTK untuk Pemula",
+			"Perjalanan",
+			"Tanggal & Waktu"
 		}
 
-		local choice = player:menuString("Hello! How can I help you today?", opts)
+		local choice = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if choice == "RetroTK for Novices" then
+		if choice == "RetroTK untuk Pemula" then
 			general_npc_funcs.novices(player, npc)
-		elseif choice == "Transport" then
+		elseif choice == "Perjalanan" then
 			Waypoint.click(player, npc)
-		elseif choice == "Date & Time" then
+		elseif choice == "Tanggal & Waktu" then
 			general_npc_funcs.time(player)
 		end
 	end),

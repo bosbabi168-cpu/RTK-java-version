@@ -8,7 +8,7 @@ stagger = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -18,8 +18,8 @@ stagger = {
 		player:playSound(43)
 		player:calcStat()
 		player:setDuration("stagger", duration)
-		player:sendMinitext("You are wildly afraid.")
-		player:sendMinitext("You cast Stagger.")
+		player:sendMinitext("Kau ketakutan luar biasa.")
+		player:sendMinitext("Kau merapal Stagger.")
 	end,
 
 	while_cast = function(player)
@@ -35,6 +35,6 @@ stagger = {
 	uncast = function(player)
 		player.drunk = 0
 		player:sendStatus()
-		player:sendMinitext("You relax, and return to your state.")
+		player:sendMinitext("Kau tenang kembali dan pulih ke keadaan semula.")
 	end
 }

@@ -2,7 +2,7 @@ general_npc_funcs = {
 	setTitle = function(player, npc)
 		if player.level < 75 then
 			player:dialog(
-				"Please return when you have reached the 75th insight.",
+				"Kembalilah kalau kau sudah mencapai pencerahan ke-75.",
 				{}
 			)
 		end
@@ -20,7 +20,7 @@ general_npc_funcs = {
 		if strlen > 12 then
 			-- The string length of 12 was verified on NTK.  The only way to get a longer title (up to 16 characters) is to seek a Chongun who has Title of Nobility Spell.
 			player:dialog(
-				"Your entered title must be no greater than 12 characters.",
+				"Gelar yang kau masukkan tidak boleh lebih dari 12 huruf.",
 				{}
 			)
 			return
@@ -29,15 +29,15 @@ general_npc_funcs = {
 		local totalcost = 200 * strlen
 
 		local confirm = player:menuSeq(
-			"For that title, " .. Tools.formatNumber(totalcost) .. " coins are required. You want to do that?",
-			{"Yes", "No"},
+			"Untuk gelar itu, " .. Tools.formatNumber(totalcost) .. " keping diperlukan. Kau mau melakukannya?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
 		if confirm == 1 then
 			if player.money < totalcost then
 				player:dialog(
-					"You do not have the required " .. totalcost .. " gold to set this title.",
+					"Kau tidak punya " .. totalcost .. " emas yang diperlukan untuk menetapkan gelar ini.",
 					{}
 				)
 				return
@@ -45,7 +45,7 @@ general_npc_funcs = {
 
 			if player.title == title then
 				player:dialog(
-					"You would be wasting your money to set the same title twice.",
+					"Kau hanya membuang uang kalau menetapkan gelar yang sama dua kali.",
 					{}
 				)
 				return
@@ -53,7 +53,7 @@ general_npc_funcs = {
 
 			player:removeGold(totalcost)
 			player.title = title
-			player:sendMinitext("Your title has been changed to: " .. title)
+			player:sendMinitext("Gelarmu telah diubah menjadi: " .. title)
 			player:sendStatus()
 		end
 	end,
@@ -69,19 +69,19 @@ general_npc_funcs = {
 		player.lastClick = npc.ID
 
 		local choiceA = player:menuSeq(
-			"Greetings, and welcome to my shop. How can I help you today?",
-			{"I need to buy a check.", "I need to cash a check."},
+			"Salam, selamat datang di tokoku. Ada yang bisa kubantu hari ini?",
+			{"Aku mau membeli cek.", "Aku mau mencairkan cek."},
 			{}
 		)
 
 		local checkopts = {
-			"1,000 gold.",
-			"5,000 gold.",
-			"10,000 gold.",
-			"50,000 gold.",
-			"100,000 gold.",
-			"500,000 gold.",
-			"1,000,000 gold."
+			"1.000 emas.",
+			"5.000 emas.",
+			"10.000 emas.",
+			"50.000 emas.",
+			"100.000 emas.",
+			"500.000 emas.",
+			"1.000.000 emas."
 		}
 		local checkAmounts = {1000, 5000, 10000, 50000, 100000, 500000, 1000000}
 		local items = {
@@ -98,7 +98,7 @@ general_npc_funcs = {
 			-- buy check
 
 			local choiceB = player:menuSeq(
-				"Ah yes.. and how big a check would you like?",
+				"Ah ya.. cek senilai berapa yang kau inginkan?",
 				checkopts,
 				{}
 			)
@@ -106,7 +106,7 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						"Return when you have enough gold or choose a smaller check."
+						"Kembalilah kalau emasmu cukup, atau pilih cek yang lebih kecil."
 					},
 					0
 				)
@@ -119,7 +119,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"There you go. Just tell me if there is anything else I can do for you."
+					"Ini dia. Bilang saja kalau ada lagi yang bisa kubantu."
 				},
 				0
 			)
@@ -127,14 +127,14 @@ general_npc_funcs = {
 		elseif choiceA == 2 then
 			-- cash check
 			local choiceB = player:menuSeq(
-				"Ah yes, and what check did you want to cash in?",
+				"Ah ya, cek mana yang ingin kau cairkan?",
 				checkopts,
 				{}
 			)
 
 			if player:hasItem(items[choiceB], 1) ~= true then
 				player:dialogSeq(
-					{t, "You do not have a check in that amount."},
+					{t, "Kau tidak punya cek senilai itu."},
 					0
 				)
 				return
@@ -143,7 +143,7 @@ general_npc_funcs = {
 			player:addGold(checkAmounts[choiceB])
 			player:removeItem(items[choiceB], 1, 9)
 
-			player:dialogSeq({t, "There is your cash, glad to help."}, 0)
+			player:dialogSeq({t, "Ini uangmu, senang bisa membantu."}, 0)
 
 			return
 		end
@@ -168,7 +168,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"You need to have an armor or a coat equipped to see your war paint. You may continue but you will be unable to see your new colors until then."
+					"Kau harus mengenakan zirah atau mantel untuk melihat cat perangmu. Kau boleh melanjutkan, tetapi warnanya belum akan terlihat sampai kau memakainya."
 				},
 				1
 			)
@@ -190,15 +190,15 @@ general_npc_funcs = {
 
 		if player.armorColor ~= 0 then
 			local choice = player:menuSeq(
-				"You wish me to bleach your war paint for 10 gold?",
-				{"Bleach me", "No"},
+				"Kau ingin cat perangmu kuluruhkan seharga 10 emas?",
+				{"Putihkan rambutku", "Tidak"},
 				{}
 			)
 
 			if choice == 1 then
 				if player.money < 10 then
 					player:dialogSeq(
-						{t, "Return to me when you have enough gold."},
+						{t, "Temui aku lagi kalau emasmu sudah cukup."},
 						0
 					)
 					return
@@ -209,10 +209,10 @@ general_npc_funcs = {
 				player.gfxDye = 0
 				player:refresh()
 
-				player:dialogSeq({t, "It is done."}, 0)
+				player:dialogSeq({t, "Sudah selesai."}, 0)
 				return
 			elseif choice == 2 then
-				player:dialogSeq({t, "As you wish."}, 0)
+				player:dialogSeq({t, "Sesuai keinginanmu."}, 0)
 				return
 			end
 		elseif player.armorColor == 0 then
@@ -233,10 +233,10 @@ general_npc_funcs = {
 				end
 
 				local choice = player:menuSeq(
-					"Do you wish to consider a special dye, Great one?",
+					"Apakah Anda ingin mempertimbangkan pewarna istimewa, Yang Agung?",
 					{
-						"Yes, please",
-						"No, I am special enough without such dyes."
+						"Ya, silakan",
+						"Tidak, aku sudah cukup istimewa tanpa pewarna semacam itu."
 					},
 					{}
 				)
@@ -244,7 +244,7 @@ general_npc_funcs = {
 				if choice == 1 then
 					-- saying yes to consider special dye
 					local choice2 = player:menuSeq(
-						"Which dye would you like, Great one?",
+						"Pewarna mana yang Anda inginkan, Yang Agung?",
 						dyes,
 						{}
 					)
@@ -253,7 +253,7 @@ general_npc_funcs = {
 						player:dialogSeq(
 							{
 								t,
-								"If you cannot afford it, perhaps you are not so great afterall..."
+								"Kalau Anda tidak sanggup membayarnya, mungkin Anda tidak seagung itu..."
 							},
 							0
 						)
@@ -278,7 +278,7 @@ general_npc_funcs = {
 					end
 					player.gfxDye = 0
 					player:refresh()
-					player:dialogSeq({t, "It is done."}, 0)
+					player:dialogSeq({t, "Sudah selesai."}, 0)
 
 					return
 				end
@@ -287,8 +287,8 @@ general_npc_funcs = {
 			--- default dialog text for everyone, including 99 unless they selected a special dye and hit the return statement above. If they chose to not dye theemselves, then they continue into the statements below
 
 			local choice = player:menuSeq(
-				"To engage in team battles you need a dye. It will cost you 20 coins, you want to do it?",
-				{"Yes", "No"},
+				"Untuk ikut pertempuran regu kau butuh pewarna. Harganya 20 keping. Kau mau?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -296,7 +296,7 @@ general_npc_funcs = {
 				-- yes
 				if player.money < 20 then
 					player:dialogSeq(
-						{t, "Return to me when you have enough gold."},
+						{t, "Temui aku lagi kalau emasmu sudah cukup."},
 						0
 					)
 					return
@@ -315,7 +315,7 @@ general_npc_funcs = {
 				local colors = {10, 21, 24, 11, 28, 17, 31, 29}
 
 				local teamChoice = player:menuSeq(
-					"Which team do you wish to join?",
+					"Regu mana yang ingin kau masuki?",
 					teams,
 					{}
 				)
@@ -329,9 +329,9 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						"May the heavens favor a painless death.",
-						"(Be sure to be able to group with your team. Press 'SHIFT G' to allow your Champion to group you.)",
-						"(If you are the Champion, press 'g' to add or remove someone from your group.)"
+						"Semoga langit menganugerahkan kematian tanpa rasa sakit.",
+						"(Pastikan kau bisa bergrup dengan regumu. Tekan 'SHIFT G' agar Juaramu bisa memasukkanmu ke grup.)",
+						"(Kalau kau sang Juara, tekan 'g' untuk menambah atau mengeluarkan seseorang dari grupmu.)"
 					},
 					0
 				)
@@ -340,7 +340,7 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						"You are not saying that 20 coins is too expensivve, are you? I can't make it any less expensive than that."
+						"Kau tidak sedang bilang 20 keping itu kemahalan, kan? Aku tidak bisa memberi lebih murah dari itu."
 					},
 					0
 				)
@@ -396,7 +396,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"You are not yet ready to hold a " .. itemType .. " of wisdom. Come back later."
+					"Kau belum siap memegang " .. itemType .. " kebijaksanaan. Kembalilah nanti."
 				},
 				0
 			)
@@ -431,15 +431,15 @@ general_npc_funcs = {
 		-- 19 year = YeoAhHopBeunZe gown or robe
 
 		local choice = player:menuSeq(
-			"Ah, you have been here some time, can I interest you in a " .. item.name .. "?",
-			{"Yes", "No"},
+			"Ah, Anda sudah cukup lama di sini. Berminatkah Anda pada " .. item.name .. "?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
 		if choice == 1 then
 			local subchoice = player:menuSeq(
-				"I hate to even ask somebody of such wisdom, and who has been around our lands for so long, but I will need 100,000 gold to cover the expense of the material to make such a fine " .. itemType .. ". Are you willing to pay?",
-				{"Yes, I am", "No, I am not"},
+				"Sungguh tidak enak meminta kepada orang sebijaksana Anda, yang sudah sekian lama berada di tanah kami, tetapi saya perlu 100.000 emas untuk menutup biaya bahan pembuatan " .. itemType .. " yang sehalus itu. Bersediakah Anda membayar?",
+				{"Ya, bersedia", "Tidak, tidak bersedia"},
 				{}
 			)
 
@@ -448,7 +448,7 @@ general_npc_funcs = {
 					player:dialogSeq(
 						{
 							t,
-							"I am very glad you are willing to pay, as soon as you have the gold come back and I will sell you one."
+							"Saya senang Anda bersedia membayar. Begitu emasnya ada, kembalilah dan akan saya jualkan satu."
 						},
 						0
 					)
@@ -460,7 +460,7 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						"Here is your " .. item.name .. ", wear it with great pride."
+						"Ini " .. item.name .. " Anda, kenakanlah dengan bangga."
 					},
 					0
 				)
@@ -468,7 +468,7 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						"I am very sorry, but the material for these robes is very expensive. I must insist on the gold."
+						"Maafkan saya, tetapi bahan jubah ini sangat mahal. Saya harus tetap meminta emasnya."
 					},
 					0
 				)
@@ -490,7 +490,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"Hello! You are still too new to these lands to consider moving to another kingdom. Perhaps when you are ready."
+					"Halo! Kau masih terlalu baru di tanah ini untuk memikirkan pindah ke kerajaan lain. Mungkin nanti kalau kau sudah siap."
 				},
 				0
 			)
@@ -502,7 +502,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"I cannot allow you to move here while you pledge your loyalty to another kingdom. Only someone who is neutral can join a kingdom."
+					"Aku tidak bisa mengizinkanmu pindah ke sini selama kau masih bersumpah setia pada kerajaan lain. Hanya yang netral yang bisa bergabung dengan sebuah kerajaan."
 				},
 				0
 			)
@@ -514,7 +514,7 @@ general_npc_funcs = {
 
 			if player.country == 0 then
 				--already neutral
-				player:dialogSeq({t, "Ah, the free life. Isn't it great?"}, 0)
+				player:dialogSeq({t, "Ah, hidup bebas. Bukankah hebat?"}, 0)
 				return
 			end
 
@@ -522,16 +522,16 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						"Welcome there city dweller. Isn't it wonderful out here?",
-						"Would you like to leave the city behind, and become a member of the wilderness?",
-						"Doing so means you will leave all that you have behind, your clan, your loyalties, your home, and your companions."
+						"Selamat datang, orang kota. Bukankah di luar sini menyenangkan?",
+						"Maukah kau meninggalkan kota dan menjadi bagian dari belantara?",
+						"Itu berarti kau meninggalkan semua yang kau punya: klanmu, kesetiaanmu, rumahmu, dan kawan-kawanmu."
 					},
 					1
 				)
 
 				local subchoice = player:menuSeq(
-					"Are you still interested in becoming Neutral?",
-					{"No, I'd prefer not to.", "Yes, please."},
+					"Apakah kau masih ingin jadi Neutral?",
+					{"Tidak, aku lebih baik tidak.", "Ya, silakan."},
 					{}
 				)
 
@@ -541,7 +541,7 @@ general_npc_funcs = {
 					player:sendStatus()
 
 					--player:dialogSeq({t,"Welcome to the wilderness. ((Log out and back in for this change to take effect."},0)
-					player:dialogSeq({t, "Welcome to the wilderness."}, 0)
+					player:dialogSeq({t, "Selamat datang di belantara."}, 0)
 					return
 				end
 			end
@@ -556,8 +556,8 @@ general_npc_funcs = {
 			end
 
 			local choice = player:menuSeq(
-				"Would you like to become a citizen of our lovely city, Kugnae?",
-				{"No, thank you.", "Yes, very much."},
+				"Maukah kau menjadi warga kota kami yang indah, Kugnae?",
+				{"Tidak, terima kasih.", "Ya, sangat."},
 				{}
 			)
 
@@ -566,7 +566,7 @@ general_npc_funcs = {
 					player:dialogSeq(
 						{
 							t,
-							"Kugnae requests 20 gold acorns as tribute to move, come back when you have that."
+							"Kugnae meminta 20 gold acorn sebagai upeti untuk pindah. Kembalilah kalau kau sudah punya."
 						},
 						0
 					)
@@ -576,7 +576,7 @@ general_npc_funcs = {
 				player:removeItem("gold_acorn", 20)
 				player:updateCountry(country)
 				player.registry["home"] = 0
-				player:dialogSeq({t, "Welcome to Kugnae."}, 0)
+				player:dialogSeq({t, "Selamat datang di Kugnae."}, 0)
 			end
 		end
 
@@ -589,8 +589,8 @@ general_npc_funcs = {
 			end
 
 			local choice = player:menuSeq(
-				"Would you like to become a citizen of our lovely city, Buya?",
-				{"No, thank you.", "Yes, very much."},
+				"Maukah kau menjadi warga kota kami yang indah, Buya?",
+				{"Tidak, terima kasih.", "Ya, sangat."},
 				{}
 			)
 
@@ -599,7 +599,7 @@ general_npc_funcs = {
 					player:dialogSeq(
 						{
 							t,
-							"Buya requests 20 gold acorns as tribute to move, come back when you have that."
+							"Buya meminta 20 gold acorn sebagai upeti untuk pindah. Kembalilah kalau kau sudah punya."
 						},
 						0
 					)
@@ -609,7 +609,7 @@ general_npc_funcs = {
 				player:removeItem("gold_acorn", 20)
 				player:updateCountry(country)
 				player.registry["home"] = 0
-				player:dialogSeq({t, "Welcome to Buya."}, 0)
+				player:dialogSeq({t, "Selamat datang di Buya."}, 0)
 			end
 		end
 
@@ -622,8 +622,8 @@ general_npc_funcs = {
 			end
 
 			local choice = player:menuSeq(
-				"Would you like to become a citizen of our lovely city, Nagnang?",
-				{"No, thank you.", "Yes, very much."},
+				"Maukah kau menjadi warga kota kami yang indah, Nagnang?",
+				{"Tidak, terima kasih.", "Ya, sangat."},
 				{}
 			)
 
@@ -632,7 +632,7 @@ general_npc_funcs = {
 					player:dialogSeq(
 						{
 							t,
-							"Nagnang requests 20 gold acorns as tribute to move, come back when you have that."
+							"Nagnang meminta 20 gold acorn sebagai upeti untuk pindah. Kembalilah kalau kau sudah punya."
 						},
 						0
 					)
@@ -642,7 +642,7 @@ general_npc_funcs = {
 				player:removeItem("gold_acorn", 20)
 				player:updateCountry(country)
 				player.registry["home"] = 0
-				player:dialogSeq({t, "Welcome to Nagnang."}, 0)
+				player:dialogSeq({t, "Selamat datang di Nagnang."}, 0)
 			end
 		end
 	end,
@@ -661,7 +661,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"After you have reached level 11, you will be able to broadcast messages to the RetroTK community regarding an event you are hosting."
+					"Setelah mencapai level 11, kau bisa menyiarkan pesan kepada masyarakat RetroTK tentang acara yang kau selenggarakan."
 				},
 				0
 			)
@@ -672,7 +672,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"You have broadcasted to RetroTK recently. Please wait one day."
+					"Kau baru saja menyiarkan pesan ke RetroTK. Tunggu satu hari."
 				},
 				0
 			)
@@ -682,20 +682,20 @@ general_npc_funcs = {
 		player:dialogSeq(
 			{
 				t,
-				"You may broadcast a message about an event you are hosting. You may do this once per day. The fee is 2,000 gold."
+				"Kau boleh menyiarkan pesan tentang acara yang kau selenggarakan, sekali sehari. Biayanya 2.000 emas."
 			},
 			1
 		)
 
 		local choice = player:menuSeq(
-			"Do you wish to pay 2,000 gold.",
-			{"Yes", "No, I've changed my mind."},
+			"Kau bersedia membayar 2.000 emas?",
+			{"Ya", "Tidak, aku berubah pikiran."},
 			{}
 		)
 
 		if choice == 1 then
 			if player.money < 2000 then
-				player:dialogSeq({t, "Return when you have enough gold."}, 0)
+				player:dialogSeq({t, "Kembalilah kalau emasmu sudah cukup."}, 0)
 				return
 			end
 
@@ -703,8 +703,8 @@ general_npc_funcs = {
 				"Auction",
 				"Giveaway",
 				"Trivia contest",
-				"My event is pretty complicated. I have",
-				"   posted about it on Community Events."
+				"Acaraku cukup rumit. Sudah",
+				"   kuumumkan di Community Events."
 			}
 			local eventLocations = {
 				"North gate",
@@ -728,14 +728,14 @@ general_npc_funcs = {
 			end
 
 			local subchoice = player:menuSeq(
-				"Which type of event are you announcing?",
+				"Acara jenis apa yang kau umumkan?",
 				events,
 				{}
 			)
 
 			if subchoice == 1 or subchoice == 2 or subchoice == 3 then
 				eventLocationChoice = player:menuSeq(
-					"Where should people assemble for this " .. events[
+					"Di mana orang-orang harus berkumpul untuk " .. events[
 						subchoice
 					],
 					eventLocations,
@@ -793,8 +793,8 @@ general_npc_funcs = {
 		player:dialogSeq(
 			{
 				t,
-				"Greetings. This ability allows you to sell a large quantity of items directly from your bank to another person's bank.",
-				"The person you are trading with must be close to you, and have the money on them, or items in their bank."
+				"Salam. Kemampuan ini memungkinkanmu menjual barang dalam jumlah besar langsung dari simpananmu ke simpanan orang lain.",
+				"Orang yang berdagang denganmu harus berada di dekatmu, membawa uangnya, atau punya barang di simpanannya."
 			},
 			1
 		)
@@ -813,7 +813,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"Sorry, I can't find " .. input .. " in the market. Ask them to come here to trade."
+					"Maaf, aku tidak menemukan " .. input .. " di pasar. Minta dia datang ke sini untuk berdagang."
 				},
 				0
 			)
@@ -825,7 +825,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"Sorry, I can't find " .. tradee.name .. " in the market. Ask them to come here to trade."
+					"Maaf, aku tidak menemukan " .. tradee.name .. " di pasar. Minta dia datang ke sini untuk berdagang."
 				},
 				0
 			)
@@ -836,7 +836,7 @@ general_npc_funcs = {
 
 		if tradee.level < 11 then
 			player:dialogSeq(
-				{t, "You can't trade with a player below level 11."},
+				{t, "Kau tidak bisa berdagang dengan pemain di bawah level 11."},
 				0
 			)
 			return
@@ -844,20 +844,20 @@ general_npc_funcs = {
 
 		if player.level < 11 then
 			player:dialogSeq(
-				{t, "You can't trade until you are level 11 or higher."},
+				{t, "Kau belum bisa berdagang sampai levelmu 11 atau lebih."},
 				0
 			)
 			return
 		end
 
 		if player.name == tradee.name then
-			player:dialogSeq({t, "You can't trade with yourself."}, 0)
+			player:dialogSeq({t, "Kau tidak bisa berdagang dengan dirimu sendiri."}, 0)
 			return
 		end
 
 		local goldChoice = player:menuSeq(
-			"Will you be adding any gold to this trade?",
-			{"Yes", "No"},
+			"Apakah kau akan menambahkan emas pada tukar-menukar ini?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -865,14 +865,14 @@ general_npc_funcs = {
 			goldAmount = player:inputNumberCheck(player:inputSeq("How much gold are you adding?", "I will add", "gold.", {}, {}))
 
 			if goldAmount > player.money then
-				player:dialogSeq({t, "You don't have that much gold."}, 0)
+				player:dialogSeq({t, "Emasmu tidak sebanyak itu."}, 0)
 				return
 			end
 		end
 
 		local itemChoice = player:menuSeq(
-			"Do you wish to add an item?",
-			{"Yes", "No"},
+			"Apakah kau ingin menambahkan satu barang?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -891,8 +891,8 @@ general_npc_funcs = {
 				)
 
 				itemChoice = player:menuSeq(
-					"Do you wish to add another item?",
-					{"Yes", "No"},
+					"Apakah kau ingin menambahkan satu barang lagi?",
+					{"Ya", "Tidak"},
 					{}
 				)
 			elseif itemChoice == 2 then
@@ -912,10 +912,10 @@ general_npc_funcs = {
 
 		player:dialogSeq({t, itemString}, 1)
 
-		local confirm = player:menuSeq("Is that correct?", {"Yes", "No"}, {})
+		local confirm = player:menuSeq("Apakah itu benar?", {"Ya", "Tidak"}, {})
 
 		if confirm == 1 then
-			player:dialogSeq({t, "Ok, let me get the other traders list."}, 1)
+			player:dialogSeq({t, "Baik, biar kuambil daftar pedagang lainnya."}, 1)
 
 			tradee:freeAsync()
 			general_npc_funcs.counterTrade(
@@ -926,7 +926,7 @@ general_npc_funcs = {
 				itemsToTrade
 			)
 		elseif confirm == 2 then
-			player:dialogSeq({t, "Oh, then we better start again."}, 0)
+			player:dialogSeq({t, "Oh, kalau begitu sebaiknya kita mulai lagi."}, 0)
 			return
 		end
 	end,
@@ -954,8 +954,8 @@ general_npc_funcs = {
 		local itemsToTrade = {}
 
 		local choice = player:menuSeq(
-			trader.name .. " is trying to trade with you. Are you ready to trade?",
-			{"Yes", "No"},
+			trader.name .. " ingin berdagang denganmu. Kau siap berdagang?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -972,8 +972,8 @@ general_npc_funcs = {
 		player:dialogSeq({t, itemsOfferedString}, 1)
 
 		local goldChoice = player:menuSeq(
-			"Will you be adding any gold to this trade?",
-			{"Yes", "No"},
+			"Apakah kau akan menambahkan emas pada tukar-menukar ini?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -981,14 +981,14 @@ general_npc_funcs = {
 			goldAmount = player:inputNumberCheck(player:inputSeq("How much gold are you adding?", "I will add", "gold.", {}, {}))
 
 			if goldAmount > player.money then
-				player:dialogSeq({t, "You don't have that much gold."}, 0)
+				player:dialogSeq({t, "Emasmu tidak sebanyak itu."}, 0)
 				return
 			end
 		end
 
 		local itemChoice = player:menuSeq(
-			"Do you wish to add an item?",
-			{"Yes", "No"},
+			"Apakah kau ingin menambahkan satu barang?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -1007,8 +1007,8 @@ general_npc_funcs = {
 				)
 
 				itemChoice = player:menuSeq(
-					"Do you wish to add another item?",
-					{"Yes", "No"},
+					"Apakah kau ingin menambahkan satu barang lagi?",
+					{"Ya", "Tidak"},
 					{}
 				)
 			elseif itemChoice == 2 then
@@ -1029,14 +1029,14 @@ general_npc_funcs = {
 		player:dialogSeq({t, itemString}, 1)
 
 		player:dialogSeq(
-			{t, "Ok, so you will get this:\n" .. itemsOfferedString},
+			{t, "Baik, jadi kau akan menerima ini:\n" .. itemsOfferedString},
 			1
 		)
-		player:dialogSeq({t, "Ok, and you will give this:\n" .. itemString}, 1)
+		player:dialogSeq({t, "Baik, dan kau akan memberikan ini:\n" .. itemString}, 1)
 
 		local confirm = player:menuSeq(
-			"Is that all correct?",
-			{"Yes", "No"},
+			"Apakah semuanya sudah benar?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -1052,7 +1052,7 @@ general_npc_funcs = {
 				itemsOffered
 			)
 		elseif confirm == 2 then
-			player:dialogSeq({t, "Oh, better start again then."}, 0)
+			player:dialogSeq({t, "Oh, kalau begitu sebaiknya mulai lagi."}, 0)
 		end
 	end),
 
@@ -1097,20 +1097,20 @@ general_npc_funcs = {
 		end
 
 		player:dialogSeq(
-			{t, "The other trader has added this to the list:\n" .. itemString},
+			{t, "Pedagang lain menambahkan ini ke daftar:\n" .. itemString},
 			1
 		)
 		player:dialogSeq(
 			{
 				t,
-				"You are giving in exchange this:\n" .. itemsPlayerOfferedString
+				"Sebagai gantinya kau memberikan ini:\n" .. itemsPlayerOfferedString
 			},
 			1
 		)
 
 		local confirm = player:menuSeq(
-			"Is that all correct?",
-			{"Yes", "No"},
+			"Apakah semuanya sudah benar?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
@@ -1122,7 +1122,7 @@ general_npc_funcs = {
 		end
 
 		if confirm == 1 then
-			player:dialogSeq({t, "Very well, let me make the exchange."}, 1)
+			player:dialogSeq({t, "Baiklah, biar kulakukan pertukarannya."}, 1)
 			general_npc_funcs.completeTrade(
 				player,
 				trader,
@@ -1191,14 +1191,14 @@ general_npc_funcs = {
 			trader:dialogSeq(
 				{
 					t,
-					"Mass exchange cancelled due to attempted fraud. GMs notified."
+					"Pertukaran massal dibatalkan karena percobaan penipuan. GM telah diberi tahu."
 				},
 				0
 			)
 			tradee:dialogSeq(
 				{
 					t,
-					"Mass exchange cancelled due to attempted fraud. GMs notified."
+					"Pertukaran massal dibatalkan karena percobaan penipuan. GM telah diberi tahu."
 				},
 				0
 			)
@@ -1209,14 +1209,14 @@ general_npc_funcs = {
 
 		--- handle gold --
 		tradee:addGold(tonumber(goldPlayerOffered))
-		tradee:sendMinitext("You have received " .. goldPlayerOffered .. " gold")
+		tradee:sendMinitext("Kau menerima " .. goldPlayerOffered .. " emas")
 		trader:removeGold(tonumber(goldPlayerOffered))
-		trader:sendMinitext("You gave " .. goldPlayerOffered .. " gold")
+		trader:sendMinitext("Kau memberikan " .. goldPlayerOffered .. " emas")
 
 		trader:addGold(tonumber(goldOffered))
-		trader:sendMinitext("You have received " .. goldOffered .. " gold")
+		trader:sendMinitext("Kau menerima " .. goldOffered .. " emas")
 		tradee:removeGold(tonumber(goldOffered))
-		tradee:sendMinitext("You gave " .. goldOffered .. " gold")
+		tradee:sendMinitext("Kau memberikan " .. goldOffered .. " emas")
 
 		--- end handle gold --
 
@@ -1280,8 +1280,8 @@ general_npc_funcs = {
 			itemsOffered
 		)
 
-		trader:sendMinitext("The trade is complete")
-		tradee:sendMinitext("The trade is complete")
+		trader:sendMinitext("Tukar-menukar selesai")
+		tradee:sendMinitext("Tukar-menukar selesai")
 	end,
 
 	massExchangeWithdraw = function(player, npc, itemsToTrade, bankItemTable, bankCountTable, bankOwnerTable, bankEngraveTable, bankTimerTable)
@@ -1342,7 +1342,7 @@ general_npc_funcs = {
 		bankTimerTable = sortedbankTimerTable
 
 		if (#bankItemTable == 0) then
-			player:dialogSeq({"Your bank is currently empty."})
+			player:dialogSeq({"Simpananmu sedang kosong."})
 			return false
 		end
 
@@ -1369,12 +1369,12 @@ general_npc_funcs = {
 		end
 
 		if Item(bankItemTable[found]).exchangeable or Item(bankItemTable[found]).depositable then
-			player:dialogSeq({"You cannot trade that item."})
+			player:dialogSeq({"Barang itu tidak bisa diperdagangkan."})
 			return
 		end
 
 		if (Item(bankItemTable[found]).stackAmount > 1 and bankCountTable[found] > 1) then
-			amount = player:inputNumberCheck(player:input("How many shall you withdraw for the trade?"))
+			amount = player:inputNumberCheck(player:input("Berapa banyak yang akan kau ambil untuk perdagangan ini?"))
 
 			if (amount > bankCountTable[found]) then
 				amount = bankCountTable[found]
@@ -1429,7 +1429,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"You have received an fragile orb of world shout too recently."
+					"Kau baru saja menerima fragile orb of world shout."
 				},
 				0
 			)
@@ -1439,8 +1439,8 @@ general_npc_funcs = {
 		player:dialogSeq(
 			{
 				t,
-				"This is an experimental feature and is temporary. Fragile Orb of World Shout will let you shout to the whole world once every hour, and it will last for 24 hours.",
-				"Here is your free Fragile Orb of World Shout."
+				"Ini fitur percobaan dan bersifat sementara. Fragile Orb of World Shout memungkinkanmu berseru ke seluruh dunia sekali tiap jam, dan bertahan 24 jam.",
+				"Ini Fragile Orb of World Shout gratis untukmu."
 			},
 			1
 		)
@@ -1493,7 +1493,7 @@ general_npc_funcs = {
 
 	reincarnate = function(player, npc)
 		if player.state ~= 1 then
-			player:dialog("You are already alive.", {})
+			player:dialog("Kau sudah hidup.", {})
 			return
 		end
 		resurrect.cast(player)
@@ -1502,8 +1502,8 @@ general_npc_funcs = {
 	observe = function(player, npc)
 		if player.state ~= 1 then
 			local choice2 = player:menuSeq(
-				"You have to be dead to observe. Do not worry, it will not hurt a bit. Are you ready?",
-				{"Yes", "No"},
+				"Kau harus mati dulu untuk bisa mengamati. Tenang, tidak akan sakit sedikit pun. Kau siap?",
+				{"Ya", "Tidak"},
 				{}
 			)
 			if choice2 == 1 then
@@ -1526,54 +1526,54 @@ general_npc_funcs = {
 		player.lastClick = npc.ID
 
 		local novices_opts = {
-			"Help!",
-			"Give me a quick tour, please.",
+			"Tolong!",
+			"Tolong beri aku tur singkat.",
 			"Keyboard commands",
 			"Finding a place",
 			"I'm lost!",
-			"My character",
+			"Karakterku",
 			"I died!",
 			"I'm naked",
 			"Food",
 			"Money",
 			"Choosing a Path",
-			"Adventuring with others",
+			"Bertualang bersama orang lain",
 			"Joining a clan",
 			"Joining a subpath",
-			"Registering my character",
-			"How can I contact RetroTKeborn staff?",
-			"Show me other Help topics."
+			"Mendaftarkan karakterku",
+			"Bagaimana cara menghubungi staf RetroTKeborn?",
+			"Tunjukkan pokok Bantuan lainnya."
 		}
 
 		if choice == nil then
 			choice = player:menuString(
-				"Please select a help topic from the list below",
+				"Pilih satu pokok bantuan dari daftar di bawah",
 				novices_opts
 			)
 		end
 
-		if choice == "Help!" then
+		if choice == "Tolong!" then
 			player:dialogSeq(
 				{
 					t,
-					"If you have problems that prevent you from playing the game, please ask in the RTK discord for help resolving your problem",
-					"If you are unsure what you need to do, try reading the Guide or Welcome to RetroTK boards.",
-					"Asking other players politely is also another way to get some wonderful help."
+					"Kalau kau punya masalah yang menghalangimu bermain, mintalah bantuan di discord RTK untuk menyelesaikannya",
+					"Kalau kau tidak yakin harus berbuat apa, coba baca papan Guide atau Welcome to RetroTK.",
+					"Bertanya baik-baik kepada pemain lain juga cara yang bagus untuk mendapat bantuan."
 				},
 				1
 			)
 			general_npc_funcs.novices(player, npc)
-		elseif choice == "Give me a quick tour, please." then
+		elseif choice == "Tolong beri aku tur singkat." then
 			local countries = {"Kugnae", "Buya", "Nagnang"}
 
 			local countryChoice = player:menuString(
-				"Which country would you like to visit?",
+				"Negeri mana yang ingin kau kunjungi?",
 				countries
 			)
 
 			if countryChoice == "Kugnae" then
 				local placeChoices = {
-					"IronHeart's home (Tutorial)",
+					"Rumah IronHeart (Tutorial)",
 					"Inn",
 					"Butcher",
 					"Smith",
@@ -1581,10 +1581,10 @@ general_npc_funcs = {
 					"Seamstress",
 					"Dawn Shaman",
 					"Dusk Shaman",
-					"Warrior's Guild",
-					"Rogue's Guild",
-					"Mage's Guild",
-					"Poet's Guild",
+					"Guild Prajurit",
+					"Guild Rogue",
+					"Guild Penyihir",
+					"Guild Pujangga",
 					"Woodlands Alchemist",
 					"Vagabond Alchemist",
 					"Arena",
@@ -1595,11 +1595,11 @@ general_npc_funcs = {
 				}
 
 				local placeChoice = player:menuString(
-					"Where in Koguryo would you like to visit?",
+					"Bagian mana dari Koguryo yang ingin kau kunjungi?",
 					placeChoices
 				)
 
-				if placeChoice == "IronHeart's home (Tutorial)" then
+				if placeChoice == "Rumah IronHeart (Tutorial)" then
 					local tironheart = {
 						graphic = convertGraphic(
 							NPC("IronHeart").look,
@@ -1610,7 +1610,7 @@ general_npc_funcs = {
 					player:dialogSeq(
 						{
 							tironheart,
-							"There are many things you need to learn in the world of RetroTKeborn. The tutor can teach you some of those things."
+							"Banyak hal yang perlu kau pelajari di dunia RetroTKeborn. Sang tutor bisa mengajarkan sebagian di antaranya."
 						},
 						1
 					)
@@ -1623,7 +1623,7 @@ general_npc_funcs = {
 					player:dialogSeq(
 						{
 							tinn,
-							"Meet your friends and store your precious items here. You can use a yellow scroll to return here, as well."
+							"Temui kawan-kawanmu dan simpan barang berhargamu di sini. Kau juga bisa memakai gulungan kuning untuk kembali ke tempat ini."
 						},
 						1
 					)
@@ -1636,7 +1636,7 @@ general_npc_funcs = {
 					player:dialogSeq(
 						{
 							tbutcher,
-							"You can sell acorns to the butcher. If you're a warrior, you can buy antlers or bear's livers for health."
+							"Kau bisa menjual acorn kepada tukang daging. Kalau kau prajurit, kau bisa membeli tanduk atau hati beruang untuk kesehatan."
 						},
 						1
 					)
@@ -1651,12 +1651,12 @@ general_npc_funcs = {
 			local commands = {
 				"Socializing",
 				"Adventuring",
-				"Looking at my character",
-				"None of this"
+				"Melihat karakterku",
+				"Tidak satu pun"
 			}
 
 			local commandChoice = player:menuString(
-				"What do you need help with?",
+				"Apa yang perlu kubantu?",
 				commands
 			)
 
@@ -1664,7 +1664,7 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						" Socializing\nSpeak <single quote>\nEmotion <colon>\nWhisper <shift><quote>\nBulletin boards<b>\nSee heroes <ctrl>+<w>\nBe sociable <shift>+<g>\nGain a group member <g>\nHistory <shift>+<uparrow>\nIgnore someone <F9>"
+						" Bergaul\nBicara <petik tunggal>\nEkspresi <titik dua>\nBisik <shift><petik>\nPapan pengumuman<b>\nLihat pahlawan <ctrl>+<w>\nBuka grup <shift>+<g>\nTambah anggota grup <g>\nRiwayat <shift>+<panah atas>\nAbaikan seseorang <F9>"
 					},
 					1
 				)
@@ -1672,19 +1672,19 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						" Adventuring\nUse an item <u>\nAttack <space>\nTake an item <comma>\nTake all <shift>+<comma>\nOpen/Close <o>\nLook <semi-colon>\nRide a horse <r>\nTake off <shift>+<t>\nDrop something <d>\nUse a talent <shift>+<z>"
+						" Bertualang\nPakai barang <u>\nSerang <spasi>\nAmbil barang <koma>\nAmbil semua <shift>+<koma>\nBuka/Tutup <o>\nLihat <titik-koma>\nTunggangi kuda <r>\nLepas <shift>+<t>\nJatuhkan sesuatu <d>\nPakai bakat <shift>+<z>"
 					},
 					1
 				)
-			elseif commandChoice == "Looking at my character" then
+			elseif commandChoice == "Melihat karakterku" then
 				player:dialogSeq(
 					{
 						t,
-						"Get mail <b>\nGet parcel by going to messengers\nStatus <s>\nMore status <Page Down>\nOptions <F10>\nInventory <i>\nUse an object <u>\nUse a secret <shift>+<z>\nHand an object <h>\nHand many objects <shift>+<h>\nHand coins <h>,<backslash>"
+						"Ambil surat <b>\nAmbil kiriman lewat kurir\nStatus <s>\nStatus lanjut <Page Down>\nSetelan <F10>\nKantong <i>\nPakai benda <u>\nPakai rahasia <shift>+<z>\nSerahkan benda <h>\nSerahkan banyak benda <shift>+<h>\nSerahkan keping <h>,<garis-miring-terbalik>"
 					},
 					1
 				)
-			elseif commandChoice == "None of this" then
+			elseif commandChoice == "Tidak satu pun" then
 				return
 			end
 
@@ -1693,7 +1693,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"Hello, you're looking for something it seems. I can help you find many places in the main cities."
+					"Halo, sepertinya kau sedang mencari sesuatu. Aku bisa membantumu menemukan banyak tempat di kota-kota utama."
 				},
 				1
 			)
@@ -1702,12 +1702,12 @@ general_npc_funcs = {
 				"Kugnae",
 				"Buya",
 				"Nagnang",
-				"What do the numbers mean?",
+				"Apa arti angka-angka itu?",
 				"I'm done"
 			}
 
 			local cityChoice = player:menuString(
-				"Which city do you need directions for?",
+				"Kota mana yang perlu kutunjukkan jalannya?",
 				cities
 			)
 
@@ -1722,7 +1722,7 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						"Kugnae Halls\nTutorial 88,148\nWarrior's Guild 48,37\nRogue's Guild 22,188\nMage's Guild 169,63\nPoet's Guild 184,182\nArena 185,31\nJail/Justice 156,157\nChapel 153,188\nPalace 111,122"
+						"Balai Kugnae\nTutorial 88,148\nGuild Prajurit 48,37\nGuild Rogue 22,188\nGuild Penyihir 169,63\nGuild Pujangga 184,182\nArena 185,31\nPenjara/Pengadilan 156,157\nKapel 153,188\nIstana 111,122"
 					},
 					1
 				)
@@ -1737,7 +1737,7 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						" Buya Halls\nTutorial 55,122\nWarrior's Guild 26,25\nRogue's Guild 21,88\nMage's Guild 126,35\nPoet's Guild 96,101\nArena 126,74\nJail/Justice 10,50\nChapel 73,102\nPalace 73,54"
+						" Balai Buya\nTutorial 55,122\nGuild Prajurit 26,25\nGuild Rogue 21,88\nGuild Penyihir 126,35\nGuild Pujangga 96,101\nArena 126,74\nPenjara/Pengadilan 10,50\nKapel 73,102\nIstana 73,54"
 					},
 					1
 				)
@@ -1752,24 +1752,24 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						" Nagnang Halls\nWarrior's Guild 29,57\nRogue's Guild 19,141\nMage's Guild 126,35\nPoet's Guild 96,101\nTavern of Wind 82,131\nTavern of Wood 87,143\nTavern of Water 97,122\nTavern of Fire 111,126\nTavern of Metal 127,131"
+						" Balai Nagnang\nGuild Prajurit 29,57\nGuild Rogue 19,141\nGuild Penyihir 126,35\nGuild Pujangga 96,101\nKedai Angin 82,131\nKedai Kayu 87,143\nKedai Air 97,122\nKedai Api 111,126\nKedai Logam 127,131"
 					},
 					1
 				)
-			elseif cityChoice == "What do the numbers mean?" then
+			elseif cityChoice == "Apa arti angka-angka itu?" then
 				player:dialogSeq(
 					{
 						t,
-						"Move this scroll so that you can see the numbers in the lower right of your screen that indicate your coordinates.",
-						"That is your position in this area. As you move East (right) the first number increases. As you move South (down) the second number increases.",
-						"All these locations list the sets of numbers that are near their entrances. If you were looking for the Tutorial in Kugnae, for example, you would walk until those numbers read about 0095 0048."
+						"Geser gulungan ini supaya kau bisa melihat angka di kanan bawah layarmu yang menunjukkan koordinatmu.",
+						"Itulah posisimu di daerah ini. Saat kau bergerak ke Timur (kanan), angka pertama bertambah. Saat kau bergerak ke Selatan (bawah), angka kedua bertambah.",
+						"Semua tempat ini mencantumkan pasangan angka yang dekat dengan pintu masuknya. Misalnya kalau kau mencari Tutorial di Kugnae, berjalanlah sampai angkanya menunjukkan sekitar 0095 0048."
 					},
 					1
 				)
 			end
 
 			player:dialogSeq(
-				{t, "If you need help using these numbers, let me know."},
+				{t, "Kalau kau butuh bantuan memakai angka-angka ini, bilang saja."},
 				1
 			)
 			general_npc_funcs.novices(player, npc, choice)
@@ -1789,21 +1789,21 @@ general_npc_funcs = {
 		local reject = "Ah, I see. Appear as thou wilt."
 
 		local crime = player:menuString(
-			"You're not wanted for a crime, are you?",
-			{"Yes", "No"}
+			"Kau tidak sedang dicari karena kejahatan, kan?",
+			{"Ya", "Tidak"}
 		)
 
-		if crime == "Yes" then
+		if crime == "Ya" then
 			player:dialogSeq({t, reject}, 0)
 			return
-		elseif crime == "No" then
+		elseif crime == "Tidak" then
 			-- maybe do some crime check here?
 
 			if player.money < 3000 then
 				player:dialogSeq(
 					{
 						t,
-						"It will cost you 3,000 coins. Come back when you have that."
+						"Harganya 3.000 keping. Kembalilah kalau kau sudah punya."
 					},
 					0
 				)
@@ -1811,15 +1811,15 @@ general_npc_funcs = {
 			end
 
 			local cost = player:menuString(
-				"It will cost you 3,000 coins. Do you wish to pay?",
-				{"Yes", "No"}
+				"Harganya 3.000 keping. Kau bersedia membayar?",
+				{"Ya", "Tidak"}
 			)
 
-			if cost == "Yes" then
+			if cost == "Ya" then
 				player:dialogSeq(
 					{
 						t,
-						"Choose the face you like. Please be careful as the change is permanent. Use the 'Previous' and 'Next' to go back and forth through the faces."
+						"Pilih wajah yang kau suka. Hati-hati, perubahannya permanen. Pakai 'Sebelumnya' dan 'Berikutnya' untuk membolak-balik pilihan wajah."
 					},
 					1
 				)
@@ -1852,10 +1852,10 @@ general_npc_funcs = {
 				local index = 1
 
 				local menu = {
-					"I want this one",
-					"Forget this",
-					"Next face",
-					"Previous face"
+					"Aku mau yang ini",
+					"Lupakan saja",
+					"Wajah berikutnya",
+					"Wajah sebelumnya"
 				}
 				local menuChoice = ""
 
@@ -1866,16 +1866,16 @@ general_npc_funcs = {
 					player.gfxFace = faces[index]
 
 					menuChoice = player:menuString(
-						"Do you like this face?",
+						"Kau suka wajah ini?",
 						menu
 					)
 
-					if menuChoice == "I want this one" then
+					if menuChoice == "Aku mau yang ini" then
 						if player.money < 3000 then
 							player:dialogSeq(
 								{
 									t,
-									"It will cost you 3,000 coins. Come back when you have that."
+									"Harganya 3.000 keping. Kembalilah kalau kau sudah punya."
 								},
 								0
 							)
@@ -1887,20 +1887,20 @@ general_npc_funcs = {
 						player:dialogSeq(
 							{
 								t,
-								"It's tricky to mold this flesh. Let's see how it looks."
+								"Membentuk daging ini tidak mudah. Mari lihat hasilnya."
 							},
 							1
 						)
 						player:sendAnimation(11, 5)
 						player:updateState()
 						return
-					elseif menuChoice == "Next face" then
+					elseif menuChoice == "Wajah berikutnya" then
 						index = index + 1
 						if index > #faces then
 							index = #faces
 						end
 						player.gfxFace = faces[index]
-					elseif menuChoice == "Previous face" then
+					elseif menuChoice == "Wajah sebelumnya" then
 						index = index - 1
 						if index < 1 then
 							index = 1
@@ -1922,7 +1922,7 @@ general_npc_funcs = {
 				end]]
 					--
 				end
-			elseif cost == "No" then
+			elseif cost == "Tidak" then
 				player:dialogSeq({t, reject}, 0)
 				return
 			end
@@ -1945,8 +1945,8 @@ general_npc_funcs = {
 		if player:isEquipped() then
 			-- player is equipped
 			local choice = player:menuSeq(
-				"You must remove everything you are wearing before you can change your gender. Remove your items now?\n(If you are full inventory, items WILL be dropped.)",
-				{"Yes, strip me", "No, I can strip myself"},
+				"Kau harus melepas semua yang kau kenakan sebelum bisa mengubah jenis kelaminmu. Lepas barangmu sekarang?\n(Kalau kantongmu penuh, barangnya AKAN dijatuhkan.)",
+				{"Ya, lepaskan semuanya", "Tidak, aku bisa melepasnya sendiri"},
 				{}
 			)
 
@@ -1962,7 +1962,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"You need 12,000 gold to change your gender, come back when you have the cash."
+					"Kau butuh 12.000 emas untuk mengubah jenis kelamin. Kembalilah kalau uangnya sudah ada."
 				},
 				0
 			)
@@ -1970,28 +1970,28 @@ general_npc_funcs = {
 		end
 
 		local confirm = player:menuString(
-			"You realize you won't be able to wear the clothes that you normally do, do you not?",
-			{"Yes", "No"}
+			"Kau sadar kau tidak akan bisa mengenakan pakaian yang biasa kau pakai, bukan?",
+			{"Ya", "Tidak"}
 		)
 
-		if confirm == "Yes" then
+		if confirm == "Ya" then
 			local confirmSexChange = ""
 
 			if player.sex == 0 then
 				-- male
 				confirmSexChange = player:menuString(
-					"Do you wish to become a woman?",
-					{"Yes", "No"}
+					"Apakah kau ingin menjadi perempuan?",
+					{"Ya", "Tidak"}
 				)
 			elseif player.sex == 1 then
 				-- female
 				confirmSexChange = player:menuString(
-					"Do you wish to become a man?",
-					{"Yes", "No"}
+					"Apakah kau ingin menjadi lelaki?",
+					{"Ya", "Tidak"}
 				)
 			end
 
-			if confirmSexChange == "Yes" then
+			if confirmSexChange == "Ya" then
 				player:removeGold(12000)
 
 				local text = ""
@@ -2009,31 +2009,31 @@ general_npc_funcs = {
 				player:dialogSeq(
 					{
 						t,
-						"There, wow that was hard work.",
-						"You can shop at the " .. text .. " shop now."
+						"Nah, wah, itu kerja keras.",
+						"Sekarang kau bisa berbelanja di toko " .. text .. "."
 					},
 					0
 				)
 				return
 			end
-		elseif confirm == "No" then
-			player:dialogSeq({t, "Ok. Maybe you're better off as you are."}, 0)
+		elseif confirm == "Tidak" then
+			player:dialogSeq({t, "Baiklah. Mungkin kau memang lebih baik seperti sekarang."}, 0)
 			return
 		end
 	end,
 
 	changeEyes = function(player, npc)
 		local eyeChoice = player:menuString(
-			"Not all eyes look the same when you change the color, are you sure you want to do this?",
-			{"Yes", "No"}
+			"Tidak semua mata tampak sama ketika warnanya diubah. Kau yakin ingin melakukannya?",
+			{"Ya", "Tidak"}
 		)
 
-		if eyeChoice == "Yes" then
+		if eyeChoice == "Ya" then
 			if player.money < 5000 then
 				player:dialogSeq(
 					{
 						t,
-						"It will cost you 5,000 coins. Come back when you have that."
+						"Harganya 5.000 keping. Kembalilah kalau kau sudah punya."
 					},
 					0
 				)
@@ -2041,15 +2041,15 @@ general_npc_funcs = {
 			end
 
 			local cost = player:menuString(
-				"It will cost you 5,000 coins. Do you wish to pay?",
-				{"Yes", "No"}
+				"Harganya 5.000 keping. Kau bersedia membayar?",
+				{"Ya", "Tidak"}
 			)
 
-			if cost == "Yes" then
+			if cost == "Ya" then
 				player:dialogSeq(
 					{
 						t,
-						"Choose the eyes you like. Please be careful as the change is permanent. Use the 'Previous' and 'Next' to go back and forth through the faces."
+						"Pilih mata yang kau suka. Hati-hati, perubahannya permanen. Pakai 'Sebelumnya' dan 'Berikutnya' untuk membolak-balik pilihannya."
 					},
 					1
 				)
@@ -2060,10 +2060,10 @@ general_npc_funcs = {
 				clone.equip(player, player)
 
 				local menu = {
-					"I want this one",
-					"Forget this",
-					"Next eye color",
-					"Previous eye color"
+					"Aku mau yang ini",
+					"Lupakan saja",
+					"Warna mata berikutnya",
+					"Warna mata sebelumnya"
 				}
 				local menuChoice = ""
 
@@ -2071,42 +2071,42 @@ general_npc_funcs = {
 
 				while str == "buff" do
 					menuChoice = player:menuString(
-						"Do you like this eye color?",
+						"Kau suka warna mata ini?",
 						menu
 					)
 
-					if menuChoice == "I want this one" then
+					if menuChoice == "Aku mau yang ini" then
 						player.faceColor = player.gfxFaceC
 						player:removeGold(3000)
 						player:dialogSeq(
 							{
 								t,
-								"It's tricky to put in these new eyes. Let's see how it looks."
+								"Memasang mata baru ini tidak mudah. Mari lihat hasilnya."
 							},
 							1
 						)
 						player:sendAnimation(11, 5)
 						player:updateState()
 						return
-					elseif menuChoice == "Next eye color" then
+					elseif menuChoice == "Warna mata berikutnya" then
 						player.gfxFaceC = player.gfxFaceC + 1
 						if player.gfxFaceC > 64 then
 							player.gfxFaceC = 64
 						end
-					elseif menuChoice == "Previous eye color" then
+					elseif menuChoice == "Warna mata sebelumnya" then
 						player.gfxFaceC = player.gfxFaceC - 1
 						if player.gfxFaceC < 0 then
 							player.gfxFaceC = 0
 						end
 					end
 				end
-			elseif cost == "No" then
+			elseif cost == "Tidak" then
 				player:dialogSeq({t, reject}, 0)
 				return
 			end
-		elseif eyeChoice == "No" then
+		elseif eyeChoice == "Tidak" then
 			player:dialogSeq(
-				{t, "I think your eyes look great just the way they are too!"},
+				{t, "Menurutku matamu sudah bagus apa adanya!"},
 				0
 			)
 			return
@@ -2143,7 +2143,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"A hair cut will cost 2,000 coins. Come and see me when you can afford it."
+					"Potong rambut harganya 2.000 keping. Temui aku kalau kau sanggup membayarnya."
 				},
 				0
 			)
@@ -2151,17 +2151,17 @@ general_npc_funcs = {
 		end
 
 		if npc.mapTitle == "Kugnae Salon" then
-			player:dialogSeq({t, "A hair cut will cost 2,000 coins."}, 1)
+			player:dialogSeq({t, "Potong rambut harganya 2.000 keping."}, 1)
 		elseif npc.mapTitle == "Buya Salon" then
 			player:dialogSeq(
 				{
 					t,
-					"2,000 clams will buy you some really far out styles, man.."
+					"Dengan 2.000 keping kau bisa dapat gaya yang benar-benar keren, kawan.."
 				},
 				1
 			)
 		elseif npc.mapTitle == "Nagnang Salon" then
-			player:dialogSeq({t, "A hair cut will cost 2,000 coins."}, 1)
+			player:dialogSeq({t, "Potong rambut harganya 2.000 keping."}, 1)
 		end
 
 		local styles = {}
@@ -2423,10 +2423,10 @@ general_npc_funcs = {
 		end
 
 		local opts = {
-			"Yes please!",
-			"Next hair style",
-			"Previous hair style",
-			"Yes, but the color is not right."
+			"Ya, silakan!",
+			"Gaya rambut berikutnya",
+			"Gaya rambut sebelumnya",
+			"Ya, tetapi warnanya kurang pas."
 		}
 
 		local str = "buff"
@@ -2435,14 +2435,14 @@ general_npc_funcs = {
 			player.gfxHair = hairs[index]
 
 			local optsChoice = player:menuString(
-				"<b>Style: " .. styles[index] .. "\n\nIs this style acceptable?",
+				"<b>Style: " .. styles[index] .. "\n\nApakah gaya ini sudah cocok?",
 				opts
 			)
 
-			if optsChoice == "Yes please!" then
+			if optsChoice == "Ya, silakan!" then
 				local confirm = player:menuSeq(
-					"The cost is 2,000 coins. Will you pay?",
-					{"Here is 2,000.", "I refuse to pay."},
+					"Biayanya 2.000 keping. Kau mau membayar?",
+					{"Ini 2.000.", "Aku menolak membayar."},
 					{}
 				)
 
@@ -2451,7 +2451,7 @@ general_npc_funcs = {
 						player:dialogSeq(
 							{
 								t,
-								"A hair cut will cost 2,000 coins. Come and see me when you can afford it."
+								"Potong rambut harganya 2.000 keping. Temui aku kalau kau sanggup membayarnya."
 							},
 							0
 						)
@@ -2461,8 +2461,8 @@ general_npc_funcs = {
 					player:dialogSeq(
 						{
 							t,
-							"Excellent! Let me get my scissors..",
-							"A snip here... [*snip*]  A snip there... [*snip*]"
+							"Bagus! Biar kuambil guntingku..",
+							"Sedikit di sini... [*kres*]  Sedikit di sana... [*kres*]"
 						},
 						1
 					)
@@ -2478,27 +2478,27 @@ general_npc_funcs = {
 
 					--player.registry["haircutTimer"] = os.time() + 10800 -- 3 hours
 					player:dialogSeq(
-						{t, "All done! Enjoy your new hairstyle!"},
+						{t, "Selesai! Nikmati gaya rambut barumu!"},
 						0
 					)
 
 					--end
 				end
-			elseif optsChoice == "Next hair style" then
+			elseif optsChoice == "Gaya rambut berikutnya" then
 				index = index + 1
 				if index > #styles then
 					index = #styles
 				end
-			elseif optsChoice == "Previous hair style" then
+			elseif optsChoice == "Gaya rambut sebelumnya" then
 				index = index - 1
 				if index < 1 then
 					index = 1
 				end
-			elseif optsChoice == "Yes, but the color is not right." then
+			elseif optsChoice == "Ya, tetapi warnanya kurang pas." then
 				player:dialogSeq(
 					{
 						t,
-						"I understand. I will try my best to match your current haircolor after I finish cutting it. Come speak to me again after we are done if you would like a new hair color."
+						"Aku mengerti. Akan kuusahakan menyamai warna rambutmu sekarang setelah selesai memotongnya. Bicaralah lagi kepadaku setelah selesai kalau kau mau warna rambut baru."
 					},
 					1
 				)
@@ -2520,14 +2520,14 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"A new dye can breathe life into your spirit and invigorate your self image! It's just the thing to cheer up your day!"
+					"Warna baru bisa menghidupkan semangatmu dan menyegarkan penampilanmu! Pas sekali untuk mencerahkan harimu!"
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"I can offer you any number of fine hair dyes for only a mere 2,000 coins."
+					"Aku bisa menawarkan berbagai pewarna rambut bermutu hanya seharga 2.000 keping."
 				},
 				1
 			)
@@ -2535,19 +2535,19 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"A new dye eh? Yeah, I can help ya with that. I only offer good hair dye colors. If you don't like my selection then get lost."
+					"Warna baru ya? Boleh, aku bisa bantu. Aku cuma menyediakan warna yang bagus. Kalau kau tidak suka pilihanku, pergi sana."
 				},
 				1
 			)
 			player:dialogSeq(
-				{t, "Hair dye costs 2,000 coins. Pay it or get out."},
+				{t, "Pewarna rambut harganya 2.000 keping. Bayar atau pergi."},
 				1
 			)
 		end
 
 		if player.money < 2000 then
 			player:dialogSeq(
-				{t, "So come back when you have enough money, dearie!"},
+				{t, "Jadi kembalilah kalau uangmu sudah cukup, sayang!"},
 				0
 			)
 			return
@@ -2605,9 +2605,9 @@ general_npc_funcs = {
 		clone.equip(player, player)
 
 		local opts = {
-			"Yes please!",
-			"Next hair color",
-			"Previous hair color",
+			"Ya, silakan!",
+			"Warna rambut berikutnya",
+			"Warna rambut sebelumnya",
 			"Nevermind"
 		}
 
@@ -2617,28 +2617,28 @@ general_npc_funcs = {
 			player.gfxHairC = hairC[index]
 
 			local optsChoice = player:menuString(
-				"<b>Color: " .. hairColors[index] .. "\n\nIs this style acceptable?",
+				"<b>Color: " .. hairColors[index] .. "\n\nApakah gaya ini sudah cocok?",
 				opts
 			)
 
-			if optsChoice == "Yes please!" then
+			if optsChoice == "Ya, silakan!" then
 				local confirm = player:menuSeq(
-					"That will be 2,000 coins. Will you pay?",
-					{"Yes, here is the money.", "I won't pay that."},
+					"Jadinya 2.000 keping. Kau mau membayar?",
+					{"Ya, ini uangnya.", "Aku tidak mau membayar sebanyak itu."},
 					{}
 				)
 
 				if confirm == 1 then
 					if player.money < 2000 then
 						player:dialogSeq(
-							{t, "Come back when you have the money."},
+							{t, "Kembalilah kalau uangnya sudah ada."},
 							0
 						)
 						return
 					end
 
 					player:dialogSeq(
-						{t, "This is a very delicate procedure. Hold still.."},
+						{t, "Ini pekerjaan yang sangat halus. Jangan bergerak.."},
 						1
 					)
 					player:removeGold(2000)
@@ -2646,18 +2646,18 @@ general_npc_funcs = {
 					player:updateState()
 
 					player:dialogSeq(
-						{t, "There! Now don't you look SOOO much better!"},
+						{t, "Nah! Sekarang kau kelihatan JAUH lebih baik, kan!"},
 						0
 					)
 
 					-- Oh one more thing. Your hair is very fragile now. I would not suggest getting a dye or style change for awhile. It could cause your hair to fall out permanently!
 				end
-			elseif optsChoice == "Next hair color" then
+			elseif optsChoice == "Warna rambut berikutnya" then
 				index = index + 1
 				if index > #hairColors then
 					index = #hairColors
 				end
-			elseif optsChoice == "Previous hair color" then
+			elseif optsChoice == "Warna rambut sebelumnya" then
 				index = index - 1
 				if index < 1 then
 					index = 1
@@ -2679,29 +2679,29 @@ general_npc_funcs = {
 		player.lastClick = npc.ID
 
 		if player:getEquippedItem(EQ_FACEACCTWO) == nil then
-			player:dialogSeq({t, "Hey, you don't have a beard!"}, 0)
+			player:dialogSeq({t, "Hei, kau tidak punya janggut!"}, 0)
 			return
 		end
 
-		local choices = {"I will pay that.", "I refuse to pay!"}
+		local choices = {"Aku akan membayarnya.", "Aku menolak membayar!"}
 
 		if player.money < 2500 then
-			player:dialogSeq({t, "Come back when you have 2,500 coins."}, 0)
+			player:dialogSeq({t, "Kembalilah kalau kau sudah punya 2.500 keping."}, 0)
 			return
 		end
 
 		local choice = player:menuString(
-			"It will cost 2500 coins to shave your beard off.",
+			"Mencukur janggutmu harganya 2.500 keping.",
 			choices
 		)
 
-		if choice == "I will pay that." then
-			player:dialogSeq({t, "Hold still for a moment.."}, 1)
+		if choice == "Aku akan membayarnya." then
+			player:dialogSeq({t, "Diam sebentar.."}, 1)
 			player:stripEquip(EQ_FACEACCTWO, 1, 0)
 			player:removeGold(2500)
 
 			player:dialogSeq(
-				{t, "There, all done. Enjoy your newly shaven face!"},
+				{t, "Nah, selesai. Nikmati wajahmu yang baru dicukur!"},
 				0
 			)
 		end
@@ -2722,7 +2722,7 @@ general_npc_funcs = {
 			player:dialogSeq(
 				{
 					t,
-					"You will need to shave your beard before you can get a new style!"
+					"Kau harus mencukur janggutmu dulu sebelum bisa mengganti gaya!"
 				},
 				0
 			)
@@ -2732,17 +2732,17 @@ general_npc_funcs = {
 		player:dialogSeq(
 			{
 				t,
-				"A new beard? Oh you would look marvelous with one of my styles!",
-				"You should know that my talents aren't free, and the hair growth potion costs me alot of money!\n\nI charge 2,500 for my services, and 11,000 for the use of the growth potion."
+				"Janggut baru? Oh, kau akan tampak menawan dengan salah satu gayaku!",
+				"Perlu kau tahu, keahlianku tidak gratis, dan ramuan penumbuh rambut itu mahal!\n\nAku memungut 2.500 untuk jasaku, dan 11.000 untuk pemakaian ramuannya."
 			},
 			1
 		)
 
 		local choice = player:menuSeq(
-			"The total for your new beard will be 13,500. Will you pay that?",
+			"Total untuk janggut barumu 13.500. Kau mau membayarnya?",
 			{
-				"Certainly, I will pay 13,500.",
-				"No, that's outrageous! I refuse."
+				"Tentu, aku akan membayar 13.500.",
+				"Tidak, itu keterlaluan! Aku menolak."
 			},
 			{}
 		)
@@ -2769,9 +2769,9 @@ general_npc_funcs = {
 			clone.equip(player, player)
 
 			local opts = {
-				"Yes please!",
-				"Next beard",
-				"Previous beard",
+				"Ya, silakan!",
+				"Janggut berikutnya",
+				"Janggut sebelumnya",
 				"Nevermind"
 			}
 
@@ -2782,23 +2782,23 @@ general_npc_funcs = {
 				player.gfxFaceATC = Item(beardItems[index]).lookC
 
 				local optsChoice = player:menuString(
-					"<b>Beard style: " .. beards[index] .. "\n\nIs this style acceptable?",
+					"<b>Beard style: " .. beards[index] .. "\n\nApakah gaya ini sudah cocok?",
 					opts
 				)
 
-				if optsChoice == "Yes please!" then
+				if optsChoice == "Ya, silakan!" then
 					player:dialogSeq(
 						{
 							t,
-							"Great! Let me get another bottle of my hair growth potion. Hold on just a second, sweetie."
+							"Bagus! Biar kuambil satu botol lagi ramuan penumbuh rambutku. Tunggu sebentar, sayang."
 						},
 						1
 					)
 					local confirm = player:menuSeq(
-						"You should know that this beard will be permanent. You won't be able to remove it until you come back here for a shave. Do you still want a new beard?",
+						"Perlu kau tahu, janggut ini permanen. Kau tidak bisa menghilangkannya sampai kembali ke sini untuk dicukur. Masih mau janggut baru?",
 						{
-							"Yes, I understand beards are permanent.",
-							"Hmmm, I can't remove it? On second thought.."
+							"Ya, aku paham janggut itu permanen.",
+							"Hmmm, tidak bisa dihilangkan? Kalau dipikir-pikir lagi.."
 						},
 						{}
 					)
@@ -2806,7 +2806,7 @@ general_npc_funcs = {
 					if confirm == 1 then
 						if player.money < 13500 then
 							player:dialogSeq(
-								{t, "Come back when you have the money."},
+								{t, "Kembalilah kalau uangnya sudah ada."},
 								0
 							)
 							return
@@ -2820,7 +2820,7 @@ general_npc_funcs = {
 						player:dialogSeq(
 							{
 								t,
-								"Alright, we're ready to begin! Hold still while I apply the potion.."
+								"Baiklah, kita siap mulai! Jangan bergerak selagi kuoleskan ramuannya.."
 							},
 							1
 						)
@@ -2829,16 +2829,16 @@ general_npc_funcs = {
 						player:updateState()
 
 						player:dialogSeq(
-							{t, "There! Now don't you look SOOO much better!"},
+							{t, "Nah! Sekarang kau kelihatan JAUH lebih baik, kan!"},
 							0
 						)
 					end
-				elseif optsChoice == "Next beard" then
+				elseif optsChoice == "Janggut berikutnya" then
 					index = index + 1
 					if index > #beards then
 						index = #beards
 					end
-				elseif optsChoice == "Previous beard" then
+				elseif optsChoice == "Janggut sebelumnya" then
 					index = index - 1
 					if index < 1 then
 						index = 1
@@ -2848,7 +2848,7 @@ general_npc_funcs = {
 				end
 			end
 		elseif choice == 2 then
-			player:dialogSeq({t, "Then my services are not for you."}, 0)
+			player:dialogSeq({t, "Kalau begitu jasaku bukan untukmu."}, 0)
 			return
 		end
 	end,
@@ -2866,7 +2866,7 @@ general_npc_funcs = {
 		player:dialogSeq(
 			{
 				t,
-				"Uhmmm maybe when you've actually, ya know, done something stressful in your life?"
+				"Ehmm, mungkin nanti kalau kau, yah, benar-benar pernah mengalami sesuatu yang melelahkan dalam hidupmu?"
 			},
 			0
 		)
@@ -2876,20 +2876,20 @@ general_npc_funcs = {
 		player:dialogSeq(
 			{
 				t,
-				"I can make your stress melt away for just one easy payment of 50,000 coins!",
-				"((This feature will reduce your mana by one point. Proceed only if you wish to lose one mana point))."
+				"Aku bisa melenyapkan penatmu hanya dengan sekali bayar 50.000 keping!",
+				"((Fitur ini mengurangi manamu satu angka. Lanjutkan hanya kalau kau rela kehilangan satu angka mana))."
 			},
 			1
 		)
 
-		local choice = player:menuString("Do you proceed?", {"Yes", "No"})
+		local choice = player:menuString("Kau lanjutkan?", {"Ya", "Tidak"})
 
-		if choice == "Yes" then
+		if choice == "Ya" then
 			player:dialogSeq(
 				{
 					t,
-					"Very nice! *he slaps his palms together and then begins drumming on your head*",
-					"*Your head feels woozy, shaken-up, and worse than before*"
+					"Bagus sekali! *ia menepukkan kedua telapak tangannya lalu mulai menabuh kepalamu*",
+					"*Kepalamu terasa pening, terguncang, dan lebih parah dari sebelumnya*"
 				},
 				0
 			)

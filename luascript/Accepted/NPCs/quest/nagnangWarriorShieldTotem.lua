@@ -28,8 +28,8 @@ nagnangWarriorShieldTotem = {
 
 		if (mobFound or player.quest["needsForgiveWarriorShieldTotem"] == 1) then
 			player.quest["needsForgiveWarriorShieldTotem"] = 1
-			player:sendMinitext("You touch the statue several times, but nothing seems to happen. You hear a faint voice calling you a killer...")
-			player:sendMinitext("Perhaps you shouldn't have killed the red and blue animals in the cave.")
+			player:sendMinitext("Kau menyentuh patung itu berkali-kali, tetapi tampaknya tidak terjadi apa-apa. Kau mendengar suara samar menyebutmu pembunuh...")
+			player:sendMinitext("Mungkin seharusnya kau tidak membunuh binatang merah dan biru di gua itu.")
 
 			for i = 1, #mobs do
 				player:flushKills(mobs[i])
@@ -43,11 +43,11 @@ nagnangWarriorShieldTotem = {
 		player:dialogSeq(
 			{
 				t,
-				"As you touch the mighty statue, it seems to come to life!",
-				"Ah, Mortal, you dared to enter my cave to face me? You are a brave and worthy warrior.",
-				"You held your word and harmed none of the red and blue creatures. You have shown honor and skill.",
-				"I shall reward you. Take this shield, and may it protect you in your upcoming battles. This is the only one I shall ever give you.",
-				"The statue turns back to stone, and you see a shield on the steps, you go to pick it up."
+				"Saat kau menyentuh patung perkasa itu, ia seakan hidup!",
+				"Ah, manusia fana, kau berani memasuki guaku untuk menghadapiku? Kau prajurit yang berani dan layak.",
+				"Kau menepati janjimu dan tidak melukai satu pun makhluk merah dan biru. Kau menunjukkan kehormatan dan kecakapan.",
+				"Kau akan kuganjar. Ambil perisai ini, semoga ia melindungimu dalam pertempuran mendatang. Hanya ini satu-satunya yang akan kuberikan padamu.",
+				"Patung itu kembali menjadi batu, dan kau melihat sebuah perisai di anak tangga lalu memungutnya."
 			},
 			1
 		)

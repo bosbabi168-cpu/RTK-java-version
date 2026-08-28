@@ -8,27 +8,27 @@ soften_skin = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType == BL_PC and not player:canPK(target)) or target.blType == BL_NPC then
-			player:sendMinitext("You cannot attack that target.")
+			player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 			return
 		end
 
 		if target:checkIfCast(curses) or target.cursed == 1 then
-			player:sendMinitext("Another spell of this type is in effect.")
+			player:sendMinitext("Mantra lain sejenis ini sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is already protected.")
+			player:sendMinitext("Sasaran itu sudah terlindungi.")
 			return
 		end
 
@@ -40,7 +40,7 @@ soften_skin = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(702)
-		player:sendMinitext("You cast Soften skin.")
+		player:sendMinitext("Kau merapal Soften skin.")
 		target:setDuration("soften_skin", duration)
 		target:sendAnimation(1, 0)
 
@@ -48,7 +48,7 @@ soften_skin = {
 			target.armor = target.armor + 35
 			target.cursed = 1
 		elseif (target.blType == BL_PC and player:canPK(target)) then
-			target:sendMinitext(player.name .. " casts Soften skin on you.")
+			target:sendMinitext(player.name .. " merapal Soften skin padamu.")
 			target:calcStat()
 		end
 	end,

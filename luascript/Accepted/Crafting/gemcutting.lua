@@ -34,7 +34,7 @@ gemcutting = {
 			local choice = 1
 			if #opts > 1 then
 				choice = player:menuSeq(
-					"Which gem would you like to attempt?",
+					"Permata mana yang ingin kau coba?",
 					opts,
 					{}
 				)
@@ -43,7 +43,7 @@ gemcutting = {
 			local amber = ambertypes[choice]
 			local ta = {graphic = Item(amber).icon, color = Item(amber).iconC}
 			if player:hasItem(amber, 1) ~= true then
-				player:dialogSeq({ta, "You have nothing to craft."}, 0)
+				player:dialogSeq({ta, "Tidak ada yang bisa kau buat."}, 0)
 				return
 			end
 
@@ -74,7 +74,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -86,7 +86,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -98,7 +98,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -109,7 +109,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -124,7 +124,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -136,7 +136,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -148,7 +148,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -159,7 +159,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -174,7 +174,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -186,7 +186,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -198,7 +198,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -209,7 +209,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -224,7 +224,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -236,7 +236,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -248,7 +248,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -259,7 +259,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -274,7 +274,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -286,7 +286,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -298,7 +298,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -309,7 +309,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -324,7 +324,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -336,7 +336,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -348,7 +348,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -359,7 +359,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -374,7 +374,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -386,7 +386,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -398,7 +398,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -409,7 +409,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -424,7 +424,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -436,7 +436,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -448,7 +448,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -459,7 +459,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -474,7 +474,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -486,7 +486,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -498,7 +498,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -509,7 +509,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -524,7 +524,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -536,7 +536,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -548,7 +548,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -559,7 +559,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -574,7 +574,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -586,7 +586,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -598,7 +598,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -609,7 +609,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -624,7 +624,7 @@ gemcutting = {
 							graphic = Item("well_crafted_amber").icon,
 							color = Item("well_crafted_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -636,7 +636,7 @@ gemcutting = {
 							graphic = Item("crafted_amber").icon,
 							color = Item("crafted_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -648,7 +648,7 @@ gemcutting = {
 							graphic = Item("tarnished_amber").icon,
 							color = Item("tarnished_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -659,7 +659,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -679,7 +679,7 @@ gemcutting = {
 							graphic = Item("well_crafted_dark_amber").icon,
 							color = Item("well_crafted_dark_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -691,7 +691,7 @@ gemcutting = {
 							graphic = Item("crafted_dark_amber").icon,
 							color = Item("crafted_dark_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -703,7 +703,7 @@ gemcutting = {
 							graphic = Item("tarnished_dark_amber").icon,
 							color = Item("tarnished_dark_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -714,7 +714,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -729,7 +729,7 @@ gemcutting = {
 							graphic = Item("well_crafted_dark_amber").icon,
 							color = Item("well_crafted_dark_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -741,7 +741,7 @@ gemcutting = {
 							graphic = Item("crafted_dark_amber").icon,
 							color = Item("crafted_dark_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -753,7 +753,7 @@ gemcutting = {
 							graphic = Item("tarnished_dark_amber").icon,
 							color = Item("tarnished_dark_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -764,7 +764,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -779,7 +779,7 @@ gemcutting = {
 							graphic = Item("well_crafted_dark_amber").icon,
 							color = Item("well_crafted_dark_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -791,7 +791,7 @@ gemcutting = {
 							graphic = Item("crafted_dark_amber").icon,
 							color = Item("crafted_dark_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -803,7 +803,7 @@ gemcutting = {
 							graphic = Item("tarnished_dark_amber").icon,
 							color = Item("tarnished_dark_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -814,7 +814,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -829,7 +829,7 @@ gemcutting = {
 							graphic = Item("well_crafted_dark_amber").icon,
 							color = Item("well_crafted_dark_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -841,7 +841,7 @@ gemcutting = {
 							graphic = Item("crafted_dark_amber").icon,
 							color = Item("crafted_dark_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -853,7 +853,7 @@ gemcutting = {
 							graphic = Item("tarnished_dark_amber").icon,
 							color = Item("tarnished_dark_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -864,7 +864,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -879,7 +879,7 @@ gemcutting = {
 							graphic = Item("well_crafted_dark_amber").icon,
 							color = Item("well_crafted_dark_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -891,7 +891,7 @@ gemcutting = {
 							graphic = Item("crafted_dark_amber").icon,
 							color = Item("crafted_dark_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -903,7 +903,7 @@ gemcutting = {
 							graphic = Item("tarnished_dark_amber").icon,
 							color = Item("tarnished_dark_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -914,7 +914,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -929,7 +929,7 @@ gemcutting = {
 							graphic = Item("well_crafted_dark_amber").icon,
 							color = Item("well_crafted_dark_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -941,7 +941,7 @@ gemcutting = {
 							graphic = Item("crafted_dark_amber").icon,
 							color = Item("crafted_dark_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -953,7 +953,7 @@ gemcutting = {
 							graphic = Item("tarnished_dark_amber").icon,
 							color = Item("tarnished_dark_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -964,7 +964,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -979,7 +979,7 @@ gemcutting = {
 							graphic = Item("well_crafted_dark_amber").icon,
 							color = Item("well_crafted_dark_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -991,7 +991,7 @@ gemcutting = {
 							graphic = Item("crafted_dark_amber").icon,
 							color = Item("crafted_dark_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1003,7 +1003,7 @@ gemcutting = {
 							graphic = Item("tarnished_dark_amber").icon,
 							color = Item("tarnished_dark_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1014,7 +1014,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1029,7 +1029,7 @@ gemcutting = {
 							graphic = Item("well_crafted_dark_amber").icon,
 							color = Item("well_crafted_dark_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1041,7 +1041,7 @@ gemcutting = {
 							graphic = Item("crafted_dark_amber").icon,
 							color = Item("crafted_dark_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1053,7 +1053,7 @@ gemcutting = {
 							graphic = Item("tarnished_dark_amber").icon,
 							color = Item("tarnished_dark_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1064,7 +1064,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1079,7 +1079,7 @@ gemcutting = {
 							graphic = Item("well_crafted_dark_amber").icon,
 							color = Item("well_crafted_dark_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1091,7 +1091,7 @@ gemcutting = {
 							graphic = Item("crafted_dark_amber").icon,
 							color = Item("crafted_dark_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1103,7 +1103,7 @@ gemcutting = {
 							graphic = Item("tarnished_dark_amber").icon,
 							color = Item("tarnished_dark_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1114,7 +1114,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1134,7 +1134,7 @@ gemcutting = {
 							graphic = Item("well_crafted_white_amber").icon,
 							color = Item("well_crafted_white_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1146,7 +1146,7 @@ gemcutting = {
 							graphic = Item("crafted_white_amber").icon,
 							color = Item("crafted_white_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1158,7 +1158,7 @@ gemcutting = {
 							graphic = Item("tarnished_white_amber").icon,
 							color = Item("tarnished_white_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1169,7 +1169,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1184,7 +1184,7 @@ gemcutting = {
 							graphic = Item("well_crafted_white_amber").icon,
 							color = Item("well_crafted_white_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1196,7 +1196,7 @@ gemcutting = {
 							graphic = Item("crafted_white_amber").icon,
 							color = Item("crafted_white_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1208,7 +1208,7 @@ gemcutting = {
 							graphic = Item("tarnished_white_amber").icon,
 							color = Item("tarnished_white_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1219,7 +1219,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1234,7 +1234,7 @@ gemcutting = {
 							graphic = Item("well_crafted_white_amber").icon,
 							color = Item("well_crafted_white_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1246,7 +1246,7 @@ gemcutting = {
 							graphic = Item("crafted_white_amber").icon,
 							color = Item("crafted_white_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1258,7 +1258,7 @@ gemcutting = {
 							graphic = Item("tarnished_white_amber").icon,
 							color = Item("tarnished_white_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1269,7 +1269,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1284,7 +1284,7 @@ gemcutting = {
 							graphic = Item("well_crafted_white_amber").icon,
 							color = Item("well_crafted_white_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1296,7 +1296,7 @@ gemcutting = {
 							graphic = Item("crafted_white_amber").icon,
 							color = Item("crafted_white_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1308,7 +1308,7 @@ gemcutting = {
 							graphic = Item("tarnished_white_amber").icon,
 							color = Item("tarnished_white_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1319,7 +1319,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1334,7 +1334,7 @@ gemcutting = {
 							graphic = Item("well_crafted_white_amber").icon,
 							color = Item("well_crafted_white_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1346,7 +1346,7 @@ gemcutting = {
 							graphic = Item("crafted_white_amber").icon,
 							color = Item("crafted_white_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1358,7 +1358,7 @@ gemcutting = {
 							graphic = Item("tarnished_white_amber").icon,
 							color = Item("tarnished_white_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1369,7 +1369,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1384,7 +1384,7 @@ gemcutting = {
 							graphic = Item("well_crafted_white_amber").icon,
 							color = Item("well_crafted_white_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1396,7 +1396,7 @@ gemcutting = {
 							graphic = Item("crafted_white_amber").icon,
 							color = Item("crafted_white_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1408,7 +1408,7 @@ gemcutting = {
 							graphic = Item("tarnished_white_amber").icon,
 							color = Item("tarnished_white_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1419,7 +1419,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1434,7 +1434,7 @@ gemcutting = {
 							graphic = Item("well_crafted_white_amber").icon,
 							color = Item("well_crafted_white_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1446,7 +1446,7 @@ gemcutting = {
 							graphic = Item("crafted_white_amber").icon,
 							color = Item("crafted_white_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1458,7 +1458,7 @@ gemcutting = {
 							graphic = Item("tarnished_white_amber").icon,
 							color = Item("tarnished_white_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1469,7 +1469,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1484,7 +1484,7 @@ gemcutting = {
 							graphic = Item("well_crafted_white_amber").icon,
 							color = Item("well_crafted_white_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1496,7 +1496,7 @@ gemcutting = {
 							graphic = Item("crafted_white_amber").icon,
 							color = Item("crafted_white_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1508,7 +1508,7 @@ gemcutting = {
 							graphic = Item("tarnished_white_amber").icon,
 							color = Item("tarnished_white_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1519,7 +1519,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1534,7 +1534,7 @@ gemcutting = {
 							graphic = Item("well_crafted_white_amber").icon,
 							color = Item("well_crafted_white_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1546,7 +1546,7 @@ gemcutting = {
 							graphic = Item("crafted_white_amber").icon,
 							color = Item("crafted_white_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1558,7 +1558,7 @@ gemcutting = {
 							graphic = Item("tarnished_white_amber").icon,
 							color = Item("tarnished_white_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1569,7 +1569,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1589,7 +1589,7 @@ gemcutting = {
 							graphic = Item("well_crafted_yellow_amber").icon,
 							color = Item("well_crafted_yellow_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1601,7 +1601,7 @@ gemcutting = {
 							graphic = Item("crafted_yellow_amber").icon,
 							color = Item("crafted_yellow_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1613,7 +1613,7 @@ gemcutting = {
 							graphic = Item("tarnished_yellow_amber").icon,
 							color = Item("tarnished_yellow_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1624,7 +1624,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1639,7 +1639,7 @@ gemcutting = {
 							graphic = Item("well_crafted_yellow_amber").icon,
 							color = Item("well_crafted_yellow_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1651,7 +1651,7 @@ gemcutting = {
 							graphic = Item("crafted_yellow_amber").icon,
 							color = Item("crafted_yellow_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1663,7 +1663,7 @@ gemcutting = {
 							graphic = Item("tarnished_yellow_amber").icon,
 							color = Item("tarnished_yellow_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1674,7 +1674,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1689,7 +1689,7 @@ gemcutting = {
 							graphic = Item("well_crafted_yellow_amber").icon,
 							color = Item("well_crafted_yellow_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1701,7 +1701,7 @@ gemcutting = {
 							graphic = Item("crafted_yellow_amber").icon,
 							color = Item("crafted_yellow_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1713,7 +1713,7 @@ gemcutting = {
 							graphic = Item("tarnished_yellow_amber").icon,
 							color = Item("tarnished_yellow_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1724,7 +1724,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1739,7 +1739,7 @@ gemcutting = {
 							graphic = Item("well_crafted_yellow_amber").icon,
 							color = Item("well_crafted_yellow_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1751,7 +1751,7 @@ gemcutting = {
 							graphic = Item("crafted_yellow_amber").icon,
 							color = Item("crafted_yellow_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1763,7 +1763,7 @@ gemcutting = {
 							graphic = Item("tarnished_yellow_amber").icon,
 							color = Item("tarnished_yellow_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1774,7 +1774,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1789,7 +1789,7 @@ gemcutting = {
 							graphic = Item("well_crafted_yellow_amber").icon,
 							color = Item("well_crafted_yellow_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1801,7 +1801,7 @@ gemcutting = {
 							graphic = Item("crafted_yellow_amber").icon,
 							color = Item("crafted_yellow_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1813,7 +1813,7 @@ gemcutting = {
 							graphic = Item("tarnished_yellow_amber").icon,
 							color = Item("tarnished_yellow_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1824,7 +1824,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1839,7 +1839,7 @@ gemcutting = {
 							graphic = Item("well_crafted_yellow_amber").icon,
 							color = Item("well_crafted_yellow_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1851,7 +1851,7 @@ gemcutting = {
 							graphic = Item("crafted_yellow_amber").icon,
 							color = Item("crafted_yellow_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1863,7 +1863,7 @@ gemcutting = {
 							graphic = Item("tarnished_yellow_amber").icon,
 							color = Item("tarnished_yellow_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1874,7 +1874,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)
@@ -1889,7 +1889,7 @@ gemcutting = {
 							graphic = Item("well_crafted_yellow_amber").icon,
 							color = Item("well_crafted_yellow_amber").iconC
 						},
-						"You have succeeded masterfully!"
+						"Kau berhasil dengan sempurna!"
 					},
 					0
 				)
@@ -1901,7 +1901,7 @@ gemcutting = {
 							graphic = Item("crafted_yellow_amber").icon,
 							color = Item("crafted_yellow_amber").iconC
 						},
-						"Your efforts are successful!"
+						"Usahamu berhasil!"
 					},
 					0
 				)
@@ -1913,7 +1913,7 @@ gemcutting = {
 							graphic = Item("tarnished_yellow_amber").icon,
 							color = Item("tarnished_yellow_amber").iconC
 						},
-						"You have failed in your attempt."
+						"Percobaanmu gagal."
 					},
 					0
 				)
@@ -1924,7 +1924,7 @@ gemcutting = {
 							graphic = Item("amber").icon,
 							color = Item("amber").iconC
 						},
-						"Your feeble efforts have destroyed that which you meant to enhance."
+						"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 					},
 					0
 				)

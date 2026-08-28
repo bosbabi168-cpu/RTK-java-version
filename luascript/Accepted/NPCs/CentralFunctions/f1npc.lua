@@ -22,16 +22,16 @@ F1Npc = {
 
 		--table.insert(opts,"Wisdom Star Status")
 		table.insert(opts, "Minigame Stats")
-		table.insert(opts, "Spells")
+		table.insert(opts, "Mantra")
 		table.insert(opts, "Toggles")
-		table.insert(opts, "My character webpage")
+		table.insert(opts, "Halaman web karakterku")
 		table.insert(opts, "Character Stats")
 		table.insert(opts, "Faerie Light")
 		table.insert(opts, "AFK Message")
 		table.insert(opts, "Kan account information")
 
 		if PoemNpc.checkPlayerSelectionList(player) == true then
-			table.insert(opts, "Warp to Poem Selection Room")
+			table.insert(opts, "Pindah ke Ruang Pemilihan Puisi")
 		end
 
 		if player:hasLegend("head_tutor") or player.gmLevel > 0 then
@@ -39,7 +39,7 @@ F1Npc = {
 		end
 
 		if player.tutor == 1 or player.gmLevel > 0 then
-			table.insert(opts, "Go to Tutor Haven")
+			table.insert(opts, "Pergi ke Tutor Haven")
 			table.insert(opts, "Novice Listener")
 		end
 
@@ -67,7 +67,7 @@ F1Npc = {
 				player:dialogSeq(
 					{
 						t,
-						"This is for the dead of the land to find a path to the shaman. You are not dead, so you have no path with me."
+						"Ini untuk arwah negeri ini menemukan jalan menuju dukun. Kau belum mati, jadi tidak ada jalan bagimu di sini."
 					},
 					0
 				)
@@ -77,7 +77,7 @@ F1Npc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ah, another who walks amongst the ranks of the dead... but it is not your time yet... I will give you passage to a Shaman to give you life again."
+					"Ah, satu lagi yang berjalan di antara barisan orang mati... tetapi waktumu belum tiba... akan kuberi jalan menuju Dukun agar kau hidup kembali."
 				},
 				1
 			)
@@ -91,57 +91,57 @@ F1Npc = {
 			if player.country == 0 then
 				--wilderness
 				warpChoice = player:menuString(
-					"Which Shaman would you like to visit?",
+					"Dukun mana yang ingin kau kunjungi?",
 					{
-						"Hyun Moo Priest, to the North side of the Wilderness",
-						"Ju Jak Priest, to the South side of the Wilderness",
-						"Baekho Priest, to the West side of the Wilderness",
-						"Chung ryong Priest, to the East side of the Wilderness"
+						"Pendeta Hyun Moo, di sisi Utara Wilderness",
+						"Pendeta Ju Jak, di sisi Selatan Wilderness",
+						"Pendeta Baekho, di sisi Barat Wilderness",
+						"Pendeta Chung ryong, di sisi Timur Wilderness"
 					},
 					{}
 				)
 			elseif player.country == 1 then
 				--kugnae
 				warpChoice = player:menuString(
-					"Which Shaman would you like to visit?",
+					"Dukun mana yang ingin kau kunjungi?",
 					{
-						"Dusk, to the West of Kugnae.",
-						"Dawn, to the East of Kugnae."
+						"Dusk, di sebelah Barat Kugnae.",
+						"Dawn, di sebelah Timur Kugnae."
 					},
 					{}
 				)
 			elseif player.country == 2 then
 				-- buya
 				warpChoice = player:menuString(
-					"Which Shaman would you like to visit?",
+					"Dukun mana yang ingin kau kunjungi?",
 					{
-						"Felis, to the West of Buya.",
-						"Storm, to the East of Buya."
+						"Felis, di sebelah Barat Buya.",
+						"Storm, di sebelah Timur Buya."
 					},
 					{}
 				)
 			end
 
-			if warpChoice == "Hyun Moo Priest, to the North side of the Wilderness" then
+			if warpChoice == "Pendeta Hyun Moo, di sisi Utara Wilderness" then
 				player:warp(1416, 11, 5)
-			elseif warpChoice == "Ju Jak Priest, to the South side of the Wilderness" then
+			elseif warpChoice == "Pendeta Ju Jak, di sisi Selatan Wilderness" then
 				player:warp(1411, 11, 5)
-			elseif warpChoice == "Baekho Priest, to the West side of the Wilderness" then
+			elseif warpChoice == "Pendeta Baekho, di sisi Barat Wilderness" then
 				player:warp(1406, 11, 5)
-			elseif warpChoice == "Chung ryong Priest, to the East side of the Wilderness" then
+			elseif warpChoice == "Pendeta Chung ryong, di sisi Timur Wilderness" then
 				player:warp(1401, 11, 5)
-			elseif warpChoice == "Dusk, to the West of Kugnae." then
+			elseif warpChoice == "Dusk, di sebelah Barat Kugnae." then
 				player:warp(8, 6, 4)
-			elseif warpChoice == "Dawn, to the East of Kugnae." then
+			elseif warpChoice == "Dawn, di sebelah Timur Kugnae." then
 				player:warp(9, 3, 5)
-			elseif warpChoice == "Felis, to the West of Buya." then
+			elseif warpChoice == "Felis, di sebelah Barat Buya." then
 				player:warp(338, 4, 4)
-			elseif warpChoice == "Storm, to the East of Buya." then
+			elseif warpChoice == "Storm, di sebelah Timur Buya." then
 				player:warp(339, 3, 5)
 			end
 		elseif choice == "GM Menu" then
 			menu = player:menuString(
-				"<b>[GM Menu]\n\nWhat would you like to do?",
+				"<b>[Menu GM]\n\nApa yang ingin kau lakukan?",
 				{
 					"God Tools",
 					"Private Tools",
@@ -157,7 +157,7 @@ F1Npc = {
 			elseif menu == "Minigame Powers" then
 				minigame_powers.f1click(player, npc)
 			elseif menu == "System Broadcast" then
-				local input = player:input("Enter what you want to broadcast")
+				local input = player:input("Masukkan pesan yang ingin kau siarkan")
 				gmbroadcast(-1, "[SYSTEM]: " .. input)
 			elseif menu == "Wisdom Star Tools" then
 				local subChoices = {
@@ -169,7 +169,7 @@ F1Npc = {
 
 				local subChoice = player:menuString("Select option", subChoices)
 				if subChoice == "Extend Wisdom Star" then
-					local minutes = player:inputNumberCheck(player:input("How many minutes would you like to extend by?"))
+					local minutes = player:inputNumberCheck(player:input("Ingin diperpanjang berapa menit?"))
 
 					local seconds = minutes * 60
 
@@ -182,14 +182,14 @@ F1Npc = {
 						"Praise the Gods! GM " .. player.name .. " has manually extended Wisdom star by " .. minutes .. " minutes."
 					)
 				elseif subChoice == "Set Minutes Remaining" then
-					local minutes = player:inputNumberCheck(player:input("How many minutes would you like to set?"))
+					local minutes = player:inputNumberCheck(player:input("Ingin diatur berapa menit?"))
 					local seconds = minutes * 60
 
 					core.gameRegistry["wisdom_star_timer"] = os.time() + seconds
 
-					player:dialogSeq({t, "It is done."}, 0)
+					player:dialogSeq({t, "Sudah selesai."}, 0)
 				elseif subChoice == "Set Multiplier" then
-					local multiplier = player:input("What do you want to set the multiplier to (do not enter x)?")
+					local multiplier = player:input("Pengalinya mau diatur berapa (jangan masukkan x)?")
 
 					if tonumber(multiplier) < 1 then
 						return
@@ -202,7 +202,7 @@ F1Npc = {
 						"Praise the Gods! GM " .. player.name .. " has set the Wisdom Star multiplier to " .. multiplier .. "x!"
 					)
 				elseif subChoice == "Set Total Points" then
-					local points = player:input("What do you want to set the daily wisdom star points to?")
+					local points = player:input("Angka wisdom star harian mau diatur berapa?")
 
 					if tonumber(points) < 0 then
 						return
@@ -211,9 +211,9 @@ F1Npc = {
 					setKanDonationPoints(points)
 				end
 			end
-		elseif choice == "Spells" then
+		elseif choice == "Mantra" then
 			local menuChoice = player:menuString(
-				"Please choose an option.",
+				"Pilih satu pilihan.",
 				{"Learnable/Divine Secret"}
 			)
 
@@ -224,7 +224,7 @@ F1Npc = {
 			local s = "buffer"
 			while s ~= "nothing" do
 				local menuChoice = player:menuString(
-					"Choose a list of toggles you would like to change.",
+					"Pilih daftar saklar yang ingin kau ubah.",
 					{"Chat Toggles", "Misc Toggles"},
 					{}
 				)
@@ -246,7 +246,7 @@ F1Npc = {
 					end
 
 					local choice = player:menuSeq(
-						"Please select a toggle to turn it on and off.",
+						"Pilih satu saklar untuk menyalakan atau mematikannya.",
 						chatsS,
 						{}
 					)
@@ -254,7 +254,7 @@ F1Npc = {
 					if choice == 1 then
 						if currentStatus[choice] == 0 then
 							player.clanChat = 1
-							player:sendMinitext("Clan Chat: ON")
+							player:sendMinitext("Obrolan Klan: NYALA")
 						end
 						if currentStatus[choice] == 1 then
 							player.clanChat = 0
@@ -263,7 +263,7 @@ F1Npc = {
 					elseif choice == 2 then
 						if currentStatus[choice] == 0 then
 							player.subpathChat = 1
-							player:sendMinitext("Subpath Chat: ON")
+							player:sendMinitext("Obrolan Subjalur: NYALA")
 						end
 						if currentStatus[choice] == 1 then
 							player.subpathChat = 0
@@ -291,7 +291,7 @@ F1Npc = {
 					end
 
 					local toggleChoice = player:menuSeq(
-						"Please select a toggle to turn it on and off.",
+						"Pilih satu saklar untuk menyalakan atau mematikannya.",
 						toggleS,
 						{}
 					)
@@ -299,17 +299,17 @@ F1Npc = {
 					if toggleChoice == 1 then
 						if currentStatus[toggleChoice] == 0 then
 							player.registry["see_warps"] = 1
-							player:sendMinitext("See Warps: ON")
+							player:sendMinitext("Lihat Portal: NYALA")
 						end
 
 						if currentStatus[toggleChoice] == 1 then
 							player.registry["see_warps"] = 0
-							player:sendMinitext("See Warps: OFF")
+							player:sendMinitext("Lihat Portal: MATI")
 						end
 					elseif toggleChoice == 2 then
 						if currentStatus[toggleChoice] == 0 then
 							player.registry["disableExperienceGain"] = 1
-							player:sendMinitext("Disable Exp Gain: ON")
+							player:sendMinitext("Matikan Perolehan Exp: NYALA")
 						end
 
 						if currentStatus[toggleChoice] == 1 then
@@ -340,8 +340,8 @@ F1Npc = {
 				player:dialogSeq(
 					{
 						t,
-						"This ability allows you to recover your lost items when an unscrupulous player is standing over them. To use this ability you must first face the items you dropped upon death. You must be only one or two steps away from them.",
-						"Then Press F1 and select \"Recover Death Pile\". Your items will be recovered even if a would-be thief is standing on them! To use this ability, you must be alive. If you do not have enough room in your inventory, you will be unable to recover all of your items."
+						"Kemampuan ini memungkinkanmu mengambil kembali barang yang hilang saat pemain nakal berdiri di atasnya. Untuk memakainya, kau harus menghadap barang yang kau jatuhkan ketika mati, dan berjarak hanya satu atau dua langkah darinya.",
+						"Lalu tekan F1 dan pilih \"Recover Death Pile\". Barangmu akan kembali walaupun calon pencuri berdiri di atasnya! Untuk memakai kemampuan ini kau harus dalam keadaan hidup. Kalau ruang kantongmu tidak cukup, tidak semua barangmu bisa diambil kembali."
 					},
 					0
 				)
@@ -350,7 +350,7 @@ F1Npc = {
 					player:dialogSeq(
 						{
 							t,
-							"You cannot recover your death pile while you are dead."
+							"Kau tidak bisa mengambil tumpukan barang matimu selagi kau mati."
 						},
 						0
 					)
@@ -381,10 +381,10 @@ F1Npc = {
 			player:popUp(string)
 		elseif choice == "Faerie Light" then
 			player:faerieLight()
-		elseif choice == "My character webpage" then
+		elseif choice == "Halaman web karakterku" then
 			local choice = player:menuString(
-				"What do you want to do with your RTK user webpage?",
-				{"Change", "Remove", "Help"}
+				"Apa yang ingin kau lakukan dengan halaman pengguna RTK-mu?",
+				{"Change", "Remove", "Bantuan"}
 			)
 
 			if choice == "Change" then
@@ -422,7 +422,7 @@ F1Npc = {
 					end
 
 					local optChoice = player:menuSeq(
-						"Please select a feature of your profile you would like to enable/disable.",
+						"Pilih bagian profilmu yang ingin kau nyalakan atau matikan.",
 						optsS,
 						{}
 					)
@@ -479,8 +479,8 @@ F1Npc = {
 				end
 			elseif choice == "Remove" then
 				local confirm = player:menuSeq(
-					"Are you sure you want to disable your profile? (This sets all individual toggles to disabled.)",
-					{"Disable my profile.", "Nevermind."},
+					"Kau yakin ingin mematikan profilmu? (Ini mematikan seluruh saklarnya satu per satu.)",
+					{"Matikan profilku.", "Nevermind."},
 					{}
 				)
 
@@ -495,20 +495,20 @@ F1Npc = {
 					player:dialogSeq(
 						{
 							t,
-							"Your profile has been effectively disabled. You are now only showing the basic information that everyone shows."
+							"Profilmu sudah dimatikan. Sekarang kau hanya menampilkan keterangan dasar yang ditampilkan semua orang."
 						},
 						0
 					)
 					return
 				end
-			elseif choice == "Help" then
+			elseif choice == "Bantuan" then
 				player:dialogSeq(
 					{
 						t,
-						"This feature will allow you to set up your own specific options for a RTK user page (https://users.RetroTK.com)",
-						"You will be able to select what information you want to show on the site, and some options on your character image as well.",
-						"These webpages will be updated dynamically with information pulled real time from the game.",
-						"Remember to wear something nice, as that will be shown on the website."
+						"Fitur ini memungkinkanmu mengatur sendiri pilihan halaman pengguna RTK (https://users.RetroTK.com)",
+						"Kau bisa memilih keterangan apa yang ingin ditampilkan di situs itu, serta beberapa pilihan untuk gambar karaktermu.",
+						"Halaman-halaman itu diperbarui secara langsung dengan keterangan yang diambil dari permainan.",
+						"Ingat, kenakan sesuatu yang bagus, sebab itulah yang tampil di situs."
 					},
 					0
 				)
@@ -539,7 +539,7 @@ F1Npc = {
 
 			string = "<b>[WISDOM STAR]\n\nStatus: " .. status .. " | " .. wisdomStarMultiplier .. "x EXP\n\nTime remaining: " .. getTimerValues("wisdom_star_timer") .. "\n\nCurrent Total: " .. Tools.formatNumber(getKanDonationPoints())
 
-			local choice2 = player:menuString(string, {"Donate", "Exit"}, {})
+			local choice2 = player:menuString(string, {"Donate", "Keluar"}, {})
 
 			if choice2 == "Donate" then
 				if player.actId == 0 then
@@ -547,20 +547,20 @@ F1Npc = {
 					player:dialogSeq(
 						{
 							t,
-							"Your character must be registered (attached to account) to donate."
+							"Karaktermu harus terdaftar (terhubung ke akun) untuk bisa menyumbang."
 						},
 						0
 					)
 					return
 				end
 
-				local amount = player:inputNumberCheck(player:input("How much would you like to donate?\n\nKan Balance: " .. Tools.formatNumber(player.registry["kan"])))
+				local amount = player:inputNumberCheck(player:input("Berapa banyak yang ingin kau sumbangkan?\n\nSaldo Kan: " .. Tools.formatNumber(player.registry["kan"])))
 
 				if amount <= 0 then
 					player:dialogSeq(
 						{
 							t,
-							"You must enter a positive number that not greater than your Kan balance."
+							"Kau harus memasukkan angka positif yang tidak melebihi saldo Kan-mu."
 						},
 						0
 					)
@@ -571,7 +571,7 @@ F1Npc = {
 					player:dialogSeq(
 						{
 							t,
-							"You cannot enter more Kan than your current Kan balance."
+							"Kau tidak bisa memasukkan Kan melebihi saldo Kan-mu saat ini."
 						},
 						0
 					)
@@ -579,8 +579,8 @@ F1Npc = {
 				end
 
 				local choice3 = player:menuSeq(
-					"Are you sure you would like to donate " .. amount .. " Kan towards Wisdom Star?",
-					{"Yes", "No"},
+					"Kau yakin ingin menyumbangkan " .. amount .. " Kan towards Wisdom Star?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
@@ -590,12 +590,12 @@ F1Npc = {
 					player:dialogSeq(
 						{
 							t,
-							"Thank you so much for your donation of " .. Tools.formatNumber(amount) .. " Kan. It really means a lot to us and is greatly appreciated."
+							"Terima kasih banyak atas sumbanganmu sebesar " .. Tools.formatNumber(amount) .. " Kan. Itu sangat berarti bagi kami dan sangat kami hargai."
 						},
 						0
 					)
 				elseif choice3 == 2 then
-					player:dialogSeq({t, "Ah, thanks anyways."}, 0)
+					player:dialogSeq({t, "Ah, terima kasih juga."}, 0)
 					return
 				end
 			end
@@ -610,7 +610,7 @@ F1Npc = {
 				"Bomber war"
 			}
 
-			local choice = player:menuString("Please select a game.", choices)
+			local choice = player:menuString("Pilih satu permainan.", choices)
 
 			if choice == "Carnage" then
 				local totalGames = player.registry["carnagePart"]
@@ -670,16 +670,16 @@ F1Npc = {
 				) .. "% of total games played\n\nVictories: " .. victories .. "\nLosses: " .. losses .. "\nTotal games played: " .. totalGames
 				player:dialogSeq({t, text}, 0)
 			end
-		elseif choice == "Warp to Poem Selection Room" then
+		elseif choice == "Pindah ke Ruang Pemilihan Puisi" then
 			player:warp(4019, math.random(9, 12), math.random(15, 17))
 		elseif choice == "AFK Message" then
-			afkMessage = player:input("Current AFK Message: " .. player.afkMessage .. "\n\nPlease set your AFK Message below: ")
+			afkMessage = player:input("Current AFK Message: " .. player.afkMessage .. "\n\nTulis Pesan AFK-mu di bawah ini: ")
 			player.afkMessage = afkMessage
 			player:sendMinitext("AFK Message updated")
 			player:updateState()
 		elseif choice == "Kan account information" then
 			KanNpc.getKanAccountInfo(player)
-		elseif choice == "Go to Tutor Haven" then
+		elseif choice == "Pergi ke Tutor Haven" then
 			if (not player:canCast(0, 1, 0)) then
 				return
 			end
@@ -701,7 +701,7 @@ F1Npc = {
 				return
 			end
 			if player.warpOut == 0 then
-				player:sendMinitext("That does not work here.")
+				player:sendMinitext("Itu tidak berlaku di sini.")
 				return
 			end
 			if player.m == 3010 or player.m == 3011 or player.m == 33 or player.m == 3017 then
@@ -710,8 +710,8 @@ F1Npc = {
 			end
 
 			local warpConfirm = player:menuSeq(
-				"Warp to Tutor's Haven?",
-				{"Yes", "No"},
+				"Pindah ke Tutor's Haven?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -726,28 +726,28 @@ F1Npc = {
 			PathArenaTutorNpc.noviceListener(player, npc)
 		elseif choice == "Tutor Management" then
 			local choice = player:menuString(
-				"What would you like to do?",
+				"Apa yang ingin kau lakukan?",
 				{"Add tutor", "Remove tutor"}
 			)
 
 			if choice == "Add tutor" then
-				local name = player:inputLetterCheck(player:input("Whom would you like to appoint as a tutor?"))
+				local name = player:inputLetterCheck(player:input("Siapa yang ingin kau angkat sebagai tutor?"))
 				local target = Player(name)
 
 				if target == nil then
-					player:dialogSeq({t, "Player not online."}, 0)
+					player:dialogSeq({t, "Pemain tidak daring."}, 0)
 					return
 				end
 
 				if target:hasLegend("tutor") then
-					player:dialogSeq({t, "Player is already a tutor."}, 0)
+					player:dialogSeq({t, "Pemain itu sudah menjadi tutor."}, 0)
 					return
 				end
 
 				local classes = {"Warrior", "Rogue", "Mage", "Poet"}
 
 				local classChoice = player:menuString(
-					"What kind of tutor?",
+					"Tutor jenis apa?",
 					classes
 				)
 
@@ -767,21 +767,21 @@ F1Npc = {
 				player:dialogSeq(
 					{
 						t,
-						target.name .. " has been added as a " .. classChoice .. " Tutor!"
+						target.name .. " telah ditambahkan sebagai " .. classChoice .. " Tutor!"
 					},
 					0
 				)
 			elseif choice == "Remove tutor" then
-				local name = player:inputLetterCheck(player:input("Whom would you like to remove as a tutor?"))
+				local name = player:inputLetterCheck(player:input("Siapa yang ingin kau lepas dari jabatan tutor?"))
 				local target = Player(name)
 
 				if target == nil then
-					player:dialogSeq({t, "Player not online."}, 0)
+					player:dialogSeq({t, "Pemain tidak daring."}, 0)
 					return
 				end
 
 				if not target:hasLegend("tutor") then
-					player:dialogSeq({t, "Player is not a tutor."}, 0)
+					player:dialogSeq({t, "Pemain itu bukan tutor."}, 0)
 					return
 				end
 
@@ -789,7 +789,7 @@ F1Npc = {
 				target:removeLegendbyName("tutor")
 
 				player:dialogSeq(
-					{t, target.name .. " has been removed as tutor!"},
+					{t, target.name .. " telah dilepas dari jabatan tutor!"},
 					0
 				)
 			end
@@ -810,28 +810,28 @@ F1Npc = {
 			player:dialogSeq(
 				{
 					t,
-					"You cannot travel anywhere because you are not alive. Please visit a Shaman first."
+					"Kau tidak bisa bepergian ke mana pun karena kau tidak hidup. Kunjungi Dukun lebih dulu."
 				},
 				1
 			)
 		end
 		local guilds = {
-			"Warrior's Guild",
-			"Rogue's Guild",
-			"Mage's Guild",
-			"Poet's Guild"
+			"Guild Prajurit",
+			"Guild Rogue",
+			"Guild Penyihir",
+			"Guild Pujangga"
 		}
 
 		player:dialogSeq(
 			{
 				t,
-				"Congratulations! You are young but your insight grows every day. Now you must choose a path to continue on your journey."
+				"Selamat! Kau masih muda tetapi pencerahanmu tumbuh setiap hari. Kini kau harus memilih jalur untuk melanjutkan perjalananmu."
 			},
 			1
 		)
 
 		local choice = player:menuSeq(
-			"Please select a guild that you'd like to visit.",
+			"Pilih guild yang ingin kau kunjungi.",
 			guilds,
 			{}
 		)

@@ -20,13 +20,13 @@ ChuRuaRabbitNpc = {
 		if (speech == "halo") then
 			Tools.checkKarma(player)
 
-			player:dialogSeq({t, "Hmmm..", "What is it you want?"}, 1)
+			player:dialogSeq({t, "Hmmm..", "Apa yang kau inginkan?"}, 1)
 		end
 
 		if (speech == "harimau") then
 			Tools.checkKarma(player)
 
-			npc:talk(2, "Fool was I to go north for ginseng. He almost ate me!")
+			npc:talk(2, "Bodoh sekali aku pergi ke utara mencari ginseng. Ia hampir memakanku!")
 		end
 
 		if (speech == "ginseng") then
@@ -35,9 +35,9 @@ ChuRuaRabbitNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"What a bitter root! It's as bad tasting as the mountains in which it grows.",
-					"Some trickster cousin told me I should go up the left path and have some of the delicious root.",
-					"Fool was I to go into the awful mountains. I followed this stream up to those horrid mountain's foot, and hopped up a dangerous path."
+					"Betapa pahit akar itu! Rasanya seburuk pegunungan tempatnya tumbuh.",
+					"Seorang sepupu licik menyuruhku menyusuri jalan kiri dan mencicipi akar lezat itu.",
+					"Bodoh sekali aku masuk ke pegunungan yang mengerikan itu. Aku menyusuri anak sungai ini sampai kaki gunung yang menyeramkan itu lalu melompati jalan yang berbahaya."
 				},
 				1
 			)

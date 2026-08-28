@@ -10,14 +10,14 @@ hailstorm = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player.magic = player.magic - 190
 
 		player:sendStatus()
-		player:sendMinitext("You cast Hailstorm.")
+		player:sendMinitext("Kau merapal Hailstorm.")
 		player:sendAction(6, 35)
 
 		if target.blType == BL_MOB then
@@ -42,7 +42,7 @@ hailstorm = {
 					targets[i]:sendAnimation(anim)
 					targets[i].attacker = player.ID
 					targets[i]:removeHealthExtend(damage, 1, 1, 1, 1, 0)
-					targets[i]:sendMinitext(player.name .. " casts Hailstorm on you.")
+					targets[i]:sendMinitext(player.name .. " merapal Hailstorm padamu.")
 				end
 			end
 		end

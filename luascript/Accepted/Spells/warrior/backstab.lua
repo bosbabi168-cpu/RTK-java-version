@@ -7,7 +7,7 @@ backstab_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -45,7 +45,7 @@ back_battle_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -83,7 +83,7 @@ back_attack_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -121,7 +121,7 @@ back_damage_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 

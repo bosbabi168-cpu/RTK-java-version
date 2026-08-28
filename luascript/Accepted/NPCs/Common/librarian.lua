@@ -9,17 +9,17 @@ LibrarianNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell", "Talk to Librarian"}
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local opts = {"Beli", "Jual", "Bicara dengan Pustakawan"}
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				LibrarianNpc.buyItems()
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend("What are you willing to sell today?", LibrarianNpc.sellItems())
-		elseif menu == "Talk to Librarian" then
+		elseif menu == "Bicara dengan Pustakawan" then
 			LibrarianNpc.onSayClick(player, npc)
 		end
 	end),
@@ -74,10 +74,10 @@ LibrarianNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Hello there, I see you have met my friend the Tutor. I hope he is doing well these days.",
-						"This is the great library of the kingdom, here we store the knowledge of the ages.",
-						"One of the prized items citizens come here for is the \"Legends\", a scroll that tells the great tales.",
-						"Unfortunately, this item is very expensive, but perhaps when you are richer you will be able to get your own."
+						"Halo, kulihat kau sudah bertemu kawanku sang Tutor. Semoga ia baik-baik saja belakangan ini.",
+						"Ini perpustakaan agung kerajaan; di sini kami menyimpan pengetahuan dari zaman ke zaman.",
+						"Salah satu benda berharga yang dicari warga di sini adalah \"Legends\", gulungan yang mengisahkan cerita-cerita besar.",
+						"Sayangnya benda itu sangat mahal, tetapi mungkin kalau kau lebih kaya kau bisa memiliki sendiri."
 					},
 					1
 				)
@@ -85,9 +85,9 @@ LibrarianNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"... or better yet... make your own legend to be told in the scroll!",
-						"Ah, what dreams, what wonders. Well, I must get back to work now. See you around, I hope to hear tales of your adventures soon.",
-						"You should go back to the tutor now, and continue to learn more, he has so much to teach you."
+						"... atau lebih baik lagi... ciptakan legendamu sendiri untuk dituliskan dalam gulungan itu!",
+						"Ah, betapa banyak impian dan keajaiban. Nah, aku harus kembali bekerja. Sampai jumpa; semoga segera kudengar kisah petualanganmu.",
+						"Sebaiknya kau kembali ke tutor sekarang dan terus belajar; banyak sekali yang bisa ia ajarkan."
 					},
 					1
 				)
@@ -101,7 +101,7 @@ LibrarianNpc = {
 
 			if not player:hasLegend("lost_legend") then
 				player:dialogSeq(
-					{t, "I really have no idea what you are talking about."},
+					{t, "Aku sungguh tidak paham apa yang kau bicarakan."},
 					0
 				)
 				return
@@ -110,11 +110,11 @@ LibrarianNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"So you have the legend, I hope it helps you with all you need.",
-					"What's that? You can't read it? Let me see...",
-					"I can read it just fine, are you blind?",
-					"Perhaps your mind is just not open to seeing beyond the surface of the paper.",
-					"Seek out the light of life, when it is young, and then you will see what you need to see."
+					"Jadi legendanya sudah kau punya; semoga ia membantumu memenuhi kebutuhanmu.",
+					"Apa? Kau tidak bisa membacanya? Coba kulihat...",
+					"Aku bisa membacanya dengan jelas; kau buta, ya?",
+					"Mungkin pikiranmu belum terbuka untuk melihat melampaui permukaan kertas itu.",
+					"Carilah cahaya kehidupan saat ia masih muda, maka kau akan melihat apa yang perlu kau lihat."
 				},
 				0
 			)
@@ -124,15 +124,15 @@ LibrarianNpc = {
 			"spy_trials"
 		] == 8 then
 			local choices = {
-				"The Rabbit Watchers",
-				"Sleds and Snow",
+				"Para Pengamat Kelinci",
+				"Kereta Luncur dan Salju",
 				"Night Breeze"
 			}
 			player:dialogSeq(
 				{
 					t,
-					"** Pond lays out some books of different colors and shapes **",
-					"These are our special collections from Sanhae."
+					"** Pond membentangkan beberapa buku beraneka warna dan bentuk **",
+					"Ini koleksi khusus kami dari Sanhae."
 				},
 				0
 			)
@@ -140,14 +140,14 @@ LibrarianNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Sorry, haven't heard anything from the other branches. Perhaps come back later."
+						"Maaf, belum ada kabar dari cabang lain. Mungkin kembalilah nanti."
 					},
 					0
 				)
 				return
 			end
 			local choice = player:menuSeq(
-				"What kind of information are you looking for?",
+				"Keterangan macam apa yang kau cari?",
 				choices,
 				{}
 			)
@@ -160,26 +160,26 @@ LibrarianNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah yes, this has been a popular one lately, and you're the second person today to ask for it!",
-						"Although, you're much better dressed. Take a seat, and I'll get it for you."
+						"Ah ya, yang ini sedang digemari, dan kau orang kedua hari ini yang memintanya!",
+						"Meski begitu, pakaianmu jauh lebih rapi. Duduklah, akan kuambilkan."
 					},
 					0
 				)
 				player:dialogSeq(
 					{
 						jewels,
-						"Word is that the Imperial Jewels are being transported by a special envoy from Buya to Nagnang for a diplomatic ceremony to build trust between the nations.",
-						"We need to know who has them currently and logistics of their transport."
+						"Kabarnya Imperial Jewels sedang dibawa utusan khusus dari Buya ke Nagnang untuk upacara diplomatik guna membangun kepercayaan antarnegeri.",
+						"Kami perlu tahu siapa yang membawanya sekarang dan bagaimana pengangkutannya diatur."
 					},
 					0
 				)
 				player:dialogSeq(
 					{
 						t,
-						"And of course, they shouldn't get to the Nangen palace.",
-						"We've observed him drinking outside the Buyan taverns during the night for the last week.",
-						"You'll need a way to get Hwan to a quiet place to interrogate him. Our Buyan potion shop associate, Baegil, should be able to give you something.",
-						"Ask him how to best receive our Special Guest"
+						"Dan tentu saja, benda itu tidak boleh sampai ke istana Nangen.",
+						"Sepekan ini kami mengamatinya minum-minum di luar kedai Buya pada malam hari.",
+						"Kau butuh cara membawa Hwan ke tempat sepi untuk diinterogasi. Rekan kami pemilik toko ramuan di Buya, Baegil, mestinya bisa memberimu sesuatu.",
+						"Tanyakan padanya cara terbaik menyambut Tamu Istimewa kita"
 					},
 					0
 				)
@@ -189,7 +189,7 @@ LibrarianNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Unfortunately, I think that one is on loan right now. Check back if you need something different..."
+						"Sayangnya yang itu sedang dipinjam. Datanglah lagi kalau kau butuh yang lain..."
 					},
 					0
 				)
@@ -203,26 +203,26 @@ LibrarianNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ah yes, this has been a popular one lately, and you're the second person today to ask for it!",
-					"Although, you're much better dressed. Take a seat, and I'll get it for you."
+					"Ah ya, yang ini sedang digemari, dan kau orang kedua hari ini yang memintanya!",
+					"Meski begitu, pakaianmu jauh lebih rapi. Duduklah, akan kuambilkan."
 				},
 				0
 			)
 			player:dialogSeq(
 				{
 					jewels,
-					"Word is that the Imperial Jewels are being transported by a special envoy from Buya to Nagnang for a diplomatic ceremony to build trust between the nations.",
-					"We need to know who has them currently and logistics of their transport."
+					"Kabarnya Imperial Jewels sedang dibawa utusan khusus dari Buya ke Nagnang untuk upacara diplomatik guna membangun kepercayaan antarnegeri.",
+					"Kami perlu tahu siapa yang membawanya sekarang dan bagaimana pengangkutannya diatur."
 				},
 				0
 			)
 			player:dialogSeq(
 				{
 					t,
-					"And of course, they shouldn't get to the Nangen palace.",
-					"We've observed him drinking outside the Buyan taverns during the night for the last week.",
-					"You'll need a way to get Hwan to a quiet place to interrogate him. Our Buyan potion shop associate, Baegil, should be able to give you something.",
-					"Ask him how to best receive our Special Guest"
+					"Dan tentu saja, benda itu tidak boleh sampai ke istana Nangen.",
+					"Sepekan ini kami mengamatinya minum-minum di luar kedai Buya pada malam hari.",
+					"Kau butuh cara membawa Hwan ke tempat sepi untuk diinterogasi. Rekan kami pemilik toko ramuan di Buya, Baegil, mestinya bisa memberimu sesuatu.",
+					"Tanyakan padanya cara terbaik menyambut Tamu Istimewa kita"
 				},
 				0
 			)
@@ -236,7 +236,7 @@ LibrarianNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Hrmmm... sorry, I don't know what you are talking about."
+						"Hrmmm... maaf, aku tidak tahu apa yang kau bicarakan."
 					},
 					0
 				)
@@ -248,12 +248,12 @@ LibrarianNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The lost legend of the winds? Yes, I know of it, but who are you to ask?",
-					"Can you even imagine the cost of such knowledge to  yourself, and the world around you?",
-					"But... perhaps it is time. I fear the secret has already been stolen from its vault by others, who would use it for the advancement of evil.",
-					"I can not tell you all, for the journey is part of the key, remember to learn all you can on this trip, as you should always do in life.",
-					"All you need to know from me is that deep within the caverns under the library is the answer you seek.",
-					"Go now, and let nothing stop you from your goals."
+					"Legenda angin yang hilang? Ya, aku tahu tentang itu, tetapi siapa kau sampai bertanya?",
+					"Bisakah kau bayangkan harga pengetahuan semacam itu bagi dirimu dan dunia di sekitarmu?",
+					"Tapi... mungkin sudah waktunya. Aku khawatir rahasia itu sudah dicuri dari ruang simpannya oleh orang lain yang akan memakainya untuk memajukan kejahatan.",
+					"Aku tidak bisa menceritakan semuanya, sebab perjalanannya sendiri bagian dari kuncinya. Ingatlah untuk belajar sebanyak mungkin dalam perjalanan ini, seperti seharusnya kau lakukan sepanjang hidup.",
+					"Yang perlu kau ketahui dariku hanyalah bahwa jauh di dalam gua di bawah perpustakaan ini terdapat jawaban yang kau cari.",
+					"Pergilah sekarang, dan jangan biarkan apa pun menghalangi tujuanmu."
 				},
 				0
 			)
@@ -266,8 +266,8 @@ LibrarianNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Here we go. It looks to be a map of some mountains north of here.",
-						"Maybe someone with deep historical knowledge will be able to help you."
+						"Nah, ini dia. Sepertinya peta pegunungan di utara sini.",
+						"Mungkin seseorang dengan pengetahuan sejarah yang dalam bisa membantumu."
 					},
 					1
 				)
@@ -280,14 +280,14 @@ LibrarianNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Here we go. It looks to be a map of some mountains north of here.",
-							"Maybe someone with deep historical knowledge will be able to help you."
+							"Nah, ini dia. Sepertinya peta pegunungan di utara sini.",
+							"Mungkin seseorang dengan pengetahuan sejarah yang dalam bisa membantumu."
 						},
 						1
 					)
 				else
 					player:dialogSeq(
-						{t, "Did you get more pieces of this map?"},
+						{t, "Apakah kau mendapat potongan peta ini lebih banyak?"},
 						1
 					)
 				end
@@ -299,15 +299,15 @@ LibrarianNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Ah yes here we go, the piece is coming in more clear.",
-							"It seems to be piece of a much larger map.",
-							"Go collect for me 4 more pieces and we can put together a map to see where this goes."
+							"Ah ya, ini dia, potongannya makin jelas.",
+							"Sepertinya ini bagian dari peta yang jauh lebih besar.",
+							"Kumpulkan 4 potongan lagi untukku, dan kita bisa menyusun petanya untuk melihat ke mana arahnya."
 						},
 						1
 					)
 				else
 					player:dialogSeq(
-						{t, "Come back to me when you get some purified water."},
+						{t, "Kembalilah kepadaku kalau kau sudah mendapat purified water."},
 						1
 					)
 				end
@@ -317,9 +317,9 @@ LibrarianNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"What is this? You were sent by Elder Zephyr to find out more about this map?",
-						"It seems pretty dirty. Let's try and clean it up",
-						"Go gather some purified water and come back to me. I will use great care on this precious piece."
+						"Apa ini? Kau diutus Tetua Zephyr untuk mencari tahu lebih banyak tentang peta ini?",
+						"Kelihatannya cukup kotor. Mari kita coba bersihkan",
+						"Kumpulkan purified water lalu kembalilah kepadaku. Akan kutangani potongan berharga ini dengan sangat hati-hati."
 					},
 					1
 				)

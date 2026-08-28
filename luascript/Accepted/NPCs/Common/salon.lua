@@ -15,7 +15,7 @@ SalonNpc = {
 			local opts = {"Buya Hair Salon", "Scalp massage"}
 
 			local choice = player:menuString(
-				"Hello! How can I help you today?",
+				"Halo! Ada yang bisa kubantu hari ini?",
 				opts
 			)
 
@@ -98,13 +98,13 @@ SalonNpc = {
 
 		if npc.mapTitle == "Kugnae Salon" or npc.mapTitle == "Buya Salon" then
 			choice = player:menuString(
-				"Welcome to my salon, " .. salutation .. ". How can I help you today?",
+				"Selamat datang di salonku, " .. salutation .. ". Ada yang bisa kubantu hari ini?",
 				opts
 			)
 			player:dialogSeq({t, msg}, 1)
 		elseif npc.mapTitle == "Nagnang Salon" then
 			choice = player:menuString(
-				"You're here to get your hair cut, eh?",
+				"Kau ke sini untuk potong rambut, ya?",
 				opts
 			)
 		end

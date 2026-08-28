@@ -64,10 +64,10 @@ foodpreparation = {
 								"food preparation"
 							)
 							player:addItem(successItem.yname, successItemAmount)
-							player:sendMinitext("You were successful.")
+							player:sendMinitext("Kau berhasil.")
 							return
 						else
-							player:sendMinitext("You failed in your attempt.")
+							player:sendMinitext("Percobaanmu gagal.")
 							return
 						end
 					elseif player:hasItem("tasty_fish", reqItemAmount) == true then
@@ -80,10 +80,10 @@ foodpreparation = {
 								"food preparation"
 							)
 							player:addItem(successItem.yname, successItemAmount)
-							player:sendMinitext("You were successful.")
+							player:sendMinitext("Kau berhasil.")
 							return
 						else
-							player:sendMinitext("You failed in your attempt.")
+							player:sendMinitext("Percobaanmu gagal.")
 							return
 						end
 					elseif player:hasItem("small_fish", reqItemAmount) == true then
@@ -96,10 +96,10 @@ foodpreparation = {
 								"food preparation"
 							)
 							player:addItem(successItem.yname, successItemAmount)
-							player:sendMinitext("You were successful.")
+							player:sendMinitext("Kau berhasil.")
 							return
 						else
-							player:sendMinitext("You failed in your attempt.")
+							player:sendMinitext("Percobaanmu gagal.")
 							return
 						end
 					elseif player:hasItem("large_fish", reqItemAmount) == true then
@@ -112,10 +112,10 @@ foodpreparation = {
 								"food preparation"
 							)
 							player:addItem(successItem.yname, successItemAmount)
-							player:sendMinitext("You were successful.")
+							player:sendMinitext("Kau berhasil.")
 							return
 						else
-							player:sendMinitext("You failed in your attempt.")
+							player:sendMinitext("Percobaanmu gagal.")
 							return
 						end
 					end
@@ -123,7 +123,7 @@ foodpreparation = {
 				player:dialogSeq(
 					{
 						treqItem,
-						"You have no " .. item.name .. " to prepare, come back when you have some."
+						"Kau tidak punya " .. item.name .. " untuk persiapan, kembalilah kalau kau sudah punya."
 					},
 					0
 				)
@@ -135,9 +135,9 @@ foodpreparation = {
 			if math.random(1, 10) == 1 then
 				crafting.skillChanceIncrease(player, npc, "food preparation")
 				player:addItem(successItem.yname, successItemAmount)
-				player:sendMinitext("You were successful.")
+				player:sendMinitext("Kau berhasil.")
 			else
-				player:sendMinitext("You failed in your attempt.")
+				player:sendMinitext("Percobaanmu gagal.")
 			end
 		end
 	end

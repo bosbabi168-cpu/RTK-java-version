@@ -328,16 +328,21 @@ public final class CharPersistence {
     private static void saveItems(Sql sql, CharStatus c) {
         sql.update("DELETE FROM `Inventory` WHERE `InvChaId` = ?", c.id);
         List<Object[]> rows = new ArrayList<>();
-        int pos = 0;
         for (Item it : c.inventory) {
             if (it.isEmpty()) {
-                pos++;
                 continue;
             }
+            // ⚠️ Slotnya it.pos, TITIK. Versi sebelumnya memakai
+            // `it.pos != 0 ? it.pos : pos` — jatuh ke indeks daftar bila
+            // posnya nol, karena nol dikira "belum disetel". Itu selamat
+            // hanya selama barang di slot 0 kebetulan selalu jadi elemen
+            // pertama (pemuatannya ORDER BY InvPosition). Begitu slot 0
+            // dikosongkan lalu diisi ulang, barangnya ada di ujung daftar dan
+            // tersimpan di slot yang salah — bisa bertabrakan dengan barang
+            // lain. Lihat Peringatan #85.
             rows.add(new Object[]{c.id, it.id, it.amount, it.dura, it.owner, it.realName, it.time,
-                    it.pos != 0 ? it.pos : pos, it.custom, it.customLook, it.customLookColor,
+                    it.pos, it.custom, it.customLook, it.customLookColor,
                     it.customIcon, it.customIconColor, it.protectedFlag, it.note});
-            pos++;
         }
         sql.batch("INSERT INTO `Inventory` (`InvChaId`,`InvItmId`,`InvAmount`,`InvDurability`,`InvChaIdOwner`,"
                 + "`InvEngrave`,`InvTimer`,`InvPosition`,`InvCustom`,`InvCustomLook`,`InvCustomLookColor`,"

@@ -4,7 +4,7 @@ stormstrike = {
 			-- dead
 
 			target:sendAnimation(4, 3)
-			target:sendMinitext(player.name .. " casts Stormstrike on you!")
+			target:sendMinitext(player.name .. " merapal Stormstrike padamu!")
 			target.attacker = target.ID
 			target:removeHealthExtend(
 				math.ceil(target.health *.50),

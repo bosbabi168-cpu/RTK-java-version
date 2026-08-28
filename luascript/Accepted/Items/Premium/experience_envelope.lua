@@ -9,12 +9,12 @@ experience_envelope_pack = {
 
 		if player.exp < 1000000000 then
 			-- 1 bil
-			player:sendMinitext("You do not have enough experience to create an envelope.")
+			player:sendMinitext("Pengalamanmu tidak cukup untuk membuat amplop.")
 			return
 		end
 
 		if not player:hasSpace("full_experience_envelope", 1, player.ID) then
-			player:sendMinitext("Your inventory is full.")
+			player:sendMinitext("Kantongmu penuh.")
 			return
 		end
 
@@ -53,7 +53,7 @@ full_experience_envelope = {
 		if player.exp + 1000000000 > 4294967295 then
 			-- max bar
 			player:dialogSeq(
-				{t, "You have too much experience. Sell some and try again."},
+				{t, "Pengalamanmu terlalu banyak. Jual sebagian lalu coba lagi."},
 				0
 			)
 			return

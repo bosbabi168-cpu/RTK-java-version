@@ -10,7 +10,7 @@ hear_footstep_diviner = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -20,7 +20,7 @@ hear_footstep_diviner = {
 		player:sendAnimation(11, 5)
 		player:setDuration("hear_footstep_diviner", duration)
 		player:setAether("hear_footstep_diviner", aethers)
-		player:sendMinitext("You cast Hear footstep.")
+		player:sendMinitext("Kau merapal Hear footstep.")
 	end,
 	while_cast = function(player)
 		if os.time() % 5 == 0 then
@@ -30,7 +30,7 @@ hear_footstep_diviner = {
 			for i = 1, #pcs do
 				if pcs[i].state == 2 and distanceSquare(player, pcs[i], 4) and pcs[i].ID ~= player.ID then
 					-- invis and within 4 tiles
-					player:sendMinitext(pcs[i].name .. " is hidden in the area.")
+					player:sendMinitext(pcs[i].name .. " bersembunyi di daerah ini.")
 				end
 			end
 		end

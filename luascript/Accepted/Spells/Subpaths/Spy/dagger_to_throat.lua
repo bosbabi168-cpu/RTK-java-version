@@ -18,25 +18,25 @@ dagger_to_throat = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:setAether("dagger_to_throat", aethers)
-		player:sendMinitext("You cast Dagger to throat.")
+		player:sendMinitext("Kau merapal Dagger to throat.")
 
 		local targetpc = getTargetFacing(player, BL_PC)
 
 		if targetpc ~= nil then
-			targetpc:sendMinitext("You feel the cold steel from a blade pressed to your neck. ((" .. player.name .. "))")
+			targetpc:sendMinitext("Kau merasakan baja dingin sebuah bilah menempel di lehermu. ((" .. player.name .. "))")
 			targetpc:setDuration("dagger_to_throat", duration)
 		end
 	end,
 
 	uncast = function(target)
-		target:sendMinitext("Your anxiety subsides.")
+		target:sendMinitext("Kegelisahanmu mereda.")
 	end,
 
 	requirements = function(player)

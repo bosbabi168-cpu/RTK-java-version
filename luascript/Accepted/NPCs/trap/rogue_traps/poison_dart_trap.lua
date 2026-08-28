@@ -6,7 +6,7 @@ PoisonDartTrapNpc = {
 			if block.state == 1 then
 				return
 			end
-			block:sendMinitext("You stepped on a trap!")
+			block:sendMinitext("Kau menginjak jebakan!")
 
 			if not block:canPK(block) then
 				return

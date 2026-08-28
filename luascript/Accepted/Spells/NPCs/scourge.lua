@@ -20,7 +20,7 @@ scourge = {
 			target.armor = target.armor + 50
 			target.cursed = 1
 		elseif (target.blType == BL_PC) then
-			target:sendMinitext(block.name .. " attacks you with Scourge spell.")
+			target:sendMinitext(block.name .. " menyerangmu dengan mantra Scourge.")
 			target:calcStat()
 		end
 	end,

@@ -1,10 +1,10 @@
 local _showShieldDialog = function(player)
 	player:dialogSeq(
 		{
-			"Anyone who dedicates their lives to the weapon should learn how to use a shield.",
-			"First, though, I will ask you to prove this to me. To the West and North of here, there is a cave. This is the training caves for our Warriors.",
-			"In it, you will find many different dyed creatures. You may not kill the red and blue ones, you must avoid them.",
-			"At the end of the caves, there is a statue of Chung Ryong. If you reach it without killing any of the Blue or Red animals, you will be rewarded with a shield."
+			"Siapa pun yang mengabdikan hidupnya pada senjata harus belajar memakai perisai.",
+			"Tetapi pertama-tama, buktikan itu kepadaku. Di Barat dan Utara sini ada sebuah gua. Itulah gua latihan para Warrior kami.",
+			"Di dalamnya kau akan menemukan berbagai makhluk berwarna. Kau tidak boleh membunuh yang merah dan biru; hindari mereka.",
+			"Di ujung gua ada patung Chung Ryong. Kalau kau mencapainya tanpa membunuh satu pun binatang Biru atau Merah, kau akan diganjar sebuah perisai."
 		},
 		1
 	)
@@ -29,16 +29,16 @@ WarriorTrainerNpc = {
 			if player.level < 99 then
 				table.insert(opts, "Divine Secret")
 			end
-			table.insert(opts, "Learn Secret")
+			table.insert(opts, "Pelajari Rahasia")
 		end
 		table.insert(opts, "Forget Secret")
 
 		table.insert(opts, "Become Noble")
 
-		table.insert(opts, "Minor Quest")
+		table.insert(opts, "Tugas Kecil")
 
 		if (player.registryString["minor_quest"] ~= "") then
-			table.insert(opts, "Complete Minor Quest")
+			table.insert(opts, "Tuntaskan Tugas Kecil")
 		end
 
 		if player.baseClass == 1 then
@@ -94,7 +94,7 @@ WarriorTrainerNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 		local choice2
@@ -104,7 +104,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are still young, and not ready for this yet. Return when you have gained your 75th level."
+						"Kau masih muda dan belum siap untuk ini. Kembalilah kalau sudah mencapai level 75."
 					},
 					1
 				)
@@ -112,16 +112,16 @@ WarriorTrainerNpc = {
 			else
 				general_npc_funcs.setTitle(player, npc)
 			end
-		elseif choice == "Minor Quest" then
+		elseif choice == "Tugas Kecil" then
 			MinorQuest.quest(player, npc)
-		elseif choice == "Complete Minor Quest" then
+		elseif choice == "Tuntaskan Tugas Kecil" then
 			MinorQuest.complete(player, npc)
 		elseif choice == "Become a Warrior" then
 			if player.level < 5 then
 				player:dialogSeq(
 					{
 						t,
-						"Hail, little one! Please return to me when you have reached the 5th insight."
+						"Salam, anak kecil! Kembalilah kepadaku kalau kau sudah mencapai pencerahan kelima."
 					},
 					0
 				)
@@ -131,14 +131,14 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Hail, mighty one! Welcome to my sanctuary, the sanctuary of the mightiest of all fighters.",
-					"Have you come to pick your path? I think you would make a great warrior, and a great hero."
+					"Salam, yang perkasa! Selamat datang di tempat sucianku, tempat sucian petarung paling perkasa.",
+					"Kau datang untuk memilih jalurmu? Kurasa kau akan jadi warrior yang hebat, sekaligus pahlawan besar."
 				},
 				1
 			)
 			choice2 = player:menuString(
-				"Will you join the path of the warrior?",
-				{"Yes", "Tell me more", "No"}
+				"Maukah kau menempuh jalur warrior?",
+				{"Ya", "Ceritakan lebih banyak", "Tidak"}
 			)
 		elseif choice == "Divine Secret" then
 			if npc.mapTitle == "Sword" or npc.mapTitle == "Kwi-Sin Sword" or npc.mapTitle == "Ming-Ken Sword" or npc.mapTitle == "Ohaeng Sword" then
@@ -146,7 +146,7 @@ WarriorTrainerNpc = {
 			else
 				player:futureSpells(npc)
 			end
-		elseif choice == "Learn Secret" then
+		elseif choice == "Pelajari Rahasia" then
 			if npc.mapTitle == "Sword" or npc.mapTitle == "Kwi-Sin Sword" or npc.mapTitle == "Ming-Ken Sword" or npc.mapTitle == "Ohaeng Sword" then
 				player:learnSpell(npc, {"feral_berserk_warrior"})
 			else
@@ -165,8 +165,8 @@ WarriorTrainerNpc = {
 			}
 
 			if player:hasItem("green_squirrel_pelt", 1) ~= true then
-				player:sendMinitext("Eh? Please don't bother me.")
-				player:sendMinitext("You probably couldn't even kill one of the Green squirrels to the south.")
+				player:sendMinitext("Eh? Jangan ganggu aku.")
+				player:sendMinitext("Kau bahkan mungkin tidak sanggup membunuh satu pun tupai Hijau di selatan.")
 				return
 			end
 			player:removeItem("green_squirrel_pelt", 1)
@@ -181,11 +181,11 @@ WarriorTrainerNpc = {
 			_showShieldDialog(player)
 		end
 
-		if choice2 == "Yes" then
+		if choice2 == "Ya" then
 			player:dialogSeq(
 				{
 					t,
-					"Great! You have made a great decision. I see you becoming a great hero in these lands. Now let me set you up with some supplies."
+					"Bagus! Itu keputusan yang tepat. Aku melihatmu kelak jadi pahlawan besar di tanah ini. Sekarang biar kubekali kau dengan perlengkapan."
 				},
 				1
 			)
@@ -207,42 +207,42 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Here is some armor, and a weapon. These are specific to the warrior path, and will help get you started.",
-					"I have also given you some gold, it's all I can spare right now. It will help you with repairs, and getting some other equipment like rings.",
-					"I have also given you some Bear's livers, these will help you keep your strength up. Eat one when you are feeling weak, and near death. Shop keepers around town sell them if you need more.",
-					"If you wish to learn some skills let me know, I can teach you many things to help you in battle."
+					"Ini zirah dan senjata untukmu. Keduanya khusus jalur prajurit dan akan membantumu memulai.",
+					"Kuberi juga sedikit emas, hanya itu yang bisa kusisihkan sekarang. Emas itu akan membantumu memperbaiki barang dan membeli perlengkapan lain seperti cincin.",
+					"Kuberi juga beberapa hati beruang; benda itu menjaga kekuatanmu. Makanlah satu saat kau lemah dan hampir mati. Para pedagang di kota menjualnya kalau kau butuh lagi.",
+					"Kalau kau ingin mempelajari beberapa keahlian, bilang saja. Banyak yang bisa kuajarkan untuk membantumu bertarung."
 				},
 				1
 			)
-		elseif choice2 == "Tell me more" then
+		elseif choice2 == "Ceritakan lebih banyak" then
 			player:dialogSeq(
 				{
 					t,
-					"Tell you about warriors? Well, they are the greatest of the fighter classes. A one man army, so to speak. Warriors are fierce, and powerful, and can battle many foes at once.",
-					"Warriors use little magic, instead we prefer to use skills, such as the ability to hit more than one creature at a time.",
-					"We depend on the healing skills of other paths, like the poets, but they are always willing to group with a warrior for our awesome killing abilities."
+					"Bercerita soal warrior? Mereka yang terbesar di antara kelas petarung. Pasukan seorang diri, boleh dibilang. Warrior itu ganas, kuat, dan bisa melawan banyak musuh sekaligus.",
+					"Warrior sedikit memakai sihir; kami lebih suka keahlian, misalnya kemampuan memukul lebih dari satu makhluk sekaligus.",
+					"Kami bergantung pada keahlian menyembuhkan jalur lain, seperti poet, tetapi mereka selalu bersedia bergrup dengan warrior demi kemampuan membunuh kami yang dahsyat."
 				},
 				1
 			)
 
 			local choice3 = player:menuString(
-				"Will you join us now?",
-				{"Yes", "No"}
+				"Maukah kau bergabung dengan kami sekarang?",
+				{"Ya", "Tidak"}
 			)
 
-			if choice3 == "No" then
+			if choice3 == "Tidak" then
 				player:dialogSeq(
 					{
 						t,
-						"Very well, I will be waiting here if you change your mind. I am seeking great people all the time to join this great path."
+						"Baiklah, aku menunggu di sini kalau kau berubah pikiran. Aku selalu mencari orang-orang hebat untuk bergabung dengan jalan yang agung ini."
 					},
 					1
 				)
-			elseif choice3 == "Yes" then
+			elseif choice3 == "Ya" then
 				player:dialogSeq(
 					{
 						t,
-						"Great! You have made a great decision. I see you becoming a great hero in these lands. Now let me set you up with some supplies."
+						"Bagus! Itu keputusan yang tepat. Aku melihatmu kelak jadi pahlawan besar di tanah ini. Sekarang biar kubekali kau dengan perlengkapan."
 					},
 					1
 				)
@@ -265,19 +265,19 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Here is some armor, and a weapon. These are specific to the warrior path, and will help get you started.",
-						"I have also given you some gold, it's all I can spare right now. It will help you with repairs, and getting some other equipment like rings.",
-						"I have also given you some Bear's livers, these will help you keep your strength up. Eat one when you are feeling weak, and near death. Shop keepers around town sell them if you need more.",
-						"If you wish to learn some skills let me know, I can teach you many things to help you in battle."
+						"Ini zirah dan senjata untukmu. Keduanya khusus jalur prajurit dan akan membantumu memulai.",
+						"Kuberi juga sedikit emas, hanya itu yang bisa kusisihkan sekarang. Emas itu akan membantumu memperbaiki barang dan membeli perlengkapan lain seperti cincin.",
+						"Kuberi juga beberapa hati beruang; benda itu menjaga kekuatanmu. Makanlah satu saat kau lemah dan hampir mati. Para pedagang di kota menjualnya kalau kau butuh lagi.",
+						"Kalau kau ingin mempelajari beberapa keahlian, bilang saja. Banyak yang bisa kuajarkan untuk membantumu bertarung."
 					},
 					1
 				)
 			end
-		elseif choice2 == "No" then
+		elseif choice2 == "Tidak" then
 			player:dialogSeq(
 				{
 					t,
-					"Very well, I will be waiting here if you change your mind. I am seeking great people all the time to join this great path."
+					"Baiklah, aku menunggu di sini kalau kau berubah pikiran. Aku selalu mencari orang-orang hebat untuk bergabung dengan jalan yang agung ini."
 				},
 				1
 			)
@@ -299,15 +299,15 @@ WarriorTrainerNpc = {
 
 			player.quest["star_armor"] = 1
 
-			player:dialogSeq({t, "Every man and woman is a star."}, 1)
-			player:dialogSeq({star, "You wish to twinkle?"}, 1)
-			player:dialogSeq({t, "Everyone does. Yet many have failed."}, 1)
+			player:dialogSeq({t, "Setiap lelaki dan perempuan adalah bintang."}, 1)
+			player:dialogSeq({star, "Kau ingin berkelip?"}, 1)
+			player:dialogSeq({t, "Semua orang ingin. Namun banyak yang gagal."}, 1)
 
 			if not player:karmaCheck("rabbit") then
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -316,14 +316,14 @@ WarriorTrainerNpc = {
 
 			if player:killCount("spry_monkey") >= 18 or player:killCount("agile_monkey") >= 18 or player:killCount("fast_monkey") >= 18 then
 				player.quest["star_armor"] = 2
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"Among the failures are the evil monkeys. Even the most agile ones lack light. Slay 18 of the fastest monkeys, then return."
+					"Di antara yang gagal ada para monyet jahat. Bahkan yang paling gesit pun kekurangan cahaya. Bunuh 18 monyet tercepat, lalu kembalilah."
 				},
 				0
 			)
@@ -333,14 +333,14 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have the speed of a star, but have you its strength? Bring me two titanium gloves."
+					"Kau punya kecepatan bintang, tetapi punyakah kau kekuatannya? Bawakan aku dua titanium glove."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -349,7 +349,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -360,7 +360,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are missing the gloves. Please return when you have them."
+						"Sarung tangannya belum ada. Kembalilah kalau sudah kau punya."
 					},
 					0
 				)
@@ -369,7 +369,7 @@ WarriorTrainerNpc = {
 
 			player:removeItem("titanium_glove", 2)
 			player.quest["star_armor"] = 3
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Warrior Star 3" then
@@ -388,14 +388,14 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"To truly shine with the light of the stars, you must also bring the sword that gloves with the star's light."
+					"Untuk benar-benar bersinar dengan cahaya bintang, kau juga harus membawa pedang yang berpendar oleh cahaya bintang."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -404,7 +404,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -413,7 +413,7 @@ WarriorTrainerNpc = {
 
 			if player:hasItem("electra", 1) ~= true then
 				player:dialogSeq(
-					{t, "Please come back when you have an electra."},
+					{t, "Kembalilah kalau kau sudah punya electra."},
 					0
 				)
 				return
@@ -424,7 +424,7 @@ WarriorTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armor,
-					"You want to wear this armor? It shall cost you some of your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Harganya sebagian kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -436,12 +436,12 @@ WarriorTrainerNpc = {
 				player.quest["star_armor"] = 0
 				player.registry["flushed_kills"] = 0
 				player:addLegend(
-					"Mastered the stars (" .. curT() .. ")",
+					"Menguasai bintang (" .. curT() .. ")",
 					"mastered_the_stars",
 					5,
 					128
 				)
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				player:calcStat()
 			end
 		end
@@ -472,15 +472,15 @@ WarriorTrainerNpc = {
 			player.quest["moon_armor"] = 1
 
 			player:dialogSeq(
-				{t, "You have returned for guidance from the moon?"},
+				{t, "Kau kembali untuk memohon bimbingan bulan?"},
 				1
 			)
 			player:dialogSeq(
-				{t, "Very well, but the sacrifices shall be much greater!"},
+				{t, "Baiklah, tetapi pengorbanannya akan jauh lebih besar!"},
 				1
 			)
 			player:dialogSeq(
-				{t, "You follow the path of Valor. Prove yours."},
+				{t, "Kau menempuh jalur Valor. Buktikan dirimu."},
 				1
 			)
 
@@ -488,7 +488,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -498,14 +498,14 @@ WarriorTrainerNpc = {
 			if player:killCount("boar_champion") >= 1 or player:killCount("pig_champion") >= 1 or player:killCount("pig_avenger") >= 1 then
 				player.quest["moon_armor"] = 2
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"A foul beast has stolen light from the moon to serve his vanity. Slay the glowing pig-man to free the moon's power."
+					"Seekor binatang keji mencuri cahaya bulan demi kesombongannya. Bunuh manusia-babi yang bercahaya itu untuk membebaskan kekuatan bulan."
 				},
 				1
 			)
@@ -516,7 +516,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -525,14 +525,14 @@ WarriorTrainerNpc = {
 
 			if player:killCount("mad_dog") >= 30 or player:killCount("crazed_mongrel") >= 30 or player:killCount("frothing_mutt") >= 30 then
 				player.quest["moon_armor"] = 3
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"The most insane mutts were corrupted by the moon's power. Slay thirty of them to realize the moon's strength."
+					"Anjing-anjing paling gila itu dirusak oleh kekuatan bulan. Bunuh tiga puluh ekor untuk menyadari kekuatan bulan."
 				},
 				1
 			)
@@ -543,7 +543,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -553,7 +553,7 @@ WarriorTrainerNpc = {
 			if player:killCount("grim_ogre") >= 20 then
 				if player:hasItem("amber", 20) ~= true then
 					player:dialogSeq(
-						{t, "Please return when you have the twenty ambers."},
+						{t, "Kembalilah kalau kedua puluh amber-nya sudah kau punya."},
 						0
 					)
 					return
@@ -561,11 +561,11 @@ WarriorTrainerNpc = {
 
 				player:removeItem("amber", 20)
 				player.quest["moon_armor"] = 4
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			else
 				player:dialogSeq(
-					{t, "I see no blood of the ogres on your blade."},
+					{t, "Aku tidak melihat darah ogre di bilahmu."},
 					1
 				)
 			end
@@ -573,7 +573,7 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The full moon drips upon the earth, seeping into the ground. The grim ogres try to harness this power. Kill twenty of them and bring me as many ambers."
+					"Bulan purnama menetes ke bumi, meresap ke dalam tanah. Para ogre suram berusaha menguasai kekuatan itu. Bunuh dua puluh ekor dan bawakan aku amber sebanyak itu pula."
 				},
 				1
 			)
@@ -584,7 +584,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -614,14 +614,14 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The moon's power is not harnessed so easily! Bring the following all at once: one titanium glove, three electras, and your star mail."
+					"Kekuatan bulan tidak semudah itu ditundukkan! Bawakan sekaligus: satu titanium glove, tiga electra, dan star mail-mu."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -631,7 +631,7 @@ WarriorTrainerNpc = {
 				player:hasItem(armor.yname, 1) ~= true) then
 
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -644,7 +644,7 @@ WarriorTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armorg,
-					"You want to wear this armor? It shall cost you some of your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Harganya sebagian kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -657,12 +657,12 @@ WarriorTrainerNpc = {
 				player.registry["flushed_kills"] = 0
 				player.quest["moon_armor"] = 0
 				player:addLegend(
-					"Understood the moon (" .. curT() .. ")",
+					"Memahami bulan (" .. curT() .. ")",
 					"understood_the_moon",
 					5,
 					128
 				)
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				player:calcStat()
 			end
 		end
@@ -702,11 +702,11 @@ WarriorTrainerNpc = {
 			player.quest["sun_armor"] = 1
 
 			player:dialogSeq(
-				{t, "The sun is the mightiest and fiercest of all."},
+				{t, "Matahari adalah yang terperkasa dan paling ganas di antara semuanya."},
 				1
 			)
 			player:dialogSeq(
-				{t, "Only the very best and most true can master it."},
+				{t, "Hanya yang terbaik dan paling tulus yang bisa menguasainya."},
 				1
 			)
 
@@ -714,7 +714,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -724,14 +724,14 @@ WarriorTrainerNpc = {
 			if player:killCount("frost_ogre") >= 60 and player:killCount("ice_ogre") >= 60 then
 				player.quest["sun_armor"] = 2
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"Far to the north is a land the sun only grazes. Master that land. Slay 60 ogres of ice and 60 ogres of frost then return."
+					"Jauh di utara ada tanah yang hanya disenggol matahari. Kuasai tanah itu. Bunuh 60 ogre es dan 60 ogre beku, lalu kembalilah."
 				},
 				1
 			)
@@ -742,7 +742,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -752,21 +752,21 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Now bring to me 20 of the purest ambers so that we may capture the light of the sun."
+					"Sekarang bawakan aku 20 amber termurni supaya kita bisa menangkap cahaya matahari."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
 
 			if player:hasItem("white_amber", 20) ~= true then
 				player:dialogSeq(
-					{t, "Return to me when you have the ambers."},
+					{t, "Kembalilah kepadaku kalau amber-nya sudah kau punya."},
 					0
 				)
 				return
@@ -774,7 +774,7 @@ WarriorTrainerNpc = {
 
 			player:removeItem("white_amber", 20)
 			player.quest["sun_armor"] = 3
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Warrior Sun 3" then
@@ -782,7 +782,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -792,17 +792,17 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You must now bring me several things to complete your armor. Read carefully and do not return unless you have ALL of them.",
-					"Such fragile hands you have. Mere flesh and bone is not enough. Bring two titanium gloves.",
-					"And to cut your armor from the sun? I will need four electras.",
-					"Only with impurities can true purity be reached. You must also bring to me two corrupted blades."
+					"Sekarang kau harus membawakan beberapa hal untuk melengkapi zirahmu. Baca baik-baik dan jangan kembali sebelum SEMUANYA kau punya.",
+					"Betapa rapuh tanganmu. Daging dan tulang saja tidak cukup. Bawakan dua titanium glove.",
+					"Dan untuk memotong zirahmu dari matahari? Aku butuh empat electra.",
+					"Hanya melalui yang tercemar kemurnian sejati bisa dicapai. Kau juga harus membawakan dua corrupted blade."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -812,7 +812,7 @@ WarriorTrainerNpc = {
 				player:hasItem("electra", 4) ~= true) then
 
 				player:dialogSeq(
-					{t, "Return to me when you have all the required items."},
+					{t, "Kembalilah kepadaku kalau seluruh barang yang diperlukan sudah kau punya."},
 					0
 				)
 				return
@@ -823,7 +823,7 @@ WarriorTrainerNpc = {
 			player:removeItem("electra", math.random(2, 4))
 
 			player.quest["sun_armor"] = 4
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Warrior Sun 4" then
@@ -831,7 +831,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -841,7 +841,7 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Did you think it was so easy? Your work is still very far from complete. Your pride is too strong. Your greed is too strong also, I see.",
+					"Kau pikir semudah itu? Pekerjaanmu masih jauh dari selesai. Kesombonganmu terlalu kuat. Ketamakanmu juga, kulihat.",
 					"Humble yourself. Slay 200 rabbits."
 				},
 				1
@@ -849,7 +849,7 @@ WarriorTrainerNpc = {
 
 			if player:killCount("rabbit") < 200 then
 				player:dialogSeq(
-					{t, "Return when you have slain 200 rabbits."},
+					{t, "Kembalilah kalau kau sudah membunuh 200 kelinci."},
 					0
 				)
 				return
@@ -858,21 +858,21 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"I heard your mind complaining at that tedious task. Perhaps you are not yet humble enough. Collect 14 gold acorns while you kill 200 squirrels."
+					"Kudengar batinmu mengeluh atas tugas yang membosankan itu. Mungkin kau belum cukup rendah hati. Kumpulkan 14 gold acorn sambil membunuh 200 tupai."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
 
 			if player:hasItem("gold_acorn", 14) ~= true then
 				player:dialogSeq(
-					{t, "Return when you have all 14 gold acorns."},
+					{t, "Kembalilah kalau keempat belas gold acorn-nya sudah kau punya."},
 					0
 				)
 				return
@@ -880,7 +880,7 @@ WarriorTrainerNpc = {
 
 			if player:killCount("squirrel") < 200 then
 				player:dialogSeq(
-					{t, "Return when you slain all 200 squirrels."},
+					{t, "Kembalilah kalau kau sudah membunuh 200 tupai."},
 					0
 				)
 				return
@@ -889,7 +889,7 @@ WarriorTrainerNpc = {
 			player:removeItem("gold_acorn", 14)
 
 			player.quest["sun_armor"] = 5
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Warrior Sun 5" then
@@ -897,7 +897,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -905,18 +905,18 @@ WarriorTrainerNpc = {
 			end
 
 			player:dialogSeq(
-				{t, "Prove your combat expertise. Win at least two Carnages."},
+				{t, "Buktikan kepiawaianmu bertempur. Menangkan sedikitnya dua Carnage."},
 				1
 			)
 
 			if player.registry["carnageWin"] >= 2 then
 				player.quest["sun_armor"] = 6
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 			else
 				player:dialogSeq(
 					{
 						t,
-						"You are missing the two required carnage victories that you need."
+						"Dua kemenangan carnage yang disyaratkan belum kau penuhi."
 					},
 					0
 				)
@@ -943,7 +943,7 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -953,7 +953,7 @@ WarriorTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Prove your superiority over the monkeys. Slay their two leaders."
+					"Buktikan keunggulanmu atas para monyet. Bunuh kedua pemimpinnya."
 				},
 				1
 			)
@@ -962,14 +962,14 @@ WarriorTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Now bring me 20,000 coins of gold which I will melt and use to forge your armor. Bring also your unequipped moon mail."
+						"Sekarang bawakan aku 20.000 keping emas untuk kulebur dan kupakai menempa zirahmu. Bawa juga moon mail-mu dalam keadaan tidak dikenakan."
 					},
 					1
 				)
 				player:dialogSeq(
 					{
 						t,
-						"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+						"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 					},
 					1
 				)
@@ -978,7 +978,7 @@ WarriorTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -992,7 +992,7 @@ WarriorTrainerNpc = {
 				local choice2 = player:dialogSeq(
 					{
 						armorg,
-						"You want to wear this armor? It shall drain your abilities and some karma."
+						"Kau ingin mengenakan zirah ini? Ia akan menguras kemampuanmu dan sebagian karmamu."
 					},
 					1
 				)
@@ -1005,12 +1005,12 @@ WarriorTrainerNpc = {
 					player.registry["flushed_kills"] = 0
 					player.quest["sun_armor"] = 0
 					player:addLegend(
-						"Survived the sun (" .. curT() .. ")",
+						"Bertahan di bawah matahari (" .. curT() .. ")",
 						"survived_the_sun",
 						5,
 						128
 					)
-					player:dialogSeq({t, "It is yours."}, 0)
+					player:dialogSeq({t, "Itu milikmu."}, 0)
 					player:calcStat()
 				end
 			end

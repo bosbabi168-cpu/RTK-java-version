@@ -6,7 +6,7 @@ faded_stone = {
 
 		if player.state == 2 or player:checkIfCast(invis) then
 			-- invis state or has invis spell running
-			player:sendMinitext("A spell of this type is already in effect.")
+			player:sendMinitext("Mantra sejenis ini sedang bekerja.")
 			return
 		end
 
@@ -28,7 +28,7 @@ faded = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 

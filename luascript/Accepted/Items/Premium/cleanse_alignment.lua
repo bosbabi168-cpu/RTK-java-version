@@ -11,7 +11,7 @@ cleanse_alignment = {
 		local currentAlignment = alignments[player.alignment + 1]
 
 		local choice = player:menuSeq(
-			"This potion will allow you to change your alignment to a new alignment as well as unalign without vita/mana penalties otherwise normally incurred.\nCurrent alignment: " .. currentAlignment,
+			"Ramuan ini memungkinkanmu mengganti keberpihakanmu ke yang baru maupun melepasnya tanpa denda vita/mana yang biasanya berlaku.\nKeberpihakan sekarang: " .. currentAlignment,
 			alignments,
 			{}
 		)
@@ -20,7 +20,7 @@ cleanse_alignment = {
 			player:dialogSeq(
 				{
 					t,
-					"Using this potion to change your alignment to the same alignment you already have would be a waste."
+					"Memakai ramuan ini untuk berpihak pada yang sudah kau anut hanya sia-sia."
 				},
 				0
 			)
@@ -28,8 +28,8 @@ cleanse_alignment = {
 		end
 
 		local confirm = player:menuSeq(
-			"Are you sure you wish to align to " .. alignments[choice] .. "?",
-			{"Yes, change my alignment.", "No, nevermind."},
+			"Kau yakin ingin berpihak pada " .. alignments[choice] .. "?",
+			{"Ya, ubah keberpihakanku.", "Tidak, lupakan saja."},
 			{}
 		)
 
@@ -43,12 +43,12 @@ cleanse_alignment = {
 
 			if choice == 1 then
 				player:dialogSeq(
-					{t, "You are returned to natural alignment"},
+					{t, "Kau dikembalikan ke keberpihakan alami"},
 					0
 				)
 			else
 				player:dialogSeq(
-					{t, "You are now aligned to " .. alignments[choice]},
+					{t, "Kini kau berpihak pada " .. alignments[choice]},
 					0
 				)
 			end

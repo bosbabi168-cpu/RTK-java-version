@@ -10,14 +10,14 @@ CartographerNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Crafting Skills", "Cartography", "Shadow Stats"}
+		local opts = {"Keahlian Kerajinan", "Cartography", "Shadow Stats"}
 
 		local menu = player:menuString(
-			"Hello! What would you like to do today?",
+			"Halo! Apa yang ingin kau lakukan hari ini?",
 			opts
 		)
 
-		if menu == "Crafting Skills" then
+		if menu == "Keahlian Kerajinan" then
 			generalNPC.crafting_skills(player, npc)
 		elseif menu == "Cartography" then
 			CartographerNpc.cartographyQuest(player, npc)
@@ -45,7 +45,7 @@ CartographerNpc = {
 		if player:hasItem("combined_map", 1) == true then
 			player:removeItem("combined_map", 1)
 			player:addLegend(
-				"Found the path to Mount Baekdu (" .. curT() .. ")",
+				"Menemukan jalan ke Gunung Baekdu (" .. curT() .. ")",
 				"mount_baekdu",
 				3,
 				128
@@ -60,18 +60,18 @@ CartographerNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Welcome to holy Baekdu Mountain, I have been exploring this area for many years.",
-				"This mountain has magical energy which will let you explore various locations around the lands.",
-				"When you bring me 10 map fragments, I will help you combine them to find new locations.",
-				"These magical locations will only be available to you and your group for a short amount of time.",
-				"Some locations may seem familiar, but some may be new and challenging.",
-				"You will be pushed to your limits, should you choose to venture, but the rewards may be great.",
-				"As you level your cartography skill you will be able to unlock harder and deeper locations.",
-				"These locations will be matched to your mark level, and can only be entered with a similar mark.",
-				"You may see creatures from your past, but be cautious because they will be much more difficult.",
-				"When you create a map, place it in the holy rock, and your group members will follow you inside from the mountain.",
-				"(( Wisdom Star does not affect skill gains for this skill ))",
-				"It is strongly recommended to venture with a group!"
+				"Selamat datang di Gunung Baekdu yang suci; aku sudah bertahun-tahun menjelajahi daerah ini.",
+				"Gunung ini menyimpan energi sihir yang memungkinkanmu menjelajahi berbagai tempat di seluruh negeri.",
+				"Kalau kau membawakan 10 potongan peta, akan kubantu menggabungkannya untuk menemukan tempat baru.",
+				"Tempat-tempat bersihir itu hanya terbuka bagimu dan kelompokmu untuk waktu yang singkat.",
+				"Sebagian tempat mungkin terasa akrab, sebagian lagi baru dan menantang.",
+				"Kau akan didorong sampai batas kemampuanmu bila memilih berangkat, tetapi ganjarannya bisa besar.",
+				"Seiring naiknya keahlian kartografimu, kau bisa membuka tempat yang lebih sulit dan lebih dalam.",
+				"Tempat-tempat itu disesuaikan dengan tingkat tandamu, dan hanya bisa dimasuki dengan tanda yang setara.",
+				"Kau mungkin melihat makhluk dari masa lalumu, tetapi berhati-hatilah karena mereka jauh lebih sulit.",
+				"Setelah membuat peta, taruh di batu suci, dan anggota grupmu akan mengikutimu masuk dari gunung.",
+				"(( Wisdom Star tidak memengaruhi kenaikan keahlian ini ))",
+				"Sangat disarankan berangkat bersama satu grup!"
 			},
 			0
 		)
@@ -117,7 +117,7 @@ CartographerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You are not ready to devote to a craft yet, come back later."
+					"Kau belum siap menekuni satu kerajinan. Kembalilah nanti."
 				},
 				0
 			)
@@ -128,7 +128,7 @@ CartographerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have already devoted yourself to the study of Cartography."
+					"Kau sudah menekuni ilmu Cartography."
 				},
 				0
 			)
@@ -138,7 +138,7 @@ CartographerNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Cartographers can craft maps with common, rare, legendary, and unique modifiers. Do you wish to become a cartographer?"
+				"Kartografer bisa membuat peta dengan pengubah biasa, langka, legendaris, dan unik. Kau ingin menjadi kartografer?"
 			},
 			1
 		)

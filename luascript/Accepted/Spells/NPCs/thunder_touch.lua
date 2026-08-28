@@ -4,7 +4,7 @@ thunder_touch = {
 		target:playSound(8)
 		target.attacker = mob.ID
 		if target.blType == BL_PC then
-			target:sendMinitext(mob.name .. " attacks you with Thunder touch spell.")
+			target:sendMinitext(mob.name .. " menyerangmu dengan mantra Thunder touch.")
 		end
 		target:removeHealthExtend(6496, 1, 1, 1, 1, 0)
 	end

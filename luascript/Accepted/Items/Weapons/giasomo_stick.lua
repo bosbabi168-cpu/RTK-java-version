@@ -5,14 +5,14 @@ giasomo_stick = {
 
 		if mob ~= nil then
 			if math.random(1, 100) <= 4 then
-				player:sendMinitext("You cast Calling Giasomo.")
+				player:sendMinitext("Kau merapal Calling Giasomo.")
 				cotw_giasomo_bird_poet.cast(player)
 			end
 		end
 
 		if pc ~= nil then
 			if math.random(1, 100) <= 4 and player:canPK(pc) then
-				player:sendMinitext("You cast Calling Giasomo.")
+				player:sendMinitext("Kau merapal Calling Giasomo.")
 				cotw_giasomo_bird_poet.cast(player)
 			end
 		end

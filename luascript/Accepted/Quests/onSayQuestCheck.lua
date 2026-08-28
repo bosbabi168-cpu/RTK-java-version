@@ -18,8 +18,8 @@ Player.onSayQuestCheck = async(function(player, speech)
 			player:dialogSeq(
 				{
 					t,
-					"You hear the rustling of a person locked away",
-					"\"Hello! Can you please help me?  I was locked away and there is no key. Can you please get a lockpick?\""
+					"Kau mendengar gemerisik seseorang yang terkurung",
+					"\"Halo! Bisakah kau menolongku? Aku dikurung dan tidak ada kuncinya. Bisakah kau mengambilkan pencongkel kunci?\""
 				},
 				0
 			)
@@ -30,7 +30,7 @@ Player.onSayQuestCheck = async(function(player, speech)
 				player:dialogSeq(
 					{
 						t,
-						"\"Ah yes, a lockpick. My old friend Maso may be able to help you make one. You might be able to access the east gate, which you can use to get around the impenetrable gate.\""
+						"\"Ah ya, pencongkel kunci. Kawan lamaku Maso mungkin bisa membantumu membuatnya. Kau mungkin bisa memakai gerbang timur untuk memutari gerbang yang tak tertembus itu.\""
 					},
 					0
 				)

@@ -168,13 +168,13 @@ opening_scene_controller = {
 			isgar.side = 1
 			isgar:sendSide()
 		elseif (opening == 22) then
-			isgar:talk(0, "Isgar: So where's Tanna?")
+			isgar:talk(0, "Isgar: Jadi, di mana Tanna?")
 		elseif (opening == 26) then
 			magnus:sendAction(20, 80)
 		elseif (opening == 27) then
 			mob:talk(
 				3,
-				player.name .. ": Who are these people? What are they doing here?"
+				player.name .. ": Siapa orang-orang ini? Apa yang mereka lakukan di sini?"
 			)
 		elseif (opening == 30) then
 			mob:sendAnimationXY(427, 8, 16, 1)
@@ -192,18 +192,18 @@ opening_scene_controller = {
 				end
 			end
 		elseif (opening == 35) then
-			magnus:talk(0, "Magnus: There she is.")
+			magnus:talk(0, "Magnus: Itu dia.")
 		elseif (opening == 36) then
 			isgar.side = 0
 			isgar:sendSide()
 			mob:moveGhost()
 		elseif (opening == 43) then
-			isgar:talk(0, "Isgar: You're late.")
+			isgar:talk(0, "Isgar: Kau terlambat.")
 			mob:moveGhost()
 		elseif (opening == 46) then
 			mob:moveGhost()
 		elseif (opening == 51) then
-			tanna:talk(0, "Tanna: I was getting everything ready.")
+			tanna:talk(0, "Tanna: Aku sedang menyiapkan segalanya.")
 		elseif (opening == 53) then
 			mob:moveGhost()
 		elseif (opening == 54) then
@@ -211,7 +211,7 @@ opening_scene_controller = {
 		elseif (opening == 56) then
 			mob:talk(
 				3,
-				player.name .. ": Getting things ready? I'd better hide."
+				player.name .. ": Menyiapkan sesuatu? Sebaiknya aku bersembunyi."
 			)
 			mob:moveGhost()
 		elseif (opening == 57) then
@@ -266,7 +266,7 @@ opening_scene_controller = {
 			arelai.side = 0
 			arelai:sendSide()
 		elseif (opening == 77) then
-			hiro:talk(0, "Hiro: Hello, Arelai.")
+			hiro:talk(0, "Hiro: Halo, Arelai.")
 		elseif (opening == 85) then
 			arelai:talk(0, "Arelai: Hey Ichkin.")
 			arelai:sendAction(14, 80)
@@ -279,7 +279,7 @@ opening_scene_controller = {
 		elseif (opening == 96) then
 			ichkin:sendAction(13, 80)
 		elseif (opening == 103) then
-			tanna:talk(0, "Tanna: Let's begin.")
+			tanna:talk(0, "Tanna: Mari kita mulai.")
 		elseif (opening == 106) then
 			ichkin.side = 3
 			ichkin:sendSide()
@@ -288,17 +288,17 @@ opening_scene_controller = {
 			isgar:sendSide()
 		elseif (opening == 111) then
 			broadcast(mob.m, "")
-			magnus:talk(3, "Magnus: *begins to focus*")
+			magnus:talk(3, "Magnus: *mulai memusatkan pikiran*")
 		elseif (opening == 114) then
-			isgar:talk(3, "Isgar: *begins to focus*")
+			isgar:talk(3, "Isgar: *mulai memusatkan pikiran*")
 		elseif (opening == 116) then
-			tanna:talk(3, "Tanna: *begins to focus*")
+			tanna:talk(3, "Tanna: *mulai memusatkan pikiran*")
 		elseif (opening == 118) then
-			hiro:talk(3, "Hiro: *begins to focus*")
+			hiro:talk(3, "Hiro: *mulai memusatkan pikiran*")
 		elseif (opening == 119) then
-			ichkin:talk(3, "Ichkin: *begins to focus*")
+			ichkin:talk(3, "Ichkin: *mulai memusatkan pikiran*")
 		elseif (opening == 120) then
-			arelai:talk(3, "Arelai: *begins to focus*")
+			arelai:talk(3, "Arelai: *mulai memusatkan pikiran*")
 		elseif (opening == 127) then
 			magnus:talk(2, "~mok ha emjata~")
 			isgar:talk(2, "~mok ha emjata~")
@@ -444,29 +444,29 @@ opening_scene_controller = {
 			tanna:talk(2, "~mok ha emjata~")
 			hiro:talk(2, "~mok ha emjata~")
 			ichkin:talk(2, "~mok ha emjata~")
-			arelai:talk(0, "Arelai: Oh so cute!")
+			arelai:talk(0, "Arelai: Oh, manis sekali!")
 			panda:sendAction(6, 255)
 		elseif (opening == 203) then
-			arelai:talk(0, "Arelai: Wait... what? PANDA!")
+			arelai:talk(0, "Arelai: Tunggu... apa? PANDA!")
 		elseif (opening == 204) then
 			arelai:sendAction(17, 80)
 		elseif (opening == 209) then
-			isgar:talk(0, "Isgar: What!?")
+			isgar:talk(0, "Isgar: Apa!?")
 		elseif (opening == 215) then
 			ichkin:talk(0, "Ichkin: ...")
-			magnus:talk(0, "Magnus: Who's this?")
+			magnus:talk(0, "Magnus: Siapa ini?")
 			isgar:sendAction(18, 80)
 		elseif (opening == 221) then
 			mob.light = 123
 			player:refresh()
 			player:changeView(6, 0)
-			hiro:talk(0, "Hiro: Ugh... this always happens.")
+			hiro:talk(0, "Hiro: Ugh... selalu begini.")
 			magnus:sendAction(21, 80)
 		elseif (opening == 227) then
 			mob.light = 0
 			player:refresh()
 			player:changeView(6, 0)
-			tanna:talk(0, "Tanna: Leave. NOW!")
+			tanna:talk(0, "Tanna: Pergi. SEKARANG!")
 			hiro:sendAction(23, 80)
 		elseif (opening == 228) then
 			panda:sendAction(12, 80)
@@ -485,7 +485,7 @@ opening_scene_controller = {
 		elseif (opening == 244) then
 			panda:moveGhost()
 		elseif (opening == 246) then
-			isgar:talk(0, "Isgar: The nerve.")
+			isgar:talk(0, "Isgar: Berani sekali.")
 		elseif (opening == 247) then
 			panda:moveGhost()
 		elseif (opening == 250) then
@@ -518,7 +518,7 @@ opening_scene_controller = {
 		elseif (opening == 268) then
 			corthol:talk(
 				0,
-				"Corthol: What's going on here? Why isn't this prepared!?"
+				"Corthol: Ada apa ini? Kenapa belum disiapkan!?"
 			)
 		elseif (opening == 269) then
 			corthol:moveGhost()
@@ -527,7 +527,7 @@ opening_scene_controller = {
 		elseif (opening == 275) then
 			corthol:moveGhost()
 		elseif (opening == 278) then
-			tanna:talk(0, "Tanna: Minor disruption. It's sorted now.")
+			tanna:talk(0, "Tanna: Gangguan kecil. Sudah beres sekarang.")
 			corthol:moveGhost()
 		elseif (opening == 281) then
 			corthol:moveGhost()
@@ -541,18 +541,18 @@ opening_scene_controller = {
 			corthol.side = 2
 			corthol:sendSide()
 		elseif (opening == 292) then
-			magnus:talk(3, "Magnus: *begins to focus*")
+			magnus:talk(3, "Magnus: *mulai memusatkan pikiran*")
 			corthol:move()
 		elseif (opening == 295) then
-			isgar:talk(3, "Isgar: *begins to focus*")
+			isgar:talk(3, "Isgar: *mulai memusatkan pikiran*")
 		elseif (opening == 297) then
-			tanna:talk(3, "Tanna: *begins to focus*")
+			tanna:talk(3, "Tanna: *mulai memusatkan pikiran*")
 		elseif (opening == 299) then
-			hiro:talk(3, "Hiro: *begins to focus*")
+			hiro:talk(3, "Hiro: *mulai memusatkan pikiran*")
 		elseif (opening == 300) then
-			ichkin:talk(3, "Ichkin: *begins to focus*")
+			ichkin:talk(3, "Ichkin: *mulai memusatkan pikiran*")
 		elseif (opening == 301) then
-			arelai:talk(3, "Arelai: *begins to focus*")
+			arelai:talk(3, "Arelai: *mulai memusatkan pikiran*")
 		elseif (opening == 308) then
 			magnus:talk(2, "~mok ha emjata~")
 			isgar:talk(2, "~mok ha emjata~")
@@ -800,7 +800,7 @@ opening_scene_controller = {
 		elseif (opening == 449) then
 			corthol:talk(
 				0,
-				"Corthol: Hurry up! Once this ritual is complete I will harness the power of these lands!"
+				"Corthol: Cepat! Begitu ritual ini selesai, akan kukuasai kekuatan tanah-tanah ini!"
 			)
 		elseif (opening == 450) then
 			setTile(mob.m, 12, 22, 35836)
@@ -835,7 +835,7 @@ opening_scene_controller = {
 		elseif (opening == 469) then
 			corthol:talk(
 				0,
-				"Corthol: Yes, I can feel myself absorbing the earth from beneath us."
+				"Corthol: Ya, kurasakan diriku menyerap bumi di bawah kita."
 			)
 		elseif (opening == 471) then
 			mob.light = 118
@@ -936,7 +936,7 @@ opening_scene_controller = {
 			arelai:sendAction(6, 40)
 			corthol:talk(
 				0,
-				"Corthol: Soon my power will be on par with that of the gods!"
+				"Corthol: Sebentar lagi kekuatanku setara dengan para dewa!"
 			)
 		elseif (opening == 489) then
 			setTile(mob.m, 12, 22, 35836)
@@ -1208,7 +1208,7 @@ opening_scene_controller = {
 				mob.side = 1
 				mob:sendSide()
 			else
-				mob:talk(3, player.name .. ": What is going on here?")
+				mob:talk(3, player.name .. ": Ada apa ini?")
 			end
 		elseif (opening == 572) then
 			if (decision == 2) then
@@ -1238,7 +1238,7 @@ opening_scene_controller = {
 			else
 				mob:talk(
 					0,
-					player.name .. ": What's up fellas? Can I get in on this?"
+					player.name .. ": Apa kabar, kawan-kawan? Boleh aku ikut?"
 				)
 			end
 		elseif (opening == 587) then
@@ -1262,7 +1262,7 @@ opening_scene_controller = {
 				mob.light = 0
 				player:refresh()
 				player:changeView(6, 0)
-				corthol:talk(0, "Corthol: You're joking, right? Look at you.")
+				corthol:talk(0, "Corthol: Kau bercanda, kan? Lihat dirimu.")
 			end
 		elseif (opening == 601) then
 			if (decision == 1 or decision == 3) then
@@ -1275,7 +1275,7 @@ opening_scene_controller = {
 			end
 		elseif (opening == 603) then
 			if (decision == 2) then
-				corthol:talk(1, "Corthol! Get them!")
+				corthol:talk(1, "Corthol! Habisi mereka!")
 			end
 		elseif (opening == 605) then
 			if (decision == 1 or decision == 3) then
@@ -1375,7 +1375,7 @@ opening_scene_controller = {
 			if (decision == 1 or decision == 3) then
 				corthol:talk(
 					0,
-					"Corthol: Enough! I will show this world the true meaning of power."
+					"Corthol: Cukup! Akan kutunjukkan kepada dunia ini arti kekuatan yang sebenarnya."
 				)
 			end
 		elseif (opening == 623) then
@@ -1385,7 +1385,7 @@ opening_scene_controller = {
 		elseif (opening == 630) then
 			corthol:talk(
 				0,
-				"Corthol: The homes and villages of those who do not worship me shall be obliterated."
+				"Corthol: Rumah dan desa mereka yang tidak menyembahku akan dimusnahkan."
 			)
 		elseif (opening == 637) then
 			mob.light = 111
@@ -1400,7 +1400,7 @@ opening_scene_controller = {
 			arelai:sendAnimation(393, 1)
 			corthol:talk(
 				0,
-				"Corthol: I, Corthol, am now ascended and one with the Gods."
+				"Corthol: Aku, Corthol, kini telah naik dan menyatu dengan para Dewa."
 			)
 		elseif (opening == 644) then
 			if (decision == 3) then
@@ -1443,7 +1443,7 @@ opening_scene_controller = {
 			if (decision == 1) then
 				mob:moveGhost()
 			else
-				corthol:talk(0, "Corthol: Huh? What was that?")
+				corthol:talk(0, "Corthol: Hah? Apa itu tadi?")
 			end
 		elseif (opening == 653) then
 			if (decision == 1) then
@@ -1470,7 +1470,7 @@ opening_scene_controller = {
 		elseif (opening == 662) then
 			corthol:talk(
 				0,
-				"Corthol: The gods said I was unfit to become one of them, I'll show them."
+				"Corthol: Para dewa bilang aku tidak layak menjadi salah satu dari mereka. Akan kubuktikan."
 			)
 			corthol:moveGhost()
 		elseif (opening == 664) then
@@ -1487,7 +1487,7 @@ opening_scene_controller = {
 			player:changeView(6, 7)
 			corthol:talk(
 				0,
-				"Corthol: They think that they are the only ones who can be all powerful."
+				"Corthol: Mereka pikir hanya merekalah yang boleh mahakuasa."
 			)
 			corthol:moveGhost()
 		elseif (opening == 676) then
@@ -1507,7 +1507,7 @@ opening_scene_controller = {
 		elseif (opening == 686) then
 			corthol:talk(
 				0,
-				"Corthol: Simply because their bloodline determines it, bah!"
+				"Corthol: Hanya karena garis darah mereka menentukannya, cih!"
 			)
 			corthol.side = 1
 			corthol:sendSide()
@@ -1530,20 +1530,20 @@ opening_scene_controller = {
 		elseif (opening == 698) then
 			corthol:talk(
 				0,
-				"Corthol: I will bring terror to this land and then come for their throats."
+				"Corthol: Akan kubawa teror ke tanah ini, lalu kucekik leher mereka."
 			)
 			mob.side = 0
 			mob:sendSide()
 		elseif (opening == 706) then
 			mob:talk(
 				3,
-				player.name .. ": Damn! I can't let this happen, I can't."
+				player.name .. ": Sialan! Aku tidak boleh membiarkan ini terjadi, tidak boleh."
 			)
 		elseif (opening == 714) then
 			player:changeView(6, 14)
 			mob:talk(
 				0,
-				player.name .. ": I won't let you do this, not to this land, not to the people who live here peacefully!"
+				player.name .. ": Aku tidak akan membiarkanmu melakukan ini, tidak kepada tanah ini, tidak kepada orang-orang yang hidup damai di sini!"
 			)
 		elseif (opening == 718) then
 			corthol.side = 2
@@ -1551,17 +1551,17 @@ opening_scene_controller = {
 		elseif (opening == 730) then
 			corthol:talk(
 				0,
-				"Corthol: Who are you? How dare you even think of thwarting my plans!"
+				"Corthol: Siapa kau? Berani-beraninya kau berpikir menggagalkan rencanaku!"
 			)
 		elseif (opening == 746) then
 			corthol:talk(
 				0,
-				"Corthol: To halt a god from their destination is to wish for certain death!"
+				"Corthol: Menghalangi dewa dari tujuannya sama saja mengharapkan kematian!"
 			)
 		elseif (opening == 762) then
-			corthol:talk(0, "Corthol: I will grant you this wish.")
+			corthol:talk(0, "Corthol: Akan kukabulkan permintaan itu.")
 		elseif (opening == 770) then
-			corthol:talk(0, "Corthol: Ha! How foolish.")
+			corthol:talk(0, "Corthol: Ha! Bodoh sekali.")
 		elseif (opening == 773) then
 			corthol:sendAction(6, 60)
 		elseif (opening == 774) then
@@ -1614,7 +1614,7 @@ opening_scene_controller = {
 			opening_scene_controller.debugger = 0
 			mob.registry["opening"] = mob.registry["opening"] + 1
 		else
-			mob:talk(2, "Debug in progress.")
+			mob:talk(2, "Penelusuran galat sedang berjalan.")
 		end
 	end,
 
@@ -1623,7 +1623,7 @@ opening_scene_controller = {
 
 	decision_one = async(function(player, mob)
 		local decisionOne = player:menuString(
-			"What is going on? Should I do something?",
+			"Ada apa ini? Haruskah aku berbuat sesuatu?",
 			{"Wait.", "Assist.", "Attack."}
 		)
 		local gfx = {graphic = convertGraphic(1035, "monster"), color = 0}
@@ -1636,7 +1636,7 @@ opening_scene_controller = {
 			player:dialogSeq(
 				{
 					gfx,
-					"I will wait and see what happens to better analyze the situation."
+					"Aku akan menunggu dan melihat apa yang terjadi untuk menilai keadaan lebih baik."
 				},
 				1
 			)
@@ -1645,14 +1645,14 @@ opening_scene_controller = {
 			player:lock()
 		elseif (decisionOne == "Assist.") then
 			player:dialogSeq(
-				{gfx, "I shall join him in the surge for power!"},
+				{gfx, "Aku akan bergabung dengannya dalam perebutan kekuatan!"},
 				1
 			)
 			mob.registry["opening_decision_one"] = 2
 			mob.registry["opening"] = 570
 			player:lock()
 		elseif (decisionOne == "Attack.") then
-			player:dialogSeq({gfx, "I can't let them do this!"}, 1)
+			player:dialogSeq({gfx, "Aku tidak bisa membiarkan mereka melakukan ini!"}, 1)
 			mob.registry["opening_decision_one"] = 3
 			mob.registry["opening"] = 570
 			player:lock()
@@ -1723,7 +1723,7 @@ opening_scene = {
 		elseif (player.sex == 1) then
 			playerMob.gfxArmor = femaleArmor[player.totem + 1]
 		else
-			player:talk(0, player.name .. ": I'm not human.")
+			player:talk(0, player.name .. ": Aku bukan manusia.")
 		end
 
 		playerMob.gfxWeap = 65535
@@ -1769,11 +1769,11 @@ opening_scene = {
 	firstlogin = async(function(player)
 		local spiritprogress = player.registry["spirit_progress"]
 		local opts = {}
-		table.insert(opts, "Yes")
-		table.insert(opts, "No")
+		table.insert(opts, "Ya")
+		table.insert(opts, "Tidak")
 		local seizures = {}
-		table.insert(seizures, "I suffer from seizures.")
-		table.insert(seizures, "I do not suffer from seizures.")
+		table.insert(seizures, "Aku menderita kejang.")
+		table.insert(seizures, "Aku tidak menderita kejang.")
 		local menuOption, menuOption2
 		local cont = 0
 		local t = {graphic = convertGraphic(838, "monster"), color = 0}
@@ -1792,7 +1792,7 @@ opening_scene = {
 				player:dialogSeq(
 					{
 						e,
-						"You try to wake up, but cannot; it seems as if you must finish the dream..."
+						"Kau berusaha bangun tetapi tidak bisa; sepertinya kau harus menuntaskan mimpi ini..."
 					},
 					1
 				)
@@ -1801,21 +1801,21 @@ opening_scene = {
 			player:dialogSeq(
 				{
 					e,
-					"You feel very light and as you open your eyes you see something approaching...",
+					"Tubuhmu terasa sangat ringan, dan saat matamu terbuka kau melihat sesuatu mendekat...",
 					e,
-					"...with your eyes still fuzzy you seem to recognize a silhouette...",
+					"...dengan pandangan yang masih kabur, kau seakan mengenali sebuah siluet...",
 					t,
-					"Greetings " .. player.name .. ". I am a spirit of Genesis and my task is to aid you in your journey.",
+					"Greetings " .. player.name .. ". Aku roh Genesis, dan tugasku membantumu dalam perjalananmu.",
 					t,
-					"I will be loyal to you regardless of your actions.",
+					"Aku akan setia kepadamu apa pun yang kau perbuat.",
 					t,
-					"Some say destiny is written, but I believe even if it is written you are still able to make your own choices to shape your own destiny.",
+					"Sebagian orang bilang takdir sudah tertulis, tetapi aku percaya meski tertulis, kau tetap bisa membuat pilihanmu sendiri untuk membentuk takdirmu.",
 					t,
-					"I believe that some choices not even the gods can foretell as they are incapable of grasping the power of choice.",
+					"Aku percaya ada pilihan yang bahkan para dewa pun tidak bisa meramalkannya, sebab mereka tidak sanggup memahami kekuatan memilih.",
 					t,
-					"Certain choices you make will affect the world's view of you. Choose wisely as your future is up to you.",
+					"Sebagian pilihanmu akan memengaruhi cara dunia memandangmu. Pilihlah dengan bijak, sebab masa depanmu ada di tanganmu.",
 					t,
-					"Now I would like for you to make your first choice. An entity as I am, I was not given a name; but perhaps you can suggest one for me. I will be contacting you often, so this will help with communication."
+					"Sekarang aku ingin kau membuat pilihan pertamamu. Sebagai wujud sepertiku, aku tidak diberi nama; mungkin kau bisa mengusulkan satu. Aku akan sering menghubungimu, jadi ini akan memudahkan kita berbicara."
 				},
 				1
 			)
@@ -1826,15 +1826,15 @@ opening_scene = {
 		local triggered = false
 
 		if (player.registry["spirit_progress"] == 1) then
-			player:dialogSeq({t, "You must give me a name."}, 1)
+			player:dialogSeq({t, "Kau harus memberiku nama."}, 1)
 
 			repeat
 				if (triggered) then
-					player:dialogSeq({t, "My name must be 4-16 characters."}, 1)
+					player:dialogSeq({t, "Namaku harus terdiri dari 4-16 huruf."}, 1)
 					player.registry["spirit_progress"] = 1
 				end
 
-				f1n = player:input("What shall I be named?")
+				f1n = player:input("Aku hendak dinamai apa?")
 				triggered = true
 			until (string.len(f1n) > 3 and string.len(f1n) <= 15)
 
@@ -1846,9 +1846,9 @@ opening_scene = {
 			player:dialogSeq(
 				{
 					t,
-					"I shall be " .. player.f1Name .. " from now on.",
+					"Mulai sekarang namaku " .. player.f1Name .. ".",
 					t,
-					"If you are in need of assistance, you may press the [F1] key at any time to call for me."
+					"Kalau kau butuh bantuan, tekan tombol [F1] kapan saja untuk memanggilku."
 				},
 				1
 			)
@@ -1857,18 +1857,18 @@ opening_scene = {
 
 		if (player.registry["spirit_progress"] == 3) then
 			player:dialogSeq(
-				{t, "Now I would like to learn a bit about you."},
+				{t, "Sekarang aku ingin tahu sedikit tentangmu."},
 				1
 			)
 			if (#opts ~= 0) then
-				menuOption = player:menu("Do you suffer from seizures?", opts)
+				menuOption = player:menu("Apakah kau menderita kejang?", opts)
 				if (menuOption == 1) then
 					--YES
 					player.registry["settings_seizure"] = 1
 					player:dialogSeq(
 						{
 							t,
-							"-" .. player.f1Name .. " writes this on a scroll, and as he finishes it vanishes-"
+							"-" .. player.f1Name .. " menuliskannya pada gulungan, dan begitu selesai gulungan itu lenyap-"
 						},
 						1
 					)
@@ -1876,7 +1876,7 @@ opening_scene = {
 				elseif (menuOption == 2) then
 					--NO
 					menuOption2 = player:menu(
-						"Are you sure that you do not suffer from seizures?",
+						"Kau yakin tidak menderita kejang?",
 						seizures
 					)
 					if (menuOption2 == 1) then
@@ -1885,9 +1885,9 @@ opening_scene = {
 						player:dialogSeq(
 							{
 								t,
-								"-" .. player.f1Name .. " writes this on a scroll, and as he finishes it vanishes-",
+								"-" .. player.f1Name .. " menuliskannya pada gulungan, dan begitu selesai gulungan itu lenyap-",
 								t,
-								"I am sorry to hear, I will keep it in mind."
+								"Aku turut prihatin; akan kuingat itu."
 							},
 							1
 						)
@@ -1897,9 +1897,9 @@ opening_scene = {
 						player:dialogSeq(
 							{
 								t,
-								"-" .. player.f1Name .. " writes this on a scroll, and as he finishes it vanishes-",
+								"-" .. player.f1Name .. " menuliskannya pada gulungan, dan begitu selesai gulungan itu lenyap-",
 								t,
-								"If you do suffer from seizures and made a mistake, please contact a Game Master as soon as possible."
+								"Kalau kau ternyata menderita kejang dan salah menjawab, segera hubungi Game Master."
 							},
 							1
 						)
@@ -1916,23 +1916,23 @@ opening_scene = {
 			player:dialogSeq(
 				{
 					t,
-					"Now I would like to provide you with some information about this realm.",
+					"Sekarang aku ingin memberimu sedikit keterangan tentang dunia ini.",
 					t,
-					"The most important thing to remember is that you are responsible for your own actions.",
+					"Hal terpenting yang harus kau ingat: kau bertanggung jawab atas perbuatanmu sendiri.",
 					t,
-					"Any action you perform or choice you make may have an impact on how the world views you.",
+					"Setiap tindakan dan pilihanmu bisa memengaruhi cara dunia memandangmu.",
 					t,
-					"Certain tasks do not have a specific ending and you will determine how things will progress. Unlike the gods you have the power to shape your own destiny.",
+					"Sebagian tugas tidak punya akhir yang pasti, dan kaulah yang menentukan jalannya. Tidak seperti para dewa, kau punya kuasa membentuk takdirmu sendiri.",
 					t,
-					"Secondly, you are an individual and are free to choose how YOU will progress, both physically and mentally.",
+					"Kedua, kau adalah pribadi yang bebas memilih bagaimana KAU berkembang, baik jasmani maupun batin.",
 					t,
-					"You are in full control of how your body grows.",
+					"Kau sepenuhnya mengendalikan cara tubuhmu tumbuh.",
 					t,
-					"As you accumulate experience you will gain insight.",
+					"Seiring pengalaman yang kau kumpulkan, kau akan memperoleh pencerahan.",
 					t,
-					"Might allows you to be stronger in swing and vitality, Will improves the accuracy of your spells and your pool of mana, while Grace increases your accuracy",
+					"Might membuat ayunan dan daya hidupmu lebih kuat, Will menajamkan ketepatan mantra serta memperbesar simpanan manamu, sedangkan Grace menambah ketepatanmu",
 					t,
-					"and avoidance while giving you a bit of both vitality and mana."
+					"dan kelincahanmu menghindar, sambil memberi sedikit daya hidup maupun mana."
 				},
 				1
 			)
@@ -1942,7 +1942,7 @@ opening_scene = {
 			player:dialogSeq(
 				{
 					t,
-					"Now I'm going to search your mind for what has brought you to me."
+					"Sekarang akan kutelusuri pikiranmu untuk mencari apa yang membawamu kepadaku."
 				},
 				1
 			)

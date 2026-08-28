@@ -1,7 +1,7 @@
 scroll_of_invocation = {
 	use = function(player)
 		if (not player:canCast(0, 1, 0)) then
-			player:sendMinitext("You cannot do that right now.")
+			player:sendMinitext("Kau tidak bisa melakukan itu sekarang.")
 			return
 		end
 
@@ -18,7 +18,7 @@ scroll_of_invocation = {
 		player:playSound(85)
 		player:sendAnimation(11)
 		player:sendStatus()
-		player:sendMinitext("You cast Invoke.")
+		player:sendMinitext("Kau merapal Invoke.")
 
 		player:removeItem("scroll_of_invocation", 1, 6)
 	end

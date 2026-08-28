@@ -12,6 +12,7 @@ import org.rtk.common.Crypt;
 import org.rtk.common.mmo.CharStatus;
 import org.rtk.common.mmo.Point;
 import org.rtk.map.data.MapData;
+import org.rtk.map.proto.Wire;
 import org.rtk.map.data.MapFile;
 import org.rtk.map.data.MapRegistry;
 
@@ -219,6 +220,170 @@ public final class ClifTest {
         saveTest(map, sd);
         bodTest(map, sd);
         adminTest(map, sd);
+        exchangeTest(map, sd);
+        protoTest(map, sd);
+        aksiTest(map, sd);
+        perlengkapanTest(map, sd);
+        rtk2Test(map, sd);
+        abaikanTest();
+        grupTest();
+        setelanTest(map, sd);
+        duniaTest(map, sd);
+    }
+
+    /**
+     * Pertukaran barang antar pemain.
+     *
+     * <p>Dua hal yang paling berbahaya kalau salah, dan keduanya dikunci di
+     * sini: barang yang ditawarkan <b>benar-benar keluar dari inventaris</b>
+     * (kalau tidak, bisa digandakan) dan <b>kembali saat dibatalkan</b>
+     * (kalau tidak, hilang). Plus persetujuan dua tahap: menekan "tukar"
+     * sekali belum memindahkan apa pun.</p>
+     */
+    private static void exchangeTest(MapData map, User sd) {
+        log.info("=== pertukaran barang antar pemain ===");
+
+        int[] c = firstWalkable(map);
+        placeAt(map, sd, c[0], c[1]);
+
+        var db = MapServer.itemDb;
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        var kosong = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+        // permata: boleh ditukar
+        db.register(new org.rtk.map.data.ItemDb.Info(7401, "permata", "Permata", "", "",
+                18, 0, 0L, 0, 1, 1, 20, 0, 0, 0, 0, 0, kosong, tanpaStat));
+        // pusaka: ItmExchangeable = 1 -> TIDAK bisa ditukar
+        db.register(new org.rtk.map.data.ItemDb.Info(7402, "pusaka", "Pusaka", "", "",
+                18, 0, 0L, 1, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+
+        // lawan main
+        CharStatus ls = new CharStatus();
+        ls.id = 0x0ABCDE;
+        ls.name = "Lawan";
+        ls.baseHp = 100;
+        ls.lastPos = new Point(0, c[0], c[1]);
+        User lawan = new User(31, ls);
+        lawan.m = 0;
+        lawan.x = c[0];
+        lawan.y = c[1];
+        lawan.status.maxInv = 20;
+        MapServer.net.openTestSession(lawan.fd);
+        MapServer.onlineChars.put(sd.fd, sd);
+        MapServer.onlineChars.put(lawan.fd, lawan);
+
+        sd.status.maxInv = 20;
+        sd.status.inventory.clear();
+        lawan.status.inventory.clear();
+        sd.exchange.items.clear();
+        lawan.exchange.items.clear();
+        sd.exchange.target = 0;
+        lawan.exchange.target = 0;
+
+        // --- mulai ---
+        check("mulai dengan diri sendiri ditolak",
+                !Exchange.start(sd, sd.id));
+        check("mulai dengan lawan sepeta berhasil",
+                Exchange.start(sd, lawan.id));
+        check("kedua sisi saling menunjuk",
+                sd.exchange.target == lawan.id && lawan.exchange.target == sd.id);
+
+        // --- titipan BENAR-BENAR keluar dari inventaris ---
+        sd.addItemById(7401, 5, -1);
+        check("titip 2 dari 5 permata", Exchange.offerItem(sd, 0, 2));
+        check("titipannya tercatat", sd.exchange.items.size() == 1
+                && sd.exchange.items.get(0).amount == 2);
+        check("⚠️ barangnya BERKURANG dari inventaris, bukan sekadar ditandai",
+                sd.status.inventory.size() == 1
+                        && sd.status.inventory.get(0).amount == 3);
+
+        // --- barang yang tidak boleh ditukar ---
+        sd.addItemById(7402, 1, -1);
+        int slotPusaka = sd.status.inventory.size() - 1;
+        check("⚠️ ItmExchangeable = 1 berarti TIDAK bisa ditukar",
+                !Exchange.offerItem(sd, slotPusaka, 1));
+        check("pusaka tetap di inventaris",
+                sd.status.inventory.get(slotPusaka).amount == 1);
+
+        // --- inventaris lawan penuh ---
+        int maxAsli = lawan.status.maxInv;
+        lawan.status.maxInv = 0;
+        check("inventaris lawan penuh -> titipan ditolak",
+                !Exchange.offerItem(sd, 0, 1));
+        lawan.status.maxInv = maxAsli;
+
+        // --- batal MENGEMBALIKAN titipan ---
+        int sebelumBatal = sd.status.inventory.size();
+        Exchange.cancel(sd);
+        check("⚠️ batal MENGEMBALIKAN titipan ke inventaris",
+                sd.status.inventory.stream()
+                        .filter(i -> i.id == 7401)
+                        .mapToInt(i -> i.amount).sum() == 5);
+        check("batal mengosongkan titipan dan tandanya",
+                sd.exchange.items.isEmpty() && sd.exchange.target == 0);
+
+        // --- persetujuan DUA TAHAP ---
+        sd.status.inventory.clear();
+        lawan.status.inventory.clear();
+        sd.addItemById(7401, 3, -1);
+        lawan.addItemById(7401, 1, -1);
+        Exchange.start(sd, lawan.id);
+        Exchange.offerItem(sd, 0, 3);
+        Exchange.offerItem(lawan, 0, 1);
+
+        Exchange.confirm(sd, lawan.id);
+        check("⚠️ satu pihak setuju: barang BELUM berpindah",
+                sd.exchange.done && !lawan.exchange.done
+                        && lawan.status.inventory.isEmpty());
+
+        Exchange.confirm(lawan, sd.id);
+        check("kedua pihak setuju: barang berpindah",
+                lawan.status.inventory.stream()
+                        .filter(i -> i.id == 7401)
+                        .mapToInt(i -> i.amount).sum() == 3);
+        check("dan sebaliknya",
+                sd.status.inventory.stream()
+                        .filter(i -> i.id == 7401)
+                        .mapToInt(i -> i.amount).sum() == 1);
+        check("pertukaran ditutup di kedua sisi",
+                sd.exchange.target == 0 && lawan.exchange.target == 0
+                        && sd.exchange.items.isEmpty()
+                        && lawan.exchange.items.isEmpty());
+
+        // --- lawan yang disebut klien tidak cocok -> kedua sisi batal ---
+        sd.status.inventory.clear();
+        lawan.status.inventory.clear();
+        sd.addItemById(7401, 2, -1);
+        Exchange.start(sd, lawan.id);
+        Exchange.offerItem(sd, 0, 2);
+        Exchange.confirm(sd, 999999L);
+        check("lawan yang disebut klien salah -> kedua sisi dibatalkan",
+                sd.exchange.target == 0 && lawan.exchange.target == 0);
+        check("dan titipannya tetap kembali",
+                sd.status.inventory.stream()
+                        .filter(i -> i.id == 7401)
+                        .mapToInt(i -> i.amount).sum() == 2);
+
+        // --- emas ---
+        sd.status.inventory.clear();
+        lawan.status.inventory.clear();
+        sd.status.money = 500;
+        lawan.status.money = 0;
+        Exchange.start(sd, lawan.id);
+        Exchange.offerGold(sd, 9999);
+        check("menawarkan emas lebih dari yang dimiliki diabaikan",
+                sd.exchange.gold == 0);
+        Exchange.offerGold(sd, 200);
+        check("menawarkan emas yang cukup tercatat", sd.exchange.gold == 200);
+        Exchange.confirm(sd, lawan.id);
+        Exchange.confirm(lawan, sd.id);
+        check("emas berpindah saat kedua pihak setuju",
+                sd.status.money == 300 && lawan.status.money == 200);
+
+        MapServer.onlineChars.remove(sd.fd);
+        MapServer.onlineChars.remove(lawan.fd);
+        sd.status.inventory.clear();
+        sd.status.money = 0;
     }
 
     /**
@@ -257,7 +422,7 @@ public final class ClifTest {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         var kosong = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
         db.register(new org.rtk.map.data.ItemDb.Info(7301, "zirah_uji", "Zirah Uji",
-                "", "", 4, 0, 0L, 1, 1, 1, 0, 0, 250, 2, 0, kosong, tanpaStat));
+                "", "", 4, 0, 0L, 0, 1, 1, 1, 0, 0, 250, 2, 0, kosong, tanpaStat));
 
         sd.status.equip.clear();
         var lama = new org.rtk.common.mmo.Item();
@@ -389,16 +554,16 @@ public final class ClifTest {
 
         // jubah: hancur saat mati (ItmBoD = 1), tanpa perlindungan bawaan
         db.register(new org.rtk.map.data.ItemDb.Info(7201, "jubah", "Jubah", "", "",
-                4, 1, 0L, 1, 1, 1, 0, 0, 100, 0, 0, kosong, tanpaStat));
+                4, 1, 0L, 0, 1, 1, 1, 0, 0, 100, 0, 0, kosong, tanpaStat));
         // jimat: ber-BoD TAPI terlindungi bawaan
         db.register(new org.rtk.map.data.ItemDb.Info(7202, "jimat", "Jimat", "", "",
-                4, 1, 0L, 1, 1, 1, 0, 0, 100, 3, 0, kosong, tanpaStat));
+                4, 1, 0L, 0, 1, 1, 1, 0, 0, 100, 3, 0, kosong, tanpaStat));
         // ramuan: barang inventaris ber-BoD
         db.register(new org.rtk.map.data.ItemDb.Info(7203, "ramuan", "Ramuan", "", "",
-                18, 1, 0L, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+                18, 1, 0L, 0, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
         // kartu: kedaluwarsa pada waktu MUTLAK di masa lalu
         db.register(new org.rtk.map.data.ItemDb.Info(7204, "kartu", "Kartu", "", "",
-                18, 0, 1000L, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
+                18, 0, 1000L, 0, 1, 1, 1, 0, 0, 0, 0, 0, kosong, tanpaStat));
 
         sd.status.inventory.clear();
         sd.status.equip.clear();
@@ -837,19 +1002,19 @@ public final class ClifTest {
 
         // pedang: perlengkapan (type 3) -> ketahanan ikut dikirim
         db.register(new org.rtk.map.data.ItemDb.Info(7101, "klewang", "Klewang", "", "",
-                3, 0, 0, 1, 1, 1, 0, 0, 120, 7, 0,
+                3, 0, 0, 0, 1, 1, 1, 0, 0, 120, 7, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 88, 6), tanpaStat));
         // roti: barang biasa bertumpuk (type 18)
         db.register(new org.rtk.map.data.ItemDb.Info(7102, "roti", "Roti Tawar", "", "",
-                18, 0, 0, 1, 1, 20, 0, 0, 0, 0, 0,
+                18, 0, 0, 0, 1, 1, 20, 0, 0, 0, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 12, 3), tanpaStat));
         // obor: ITM_SMOKE -> teksnya "nama [dura satuan]"
         db.register(new org.rtk.map.data.ItemDb.Info(7103, "obor", "Obor", "", "jam",
-                org.rtk.map.data.ItemDb.ITM_SMOKE, 0, 0, 1, 1, 1, 0, 0, 30, 0, 0,
+                org.rtk.map.data.ItemDb.ITM_SMOKE, 0, 0, 0, 1, 1, 1, 0, 0, 30, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 5, 1), tanpaStat));
         // peta: ITM_MAP -> teksnya "[Tdura] nama"
         db.register(new org.rtk.map.data.ItemDb.Info(7104, "peta_uji", "Peta Uji", "", "",
-                org.rtk.map.data.ItemDb.ITM_MAP, 0, 0, 1, 1, 1, 0, 0, 3, 0, 0,
+                org.rtk.map.data.ItemDb.ITM_MAP, 0, 0, 0, 1, 1, 1, 0, 0, 3, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(0, 0, 9, 2), tanpaStat));
 
         sd.status.inventory.clear();
@@ -952,7 +1117,13 @@ public final class ClifTest {
         check("addItem: barang tak dikenal DIBUANG juga",
                 sd.status.inventory.isEmpty() && drain(s).length == 0);
 
-        // --- 0x10 mengosongkan slot di SERVER, bukan cuma di klien ---
+        // --- 0x10: paketnya, dan siapa yang mengosongkan slotnya ---
+        //
+        // ⚠️ Di C paket ini SEKALIGUS mengosongkan slot di server. Sejak
+        // protokol kedua berdiri itu tidak bisa dipertahankan: efek samping
+        // di dalam fungsi paket akan berjalan sekali per protokol, dan yang
+        // kedua membuang slot pemain BERIKUTNYA (Peringatan #61 dan #70).
+        // Pengosongannya sekarang milik sisi logika.
         sd.status.inventory.clear();
         sd.addItemById(7102, 3, -1);
         drain(s);
@@ -961,7 +1132,10 @@ public final class ClifTest {
         check("delItem: opcode 0x10", (p[3] & 0xFF) == 0x10);
         check("delItem: slot 1-basis di [5]", (p[5] & 0xFF) == 1);
         check("delItem: alasan di [6]", (p[6] & 0xFF) == 6);
-        check("delItem: slotnya ikut kosong di server",
+        check("delItem: paketnya TIDAK lagi menyentuh keadaan server",
+                sd.status.inventory.size() == 1);
+        sd.clearInventorySlot(0);
+        check("delItem: yang mengosongkannya sisi logika",
                 sd.status.inventory.isEmpty());
 
         // --- updateInv menyapu seluruh isi tas ---
@@ -1003,17 +1177,17 @@ public final class ClifTest {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         // apel: bertumpuk 10, boleh dipungut
         db.register(new org.rtk.map.data.ItemDb.Info(7001, "apel_uji", "Apel Uji", "", "",
-                18, 0, 0, 1, 1, 10, 0, 0, 50, 0, 0,
+                18, 0, 0, 0, 1, 1, 10, 0, 0, 50, 0, 0,
                 new org.rtk.map.data.ItemDb.Look(11, 2, 33, 4), tanpaStat));
         // pedang: tidak bertumpuk
         db.register(new org.rtk.map.data.ItemDb.Info(7002, "pedang_uji", "Pedang Uji", "", "",
-                3, 0, 0, 1, 1, 1, 0, 0, 100, 0, 0, kosongLook, tanpaStat));
+                3, 0, 0, 0, 1, 1, 1, 0, 0, 100, 0, 0, kosongLook, tanpaStat));
         // batu nisan: ItmDroppable != 0 -> TIDAK bisa dipungut
         db.register(new org.rtk.map.data.ItemDb.Info(7003, "nisan_uji", "Nisan Uji", "", "",
-                18, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, kosongLook, tanpaStat));
+                18, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, kosongLook, tanpaStat));
         // jebakan: ITM_TRAPS
         db.register(new org.rtk.map.data.ItemDb.Info(7004, "jebakan_uji", "Jebakan Uji", "", "",
-                org.rtk.map.data.ItemDb.ITM_TRAPS, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0,
+                org.rtk.map.data.ItemDb.ITM_TRAPS, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0,
                 kosongLook, tanpaStat));
 
         var reg = MapServer.floorItems;
@@ -1043,6 +1217,36 @@ public final class ClifTest {
         check("drop: barang sejenis DIGABUNG, bukan jadi benda kedua",
                 fl2 == fl && reg.count() == sebelum && fl.data.amount == 5);
         check("drop: jumlah sebelumnya tercatat di lastAmount", fl.lastAmount == 3);
+
+        // --- atribut ID: id BENDA, bukan id jenis barang (R5) ---
+        // ⚠️ Skrip memakai `.ID` 1.292 kali di 347 berkas, dan `onPickup.lua`
+        // memanggil `player:pickUp(groundItems[i].ID)`. Selama `.ID` menjawab
+        // nil, MEMUNGUT BARANG DARI TANAH tidak pernah berhasil — tanpa satu
+        // pun pesan galat, karena `pickUp(nil)` jadi `pickUp(0)` dan id 0
+        // sekadar tidak ditemukan. Gerbang ini menjaga agar kesenyapan itu
+        // tidak bisa kembali.
+        {
+            var engineLama = MapServer.scriptEngine;
+            // ⚠️ Engine TERSENDIRI: `ScriptPlayer.udata` di-cache, jadi satu
+            // objek pemain hanya boleh dipakai oleh satu ScriptEngine.
+            var eng = new org.rtk.map.script.ScriptEngine();
+            MapServer.scriptEngine = eng;
+            CharStatus stId = new CharStatus();
+            stId.id = 7778;
+            stId.name = "UjiId";
+            User sdId = new User(78, stId);
+            sdId.m = sd.m;
+            org.luaj.vm2.LuaValue refBenda = eng.objectRef(fl);
+            org.luaj.vm2.LuaValue refPemain = eng.playerRef(sdId.scriptPlayer());
+            check("atribut ID benda lantai = id BENDA, bukan id jenis barang",
+                    refBenda.get("ID").todouble() == fl.id
+                            && fl.id != fl.data.id);
+            check("atribut id benda lantai tetap id JENIS barang",
+                    refBenda.get("id").todouble() == fl.data.id);
+            check("atribut ID pemain = id bloknya",
+                    refPemain.get("ID").todouble() == sdId.id);
+            MapServer.scriptEngine = engineLama;
+        }
 
         // --- pungut ---
         sd.status.inventory.clear();
@@ -2075,6 +2279,63 @@ public final class ClifTest {
         check("mati: tabel ancaman dibersihkan", mb.threat.isEmpty());
         check("mati: penyerang direset", mb.attacker == 0);
 
+        // --- pengalaman & hitungan bunuh (clif.c:2469-2489) ---
+        //
+        // ⚠️ Ketiganya sempat HILANG SELURUHNYA dari port ini: mob mati
+        // tanpa memberi pengalaman dan tanpa menambah hitungan bunuh, dan
+        // tidak ada satu pun error. Gerbang ini yang menjaganya kembali.
+        MobRegistry.resetStats(mb);
+        mb.state = MobData.MOB_ALIVE;
+        map.addBlock(mb);
+        MapServer.onlineChars.put(sdm.fd, sdm);
+        long expSemula = mb.data.exp;
+        mb.data.exp = 7;
+        sdm.status.killReg.clear();
+        mobEngine.globals().load(
+                "XP_DIPANGGIL = 0\n"
+              + "XP_ARG_MOB = ''\n"
+              + "onGetExp = function(pl, mob)\n"
+              + "  XP_DIPANGGIL = XP_DIPANGGIL + 1\n"
+              + "  XP_ARG_MOB = mob.yname\n"
+              + "  GRUP_N = #pl.group\n"
+              + "  GRUP_1 = pl.group[1]\n"
+              + "end\n"
+              + "LEVEL_DIPANGGIL = 0\n"
+              + "onLevel = function(pl) LEVEL_DIPANGGIL = LEVEL_DIPANGGIL + 1 end\n").call();
+        mobEngine.globals().get("ANCAM").call(mobEngine.playerRef(pm),
+                org.luaj.vm2.LuaValue.valueOf(4));
+        mb.currentVita = 0;
+        reg.runTimers(mobEngine, MapServer.world);
+        check("mati: kait onGetExp DIPANGGIL",
+                mobEngine.globals().get("XP_DIPANGGIL").toint() == 1);
+        check("mati: onGetExp menerima mob sebagai argumen kedua",
+                "squirrel".equals(mobEngine.globals().get("XP_ARG_MOB").tojstring()));
+        check("mati: player.group di dalam kait berisi pemain sendiri",
+                mobEngine.globals().get("GRUP_N").toint() == 1
+                        && (long) mobEngine.globals().get("GRUP_1").todouble()
+                                == sdm.status.id);
+        check("mati: hitungan bunuh bertambah untuk jenis mob itu",
+                sdm.status.killReg.getOrDefault(mb.data.id, 0L) == 1L);
+        check("mati: pc_checklevel ikut dipanggil",
+                mobEngine.globals().get("LEVEL_DIPANGGIL").toint() >= 1);
+
+        // Mob tanpa pengalaman TIDAK masuk hitungan bunuh saat sendirian —
+        // syarat `if (mob->exp)` yang hanya ada di cabang solo.
+        MobRegistry.resetStats(mb);
+        mb.state = MobData.MOB_ALIVE;
+        map.addBlock(mb);
+        mb.data.exp = 0;
+        sdm.status.killReg.clear();
+        mobEngine.globals().get("ANCAM").call(mobEngine.playerRef(pm),
+                org.luaj.vm2.LuaValue.valueOf(4));
+        mb.currentVita = 0;
+        reg.runTimers(mobEngine, MapServer.world);
+        check("mati: mob tanpa pengalaman tidak masuk hitungan bunuh",
+                sdm.status.killReg.isEmpty());
+        check("mati: kait onGetExp tetap dipanggil untuk mob tanpa pengalaman",
+                mobEngine.globals().get("XP_DIPANGGIL").toint() == 2);
+        mb.data.exp = expSemula;
+
         MapServer.onlineChars.remove(sdm.fd);
 
         // --- addNPC: skrip melahirkan NPC sementara ---
@@ -2095,7 +2356,14 @@ public final class ClifTest {
         check("kait on_spawn terpanggil",
                 mobEngine.globals().get("SPAWN_DIPANGGIL").toint() == 1);
 
-        Npc temp = MapServer.npcs.byName("TrapNpc");
+        // ⚠️ BUKAN byName("TrapNpc"). `map_name2npc` di C mencocokkan
+        // `npc_name`, yaitu nama TAMPILAN — dan `bll_addnpc` mengisinya
+        // "nothing" bila skrip tidak menyebutkannya (sl.c:3950). Jadi mencari
+        // NPC sementara lewat nama skripnya memang tidak seharusnya berhasil;
+        // uji ini dulu lulus hanya karena indeks Java salah kolom.
+        Npc temp = MapServer.npcs.all().stream()
+                .filter(n -> "TrapNpc".equals(n.name))
+                .findFirst().orElse(null);
         check("NPC sementara memakai rentang id terpisah",
                 temp != null && temp.id >= Npc.NPCT_START_NUM);
         check("NPC sementara ditandai temporary", temp != null && temp.temporary);
@@ -3491,4 +3759,2496 @@ public final class ClifTest {
         return ((b[o] & 0xFF) << 24) | ((b[o + 1] & 0xFF) << 16)
                 | ((b[o + 2] & 0xFF) << 8) | (b[o + 3] & 0xFF);
     }
+
+    // ==================================================================
+    // Protokol RTK2 arah masuk (org.rtk.map.proto)
+    // ==================================================================
+
+    /** Penyusun bingkai RTK2 — kebalikan Wire.Reader, dipakai uji saja. */
+    private static final class Bingkai {
+        private final java.io.ByteArrayOutputStream isi = new java.io.ByteArrayOutputStream();
+        private final int op;
+
+        Bingkai(int op) {
+            this.op = op;
+        }
+
+        Bingkai u8(int v) {
+            isi.write(v & 0xFF);
+            return this;
+        }
+
+        Bingkai u16(int v) {
+            isi.write((v >> 8) & 0xFF);
+            isi.write(v & 0xFF);
+            return this;
+        }
+
+        Bingkai u32(long v) {
+            for (int i = 3; i >= 0; i--) {
+                isi.write((int) (v >> (i * 8)) & 0xFF);
+            }
+            return this;
+        }
+
+        Bingkai u64(long v) {
+            for (int i = 7; i >= 0; i--) {
+                isi.write((int) (v >> (i * 8)) & 0xFF);
+            }
+            return this;
+        }
+
+        Bingkai str(String t) {
+            byte[] b = t.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            u16(b.length);
+            isi.write(b, 0, b.length);
+            return this;
+        }
+
+        byte[] bytes() {
+            byte[] muatan = isi.toByteArray();
+            byte[] out = new byte[4 + muatan.length];
+            int len = 2 + muatan.length;
+            out[0] = (byte) (len >> 8);
+            out[1] = (byte) len;
+            out[2] = (byte) (op >> 8);
+            out[3] = (byte) op;
+            System.arraycopy(muatan, 0, out, 4, muatan.length);
+            return out;
+        }
+    }
+
+    /** Perintah yang mencatat panggilannya alih-alih menjalankan logikanya. */
+    /**
+     * Daftar abaikan: sifat DUA ARAH-nya.
+     *
+     * <p>⚠️ Diuji di sini, bukan lewat klien hidup. Jangkauan ucapan di
+     * server tidak simetris — area pandang persegi yang <b>digeser</b> di
+     * tepi peta membuat pemain di pojok mendengar yang di tengah tanpa
+     * sebaliknya. Uji hidup yang mencoba membuktikan dua arah karena itu
+     * "lulus" tanpa arti, dan sempat menyembunyikan penyaring yang dipasang
+     * di jalur yang salah.</p>
+     */
+    private static void abaikanTest() {
+        log.info("=== daftar abaikan ===");
+        // Dua pemain buatan: ujinya tentang aturan daftar abaikan, bukan
+        // tentang dunia. Membuatnya sendiri membuat uji ini tidak bergantung
+        // pada siapa yang kebetulan online.
+        User a = pemainUji(9001, "AbaikanA");
+        User b = pemainUji(9002, "AbaikanB");
+
+        check("tanpa abaikan keduanya saling dengar",
+                User.bolehSalingDengar(a, b) && User.bolehSalingDengar(b, a));
+
+        check("menambah nama mengembalikan true sekali", a.abaikan(b.name()));
+        check("menambah nama yang sama lagi mengembalikan false", !a.abaikan(b.name()));
+        check("tidak peka besar-kecil",
+                a.mengabaikan(b.name().toUpperCase(java.util.Locale.ROOT)));
+
+        // ⚠️ Inti sifatnya: yang MENGABAIKAN tidak mendengar, DAN yang
+        // diabaikan juga tidak. Satu arah saja bukan perilaku C.
+        check("yang mengabaikan tidak mendengar", !User.bolehSalingDengar(b, a));
+        check("yang DIABAIKAN juga tidak mendengar", !User.bolehSalingDengar(a, b));
+
+        check("mencabut mengembalikan true", a.berhentiAbaikan(b.name()));
+        check("setelah dicabut keduanya saling dengar lagi",
+                User.bolehSalingDengar(a, b) && User.bolehSalingDengar(b, a));
+        check("mencabut nama yang tidak ada mengembalikan false",
+                !a.berhentiAbaikan("SiapaPunTidakAda"));
+
+        check("pemain selalu mendengar dirinya sendiri",
+                User.bolehSalingDengar(a, a));
+        check("null tidak pernah menyaring", User.bolehSalingDengar(a, null));
+    }
+
+    private static void setelanTest(MapData map, User sd) {
+        log.info("=== setelan pemain ===");
+        var engineLama = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;   // kait tunggangan diuji terpisah
+        ClientCommands cmd = MapServer.commands;
+        final int F = org.rtk.common.mmo.SettingFlags.WHISPER;
+        final int GRUP = org.rtk.common.mmo.SettingFlags.GROUP;
+
+        long semula = sd.status.settingFlags;
+        int klanSemula = sd.status.clanChat;
+
+        // --- baseline "terjadi": satu balikan benar-benar mengubah bit ---
+        sd.status.settingFlags = 0;
+        cmd.playerChangesSetting(sd, 1, false);
+        check("setelan: balikan pertama MENYALAKAN bitnya",
+                (sd.status.settingFlags & F) != 0);
+
+        // ⚠️ Inti sifatnya: XOR, bukan penetapan.
+        cmd.playerChangesSetting(sd, 1, false);
+        check("setelan: balikan kedua MEMATIKANNYA lagi (XOR, bukan set)",
+                (sd.status.settingFlags & F) == 0);
+
+        // Bit lain tidak ikut tersentuh.
+        sd.status.settingFlags = GRUP;
+        cmd.playerChangesSetting(sd, 1, false);
+        check("setelan: bit lain tidak ikut berubah",
+                (sd.status.settingFlags & GRUP) != 0
+                        && (sd.status.settingFlags & F) != 0);
+
+        // --- ragam tak dikenal tidak mengubah apa pun ---
+        long sebelum = sd.status.settingFlags;
+        cmd.playerChangesSetting(sd, 11, false);
+        cmd.playerChangesSetting(sd, 12, false);
+        cmd.playerChangesSetting(sd, 99, false);
+        check("setelan: ragam tak dikenal (11, 12, 99) diabaikan diam-diam",
+                sd.status.settingFlags == sebelum);
+
+        // --- paket suara pembuka diabaikan; yang biasa tidak ---
+        sd.status.settingFlags = org.rtk.common.mmo.SettingFlags.SOUND;
+        cmd.playerChangesSetting(sd, 13, true);
+        check("setelan: paket suara PEMBUKA tidak mematikan suara",
+                (sd.status.settingFlags & org.rtk.common.mmo.SettingFlags.SOUND) != 0);
+        cmd.playerChangesSetting(sd, 13, false);
+        check("setelan: paket suara biasa tetap membalik",
+                (sd.status.settingFlags & org.rtk.common.mmo.SettingFlags.SOUND) == 0);
+        // ⚠️ Penjaganya HANYA untuk suara: ragam lain tidak punya keanehan
+        // itu di C, jadi paketAwal tidak boleh membungkam semuanya.
+        sd.status.settingFlags = 0;
+        cmd.playerChangesSetting(sd, 1, true);
+        check("setelan: penanda pembuka tidak membungkam ragam selain suara",
+                (sd.status.settingFlags & F) != 0);
+
+        // --- obrolan klan: ladang tersendiri, bukan bendera ---
+        sd.status.settingFlags = 0;
+        sd.status.clanChat = 0;
+        cmd.playerChangesSetting(sd, 10, false);
+        check("setelan: obrolan klan menyala", sd.status.clanChat == 1);
+        check("setelan: obrolan klan TIDAK menyentuh settingFlags",
+                sd.status.settingFlags == 0);
+        cmd.playerChangesSetting(sd, 10, false);
+        check("setelan: obrolan klan mati lagi", sd.status.clanChat == 0);
+
+        // --- helm & kalung menulis registry yang dibaca skrip ---
+        sd.status.settingFlags = 0;
+        sd.status.registry.remove("show_helmet");
+        cmd.playerChangesSetting(sd, 14, false);
+        check("setelan: helm menyala menulis registry show_helmet=1",
+                sd.status.registry.getOrDefault("show_helmet", -1) == 1);
+        cmd.playerChangesSetting(sd, 14, false);
+        check("setelan: helm mati menulis registry show_helmet=0",
+                sd.status.registry.getOrDefault("show_helmet", -1) == 0);
+        sd.status.registry.remove("show_necklace");
+        cmd.playerChangesSetting(sd, 15, false);
+        check("setelan: kalung menulis registry show_necklace=1",
+                sd.status.registry.getOrDefault("show_necklace", -1) == 1);
+
+        // --- mematikan setelan grup MENGELUARKAN dari grup ---
+        Groups.bersihkanUntukUji();
+        java.util.Map<Integer, User> onlineSemula =
+                new java.util.HashMap<>(MapServer.onlineChars);
+        MapServer.onlineChars.clear();
+        User a = pemainUji(9201, "SetelanA");
+        User b = pemainUji(9202, "SetelanB");
+        for (User u : java.util.List.of(a, b)) {
+            u.m = -1;
+            u.status.settingFlags = GRUP;
+            MapServer.onlineChars.put(u.fd, u);
+        }
+        Groups.tambah(a, "SetelanB");
+        check("setelan: baseline — keduanya bergrup lebih dulu",
+                a.groupId != 0 && a.groupId == b.groupId);
+        cmd.playerChangesSetting(a, 2, false);
+        check("setelan: mematikan setelan grup melepas grup yang sedang diikuti",
+                a.groupId == 0 && (a.status.settingFlags & GRUP) == 0);
+        check("setelan: anggota lain ikut lepas karena grupnya bubar",
+                b.groupId == 0);
+        // Menyalakannya kembali tidak boleh diam-diam memasukkan ke grup.
+        cmd.playerChangesSetting(a, 2, false);
+        check("setelan: menyalakannya kembali tidak membentuk grup apa pun",
+                a.groupId == 0 && (a.status.settingFlags & GRUP) != 0);
+        Groups.bersihkanUntukUji();
+        MapServer.onlineChars.clear();
+        MapServer.onlineChars.putAll(onlineSemula);
+
+        // --- jembatan Lua: player.settings juga XOR ---
+        sd.status.settingFlags = 0;
+        check("setelan: player.settings terbaca skrip",
+                sd.scriptGetAttr("settings") != null
+                        && sd.scriptGetAttr("settings") == 0L);
+        sd.scriptSetAttr("settings", GRUP);
+        check("setelan: tulis player.settings MEMBALIK bit, bukan menyetel",
+                sd.status.settingFlags == GRUP);
+        sd.scriptSetAttr("settings", GRUP);
+        check("setelan: tulis kedua kalinya membalik kembali ke nol",
+                sd.status.settingFlags == 0);
+
+        sd.status.settingFlags = semula;
+        sd.status.clanChat = klanSemula;
+        MapServer.scriptEngine = engineLama;
+    }
+
+    private static void grupTest() {
+        log.info("=== grup ===");
+        Groups.bersihkanUntukUji();
+        java.util.Map<Integer, User> semula =
+                new java.util.HashMap<>(MapServer.onlineChars);
+        MapServer.onlineChars.clear();
+
+        final int GRUP = org.rtk.common.mmo.SettingFlags.GROUP;
+        User a = pemainUji(9101, "GrupA");
+        User b = pemainUji(9102, "GrupB");
+        User c = pemainUji(9103, "GrupC");
+        for (User u : java.util.List.of(a, b, c)) {
+            u.m = -1;                       // peta tak dikenal: canGroup bebas
+            u.status.settingFlags = GRUP;
+            MapServer.onlineChars.put(u.fd, u);
+        }
+
+        // --- baseline "terjadi" DULU: tanpa ini, tiap uji "tidak terjadi"
+        // di bawah bisa lulus hanya karena grupnya memang tak pernah jadi.
+        Groups.tambah(a, "GrupB");
+        check("mengajak membentuk grup", a.groupId != 0 && a.groupId == b.groupId);
+        check("grup baru beranggota dua", a.groupCount == 2 && b.groupCount == 2);
+        check("pengajak jadi pemimpin",
+                a.groupLeader == a.status.id && b.groupLeader == a.status.id);
+        check("pemimpin adalah anggota indeks 0",
+                Groups.anggota(a.groupId).get(0) == a.status.id);
+        check("id grup bukan 0 — 0 berarti tidak bergrup", a.groupId >= 1);
+        check("keduanya saling mengenali segrup",
+                Groups.seGrup(a, b) && Groups.seGrup(b, a));
+
+        // --- penolakan ---
+        int gidA = a.groupId;
+        Groups.tambah(a, "GrupA");
+        check("tidak bisa mengajak diri sendiri", a.groupCount == 2);
+        Groups.tambah(c, "GrupB");
+        check("yang sudah bergrup tidak bisa diajak orang lain",
+                c.groupId == 0 && b.groupId == gidA);
+        b.status.settingFlags = 0;
+        User d = pemainUji(9104, "GrupD");
+        d.m = -1;
+        MapServer.onlineChars.put(d.fd, d);
+        Groups.tambah(c, "GrupD");
+        check("setelan grup mati menolak ajakan", c.groupId == 0 && d.groupId == 0);
+        d.status.settingFlags = GRUP;
+        d.status.state = 1;                 // hantu
+        Groups.tambah(c, "GrupD");
+        check("hantu tidak bisa diajak", c.groupId == 0 && d.groupId == 0);
+        d.status.state = 0;
+        b.status.settingFlags = GRUP;
+
+        // --- tumbuh, lalu keluar ---
+        Groups.tambah(a, "GrupC");
+        check("pemimpin bisa menambah anggota ketiga",
+                c.groupId == gidA && a.groupCount == 3);
+        check("hitungan tersebar ke semua anggota",
+                b.groupCount == 3 && c.groupCount == 3);
+
+        // ⚠️ Saklar: mengajak anggota grup sendiri justru MENGELUARKAN dia,
+        // dan hanya pemimpin yang bisa.
+        Groups.tambah(b, "GrupC");
+        check("bukan pemimpin tidak bisa mengeluarkan anggota",
+                c.groupId == gidA && a.groupCount == 3);
+        Groups.tambah(a, "GrupC");
+        check("pemimpin mengeluarkan anggota lewat opcode yang sama",
+                c.groupId == 0 && c.groupCount == 0 && a.groupCount == 2);
+        check("yang dikeluarkan tidak lagi terdaftar",
+                !Groups.anggota(gidA).contains(c.status.id));
+
+        // --- pemimpin keluar: kepemimpinan pindah, lalu grup bubar ---
+        Groups.tambah(a, "GrupC");
+        check("bisa diajak kembali setelah dikeluarkan", c.groupId == gidA);
+        Groups.keluar(a);
+        check("pemimpin keluar: dirinya lepas",
+                a.groupId == 0 && a.groupCount == 0 && a.groupLeader == 0);
+        check("kepemimpinan pindah ke anggota berikutnya",
+                b.groupLeader == b.status.id && c.groupLeader == b.status.id);
+        check("sisa anggota tetap bergrup",
+                b.groupId == gidA && c.groupId == gidA && b.groupCount == 2);
+
+        Groups.keluar(c);
+        check("tinggal satu orang: grupnya BUBAR, bukan grup beranggota satu",
+                b.groupId == 0 && b.groupCount == 0);
+        check("slot grup dilepas kembali", Groups.anggota(gidA).isEmpty());
+        check("tidak ada grup tersisa", Groups.jumlahGrup() == 0);
+
+        // --- keluar saat tidak bergrup harus aman: jalur putus sambungan
+        // memanggilnya tanpa syarat ---
+        Groups.keluar(a);
+        check("keluar tanpa grup tidak melempar", a.groupId == 0);
+
+        // --- daftar untuk skrip ---
+        check("player.group pemain sendirian berisi DIRINYA, bukan kosong",
+                Groups.daftarSkrip(a).equals(java.util.List.of(a.status.id)));
+        Groups.tambah(a, "GrupB");
+        check("player.group bergrup berisi seluruh anggota",
+                Groups.daftarSkrip(a).size() == 2
+                        && Groups.daftarSkrip(a).get(0) == a.status.id);
+        check("anggota membaca daftar yang sama",
+                Groups.daftarSkrip(b).equals(Groups.daftarSkrip(a)));
+
+        // --- peta yang melarang grup ---
+        Groups.keluar(a);
+        if (MapServer.world.get(0) != null) {
+            MapData nyata = MapServer.world.get(0);
+            int simpan = nyata.canGroup;
+            nyata.canGroup = 0;
+            a.m = 0;
+            Groups.tambah(a, "GrupB");
+            check("peta yang melarang grup menolak ajakan", a.groupId == 0);
+            nyata.canGroup = 1;
+            Groups.tambah(a, "GrupB");
+            check("peta yang mengizinkan grup menerima ajakan", a.groupId != 0);
+            Groups.keluar(a);
+            nyata.canGroup = simpan;
+            a.m = -1;
+        }
+
+        Groups.bersihkanUntukUji();
+        for (User u : java.util.List.of(a, b, c, d)) {
+            u.groupId = 0;
+            u.groupCount = 0;
+            u.groupLeader = 0;
+        }
+        MapServer.onlineChars.clear();
+        MapServer.onlineChars.putAll(semula);
+    }
+
+    /** Pemain buatan sekadar pembawa nama dan daftar abaikan. */
+    private static User pemainUji(int fd, String nama) {
+        org.rtk.common.mmo.CharStatus st = new org.rtk.common.mmo.CharStatus();
+        st.id = fd;
+        st.name = nama;
+        return new User(fd, st);
+    }
+
+    private static final class Rekam implements ClientCommands {
+        String terakhir = "";
+        final java.util.List<Object> arg = new java.util.ArrayList<>();
+
+        private void catat(String nama, Object... a) {
+            terakhir = nama;
+            arg.clear();
+            arg.addAll(java.util.Arrays.asList(a));
+        }
+
+        @Override
+        public void playerWalks(User sd, int d, int x, int y, RedrawRequest r) {
+            catat("walk", d, x, y, r);
+        }
+
+        @Override
+        public void playerClicks(User sd, long id) {
+            catat("click", id);
+        }
+
+        @Override
+        public void playerCastsSpell(User sd, int slot, long target, String question) {
+            catat("cast", slot, target, question);
+        }
+
+        @Override
+        public void playerChangesIgnore(User sd, boolean tambah, String name) {
+            catat("ignore", tambah, name);
+        }
+
+        @Override
+        public void playerChangesGroup(User sd, int aksi, String nama) {
+            catat("group", aksi, nama);
+        }
+
+        @Override
+        public void playerChangesSetting(User sd, int jenis, boolean paketAwal) {
+            catat("setting", jenis, paketAwal);
+        }
+
+        @Override
+        public void playerRides(User sd) {
+            catat("ride");
+        }
+
+        @Override
+        public void playerTurns(User sd, int arah) {
+            catat("turn", arah);
+        }
+
+        @Override
+        public void playerEmotes(User sd, int emosi) {
+            catat("emote", emosi);
+        }
+
+        @Override
+        public void playerRequestsRefresh(User sd) {
+            catat("refresh");
+        }
+
+        @Override
+        public void playerLooksAt(User sd, long id) {
+            catat("lookAt", id);
+        }
+
+        @Override
+        public void playerSwapsItems(User sd, int dari, int ke) {
+            catat("swapItem", dari, ke);
+        }
+
+        @Override
+        public void playerSwapsSpells(User sd, int dari, int ke) {
+            catat("swapSpell", dari, ke);
+        }
+
+        @Override
+        public void playerOpensProfile(User sd, int ragam) {
+            catat("profile", ragam);
+        }
+
+        @Override
+        public void playerEditsProfile(User sd, String teks) {
+            catat("profileEdit", teks);
+        }
+
+        @Override
+        public void playerRequestsTowns(User sd) {
+            catat("towns");
+        }
+
+        @Override
+        public void playerRequestsRanking(User sd) {
+            catat("ranking");
+        }
+
+        @Override
+        public void playerSavesFriends(User sd, java.util.List<String> teman) {
+            catat("friends", teman.size());
+        }
+
+        @Override
+        public void playerSetsHunter(User sd, boolean nyala, String catatan) {
+            catat("hunter", nyala, catatan);
+        }
+
+        @Override
+        public void playerUsesBoard(User sd, int aksi, int papan, int pos) {
+            catat("board", aksi, papan, pos);
+        }
+
+        @Override
+        public void playerCollectsParcel(User sd) {
+            catat("parcel");
+        }
+
+        @Override
+        public void playerStartsExchange(User sd, long t) {
+            catat("exStart", t);
+        }
+
+        @Override
+        public void playerOffersItem(User sd, int slot, int n) {
+            catat("exItem", slot, n);
+        }
+
+        @Override
+        public void playerOffersGold(User sd, long n) {
+            catat("exGold", n);
+        }
+
+        @Override
+        public void playerCancelsExchange(User sd) {
+            catat("exCancel");
+        }
+
+        @Override
+        public void playerConfirmsExchange(User sd, long t) {
+            catat("exConfirm", t);
+        }
+
+        @Override
+        public void playerSays(User sd, int ch, String t) {
+            catat("say", ch, t);
+        }
+
+        @Override
+        public void playerWhispers(User sd, String to, String t) {
+            catat("whisper", to, t);
+        }
+
+        @Override
+        public void playerPicksUp(User sd, int mode) {
+            catat("pickup", mode);
+        }
+
+        @Override
+        public void playerDropsItem(User sd, int slot, boolean all) {
+            catat("drop", slot, all);
+        }
+
+        @Override
+        public void playerDropsGold(User sd, long n) {
+            catat("dropGold", n);
+        }
+
+        @Override
+        public void playerHandsItem(User sd, int slot, int n) {
+            catat("handItem", slot, n);
+        }
+
+        @Override
+        public void playerHandsGold(User sd, long n) {
+            catat("handGold", n);
+        }
+
+        @Override
+        public void playerAttacks(User sd) {
+            catat("attack");
+        }
+
+        @Override
+        public void playerWields(User sd, int slot) {
+            catat("wield", slot);
+        }
+
+        @Override
+        public void playerUnequips(User sd, int slot) {
+            catat("unequip", slot);
+        }
+
+        @Override
+        public void playerEatsItem(User sd, int slot) {
+            catat("eat", slot);
+        }
+
+        @Override
+        public void playerUsesItem(User sd, int slot) {
+            catat("use", slot);
+        }
+
+        @Override
+        public void playerThrowsItem(User sd, int slot, boolean confirmed) {
+            catat("throw", slot, confirmed);
+        }
+
+        @Override
+        public void playerAnswersMenu(User sd, Answer a) {
+            catat("menu", a);
+        }
+
+        @Override
+        public void playerAnswersDialog(User sd, Answer a) {
+            catat("dialog", a);
+        }
+    }
+
+    private static void protoTest(MapData map, User sd) {
+        log.info("=== protokol RTK2 (arah masuk) ===");
+        var engineLama = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;   // uji keadaan murni, tanpa kait skrip
+
+        // ---- pemilihan protokol ----
+        org.rtk.common.Session retro = MapServer.net.openTestSession(900);
+        retro.feedTest(new byte[] {(byte) 0xAA, 0x00, 0x04, 0x06});
+        check("proto: paket 0xAA dikenali sebagai RetroTK",
+                org.rtk.map.proto.Wire.isRetroTk(org.rtk.map.proto.Inbound.bytesOf(retro)));
+
+        org.rtk.common.Session s = MapServer.net.openTestSession(901);
+        s.feedTest(new Bingkai(org.rtk.map.proto.Wire.OP_PING).bytes());
+        check("proto: bingkai RTK2 tidak tertukar dengan RetroTK",
+                !org.rtk.map.proto.Wire.isRetroTk(org.rtk.map.proto.Inbound.bytesOf(s)));
+        check("proto: bingkai kosong panjangnya 4 byte",
+                org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s)) == 4);
+        check("proto: opcode terbaca dari ladangnya",
+                org.rtk.map.proto.Wire.opcode(org.rtk.map.proto.Inbound.bytesOf(s)) == org.rtk.map.proto.Wire.OP_PING);
+
+        // Batas MAX_FRAME ikut menjaga pemilihan protokol: selama ia di bawah
+        // 43.520, byte tinggi ladang panjang tidak akan pernah 0xAA.
+        check("proto: MAX_FRAME menjaga pembeda protokol tetap aman",
+                org.rtk.map.proto.Wire.MAX_FRAME < 0xAA00);
+
+        // ---- bingkai yang belum lengkap ----
+        org.rtk.common.Session pecah = MapServer.net.openTestSession(902);
+        byte[] utuh = new Bingkai(org.rtk.map.proto.Wire.OP_CLICK).u64(42).bytes();
+        pecah.feedTest(java.util.Arrays.copyOf(utuh, 5));
+        check("proto: bingkai separuh dijawab 0, bukan dibaca",
+                org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(pecah)) == 0);
+        pecah.feedTest(java.util.Arrays.copyOfRange(utuh, 5, utuh.length));
+        check("proto: setelah sisanya tiba, panjangnya utuh",
+                org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(pecah)) == utuh.length);
+
+        // ---- bingkai rusak ----
+        check("proto: ladang panjang < 2 ditolak",
+                malformed(new byte[] {0x00, 0x01, 0x00, 0x00}));
+        check("proto: bingkai melewati MAX_FRAME ditolak",
+                malformed(new byte[] {(byte) 0x7F, (byte) 0xFF, 0x00, 0x00}));
+
+        // String yang mengaku lebih panjang dari bingkainya: di C penjaga
+        // seperti ini ditulis tangan per penangan, dan tidak selalu ada.
+        byte[] bohong = new Bingkai(org.rtk.map.proto.Wire.OP_SAY).u8(0).u16(99).bytes();
+        check("proto: string yang mengaku melebihi bingkai ditolak",
+                malformedDispatch(bohong, sd));
+
+        // ---- pemetaan opcode -> perintah ----
+        Rekam rekam = new Rekam();
+        check("proto: WALK -> playerWalks(arah, x, y)",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_WALK).u8(2).u16(50).u16(60),
+                        sd, rekam)
+                && rekam.terakhir.equals("walk")
+                && rekam.arg.get(0).equals(2) && rekam.arg.get(1).equals(50)
+                && rekam.arg.get(2).equals(60));
+        check("proto: WALK tidak membawa permintaan gambar ulang",
+                rekam.arg.get(3) == null);
+
+        check("proto: CLICK -> playerClicks",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_CLICK).u64(0x1122334455L),
+                        sd, rekam)
+                && rekam.terakhir.equals("click")
+                && rekam.arg.get(0).equals(0x1122334455L));
+
+        // ⚠️ Slot 0-basis di kedua sisi. RetroTK mengirim slot+1 dan tiap
+        // penangan di C mengurangi 1 lagi; salah satu jebakan yang dibuang.
+        check("proto: DROP_ITEM memakai slot 0-basis apa adanya",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_DROP_ITEM).u8(0).u8(1),
+                        sd, rekam)
+                && rekam.terakhir.equals("drop")
+                && rekam.arg.get(0).equals(0) && rekam.arg.get(1).equals(true));
+
+        long besar = 5_000_000_000L;   // di atas batas 32-bit
+        check("proto: DROP_GOLD membawa nilai di atas 32-bit utuh",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_DROP_GOLD).u64(besar),
+                        sd, rekam)
+                && rekam.terakhir.equals("dropGold") && rekam.arg.get(0).equals(besar));
+
+        check("proto: PICKUP -> playerPicksUp",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_PICKUP).u8(1), sd, rekam)
+                && rekam.terakhir.equals("pickup") && rekam.arg.get(0).equals(1));
+
+        check("proto: HAND_ITEM -> playerHandsItem(slot, jumlah)",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_HAND_ITEM).u8(3).u16(7),
+                        sd, rekam)
+                && rekam.terakhir.equals("handItem")
+                && rekam.arg.get(0).equals(3) && rekam.arg.get(1).equals(7));
+
+        check("proto: SAY membawa saluran dan teksnya",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_SAY).u8(1).str("halo dunia"),
+                        sd, rekam)
+                && rekam.terakhir.equals("say")
+                && rekam.arg.get(0).equals(1) && rekam.arg.get(1).equals("halo dunia"));
+
+        check("proto: teks UTF-8 utuh melewati kabel",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_SAY).u8(0).str("héllo — dunia"),
+                        sd, rekam)
+                && rekam.arg.get(1).equals("héllo — dunia"));
+
+        check("proto: WHISPER membawa dua string berurutan",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_WHISPER).str("!").str("hai klan"),
+                        sd, rekam)
+                && rekam.terakhir.equals("whisper")
+                && rekam.arg.get(0).equals("!") && rekam.arg.get(1).equals("hai klan"));
+
+        check("proto: EXCHANGE_ITEM tidak perlu tanya-jumlah bolak-balik",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_EXCHANGE_ITEM).u8(2).u16(15),
+                        sd, rekam)
+                && rekam.terakhir.equals("exItem")
+                && rekam.arg.get(0).equals(2) && rekam.arg.get(1).equals(15));
+
+        check("proto: EXCHANGE_CANCEL tanpa muatan",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_EXCHANGE_CANCEL), sd, rekam)
+                && rekam.terakhir.equals("exCancel"));
+
+        check("proto: WIELD -> playerWields",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_WIELD).u8(4), sd, rekam)
+                && rekam.terakhir.equals("wield") && rekam.arg.get(0).equals(4));
+        // ⚠️ Slot lepas-perlengkapan di RTK2 adalah indeks EQ_* apa adanya.
+        // RetroTK memakai penomoran panel kliennya sendiri, yang berlubang
+        // (1,2,3,4,6,7,8,13,14,16,20..23) dan harus diterjemahkan dua arah.
+        check("proto: UNEQUIP memakai indeks EQ_* apa adanya",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_UNEQUIP)
+                        .u8(org.rtk.map.data.Equip.SUBRIGHT), sd, rekam)
+                && rekam.terakhir.equals("unequip")
+                && rekam.arg.get(0).equals(org.rtk.map.data.Equip.SUBRIGHT));
+        check("proto: kode panel RetroTK memang BUKAN indeks EQ_*",
+                Clif.panelCode(org.rtk.map.data.Equip.SUBRIGHT) == 21
+                && Clif.slotFromPanelCode(21) == org.rtk.map.data.Equip.SUBRIGHT
+                && Clif.panelCode(org.rtk.map.data.Equip.FACEACCTWO) == -1);
+        check("proto: EAT -> playerEatsItem",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_EAT).u8(2), sd, rekam)
+                && rekam.terakhir.equals("eat") && rekam.arg.get(0).equals(2));
+        check("proto: USE -> playerUsesItem",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_USE).u8(9), sd, rekam)
+                && rekam.terakhir.equals("use") && rekam.arg.get(0).equals(9));
+        check("proto: THROW membawa slot dan bendera konfirmasi",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_THROW).u8(1).u8(1),
+                        sd, rekam)
+                && rekam.terakhir.equals("throw")
+                && rekam.arg.get(0).equals(1) && rekam.arg.get(1).equals(true));
+
+        check("proto: ATTACK tanpa sasaran dari klien",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ATTACK), sd, rekam)
+                && rekam.terakhir.equals("attack") && rekam.arg.isEmpty());
+
+        // ---- jawaban dialog: enam ragam, dua pintu terpisah ----
+        // ⚠️ Dikirim 3, diharapkan 4. Di kabel RTK2 pilihan menu 0-BASIS;
+        // lapisan logika 1-BASIS karena Lua-nya begitu (`options[selection]`,
+        // dan tabel Lua mulai dari 1). Penyesuaiannya di `Inbound.jawaban`.
+        // Tanpa itu pilihan pertama jadi `options[0]` = nil dan skripnya
+        // berhenti tanpa satu pun cabang cocok — NPC bicara sekali lalu
+        // membisu, tanpa error. Lihat Peringatan #88.
+        check("proto: jawaban ragam 1 jadi pilihan menu, digeser ke 1-basis",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ANSWER_MENU).u8(1).u16(3),
+                        sd, rekam)
+                && rekam.terakhir.equals("menu")
+                && ((ClientCommands.Answer) rekam.arg.get(0)).choice == 4);
+        check("proto: jawaban ragam 2 jadi teks",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ANSWER_MENU).u8(2).str("budi"),
+                        sd, rekam)
+                && "budi".equals(((ClientCommands.Answer) rekam.arg.get(0)).text));
+        check("proto: jawaban ragam 3 jadi nama barang (daftar beli)",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ANSWER_MENU).u8(3).str("apple"),
+                        sd, rekam)
+                && "apple".equals(((ClientCommands.Answer) rekam.arg.get(0)).itemName));
+        check("proto: jawaban ragam 4 jadi nomor slot (daftar jual)",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ANSWER_MENU).u8(4).u8(5),
+                        sd, rekam)
+                && ((ClientCommands.Answer) rekam.arg.get(0)).slot == 5);
+        check("proto: ragam 0 berarti BATAL, bukan jawaban kosong",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ANSWER_MENU).u8(0), sd, rekam)
+                && rekam.arg.get(0) == null);
+        check("proto: jalur dialog terpisah dari jalur menu",
+                kirim(new Bingkai(org.rtk.map.proto.Wire.OP_ANSWER_DIALOG).u8(5).u8(1),
+                        sd, rekam)
+                && rekam.terakhir.equals("dialog")
+                && ((ClientCommands.Answer) rekam.arg.get(0)).step == 1);
+        check("proto: ragam jawaban yang tidak dikenal ditolak",
+                malformedDispatch(
+                        new Bingkai(org.rtk.map.proto.Wire.OP_ANSWER_MENU).u8(9).bytes(), sd));
+
+        // ---- sebelum terautentikasi ----
+        Rekam sepi = new Rekam();
+        kirimTanpaPemain(new Bingkai(org.rtk.map.proto.Wire.OP_ATTACK).bytes(), sepi, null);
+        check("proto: perintah sebelum perkenalan diabaikan", sepi.terakhir.isEmpty());
+
+        // K3.4: HELLO membawa nama DAN sandi. Keduanya diteruskan ke
+        // verifikator; sandinya tidak lagi byte sisa yang dibuang diam-diam.
+        final String[] diperkenalkan = {null, null};
+        kirimTanpaPemain(new Bingkai(org.rtk.map.proto.Wire.OP_HELLO)
+                        .u32(org.rtk.map.proto.Wire.MAGIC)
+                        .u16(org.rtk.map.proto.Wire.VERSION)
+                        .str("Tester").str("rahasia").bytes(),
+                sepi, (fd, sesi, nama, sandi) -> {
+                    diperkenalkan[0] = nama;
+                    diperkenalkan[1] = sandi;
+                    return true;
+                });
+        check("proto: HELLO meneruskan nama karakter ke jalur autentikasi",
+                "Tester".equals(diperkenalkan[0]));
+        check("proto: HELLO meneruskan SANDI ke verifikator (K3.4)",
+                "rahasia".equals(diperkenalkan[1]));
+        check("proto: perkenalan yang ditolak verifikator menutup sambungan",
+                helloDitolak(new Bingkai(org.rtk.map.proto.Wire.OP_HELLO)
+                        .u32(org.rtk.map.proto.Wire.MAGIC)
+                        .u16(org.rtk.map.proto.Wire.VERSION)
+                        .str("Tester").str("salah").bytes()));
+
+        check("proto: magic yang salah ditolak",
+                malformedHello(new Bingkai(org.rtk.map.proto.Wire.OP_HELLO)
+                        .u32(0xDEADBEEFL).u16(1).str("Tester").str("").bytes()));
+        check("proto: versi protokol yang berbeda ditolak, bukan ditebak",
+                malformedHello(new Bingkai(org.rtk.map.proto.Wire.OP_HELLO)
+                        .u32(org.rtk.map.proto.Wire.MAGIC)
+                        .u16(org.rtk.map.proto.Wire.VERSION + 1)
+                        .str("Tester").str("").bytes()));
+
+        MapServer.scriptEngine = engineLama;
+    }
+
+    // ---- alat bantu protoTest ----
+
+    private static int fdUji = 910;
+
+    /** Suapkan satu bingkai ke pembaca; true bila selesai tanpa keluhan. */
+    private static boolean kirim(Bingkai b, User sd, Rekam rekam) {
+        org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
+        s.feedTest(b.bytes());
+        int len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
+        if (len == 0) {
+            return false;
+        }
+        org.rtk.map.proto.Inbound.dispatch(s.fd, s, sd, len, rekam, (a, c, n, p) -> true);
+        return true;
+    }
+
+    private static void kirimTanpaPemain(byte[] bingkai, Rekam rekam,
+                                         org.rtk.map.proto.Inbound.Handshake h) {
+        org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
+        s.feedTest(bingkai);
+        int len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
+        org.rtk.map.proto.Inbound.dispatch(s.fd, s, null, len, rekam,
+                h != null ? h : (a, c, n, p) -> true);
+    }
+
+    private static boolean malformed(byte[] bingkai) {
+        org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
+        s.feedTest(bingkai);
+        try {
+            org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
+            return false;
+        } catch (org.rtk.map.proto.Wire.Malformed e) {
+            return true;
+        }
+    }
+
+    private static boolean malformedDispatch(byte[] bingkai, User sd) {
+        org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
+        s.feedTest(bingkai);
+        try {
+            int len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
+            org.rtk.map.proto.Inbound.dispatch(s.fd, s, sd, len, new Rekam(),
+                    (a, c, n, p) -> true);
+            return false;
+        } catch (org.rtk.map.proto.Wire.Malformed e) {
+            return true;
+        }
+    }
+
+    private static boolean malformedHello(byte[] bingkai) {
+        return malformedDispatch2(bingkai);
+    }
+
+    /** true bila verifikator menolak dan sesinya ditandai untuk ditutup. */
+    private static boolean helloDitolak(byte[] bingkai) {
+        org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
+        s.feedTest(bingkai);
+        int len = org.rtk.map.proto.Wire.frameLength(
+                org.rtk.map.proto.Inbound.bytesOf(s));
+        org.rtk.map.proto.Inbound.dispatch(s.fd, s, null, len, new Rekam(),
+                (a, c, n, p) -> false);   // verifikator menolak
+        return s.eof;
+    }
+
+    private static boolean malformedDispatch2(byte[] bingkai) {
+        org.rtk.common.Session s = MapServer.net.openTestSession(fdUji++);
+        s.feedTest(bingkai);
+        try {
+            int len = org.rtk.map.proto.Wire.frameLength(org.rtk.map.proto.Inbound.bytesOf(s));
+            org.rtk.map.proto.Inbound.dispatch(s.fd, s, null, len, new Rekam(),
+                    (a, c, n, p) -> true);
+            return false;
+        } catch (org.rtk.map.proto.Wire.Malformed e) {
+            return true;
+        }
+    }
+
+    // ==================================================================
+    // Logika di balik aksi baru (MapCommands)
+    // ==================================================================
+
+    private static void aksiTest(MapData map, User sd) {
+        log.info("=== aksi pemain (bicara, barang, serang) ===");
+        var engineLama = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;   // kait skrip diuji terpisah
+        ClientCommands cmd = MapServer.commands;
+
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+
+        // ---- bicara ----
+        sd.status.mute = 0;
+        cmd.playerSays(sd, 1, "halo semua");
+        check("aksi: kalimat tersimpan di speech untuk dibaca skrip",
+                "halo semua".equals(sd.speech));
+        check("aksi: saluran tersimpan di talkType", sd.talkType == 1);
+        check("aksi: speech terbaca lewat jembatan atribut skrip",
+                "halo semua".equals(sd.scriptGetSpecial("speech").tojstring()));
+
+        sd.speech = "";
+        cmd.playerSays(sd, 2, "saluran ngawur");
+        check("aksi: saluran di luar 0..1 ditolak, speech tak berubah",
+                sd.speech.isEmpty());
+
+        cmd.playerSays(sd, 0, "x".repeat(101));
+        check("aksi: kalimat melebihi 100 huruf ditolak", sd.speech.isEmpty());
+
+        sd.status.mute = 1;
+        cmd.playerSays(sd, 0, "seharusnya diam");
+        check("aksi: pemain yang dibungkam tidak menyetel speech",
+                sd.speech.isEmpty());
+        sd.status.mute = 0;
+
+        // ---- tumpukan koin ----
+        check("aksi: 1 emas jadi tumpukan tingkat 0",
+                FloorItemRegistry.newGoldPile(1).data.id == 0);
+        check("aksi: 50 emas jadi tingkat 1",
+                FloorItemRegistry.newGoldPile(50).data.id == 1);
+        check("aksi: 500 emas jadi tingkat 2",
+                FloorItemRegistry.newGoldPile(500).data.id == 2);
+        check("aksi: 5000 emas jadi tingkat 3",
+                FloorItemRegistry.newGoldPile(5000).data.id == 3);
+
+        int lantaiAwal = MapServer.floorItems.count();
+        sd.status.money = 10_000;
+        sd.status.state = 0;
+        cmd.playerDropsGold(sd, 1);
+        check("aksi: menjatuhkan emas memotong dompet",
+                sd.status.money == 9_999);
+        check("aksi: tumpukan koin muncul di lantai",
+                MapServer.floorItems.count() == lantaiAwal + 1);
+
+        cmd.playerDropsGold(sd, 5000);
+        check("aksi: emas kedua MELEBUR, bukan jadi tumpukan kedua",
+                MapServer.floorItems.count() == lantaiAwal + 1);
+        FloorItem koin = null;
+        for (FloorItem fi : MapServer.floorItems.all()) {
+            if (fi.m == sd.m && fi.x == sd.x && fi.y == sd.y) {
+                koin = fi;
+            }
+        }
+        check("aksi: jumlahnya bertambah setelah melebur",
+                koin != null && koin.data.amount == 5001);
+        check("aksi: tingkat gambar TIDAK dihitung ulang setelah melebur",
+                koin != null && koin.data.id == 0);
+
+        cmd.playerDropsGold(sd, 99_999);
+        check("aksi: jatuhan dibatasi isi dompet", sd.status.money == 0);
+        cmd.playerDropsGold(sd, 10);
+        check("aksi: dompet kosong tidak menghasilkan tumpukan baru",
+                MapServer.floorItems.count() == lantaiAwal + 1);
+
+        sd.status.state = 1;   // arwah
+        sd.status.money = 500;
+        cmd.playerDropsGold(sd, 100);
+        check("aksi: arwah tidak bisa menjatuhkan emas", sd.status.money == 500);
+        sd.status.state = 0;
+
+        // ---- R2: mob mati tidak menghalangi langkah, klik mob ----
+        // clif_canmove_sub: `if (mob->state == MOB_DEAD) return 0;`.
+        // Bangkainya masih terdaftar di petaknya sampai disapu, jadi tanpa
+        // cabang ini pemain terhalang oleh sesuatu yang tak terlihat.
+        var jenisR2 = new MobData();
+        jenisR2.id = 9001;
+        jenisR2.yname = "uji_mob_r2";
+        jenisR2.name = "Mob R2";
+        jenisR2.vita = 10;
+        Mob mbR2 = new Mob();
+        mbR2.data = jenisR2;
+        mbR2.id = Mob.MOB_START_NUM + 4242;
+        mbR2.m = sd.m;
+        mbR2.x = sd.x + 1;
+        mbR2.y = sd.y;
+        MobRegistry.resetStats(mbR2);
+        MapServer.world.get(sd.m).addBlock(mbR2);
+
+        int arahTimur = 1;
+        int xSebelum = sd.x;
+        sd.status.gmLevel = 0;
+        cmd.playerWalks(sd, arahTimur, sd.x, sd.y, null);
+        check("r2: mob HIDUP menghalangi langkah", sd.x == xSebelum);
+        mbR2.state = MobData.MOB_DEAD;
+        cmd.playerWalks(sd, arahTimur, sd.x, sd.y, null);
+        check("r2: mob MATI tidak menghalangi langkah", sd.x == xSebelum + 1);
+        // kembalikan posisi dan bersihkan
+        cmd.playerWalks(sd, 3, sd.x, sd.y, null);
+        MapServer.world.get(sd.m).delBlock(mbR2);
+
+        // ---- R1/K4: berputar, emosi, susun ulang ----
+        int xAwal = sd.x, yAwal = sd.y;
+        sd.status.side = 0;
+        cmd.playerTurns(sd, 3);
+        check("k4: berputar menyetel arah", sd.status.side == 3);
+        check("k4: berputar TIDAK memindahkan pemain",
+                sd.x == xAwal && sd.y == yAwal);
+        cmd.playerTurns(sd, 7);
+        check("k4: arah di luar 0..3 dilipat, bukan ditolak mentah",
+                sd.status.side == 3);
+
+        // Tukar posisi barang: slot ada di Item.pos, bukan indeks daftar.
+        // ⚠️ Barangnya harus TERDAFTAR di ItemDb: Clif.sendAddItem punya
+        // penyapu data rusak yang MEMBUANG barang ber-id tak dikenal, jadi
+        // fixture dengan id karangan akan lenyap di tengah uji.
+        MapServer.itemDb.register(new org.rtk.map.data.ItemDb.Info(7703,
+                "barang_k4", "Barang K4", "", "",
+                org.rtk.map.data.ItemDb.ITM_ETC, 0, 0, 0, 1, 1, 1, 0, 0, 100, 0, 0,
+                new org.rtk.map.data.ItemDb.Look(0, 0, 55, 0),
+                new org.rtk.map.data.ItemDb.Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)));
+        int maxInvLama = sd.status.maxInv;
+        if (sd.status.maxInv < 27) {
+            sd.status.maxInv = 27;   // fixture: kantong bawaan karakter uji
+        }
+        sd.status.inventory.clear();
+        org.rtk.common.mmo.Item p1 = new org.rtk.common.mmo.Item();
+        p1.id = 7703;
+        p1.amount = 1;
+        p1.dura = 100;
+        p1.pos = 2;
+        sd.status.inventory.add(p1);
+        cmd.playerSwapsItems(sd, 2, 9);
+        check("k4: tukar ke slot kosong memindahkan POS barangnya",
+                sd.status.inventoryAt(9) != null && sd.status.inventoryAt(2) == null);
+        org.rtk.common.mmo.Item p2 = new org.rtk.common.mmo.Item();
+        p2.id = 7703;
+        p2.amount = 3;
+        p2.dura = 100;
+        p2.pos = 4;
+        sd.status.inventory.add(p2);
+        cmd.playerSwapsItems(sd, 9, 4);
+        check("k4: tukar dua slot terisi menukar keduanya",
+                sd.status.inventoryAt(4) != null && sd.status.inventoryAt(4).amount == 1
+                        && sd.status.inventoryAt(9) != null
+                        && sd.status.inventoryAt(9).amount == 3);
+        cmd.playerSwapsItems(sd, 4, 4);
+        check("k4: menukar slot dengan dirinya sendiri tidak mengubah apa pun",
+                sd.status.inventoryAt(4) != null && sd.status.inventoryAt(4).amount == 1);
+        cmd.playerSwapsItems(sd, 4, 9999);
+        check("k4: slot di luar maxInv ditolak tanpa merusak kantong",
+                sd.status.inventoryAt(4) != null);
+        sd.status.inventory.clear();
+        sd.status.maxInv = maxInvLama;
+
+        // Tukar posisi mantra.
+        sd.status.spells = new int[] {11, 22, 0};
+        cmd.playerSwapsSpells(sd, 0, 2);
+        check("k4: tukar mantra memindahkan id-nya",
+                sd.status.spells[2] == 11 && sd.status.spells[0] == 0);
+        cmd.playerSwapsSpells(sd, 0, 99);
+        check("k4: slot mantra di luar batas ditolak",
+                sd.status.spells[2] == 11);
+        sd.status.spells = new int[0];
+
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+
+        // ---- menyerahkan barang ke mob, dan mendapatkannya kembali ----
+        sd.status.side = 2;   // menghadap ke bawah
+        Mob mob = new Mob();
+        mob.m = sd.m;
+        mob.x = sd.x;
+        mob.y = sd.y + 1;
+        mob.id = 777_000;
+        map.addBlock(mob);
+
+        // ⚠️ Barang uji WAJIB terdaftar di ItemDb. Peringatan #37:
+        // clif_sendadditem MENGHAPUS barang yang tidak ada di tabel Items —
+        // jadi barang karangan akan lenyap dari inventaris begitu paketnya
+        // disusun, dan ujinya gagal karena alasan yang sama sekali berbeda
+        // dari yang sedang diuji. Ini kejadian saat menulis uji ini.
+        var kosongLookAksi = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+        var tanpaStatAksi = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        MapServer.itemDb.register(new org.rtk.map.data.ItemDb.Info(7501, "beras_uji",
+                "Beras Uji", "", "", 18, 0, 0, 0, 1, 1, 20, 0, 0, 50, 0, 0,
+                kosongLookAksi, tanpaStatAksi));
+
+        sd.status.inventory.clear();
+        org.rtk.common.mmo.Item bawaan = new org.rtk.common.mmo.Item();
+        bawaan.id = 7501;
+        bawaan.amount = 5;
+        sd.status.inventory.add(bawaan);
+
+        cmd.playerHandsItem(sd, 0, 2);
+        check("aksi: barang keluar dari inventaris pemain",
+                sd.status.inventory.get(0).amount == 3);
+        check("aksi: mob menyimpannya, bukan membuangnya",
+                mob.inventory.size() == 1 && mob.inventory.get(0).amount == 2);
+
+        cmd.playerHandsItem(sd, 0, 3);
+        check("aksi: penyerahan kedua digabung ke slot yang sama",
+                mob.inventory.size() == 1 && mob.inventory.get(0).amount == 5);
+        check("aksi: slot pemain yang habis dikosongkan",
+                sd.status.inventory.isEmpty());
+
+        int sebelumMati = MapServer.floorItems.count();
+        MapServer.mobs.jatuhkanInventarisUji(mob);
+        check("aksi: isi inventaris mob jatuh ke tanah saat ia mati",
+                MapServer.floorItems.count() == sebelumMati + 1);
+        check("aksi: daftarnya dikosongkan sesudahnya", mob.inventory.isEmpty());
+
+        map.delBlock(mob);
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+
+        // ---- pembatas kecepatan serang ----
+        sd.attacked = false;
+        sd.paralyzed = false;
+        sd.attackSpeed = 20;
+        cmd.playerAttacks(sd);
+        check("aksi: ayunan pertama diterima", sd.attacked);
+        sd.status.side = 2;
+        cmd.playerAttacks(sd);
+        check("aksi: ayunan kedua sebelum jedanya habis diabaikan", sd.attacked);
+
+        sd.attacked = false;
+        sd.attackSpeed = 0;
+        cmd.playerAttacks(sd);
+        check("aksi: kecepatan serang 0 berarti tidak bisa mengayun",
+                !sd.attacked);
+        sd.attackSpeed = 20;
+
+        sd.attacked = false;
+        sd.status.state = 1;
+        cmd.playerAttacks(sd);
+        check("aksi: arwah tidak bisa mengayun", !sd.attacked);
+        sd.status.state = 0;
+        sd.attacked = false;
+
+        sd.status.inventory.clear();
+
+        // ---- jembatan atribut yang dipakai kait skrip ----
+        //
+        // ⚠️ Ini bagian yang paling mudah gagal SENYAP. Keempat atribut di
+        // bawah dibaca kait yang baru tersambung (speech.lua membaca
+        // `player.speech` di baris pertama `onSay`, onPickup.lua membaca
+        // `player.pickUpType`, 15 skrip barang menulis `player.fakeDrop`).
+        // Kalau salah satunya tidak terpasang, Lua menerima nil — dan
+        // `string.lower(nil)` meledak di tempat yang jauh dari sebabnya.
+        // Yang diuji di sini jembatannya, bukan skripnya: menjalankan
+        // speech.lua sungguhan butuh 906 skrip termuat DAN pemain online,
+        // dan itu tetap jadi butir roadmap tersendiri.
+        var engineAtribut = new org.rtk.map.script.ScriptEngine();
+        MapServer.scriptEngine = engineAtribut;
+        var pemain = sd.scriptPlayer();
+        sd.speech = "kata kunci";
+        sd.talkType = 1;
+        sd.pickUpType = 1;
+        sd.invSlot = 4;
+        sd.fakeDrop = 0;
+        engineAtribut.globals().load(
+                "AtributUji = {}\n"
+              + "AtributUji.baca = function(player)\n"
+              + "    AtributUji.speech = player.speech\n"
+              + "    AtributUji.talkType = player.talkType\n"
+              + "    AtributUji.pickUpType = player.pickUpType\n"
+              + "    AtributUji.invSlot = player.invSlot\n"
+              + "    player.fakeDrop = 1\n"
+              + "    player.speech = string.lower(player.speech)\n"
+              + "end\n").call();
+        engineAtribut.doScript("AtributUji", "baca", engineAtribut.playerRef(pemain));
+        var tabel = engineAtribut.globals().get("AtributUji");
+        check("atribut: player.speech terbaca skrip sebagai string",
+                "kata kunci".equals(tabel.get("speech").tojstring()));
+        check("atribut: player.talkType terbaca", tabel.get("talkType").toint() == 1);
+        check("atribut: player.pickUpType terbaca", tabel.get("pickUpType").toint() == 1);
+        check("atribut: player.invSlot terbaca", tabel.get("invSlot").toint() == 4);
+        check("atribut: player.fakeDrop bisa DITULIS skrip", sd.fakeDrop == 1);
+        check("atribut: player.speech bisa ditulis balik (pintasan /s)",
+                "kata kunci".equals(sd.speech));
+        sd.fakeDrop = 0;
+
+        MapServer.scriptEngine = engineLama;
+    }
+
+
+    // ==================================================================
+    // Perlengkapan & memakai barang
+    // ==================================================================
+
+    private static void perlengkapanTest(MapData map, User sd) {
+        log.info("=== perlengkapan & memakai barang ===");
+        var engineLama = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;   // dua langkahnya diuji manual
+        ClientCommands cmd = MapServer.commands;
+        var db = MapServer.itemDb;
+        var kosongLook = new org.rtk.map.data.ItemDb.Look(0, 0, 0, 0);
+        var tanpaStat = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        var bebas = org.rtk.map.data.ItemDb.Reqs.NONE;
+
+        // ---- pesan bawaan ----
+        check("pesan: bawaan terpasang tanpa conf/lang.conf",
+                !org.rtk.map.data.MapMsg.of("MAP_ERRITM2H").isEmpty());
+        check("pesan: kunci tak dikenal dijawab kosong, bukan null",
+                org.rtk.map.data.MapMsg.of("MAP_TIDAK_ADA").isEmpty());
+
+        // ---- barang uji ----
+        // klewang: senjata biasa
+        db.register(new org.rtk.map.data.ItemDb.Info(7601, "klewang_eq", "Klewang",
+                "", "", org.rtk.map.data.ItemDb.ITM_WEAP, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat, bebas));
+        // tombak: senjata DUA TANGAN (ItmLook 10000..29999)
+        db.register(new org.rtk.map.data.ItemDb.Info(7602, "tombak_eq", "Tombak",
+                "", "", org.rtk.map.data.ItemDb.ITM_WEAP, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, new org.rtk.map.data.ItemDb.Look(15000, 0, 0, 0),
+                tanpaStat, bebas));
+        // perisai
+        db.register(new org.rtk.map.data.ItemDb.Info(7603, "perisai_eq", "Perisai",
+                "", "", org.rtk.map.data.ItemDb.ITM_SHIELD, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat, bebas));
+        // mahkota terkunci: ItmUnequip = 1
+        db.register(new org.rtk.map.data.ItemDb.Info(7604, "mahkota_eq", "Mahkota",
+                "", "", org.rtk.map.data.ItemDb.ITM_CROWN, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat,
+                new org.rtk.map.data.ItemDb.Reqs(0, 0, 2, 0, 0, 1, 0, 0)));
+        // zirah level 50
+        db.register(new org.rtk.map.data.ItemDb.Info(7605, "zirah_eq", "Zirah Berat",
+                "", "", org.rtk.map.data.ItemDb.ITM_ARMOR, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat,
+                new org.rtk.map.data.ItemDb.Reqs(50, 0, 2, 0, 0, 0, 0, 0)));
+        // gaun khusus perempuan (ItmSex 1)
+        db.register(new org.rtk.map.data.ItemDb.Info(7606, "gaun_eq", "Gaun",
+                "", "", org.rtk.map.data.ItemDb.ITM_ARMOR, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat,
+                new org.rtk.map.data.ItemDb.Reqs(0, 0, 1, 0, 0, 0, 0, 0)));
+        // cincin (pasangan kiri/kanan)
+        db.register(new org.rtk.map.data.ItemDb.Info(7607, "cincin_eq", "Cincin",
+                "", "", org.rtk.map.data.ItemDb.ITM_LEFT, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat, bebas));
+        // anting (pasangan sub kiri/kanan — aturannya TERBALIK)
+        db.register(new org.rtk.map.data.ItemDb.Info(7608, "anting_eq", "Anting",
+                "", "", org.rtk.map.data.ItemDb.ITM_SUBLEFT, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook, tanpaStat, bebas));
+        // jimat pengurang darah besar
+        db.register(new org.rtk.map.data.ItemDb.Info(7609, "jimat_eq", "Jimat Kutukan",
+                "", "", org.rtk.map.data.ItemDb.ITM_NECKLACE, 0, 0, 0, 1, 1, 1, 0, 0,
+                100, 0, 0, kosongLook,
+                new org.rtk.map.data.ItemDb.Stats(-200, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0), bebas));
+        // rokok: dura = sisa isap
+        db.register(new org.rtk.map.data.ItemDb.Info(7610, "obor_eq", "Obor",
+                "", "jam", org.rtk.map.data.ItemDb.ITM_SMOKE, 0, 0, 0, 1, 1, 1, 0, 0,
+                3, 0, 0, kosongLook, tanpaStat, bebas));
+        // ransum: makanan berumur 60 detik sejak dipakai
+        db.register(new org.rtk.map.data.ItemDb.Info(7611, "ransum_eq", "Ransum",
+                "", "", org.rtk.map.data.ItemDb.ITM_EAT, 0, 60, 0, 1, 1, 5, 0, 0,
+                1, 0, 0, kosongLook, tanpaStat, bebas));
+        // batu: hanya bisa dilempar setelah konfirmasi
+        db.register(new org.rtk.map.data.ItemDb.Info(7612, "batu_eq", "Batu Kutuk",
+                "", "", org.rtk.map.data.ItemDb.ITM_ETC, 0, 0, 0, 1, 1, 1, 0, 0,
+                1, 0, 0, kosongLook, tanpaStat,
+                new org.rtk.map.data.ItemDb.Reqs(0, 0, 2, 0, 0, 0, 1, 1)));
+
+        map.canUse = 1;
+        map.canEat = 1;
+        map.canSmoke = 1;
+        map.canEquip = 1;
+        sd.status.state = 0;
+        sd.status.level = 99;
+        sd.status.sex = 0;
+        sd.might = 100;
+        sd.maxHp = 500;
+        sd.maxMp = 500;
+        sd.status.maxInv = 20;
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+
+        // ---- dua langkah: menyiapkan lalu memindahkan ----
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: mengenakan MENYIAPKAN, belum memasang",
+                sd.status.equipAt(org.rtk.map.data.Equip.WEAP) == null
+                && sd.equipId == 7601 && sd.invSlot == 0);
+        Items.equipScript(sd);   // yang di dunia nyata dipanggil skrip onEquip
+        check("perlengkapan: equip() barulah memasangnya",
+                sd.status.equipAt(org.rtk.map.data.Equip.WEAP) != null
+                && sd.status.equipAt(org.rtk.map.data.Equip.WEAP).id == 7601);
+        check("perlengkapan: slot inventarisnya ikut kosong",
+                sd.status.inventory.isEmpty());
+        check("perlengkapan: equipId dilepas sesudahnya", sd.equipId == 0);
+
+        // ---- melepas ----
+        cmd.playerUnequips(sd, org.rtk.map.data.Equip.WEAP);
+        check("perlengkapan: melepas MENANDAI, belum mencabut",
+                sd.takeOffId == org.rtk.map.data.Equip.WEAP
+                && sd.status.equipAt(org.rtk.map.data.Equip.WEAP) != null);
+        Items.unequipScript(sd);
+        check("perlengkapan: takeOff() barulah mencabutnya",
+                sd.status.equipAt(org.rtk.map.data.Equip.WEAP) == null);
+        check("perlengkapan: barangnya kembali ke inventaris",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).id == 7601);
+        check("perlengkapan: takeOffId dikembalikan ke -1, bukan 0",
+                sd.takeOffId == -1);
+
+        // ---- senjata dua tangan vs perisai ----
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.inventory.add(barangUji(7602, 1, 100));   // tombak
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        sd.status.inventory.add(barangUji(7603, 1, 100));   // perisai
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: perisai ditolak saat memegang senjata dua tangan",
+                sd.status.equipAt(org.rtk.map.data.Equip.SHIELD) == null
+                && sd.equipId == 0);
+
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.inventory.add(barangUji(7603, 1, 100));   // perisai dulu
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        sd.status.inventory.add(barangUji(7602, 1, 100));   // lalu tombak
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: senjata dua tangan ditolak saat memakai perisai",
+                sd.equipId == 0);
+
+        // ---- syarat level, kelamin, nilai ----
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.level = 10;
+        sd.status.inventory.add(barangUji(7605, 1, 100));
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: level kurang ditolak", sd.equipId == 0);
+        sd.status.level = 99;
+
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7606, 1, 100));
+        sd.status.sex = 0;
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: jenis kelamin tidak cocok ditolak", sd.equipId == 0);
+        sd.status.sex = 1;
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: jenis kelamin cocok diterima", sd.equipId == 7606);
+        sd.equipId = 0;
+
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7609, 1, 100));
+        sd.maxHp = 100;
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: pengurang darah melebihi milik pemain ditolak",
+                sd.equipId == 0);
+        sd.maxHp = 500;
+        cmd.playerWields(sd, 0);
+        check("perlengkapan: dengan darah cukup, barang yang sama diterima",
+                sd.equipId == 7609);
+        sd.equipId = 0;
+
+        // ---- barang yang tidak bisa dilepas ----
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.status.inventory.add(barangUji(7604, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        check("perlengkapan: mahkota terpasang",
+                sd.status.equipAt(org.rtk.map.data.Equip.CROWN) != null);
+        sd.takeOffId = -1;
+        cmd.playerUnequips(sd, org.rtk.map.data.Equip.CROWN);
+        check("perlengkapan: ItmUnequip=1 berarti TIDAK BISA dilepas",
+                sd.takeOffId == -1
+                && sd.status.equipAt(org.rtk.map.data.Equip.CROWN) != null);
+
+        // ---- inventaris penuh ----
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        sd.status.maxInv = 1;
+        sd.status.inventory.add(barangUji(7603, 1, 100));
+        sd.takeOffId = -1;
+        cmd.playerUnequips(sd, org.rtk.map.data.Equip.WEAP);
+        check("perlengkapan: inventaris penuh menahan pelepasan",
+                sd.takeOffId == -1
+                && sd.status.equipAt(org.rtk.map.data.Equip.WEAP) != null);
+        sd.status.maxInv = 20;
+
+        // ---- pasangan kiri/kanan, dan ketidaksimetrisannya ----
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7607, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        check("pasangan: cincin pertama masuk slot KIRI",
+                sd.status.equipAt(org.rtk.map.data.Equip.LEFT) != null);
+        sd.status.inventory.add(barangUji(7607, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        check("pasangan: cincin kedua PINDAH ke slot kanan",
+                sd.status.equipAt(org.rtk.map.data.Equip.RIGHT) != null);
+
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7608, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        // ⚠️ Anting pertama masuk SUBRIGHT, bukan SUBLEFT — kebalikan dari
+        // cincin. Ada di C (empat blok `if` berurutan, bukan `else if`);
+        // lihat Items.pasanganKiriKanan.
+        check("pasangan: anting pertama justru masuk slot SUB-KANAN",
+                sd.status.equipAt(org.rtk.map.data.Equip.SUBRIGHT) != null
+                && sd.status.equipAt(org.rtk.map.data.Equip.SUBLEFT) == null);
+
+        // ---- pesona senjata lepas saat diganti ----
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        cmd.playerWields(sd, 0);
+        Items.equipScript(sd);
+        sd.enchanted = 2.5f;
+        sd.flank = true;
+        sd.backstab = true;
+        cmd.playerUnequips(sd, org.rtk.map.data.Equip.WEAP);
+        Items.unequipScript(sd);
+        check("pesona: senjata dilepas mengembalikan enchant ke 1.0",
+                sd.enchanted == 1.0f && !sd.flank && !sd.backstab);
+
+        // ---- makan, umur barang, rokok ----
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7611, 2, 1));
+        cmd.playerEatsItem(sd, 0);
+        check("pakai: memakan mengurangi satu keping",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).amount == 1);
+        long capMakan = sd.status.inventory.get(0).time;
+        check("pakai: umur barang mulai dihitung saat DIPAKAI pertama kali",
+                capMakan > 0);
+        cmd.playerEatsItem(sd, 0);
+        check("pakai: keping terakhir mengosongkan slotnya",
+                sd.status.inventory.isEmpty());
+
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        cmd.playerEatsItem(sd, 0);
+        check("pakai: barang yang bukan makanan ditolak",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).amount == 1);
+
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7610, 1, 2));
+        cmd.playerUsesItem(sd, 0);
+        check("rokok: ketahanan berkurang satu tiap isap, bukan jumlahnya",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).dura == 1
+                && sd.status.inventory.get(0).amount == 1);
+        cmd.playerUsesItem(sd, 0);
+        check("rokok: habis isap terakhir barangnya hilang",
+                sd.status.inventory.isEmpty());
+
+        // ---- penjaga peta ----
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7611, 1, 1));
+        map.canEat = 0;
+        cmd.playerEatsItem(sd, 0);
+        check("peta: MapCanEat=0 menahan makan",
+                sd.status.inventory.size() == 1);
+        map.canEat = 1;
+
+        sd.status.equip.clear();
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7601, 1, 100));
+        map.canEquip = 0;
+        cmd.playerWields(sd, 0);
+        check("peta: MapCanEquip=0 menahan mengenakan", sd.equipId == 0);
+        map.canEquip = 1;
+
+        // ---- keadaan pemain ----
+        sd.status.state = 1;
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7611, 1, 1));
+        cmd.playerUsesItem(sd, 0);
+        check("keadaan: arwah tidak bisa memakai apa pun",
+                sd.status.inventory.size() == 1
+                && sd.status.inventory.get(0).amount == 1);
+        sd.status.state = 0;
+
+        // ---- melempar ----
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        sd.status.inventory.clear();
+        sd.status.inventory.add(barangUji(7612, 3, 1));
+        sd.status.side = 1;   // menghadap kanan
+
+        // ⚠️ Cari petak yang bersih dulu. Uji-uji sebelumnya menanam PORTAL
+        // di sekitar posisi pemain, dan portal menghentikan lemparan — uji
+        // ini akan gagal karena sebab yang sama sekali berbeda dari yang
+        // sedang diperiksa. Jebakan yang persis sama pernah kejadian pada
+        // uji tabrakan (lihat catatan portal di CLAUDE.md).
+        int lx = sd.x;
+        int ly = sd.y;
+        for (int y = 1; y < map.ys - 1; y++) {
+            boolean ketemu = false;
+            for (int x = 1; x < map.xs - 3; x++) {
+                if (map.walkable(x, y) && map.walkable(x + 1, y)
+                        && map.warpAt(x, y) == null && map.warpAt(x + 1, y) == null
+                        && map.objectsAt(x + 1, y).isEmpty()) {
+                    lx = x;
+                    ly = y;
+                    ketemu = true;
+                    break;
+                }
+            }
+            if (ketemu) {
+                break;
+            }
+        }
+        Pc.warp(MapServer.world, sd, sd.m, lx, ly);
+        sd.status.side = 1;
+
+        cmd.playerThrowsItem(sd, 0, false);
+        check("lempar: barang ber-ItmThrownConfirm menanyakan dulu",
+                sd.status.inventory.get(0).amount == 3);
+
+        int lantaiAwal = MapServer.floorItems.count();
+        cmd.playerThrowsItem(sd, 0, true);
+        check("lempar: setelah dikonfirmasi barangnya berkurang satu",
+                sd.status.inventory.get(0).amount == 2);
+        check("lempar: satu barang mendarat di lantai",
+                MapServer.floorItems.count() == lantaiAwal + 1);
+        FloorItem terlempar = null;
+        for (FloorItem fi : MapServer.floorItems.all()) {
+            if (fi.data.id == 7612) {
+                terlempar = fi;
+            }
+        }
+        check("lempar: mendarat di petak lain, bukan di kaki pelempar",
+                terlempar != null && terlempar.x > sd.x && terlempar.y == sd.y);
+        check("lempar: SELALU sekeping, berapa pun isi slotnya",
+                terlempar != null && terlempar.data.amount == 1);
+
+        // Dinding menghentikan lemparan: hadapkan ke tepi peta.
+        int xLama = sd.x;
+        sd.x = 1;
+        sd.status.side = 3;   // menghadap kiri, tepi peta di x=0
+        int[] tujuan = Items.throwLanding(sd);
+        check("lempar: penelusuran berhenti di batas peta",
+                tujuan[0] >= 0 && tujuan[0] <= 1);
+        sd.x = xLama;
+        sd.status.side = 1;
+
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        sd.status.inventory.clear();
+        sd.status.equip.clear();
+        sd.equipId = 0;
+        sd.takeOffId = -1;
+        MapServer.scriptEngine = engineLama;
+    }
+
+    /** Satu barang inventaris untuk uji. */
+    private static org.rtk.common.mmo.Item barangUji(long id, int amount, int dura) {
+        org.rtk.common.mmo.Item it = new org.rtk.common.mmo.Item();
+        it.id = id;
+        it.amount = amount;
+        it.dura = dura;
+        return it;
+    }
+
+
+    // ==================================================================
+    // Arah keluar RTK2 (Rtk2ClientView + ProtocolRouter)
+    // ==================================================================
+
+    /** Satu bingkai RTK2 yang sudah dibongkar, untuk dibaca uji. */
+    private record Keluar(int opcode, org.rtk.common.Session sesi, int panjang) {
+    }
+
+    /**
+     * Pecah isi outbox jadi bingkai RTK2, lalu masukkan ke buffer BACA
+     * sesi bayangan supaya bisa dibaca {@code Wire.Reader} yang sungguhan.
+     *
+     * <p>Memakai pembaca yang sama dengan runtime, bukan pembaca uji
+     * tersendiri — pelajaran Peringatan #10: helper uji yang konsisten
+     * dengan dirinya sendiri bisa lolos tanpa menguji kodenya.</p>
+     */
+    private static java.util.List<Keluar> bingkaiRtk2(org.rtk.common.Session s) {
+        byte[] semua = s.takeOutbound();
+        java.util.List<Keluar> hasil = new java.util.ArrayList<>();
+        int off = 0;
+        while (off + 4 <= semua.length) {
+            int len = ((semua[off] & 0xFF) << 8 | (semua[off + 1] & 0xFF)) + 2;
+            if (off + len > semua.length) {
+                break;
+            }
+            org.rtk.common.Session bayangan = MapServer.net.openTestSession(fdUji++);
+            bayangan.feedTest(java.util.Arrays.copyOfRange(semua, off, off + len));
+            hasil.add(new Keluar(((semua[off + 2] & 0xFF) << 8) | (semua[off + 3] & 0xFF),
+                    bayangan, len));
+            off += len;
+        }
+        return hasil;
+    }
+
+    private static Keluar cariOpcode(java.util.List<Keluar> daftar, int opcode) {
+        for (Keluar k : daftar) {
+            if (k.opcode() == opcode) {
+                return k;
+            }
+        }
+        return null;
+    }
+
+    private static Wire.Reader baca(Keluar k) {
+        return new Wire.Reader(org.rtk.map.proto.Inbound.bytesOf(k.sesi()), k.panjang());
+    }
+
+    /**
+     * Lewati blok dasar benda; kembalikan namanya.
+     *
+     * <p>Ada sebagai helper supaya kedua uji blok benda memakai hitungan
+     * ladang yang <b>sama</b>. Menghitungnya ulang di tiap tempat adalah
+     * cara paling mudah membuat uji gagal karena hitungannya sendiri, bukan
+     * karena kodenya — dan itu sudah kejadian saat menulis uji ini.</p>
+     */
+    private static String lewatiDasar(Wire.Reader r) {
+        r.u64();          // id
+        r.u8();           // kind
+        r.u16();          // x
+        r.u16();          // y
+        r.u8();           // side
+        r.u16();          // grafik
+        r.u8();           // warna grafik
+        r.u8();           // bendera
+        return r.str();   // nama
+    }
+
+    /** Lewati bagian wujud karakter sampai tepat sebelum jumlah slot. */
+    private static void lewatiWujud(Wire.Reader r) {
+        r.u8();    // sex
+        r.u8();    // state
+        r.u16();   // penyamaran
+        r.u8();    // warna penyamaran
+        r.u8();    // kecepatan
+        r.u8();    // wajah
+        r.u8();    // rambut
+        r.u8();    // warna rambut
+        r.u8();    // warna wajah
+        r.u8();    // warna kulit
+    }
+
+    private static void rtk2Test(MapData map, User sd) {
+        log.info("=== arah keluar RTK2 ===");
+        var engineLama = MapServer.scriptEngine;
+        MapServer.scriptEngine = null;
+
+        // Dua pemain bersebelahan, protokol berbeda.
+        int px = -1;
+        int py = -1;
+        for (int y = 1; y < map.ys - 1 && px < 0; y++) {
+            for (int x = 1; x < map.xs - 3; x++) {
+                if (map.walkable(x, y) && map.walkable(x + 1, y)
+                        && map.warpAt(x, y) == null && map.warpAt(x + 1, y) == null
+                        && map.objectsAt(x, y).isEmpty()
+                        && map.objectsAt(x + 1, y).isEmpty()) {
+                    px = x;
+                    py = y;
+                    break;
+                }
+            }
+        }
+        check("rtk2: petak uji ditemukan", px > 0);
+
+        CharStatus sa = new CharStatus();
+        sa.id = 0x0A0A0A;
+        sa.name = "Baru";
+        sa.baseHp = 100;
+        sa.lastPos = new Point(map.id, px, py);
+        User a = new User(70, sa);
+        a.rtk2 = true;
+        a.m = map.id;
+        a.x = px;
+        a.y = py;
+
+        CharStatus sb = new CharStatus();
+        sb.id = 0x0B0B0B;
+        sb.name = "Lama";
+        sb.baseHp = 100;
+        sb.lastPos = new Point(map.id, px + 1, py);
+        User b = new User(71, sb);
+        b.rtk2 = false;
+        b.m = map.id;
+        b.x = px + 1;
+        b.y = py;
+
+        org.rtk.common.Session ka = MapServer.net.openTestSession(a.fd);
+        org.rtk.common.Session kb = MapServer.net.openTestSession(b.fd);
+        MapServer.onlineChars.put(a.fd, a);
+        MapServer.onlineChars.put(b.fd, b);
+        map.addBlock(a);
+        map.addBlock(b);
+        ka.takeOutbound();
+        kb.takeOutbound();
+
+        var cv = MapServer.clientView;
+        check("rtk2: penyalur memegang dua implementasi",
+                cv instanceof ProtocolRouter r && r.views().size() == 2);
+
+        // ---- pesan ke satu pemain ----
+        cv.messageToPlayer(a, 3, "halo dunia");
+        var fa = bingkaiRtk2(ka);
+        byte[] mentahB = kb.takeOutbound();
+        check("rtk2: pemain RTK2 menerima satu bingkai", fa.size() == 1);
+        check("rtk2: pemain RetroTK TIDAK ikut menerimanya", mentahB.length == 0);
+        Keluar pesan = fa.get(0);
+        check("rtk2: opcodenya EV_MESSAGE", pesan.opcode() == Wire.EV_MESSAGE);
+        var r1 = baca(pesan);
+        check("rtk2: ragam pesan terbaca", r1.u8() == 3);
+        check("rtk2: teksnya utuh", "halo dunia".equals(r1.str()));
+        check("rtk2: tidak ada byte sisa di bingkainya", r1.rest() == 0);
+
+        // ---- pesan ke pemain RetroTK ----
+        cv.messageToPlayer(b, 3, "halo lama");
+        byte[] mentah = kb.takeOutbound();
+        check("rtk2: pemain RetroTK tetap menerima paket 0xAA",
+                mentah.length > 0 && (mentah[0] & 0xFF) == 0xAA);
+        check("rtk2: pemain RTK2 tidak ikut kena", bingkaiRtk2(ka).isEmpty());
+
+        // ---- siaran ke area: KEDUANYA kena, masing-masing formatnya ----
+        cv.objectSpoke(a, 0, "hai semua");
+        var siarA = bingkaiRtk2(ka);
+        byte[] siarB = kb.takeOutbound();
+        check("rtk2: siaran sampai ke pemain RTK2",
+                cariOpcode(siarA, Wire.EV_OBJECT_SPOKE) != null);
+        check("rtk2: siaran yang SAMA sampai ke pemain RetroTK",
+                siarB.length > 0 && (siarB[0] & 0xFF) == 0xAA);
+        var r2 = baca(cariOpcode(siarA, Wire.EV_OBJECT_SPOKE));
+        check("rtk2: id pembicara ikut di bingkainya", r2.u64() == a.id);
+        r2.u8();
+        check("rtk2: teks siaran utuh", "hai semua".equals(r2.str()));
+
+        // ---- panjang bingkai adalah panjang sebenarnya ----
+        // ⚠️ Ini yang TIDAK berlaku di RetroTK: setPacketIndexes menimpa
+        // ladang panjang dengan nilai+3 lalu menempel 3 byte kunci, dan itu
+        // sudah dua kali membuat ekspektasi uji salah (Peringatan #17).
+        cv.messageToPlayer(a, 5, "abc");
+        Keluar k = bingkaiRtk2(ka).get(0);
+        check("rtk2: panjang bingkai = 4 header + 1 ragam + 2 + 3 teks",
+                k.panjang() == 4 + 1 + 2 + 3);
+
+        // ---- blok benda disusun ULANG per penonton ----
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        var kosongLookR = new org.rtk.map.data.ItemDb.Look(0, 0, 77, 3);
+        var tanpaStatR = new org.rtk.map.data.ItemDb.Stats(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        MapServer.itemDb.register(new org.rtk.map.data.ItemDb.Info(7701, "jebakan_r2",
+                "Jebakan R2", "", "", org.rtk.map.data.ItemDb.ITM_TRAPS, 0, 0, 0,
+                1, 1, 1, 0, 0, 1, 0, 0, kosongLookR, tanpaStatR));
+        FloorItem jebakan = MapServer.floorItems.drop(null, 7701, 1, 1, 0, 0,
+                map.id, px, py);
+        check("rtk2: jebakan uji tergeletak", jebakan != null);
+        ka.takeOutbound();
+        kb.takeOutbound();
+
+        cv.floorItemAppeared(jebakan);
+        check("rtk2: jebakan yang BELUM ditemukan tidak dikirim",
+                cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARED) == null);
+        kb.takeOutbound();
+
+        jebakan.addTrapSpotter(a.id);
+        cv.floorItemAppeared(jebakan);
+        Keluar tampak = cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARED);
+        check("rtk2: setelah ditemukan, jebakan yang sama DIKIRIM", tampak != null);
+        var r3 = baca(tampak);
+        check("rtk2: blok benda membawa id barang lantai", r3.u64() == jebakan.id);
+        check("rtk2: jenisnya 4 (barang)", r3.u8() == 4);
+        check("rtk2: petaknya benar", r3.u16() == px && r3.u16() == py);
+        r3.u8();
+        // ⚠️ Ikon dikirim MENTAH — tanpa penambah 32768/49152 yang di RetroTK
+        // berbeda-beda per jenis benda (Peringatan #34).
+        check("rtk2: ikon dikirim mentah, tanpa penambah", r3.u16() == 77);
+        check("rtk2: warna ikon terbaca", r3.u8() == 3);
+        check("rtk2: barang lantai TIDAK bertanda 'digambar sebagai karakter'",
+                (r3.u8() & 1) == 0);
+        check("rtk2: nama barangnya ikut", "Jebakan R2".equals(r3.str()));
+        check("rtk2: jumlahnya ikut", r3.u32() == 1);
+
+        // ---- blok pemain: daftar slot, bukan offset tetap ----
+        ka.takeOutbound();
+        a.status.equip.clear();
+        cv.objectAppearanceChanged(b);
+        Keluar wujud = cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARANCE);
+        check("rtk2: perubahan wujud pemain lain sampai", wujud != null);
+        var r4 = baca(wujud);
+        check("rtk2: id pemainnya", r4.u64() == b.id);
+        check("rtk2: jenisnya 1 (pemain)", r4.u8() == 1);
+        check("rtk2: petak pemainnya", r4.u16() == b.x && r4.u16() == b.y);
+        r4.u8();
+        r4.u16();
+        r4.u8();
+        check("rtk2: benderanya menandai 'digambar sebagai karakter'",
+                (r4.u8() & 1) != 0);
+        check("rtk2: namanya ikut di bloknya", "Lama".equals(r4.str()));
+        lewatiWujud(r4);
+        check("rtk2: pemain tanpa perlengkapan mengirim NOL slot, bukan sentinel",
+                r4.u8() == 0);
+
+        var kosongLook2 = new org.rtk.map.data.ItemDb.Look(4321, 9, 0, 0);
+        MapServer.itemDb.register(new org.rtk.map.data.ItemDb.Info(7702, "pedang_r2",
+                "Pedang R2", "", "", org.rtk.map.data.ItemDb.ITM_WEAP, 0, 0, 0,
+                1, 1, 1, 0, 0, 100, 0, 0, kosongLook2, tanpaStatR));
+        org.rtk.common.mmo.Item sen = new org.rtk.common.mmo.Item();
+        sen.id = 7702;
+        sen.amount = 1;
+        sen.dura = 100;
+        sen.pos = org.rtk.map.data.Equip.WEAP;
+        b.status.equip.add(sen);
+        ka.takeOutbound();
+        cv.objectAppearanceChanged(b);
+        var r5 = baca(cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARANCE));
+        lewatiDasar(r5);
+        lewatiWujud(r5);
+        check("rtk2: satu perlengkapan berarti satu entri slot", r5.u8() == 1);
+        check("rtk2: nomor slotnya EQ_WEAP", r5.u8() == org.rtk.map.data.Equip.WEAP);
+        check("rtk2: grafiknya dari ItmLook", r5.u16() == 4321);
+        check("rtk2: warnanya dari ItmLookColor", r5.u8() == 9);
+        b.status.equip.clear();
+
+        // ---- sapuan area MENYERTAKAN diri sendiri (K1.1) ----
+        // Pemain adalah benda di dunia seperti yang lain; tanpa blok ini
+        // klien tidak pernah tahu wujudnya sendiri dan tidak bisa
+        // menggambarnya. Posisi di layar tetap dari EV_SELF_*.
+        ka.takeOutbound();
+        cv.playerViewRefreshed(a);
+        boolean adaDiri = false;
+        boolean adaLain = false;
+        for (Keluar kel : bingkaiRtk2(ka)) {
+            if (kel.opcode() != Wire.EV_OBJECT_APPEARED) {
+                continue;
+            }
+            long idBenda = baca(kel).u64();
+            if (idBenda == a.id) {
+                adaDiri = true;
+            }
+            if (idBenda == b.id) {
+                adaLain = true;
+            }
+        }
+        check("rtk2: sapuan area menyertakan DIRI SENDIRI", adaDiri);
+        check("rtk2: sapuan area tetap menyertakan pemain lain", adaLain);
+
+        // ---- K1.2: dua wajah NPC ----
+        // NPC biasa (npcType != 1): gambar tunggal dari ruang look mob,
+        // TANPA bendera karakter — dulu benderanya keliru menyala dan klien
+        // menggambar badan telanjang.
+        Npc biasa = new Npc();
+        biasa.name = "npc_biasa_r2";
+        biasa.displayName = "Warga";
+        biasa.npcId = 9101;
+        biasa.id = Npc.blockIdFor(9101);
+        biasa.m = map.id;
+        biasa.x = px;
+        biasa.y = py;
+        biasa.side = 2;
+        biasa.npcType = 0;
+        biasa.graphicId = 15;
+        biasa.graphicColor = 2;
+        ka.takeOutbound();
+        cv.npcAppearedTo(a, biasa);
+        var rBiasa = baca(cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARED));
+        check("rtk2: NPC biasa terkirim", rBiasa != null);
+        rBiasa.u64();
+        check("rtk2: NPC biasa berjenis 3", rBiasa.u8() == 3);
+        rBiasa.u16();
+        rBiasa.u16();
+        rBiasa.u8();
+        check("rtk2: grafik NPC biasa = graphicId MENTAH (ruang look mob)",
+                rBiasa.u16() == 15);
+        check("rtk2: warna grafiknya ikut", rBiasa.u8() == 2);
+        check("rtk2: NPC biasa TIDAK berbendera karakter", (rBiasa.u8() & 1) == 0);
+        check("rtk2: namanya ikut", "Warga".equals(rBiasa.str()));
+        check("rtk2: blok NPC biasa berhenti di nama (tanpa blok wujud)",
+                rBiasa.rest() == 0);
+
+        // NPC karakter (npcType == 1): FLAG_AS_CHAR + blok wujud + slot
+        // NPCEquipment (NeqLook = nomor grafik, TANPA lewat ItemDb).
+        Npc berwujud = new Npc();
+        berwujud.name = "npc_wujud_r2";
+        berwujud.displayName = "Yunsil R2";
+        berwujud.npcId = 9102;
+        berwujud.id = Npc.blockIdFor(9102);
+        berwujud.m = map.id;
+        berwujud.x = px;
+        berwujud.y = py;
+        berwujud.side = 1;
+        berwujud.npcType = 1;
+        berwujud.sex = 1;
+        berwujud.face = 3;
+        berwujud.hair = 5;
+        berwujud.hairColor = 7;
+        berwujud.faceColor = 2;
+        berwujud.skinColor = 4;
+        org.rtk.common.mmo.Item zirahNpc = new org.rtk.common.mmo.Item();
+        zirahNpc.id = 305;          // NeqLook — langsung nomor grafik
+        zirahNpc.amount = 1;
+        zirahNpc.customLookColor = 6;
+        berwujud.equip[org.rtk.map.data.Equip.ARMOR] = zirahNpc;
+        ka.takeOutbound();
+        cv.npcAppearedTo(a, berwujud);
+        var rWujud = baca(cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARED));
+        check("rtk2: NPC berwujud terkirim", rWujud != null);
+        rWujud.u64();
+        rWujud.u8();
+        rWujud.u16();
+        rWujud.u16();
+        rWujud.u8();
+        rWujud.u16();
+        rWujud.u8();
+        check("rtk2: NPC berwujud BERBENDERA karakter", (rWujud.u8() & 1) != 0);
+        check("rtk2: nama NPC berwujud", "Yunsil R2".equals(rWujud.str()));
+        check("rtk2: wujud NPC — sex", rWujud.u8() == 1);
+        rWujud.u8();
+        rWujud.u16();
+        rWujud.u8();
+        rWujud.u8();
+        check("rtk2: wujud NPC — wajah & rambut",
+                rWujud.u8() == 3 && rWujud.u8() == 5 && rWujud.u8() == 7);
+        rWujud.u8();
+        rWujud.u8();
+        check("rtk2: satu slot perlengkapan NPC", rWujud.u8() == 1);
+        check("rtk2: nomor slotnya EQ_ARMOR",
+                rWujud.u8() == org.rtk.map.data.Equip.ARMOR);
+        check("rtk2: grafik slot NPC = NeqLook LANGSUNG, tanpa ItemDb",
+                rWujud.u16() == 305);
+        check("rtk2: warna slot NPC dari NeqColor", rWujud.u8() == 6);
+        check("rtk2: blok wujud NPC habis tepat di tanda",
+                rWujud.rest() == 1);
+
+        // ---- K3.2: buku mantra ----
+        // Server dulu hanya pernah mengirim PENGHAPUSAN mantra; isi bukunya
+        // tidak pernah — klien tidak bisa menampilkan atau memilih mantra
+        // untuk OP_CAST.
+        MapServer.spellDb.register(4801, "uji_mantra_r2", "Sinar Uji", 0, 0);
+        a.status.spells = new int[] {0, 4801};
+        ka.takeOutbound();
+        cv.playerSpellSlotChanged(a, 1);
+        var rMantra = baca(cariOpcode(bingkaiRtk2(ka), Wire.EV_SPELL_SLOT));
+        check("rtk2: slot mantra terkirim", rMantra != null);
+        check("rtk2: slot mantra 0-BASIS apa adanya", rMantra.u8() == 1);
+        check("rtk2: id mantranya ikut", rMantra.u32() == 4801);
+        rMantra.u8();   // tipe (SplType; 0 untuk mantra uji)
+        check("rtk2: nama TAMPILAN mantra, bukan nama skrip",
+                "Sinar Uji".equals(rMantra.str()));
+        check("rtk2: pertanyaan ikut (kosong bila tidak bertanya)",
+                "".equals(rMantra.str()) && rMantra.rest() == 0);
+
+        // Slot kosong tidak mengirim apa-apa — jangan mengumumkan ketiadaan.
+        ka.takeOutbound();
+        cv.playerSpellSlotChanged(a, 0);
+        check("rtk2: slot mantra KOSONG tidak dikirim",
+                cariOpcode(bingkaiRtk2(ka), Wire.EV_SPELL_SLOT) == null);
+
+        // Masuk dunia membawa seluruh buku (cermin pc_loadmagic).
+        ka.takeOutbound();
+        cv.playerEnteredWorld(a);
+        boolean bukuIkut = false;
+        for (Keluar kel : bingkaiRtk2(ka)) {
+            if (kel.opcode() == Wire.EV_SPELL_SLOT) {
+                bukuIkut = true;
+            }
+        }
+        check("rtk2: masuk dunia membawa buku mantra (pc_loadmagic)", bukuIkut);
+        a.status.spells = new int[0];
+
+        // ---- K2: masuk dunia membawa kata setelan ----
+        // EV_SELF_SETTINGS tadinya hanya terbit saat setelan berubah;
+        // jendela setelan klien buta sampai pemain membalik sesuatu.
+        ka.takeOutbound();
+        kb.takeOutbound();
+        cv.playerEnteredWorld(a);
+        check("rtk2: masuk dunia mengirim kata setelan (EV_SELF_SETTINGS)",
+                cariOpcode(bingkaiRtk2(ka), Wire.EV_SELF_SETTINGS) != null);
+
+        // ---- R1/K4: emosi lewat kabel ----
+        // clif_parseemotion: nomor aksi = emosi + 11, waktu 0x4E, dan HANYA
+        // pada keadaan normal.
+        a.status.state = 0;
+        ka.takeOutbound();
+        MapServer.commands.playerEmotes(a, 5);
+        var emo = cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_ACTED);
+        check("k4: emosi menghasilkan EV_OBJECT_ACTED", emo != null);
+        if (emo != null) {
+            var re = baca(emo);
+            check("k4: aksi milik pemain yang beremosi", re.u64() == a.id);
+            check("k4: nomor aksinya emosi + 11 (dari C)", re.u8() == 16);
+            check("k4: waktunya 0x4E (dari C)", re.u16() == 0x4E);
+        }
+        a.status.state = 1;   // arwah
+        ka.takeOutbound();
+        MapServer.commands.playerEmotes(a, 5);
+        check("k4: arwah TIDAK beremosi",
+                cariOpcode(bingkaiRtk2(ka), Wire.EV_OBJECT_ACTED) == null);
+        a.status.state = 0;
+
+        // ---- R3/C3: perpindahan antar map server ----
+        // Peta yang tidak dimuat di sini bukan lagi penolakan: server
+        // pemiliknya dicari di Maps.MapServer, lalu klien dialihkan.
+        int serverLama = MapServer.serverId;
+        int dmLama = a.destMap;
+        // Peta 2 ada di tabel Maps; kita pura-pura server ini bukan
+        // pemiliknya supaya cabang transfer yang diuji, bukan cabang lokal.
+        Integer pemilik = MapServer.sql.queryInt(
+                "SELECT `MapServer` FROM `Maps` WHERE `MapId` = ?", 2);
+        check("c3: peta uji ada di tabel Maps", pemilik != null);
+        if (pemilik != null) {
+            MapServer.serverId = pemilik + 7;   // bukan pemiliknya
+            ka.takeOutbound();
+            a.destMap = -1;
+            MapData petaLokal = MapServer.world.get(2);
+            MapServer.world.remove(2);          // seolah tidak dimuat di sini
+            boolean hasil = Pc.warp(MapServer.world, a, 2, 300, 400);   // di luar 1..255
+            check("c3: perpindahan ke peta server lain DITERIMA, bukan ditolak",
+                    hasil);
+            // ⚠️ Koordinat di luar 1..255 di C tidak DIJEPIT melainkan
+            // disetel ke 1 ("Just for Justin"). Menjepitnya ke 255 akan
+            // menaruh pemain di pojok peta yang salah.
+            check("c3: petak mustahil disetel ke 1, bukan dijepit ke 255",
+                    a.destMap == 2 && a.destX == 1 && a.destY == 1);
+            var tr = cariOpcode(bingkaiRtk2(ka), Wire.EV_TRANSFER);
+            check("c3: klien diberi alamat server tujuan", tr != null);
+            if (tr != null) {
+                var rt = baca(tr);
+                check("c3: host ikut", !rt.str().isEmpty());
+                check("c3: port = 2001 + id server pemiliknya",
+                        rt.u16() == MapServer.PORT_MAP_DASAR + pemilik);
+                check("c3: peta dan petak tujuan ikut",
+                        rt.u16() == 2 && rt.u16() == 1 && rt.u16() == 1
+                                && rt.rest() == 0);
+            }
+            // Peta milik server INI tapi tidak termuat = kesalahan, bukan
+            // transfer: mengalihkan ke diri sendiri hanya jadi gelung.
+            MapServer.serverId = pemilik;
+            a.destMap = -1;
+            check("c3: peta milik server sendiri yang tidak termuat TIDAK dialihkan",
+                    !Pc.warp(MapServer.world, a, 2, 10, 10) && a.destMap == -1);
+            if (petaLokal != null) {
+                MapServer.world.put(petaLokal);
+            }
+        }
+        MapServer.serverId = serverLama;
+        a.destMap = dmLama;
+
+        // ---- R2: kalender dunia ----
+        // ⚠️ BACA dulu dari tabelnya sebelum menyimpan "nilai lama".
+        // Versi pertama uji ini menyimpan isi statik yang BELUM pernah
+        // dimuat (masih bawaan 0/1/1/1), lalu menuliskannya kembali ke
+        // database di akhir — kalender dunia yang sungguhan tertimpa
+        // nilai bawaan. Uji yang mengembalikan sesuatu harus mengembalikan
+        // apa yang benar-benar ada, bukan apa yang kebetulan ada di memori.
+        WorldTime.load(MapServer.sql);
+        int jamLama = WorldTime.hour, hariLama = WorldTime.day;
+        int musimLama = WorldTime.season, tahunLama = WorldTime.year;
+        WorldTime.hour = 23;
+        WorldTime.day = 91;
+        WorldTime.season = 4;
+        WorldTime.year = 6;
+        ka.takeOutbound();
+        cv.worldTimeChanged(a);
+        var wt = cariOpcode(bingkaiRtk2(ka), Wire.EV_WORLD_TIME);
+        check("r2: kalender dunia terkirim", wt != null);
+        if (wt != null) {
+            var rw = baca(wt);
+            check("r2: jam, hari, musim, tahun terbaca utuh",
+                    rw.u8() == 23 && rw.u8() == 91 && rw.u8() == 4
+                            && rw.u16() == 6 && rw.rest() == 0);
+        }
+        // Satu jam berlalu: 23 -> hari baru -> musim baru -> TAHUN baru.
+        // Urutan tumpahnya persis change_time_char di C.
+        // ⚠️ tick() ikut menulis ke tabel Time; barisnya dikembalikan di
+        // bawah supaya gerbang ini tidak menggeser kalender dunia.
+        WorldTime.tick();
+        check("r2: jam 23 + 1 mengganti hari", WorldTime.hour == 0);
+        check("r2: hari 91 + 1 mengganti musim", WorldTime.day == 1);
+        check("r2: musim 4 + 1 kembali ke 1 dan menambah tahun",
+                WorldTime.season == 1 && WorldTime.year == 7);
+        check("r2: nama musim mengikuti urutan C (1=Winter)",
+                "Winter".equals(WorldTime.seasonName()));
+        WorldTime.season = 3;
+        check("r2: musim 3 = Summer", "Summer".equals(WorldTime.seasonName()));
+        WorldTime.hour = jamLama;
+        WorldTime.day = hariLama;
+        WorldTime.season = musimLama;
+        WorldTime.year = tahunLama;
+        MapServer.sql.update("UPDATE `Time` SET `TimHour` = ?, `TimDay` = ?, "
+                + "`TimSeason` = ?, `TimYear` = ?",
+                jamLama, hariLama, musimLama, tahunLama);
+
+        // ---- R1 batch 2: profil, kota, peringkat ----
+        // Profil menggantikan sendMyStatus TAHAP 1: yang dikirim HANYA yang
+        // tidak bisa dihitung klien.
+        a.status.title = "Pengembara";
+        a.status.clanTitle = "Tetua";
+        a.status.level = 5;
+        a.status.exp = 10;
+        a.profileText = "halo";
+        ka.takeOutbound();
+        cv.playerProfile(a);
+        var prof = cariOpcode(bingkaiRtk2(ka), Wire.EV_SELF_PROFILE);
+        check("r1: profil diri terkirim", prof != null);
+        if (prof != null) {
+            var rp = baca(prof);
+            rp.str();                            // nama kelas dari ClassDb
+            check("r1: gelar ikut", "Pengembara".equals(rp.str()));
+            check("r1: gelar klan ikut", "Tetua".equals(rp.str()));
+            rp.str();                            // pasangan (kosong)
+            long tnl = rp.u32();
+            check("r1: TNL = sisa exp ke tingkat berikutnya, bukan 0 seperti TAHAP 1",
+                    tnl > 0);
+            int persen = rp.u16();
+            check("r1: persen bilah XP dikirim ×100 (0..10000)",
+                    persen >= 0 && persen <= 10000);
+            check("r1: teks profil ikut", "halo".equals(rp.str()));
+            check("r1: daftar legenda ikut (kosong untuk karakter uji)",
+                    rp.u16() == 0 && rp.rest() == 0);
+        }
+        a.profileText = "";
+
+        // Daftar kota: nama saja, urut seperti map.conf.
+        ka.takeOutbound();
+        cv.townListToPlayer(a, java.util.List.of("Koguryo", "Buya"));
+        var kota = cariOpcode(bingkaiRtk2(ka), Wire.EV_TOWNS);
+        check("r1: daftar kota terkirim", kota != null);
+        if (kota != null) {
+            var rk = baca(kota);
+            check("r1: jumlah kota", rk.u16() == 2);
+            check("r1: urutannya dipertahankan",
+                    "Koguryo".equals(rk.str()) && "Buya".equals(rk.str()));
+            check("r1: bingkai kota habis", rk.rest() == 0);
+        }
+
+        // Peringkat: daftar KOSONG tetap dikirim — klien harus bisa menutup
+        // jendelanya, bukan menggantung menunggu.
+        ka.takeOutbound();
+        cv.rankingToPlayer(a, "Peringkat", java.util.List.of());
+        var rank = cariOpcode(bingkaiRtk2(ka), Wire.EV_RANKING);
+        check("r1: peringkat KOSONG tetap dikirim", rank != null);
+        if (rank != null) {
+            var rr = baca(rank);
+            check("r1: judulnya ikut", "Peringkat".equals(rr.str()));
+            check("r1: jumlah barisnya nol", rr.u16() == 0 && rr.rest() == 0);
+        }
+        ka.takeOutbound();
+        cv.rankingToPlayer(a, "Peringkat",
+                java.util.List.<Object[]>of(new Object[] {1, "Adrielle", 999L}));
+        var rr2 = baca(cariOpcode(bingkaiRtk2(ka), Wire.EV_RANKING));
+        rr2.str();
+        check("r1: satu baris peringkat terbaca utuh",
+                rr2.u16() == 1 && rr2.u16() == 1
+                        && "Adrielle".equals(rr2.str()) && rr2.u32() == 999);
+
+        // ---- kebocoran yang sengaja tidak diteruskan ----
+        ka.takeOutbound();
+        cv.areaRedrawRequested(a, map, 0, 0, 4, 4, 0);
+        check("rtk2: permintaan gambar ulang TIDAK diteruskan (kebocoran RetroTK)",
+                bingkaiRtk2(ka).isEmpty());
+
+        // ---- bersih-bersih ----
+        for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
+            MapServer.floorItems.hapus(fi);
+        }
+        map.delBlock(a);
+        map.delBlock(b);
+        MapServer.onlineChars.remove(a.fd);
+        MapServer.onlineChars.remove(b.fd);
+        MapServer.scriptEngine = engineLama;
+    }
+
+
+    // ==================================================================
+    // Binding dunia (WorldBindings) — peta, cuaca, teks
+    // ==================================================================
+
+    /**
+     * Panggil satu global Lua dengan argumen sebanyak apa pun.
+     *
+     * <p>{@code LuaValue.call} hanya menerima tiga argumen; global peta
+     * memakai empat sampai sembilan belas. Memakai {@code invoke} sekali di
+     * satu helper lebih baik daripada mencampur keduanya per pemanggilan.</p>
+     */
+    private static org.luaj.vm2.LuaValue panggilGlobal(
+            org.rtk.map.script.ScriptEngine engine, String nama, Object... args) {
+        org.luaj.vm2.LuaValue[] v = new org.luaj.vm2.LuaValue[args.length];
+        for (int i = 0; i < args.length; i++) {
+            v[i] = args[i] instanceof String t
+                    ? org.luaj.vm2.LuaValue.valueOf(t)
+                    : org.luaj.vm2.LuaValue.valueOf(((Number) args[i]).doubleValue());
+        }
+        return engine.globals().get(nama)
+                .invoke(org.luaj.vm2.LuaValue.varargsOf(v)).arg1();
+    }
+
+    private static void duniaTest(MapData map, User sd) {
+        log.info("=== binding dunia: peta, cuaca, siaran ===");
+        var engineLama = MapServer.scriptEngine;
+        var engine = new org.rtk.map.script.ScriptEngine();
+        MapServer.scriptEngine = engine;
+
+        // ---- ⚠️ salin-saat-ditulis: dua peta, SATU berkas ----
+        //
+        // Inilah perangkap yang ditemukan audit 27 Agustus: MapRegistry
+        // men-cache satu MapFile per NAMA BERKAS, dan 9.850 peta hanya
+        // menunjuk 2.919 berkas. setTile yang menulis langsung akan mengubah
+        // petak itu di SETIAP peta sejenis — dan tiap peta akan tetap
+        // terlihat "benar" bila diperiksa sendiri-sendiri.
+        var berkas = map.geometry();
+        MapData kembarA = new MapData(60001, berkas);
+        MapData kembarB = new MapData(60002, berkas);
+        MapServer.world.put(kembarA);
+        MapServer.world.put(kembarB);
+
+        int asli = kembarA.tile(3, 3);
+        check("dunia: dua peta berangkat dari petak yang sama",
+                kembarB.tile(3, 3) == asli);
+        check("dunia: keduanya belum punya geometri sendiri",
+                !kembarA.hasPrivateGeometry() && !kembarB.hasPrivateGeometry());
+
+        panggilGlobal(engine, "setTile", 60001, 3, 3, asli + 7);
+        check("dunia: setTile mengubah peta yang dituju",
+                kembarA.tile(3, 3) == asli + 7);
+        check("dunia: peta KEMBARANNYA TIDAK ikut berubah",
+                kembarB.tile(3, 3) == asli);
+        check("dunia: yang diubah kini punya geometri sendiri",
+                kembarA.hasPrivateGeometry() && !kembarB.hasPrivateGeometry());
+        check("dunia: berkas aslinya juga tidak tersentuh",
+                berkas.tile(3, 3) == asli);
+
+        panggilGlobal(engine, "setObject", 60002, 4, 4, 99);
+        check("dunia: setObject menulis lapisan objek",
+                kembarB.obj(4, 4) == 99);
+        panggilGlobal(engine, "setPass", 60002, 5, 5, 1);
+        check("dunia: setPass membuat petak jadi terhalang",
+                kembarB.pass(5, 5) == 1 && !kembarB.walkable(5, 5));
+        check("dunia: kembarannya tetap bisa dilewati",
+                kembarA.walkable(5, 5));
+
+        // Petak di luar peta tidak boleh meledak, hanya diabaikan.
+        panggilGlobal(engine, "setTile", 60001, 99999, 99999, 1);
+        check("dunia: petak di luar peta diabaikan, bukan melempar", true);
+
+        // ⚠️ getObject/getTile juga tidak boleh melempar di luar batas.
+        // Di C keduanya mengindeks larik tanpa pemeriksaan, jadi membaca
+        // sepetak di luar tepi hanya memberi angka tetangga. Di sini ia
+        // sempat melempar dan MEMBUNUH skrip — setiap kait `onLook` gagal
+        // ketika pemain berdiri di tepi peta.
+        var mdTepi = MapServer.world.get(sd.m);
+        var glob = MapServer.scriptEngine == null ? null
+                : MapServer.scriptEngine.globals();
+        if (glob != null && mdTepi != null) {
+            String panggil = "return getObject(" + sd.m + ", 0, " + mdTepi.ys + ")";
+            check("dunia: getObject sepetak di luar tepi mengembalikan 0, bukan melempar",
+                    glob.load(panggil).call().toint() == 0);
+            check("dunia: getTile di luar tepi juga aman",
+                    glob.load("return getTile(" + sd.m + ", " + mdTepi.xs + ", 0)")
+                            .call().toint() == 0);
+            check("dunia: koordinat negatif ikut dijaga",
+                    glob.load("return getObject(" + sd.m + ", -1, -1)")
+                            .call().toint() == 0);
+            check("dunia: petak SAH tetap terbaca apa adanya",
+                    glob.load("return getTile(" + sd.m + ", 0, 0)").call().toint()
+                            == mdTepi.tile(0, 0));
+        }
+
+        // ---- atribut peta ----
+        check("dunia: getMapIsLoaded untuk peta yang ada",
+                panggilGlobal(engine, "getMapIsLoaded", 60001).toboolean());
+        check("dunia: getMapIsLoaded untuk peta yang tidak ada",
+                !panggilGlobal(engine, "getMapIsLoaded", 58888).toboolean());
+
+        kembarA.pvp = 0;
+        panggilGlobal(engine, "setMapPvP", 60001, 1);
+        check("dunia: setMapPvP menyalakan PvP", kembarA.pvp == 1);
+        check("dunia: getMapPvP membacanya kembali",
+                panggilGlobal(engine, "getMapPvP", 60001).toint() == 1);
+
+        panggilGlobal(engine, "setMapAttribute", 60001, "canEat", 1);
+        check("dunia: setMapAttribute menulis ladang bernama",
+                kembarA.canEat == 1);
+        check("dunia: getMapAttribute membacanya kembali",
+                panggilGlobal(engine, "getMapAttribute", 60001, "canEat").toint() == 1);
+        check("dunia: xmax adalah INDEKS terbesar, bukan lebar",
+                panggilGlobal(engine, "getMapAttribute", 60001, "xmax").toint()
+                        == kembarA.xs - 1);
+        check("dunia: atribut yang tidak dikenal dijawab nil, bukan meledak",
+                panggilGlobal(engine, "getMapAttribute", 60001, "takAda").isnil());
+
+        // ---- setLight: hanya peta yang cahayanya MASIH 0 ----
+        kembarA.region = 77;
+        kembarA.indoor = 0;
+        kembarA.light = 0;
+        kembarB.region = 77;
+        kembarB.indoor = 0;
+        kembarB.light = 5;
+        panggilGlobal(engine, "setLight", 77, 0, 9);
+        check("dunia: setLight mengisi peta yang cahayanya 0", kembarA.light == 9);
+        check("dunia: setLight TIDAK menimpa peta yang sudah bercahaya",
+                kembarB.light == 5);
+
+        // ---- cuaca, dan penjaga cuaca buatan ----
+        kembarA.weather = 0;
+        panggilGlobal(engine, "setWeatherM", 60001, 3);
+        check("dunia: setWeatherM memasang cuaca", kembarA.weather == 3);
+        check("dunia: getWeatherM membacanya kembali",
+                panggilGlobal(engine, "getWeatherM", 60001).toint() == 3);
+
+        // Cap di MASA DEPAN berarti cuaca buatan sedang berjalan: cuaca
+        // musiman tidak boleh menimpanya.
+        long nanti = System.currentTimeMillis() / 1000 + 3600;
+        engine.mapReg(60001).put("artificial_weather_timer", (int) nanti);
+        panggilGlobal(engine, "setWeatherM", 60001, 7);
+        check("dunia: cuaca buatan yang masih berlaku TIDAK tertimpa",
+                kembarA.weather == 3);
+
+        // Cap yang sudah LEWAT dibersihkan di sini, bukan oleh timer lain.
+        engine.mapReg(60001).put("artificial_weather_timer", 1);
+        panggilGlobal(engine, "setWeatherM", 60001, 7);
+        check("dunia: cap yang kedaluwarsa dibersihkan lalu cuacanya berubah",
+                kembarA.weather == 7
+                && engine.mapReg(60001).get("artificial_weather_timer") == 0);
+
+        // ---- portal ----
+        panggilGlobal(engine, "setWarps", 60001, 6, 6, 60002, 1, 2);
+        var w = kembarA.warpAt(6, 6);
+        check("dunia: setWarps menanam portal", w != null && w.tm() == 60002
+                && w.tx() == 1 && w.ty() == 2);
+        check("dunia: setWarps ke peta yang tidak dimuat ditolak",
+                !panggilGlobal(engine, "setWarps", 60001, 7, 7, 58888, 1, 1)
+                        .toboolean());
+
+        // ---- saveMap lalu setMap: bolak-balik lewat berkas ----
+        java.nio.file.Path tmp = java.nio.file.Paths.get(
+                System.getProperty("java.io.tmpdir"), "rtk-uji-peta.map");
+        check("dunia: saveMap menulis berkas",
+                panggilGlobal(engine, "saveMap", 60001, tmp.toString()).toboolean());
+        int ukuranA = kembarA.xs;
+        MapData muat = new MapData(60003, berkas);
+        MapServer.world.put(muat);
+        check("dunia: setMap memuat berkas itu ke peta lain",
+                panggilGlobal(engine, "setMap", 60003, tmp.toString()).toboolean());
+        check("dunia: petak yang diubah ikut terbawa lewat berkas",
+                muat.tile(3, 3) == asli + 7 && muat.xs == ukuranA);
+        check("dunia: peta hasil setMap selalu punya geometri sendiri",
+                muat.hasPrivateGeometry());
+        check("dunia: setMap dengan berkas yang tidak ada dijawab false",
+                !panggilGlobal(engine, "setMap", 60003, "tidak-ada-sama-sekali.map")
+                        .toboolean());
+        try {
+            java.nio.file.Files.deleteIfExists(tmp);
+        } catch (java.io.IOException ignored) {
+            // berkas sementara; kegagalan menghapusnya tidak mengubah hasil uji
+        }
+
+        // ---- getObjectsMap: tiruan setia yang tidak mengembalikan apa pun ----
+        check("dunia: getObjectsMap tidak mengembalikan apa pun (badannya "
+                + "dikomentari di C)",
+                panggilGlobal(engine, "getObjectsMap", 60001).isnil());
+
+        // ---- guitext GLOBAL: siaran, bukan per pemain ----
+        //
+        // ⚠️ Berbeda dari method player:guitext(). Yang ini menyiarkan ke
+        // seluruh peta, dan (-1, 0) ke seluruh server (Peringatan #75).
+        final java.util.List<String> tertangkap = new java.util.ArrayList<>();
+        var cvLama = MapServer.clientView;
+        MapServer.clientView = new RekamGuiText(tertangkap);
+        MapServer.onlineChars.put(sd.fd, sd);
+        panggilGlobal(engine, "guitext", -1, 0, "pengumuman");
+        // ⚠️ Jangan menguji JUMLAHNYA: bagian uji lain meninggalkan pemain
+        // di onlineChars, jadi angkanya bergantung pada urutan uji — bukan
+        // pada kode yang sedang diperiksa.
+        check("dunia: guitext(-1, 0) menyiarkan ke seluruh server",
+                tertangkap.contains("pengumuman"));
+        tertangkap.clear();
+        panggilGlobal(engine, "guitext", 0, 58888, "peta lain");
+        check("dunia: guitext ke peta lain tidak menyentuh pemain di sini",
+                tertangkap.isEmpty());
+        MapServer.clientView = cvLama;
+
+        // ---- getXPforLevel: tabelnya memang sudah ada ----
+        var xp = panggilGlobal(engine, "getXPforLevel", 1, 10);
+        check("dunia: getXPforLevel menjawab dari tabel level, bukan 0",
+                xp.todouble() > 0);
+        // ⚠️ Argumen pertama boleh JALUR atau KELAS: nilai di atas 5
+        // diterjemahkan dulu jadi jalur dasarnya, jadi sebuah subpath
+        // menjawab sama dengan jalur induknya. Tanpa terjemahan itu tiap
+        // subpath akan menjawab 0.
+        int subpath = -1;
+        for (int k = 6; k < 40 && subpath < 0; k++) {
+            if (MapServer.classDb.pathOf(k) == 1) {
+                subpath = k;
+            }
+        }
+        if (subpath > 0) {
+            check("dunia: kelas subpath dipetakan ke jalur induknya",
+                    panggilGlobal(engine, "getXPforLevel", subpath, 10).todouble()
+                            == xp.todouble());
+        } else {
+            log.info("SKIP: tidak ada kelas subpath berjalur 1 di database");
+        }
+
+        MapServer.onlineChars.remove(sd.fd);
+        MapServer.world.remove(60001);
+        MapServer.world.remove(60002);
+        MapServer.world.remove(60003);
+        MapServer.scriptEngine = engineLama;
+    }
+
+    /**
+     * ClientView yang hanya mencatat guitext.
+     *
+     * <p>Membungkus penyalur kosong ({@code new ProtocolRouter()} tanpa
+     * tujuan) supaya setiap peristiwa lain jadi tidak berbuat apa-apa —
+     * yang diuji di sini siapa yang MENERIMA siaran, bukan bytenya.</p>
+     */
+    private static final class RekamGuiText implements ClientView {
+        private final java.util.List<String> keluar;
+        private final ClientView sunyi = new ProtocolRouter();
+
+        RekamGuiText(java.util.List<String> keluar) {
+            this.keluar = keluar;
+        }
+
+        @Override
+        public void guiTextToPlayer(User sd, String text) {
+            keluar.add(text);
+        }
+
+        // Sisanya diteruskan ke penyalur kosong.
+        @Override public void playerEnteredWorld(User a) { sunyi.playerEnteredWorld(a); }
+        @Override public void playerViewRefreshed(User a) { sunyi.playerViewRefreshed(a); }
+        @Override public void playerStatusChanged(User a, int b) { sunyi.playerStatusChanged(a, b); }
+        @Override public void playerIdentityChanged(User a) { sunyi.playerIdentityChanged(a); }
+        @Override public void playerDurationChanged(User a, int b, int c, String d) { sunyi.playerDurationChanged(a, b, c, d); }
+        @Override public void playerAetherChanged(User a, int b, int c) { sunyi.playerAetherChanged(a, b, c); }
+        @Override public void playerInventorySlotChanged(User a, int b) { sunyi.playerInventorySlotChanged(a, b); }
+        @Override public void playerInventorySlotCleared(User a, int b, int c) { sunyi.playerInventorySlotCleared(a, b, c); }
+        @Override public void playerSpellRemoved(User a, int b) { sunyi.playerSpellRemoved(a, b); }
+        @Override public void playerSpellSlotChanged(User a, int b) { sunyi.playerSpellSlotChanged(a, b); }
+        @Override public void playerProfile(User a) { sunyi.playerProfile(a); }
+        @Override public void worldTimeChanged(User a) { sunyi.worldTimeChanged(a); }
+        @Override public void playerTransferred(User a, String h, int p, int m, int x, int y) {
+            sunyi.playerTransferred(a, h, p, m, x, y);
+        }
+        @Override public void townListToPlayer(User a, java.util.List<String> b) { sunyi.townListToPlayer(a, b); }
+        @Override public void rankingToPlayer(User a, String b, java.util.List<Object[]> c) { sunyi.rankingToPlayer(a, b, c); }
+        @Override public void chatLineToPlayer(User a, int b, long c, String d) { sunyi.chatLineToPlayer(a, b, c, d); }
+        @Override public void popupToPlayer(User a, String b) { sunyi.popupToPlayer(a, b); }
+        @Override public void playerCameraChanged(User a, int b, int c) { sunyi.playerCameraChanged(a, b, c); }
+        @Override public void boardListToPlayer(User a, int b, int c, int d, java.util.List<Clif.BoardEntry> e) { sunyi.boardListToPlayer(a, b, c, d, e); }
+        @Override public void exchangeOpened(User a, User b) { sunyi.exchangeOpened(a, b); }
+        @Override public void exchangeItemOffered(User a, User b, org.rtk.common.mmo.Item c, int d) { sunyi.exchangeItemOffered(a, b, c, d); }
+        @Override public void exchangeGoldOffered(User a, User b, long c) { sunyi.exchangeGoldOffered(a, b, c); }
+        @Override public void exchangeConfirmed(User a, User b, boolean c) { sunyi.exchangeConfirmed(a, b, c); }
+        @Override public void mapSelectionToPlayer(User a, String b, java.util.List<Integer> c, java.util.List<Integer> d, java.util.List<String> e, java.util.List<Integer> f, java.util.List<Integer> g, java.util.List<Integer> h) { sunyi.mapSelectionToPlayer(a, b, c, d, e, f, g, h); }
+        @Override public void powerBoardToPlayer(User a) { sunyi.powerBoardToPlayer(a); }
+        @Override public void boardQuestionsToPlayer(User a, java.util.List<String> b, java.util.List<String> c, java.util.List<Integer> d) { sunyi.boardQuestionsToPlayer(a, b, c, d); }
+        @Override public void paperToPlayer(User a, String b, int c, int d) { sunyi.paperToPlayer(a, b, c, d); }
+        @Override public void urlToPlayer(User a, int b, String c) { sunyi.urlToPlayer(a, b, c); }
+        @Override public void playerTimerSet(User a, int b, long c) { sunyi.playerTimerSet(a, b, c); }
+        @Override public void playerSpoke(User a, String b, int c) { sunyi.playerSpoke(a, b, c); }
+        @Override public void playerMovementLocked(User a, boolean b) { sunyi.playerMovementLocked(a, b); }
+        @Override public void objectAnimationSeenBy(User a, org.rtk.map.data.BlockList b, int c, int d) { sunyi.objectAnimationSeenBy(a, b, c, d); }
+        @Override public void playerHealthChanged(User a, int b, int c, int d) { sunyi.playerHealthChanged(a, b, c, d); }
+        @Override public void objectSideChanged(org.rtk.map.data.BlockList a) { sunyi.objectSideChanged(a); }
+        @Override public void objectAnimation(org.rtk.map.data.BlockList a, int b, int c) { sunyi.objectAnimation(a, b, c); }
+        @Override public void objectAnimationAt(org.rtk.map.data.BlockList a, int b, int c, int d, int e) { sunyi.objectAnimationAt(a, b, c, d, e); }
+        @Override public void soundPlayed(org.rtk.map.data.BlockList a, int b) { sunyi.soundPlayed(a, b); }
+        @Override public void objectSpoke(org.rtk.map.data.BlockList a, int b, String c) { sunyi.objectSpoke(a, b, c); }
+        @Override public void objectActed(org.rtk.map.data.BlockList a, int b, int c, int d) { sunyi.objectActed(a, b, c, d); }
+        @Override public void objectAppearanceChanged(org.rtk.map.data.BlockList a) { sunyi.objectAppearanceChanged(a); }
+        @Override public void objectRemoved(org.rtk.map.data.BlockList a) { sunyi.objectRemoved(a); }
+        @Override public void messageToPlayer(User a, int b, String c) { sunyi.messageToPlayer(a, b, c); }
+        @Override public void npcMoved(Npc a, MapData b, int c, int d, int e, int f, int g, int h) { sunyi.npcMoved(a, b, c, d, e, f, g, h); }
+        @Override public void npcAppearedTo(User a, Npc b) { sunyi.npcAppearedTo(a, b); }
+        @Override public void mobMoved(Mob a, MapData b, int c, int d, int e, int f, int g, int h) { sunyi.mobMoved(a, b, c, d, e, f, g, h); }
+        @Override public void mobSpawned(Mob a) { sunyi.mobSpawned(a); }
+        @Override public void floorItemAppeared(FloorItem a) { sunyi.floorItemAppeared(a); }
+        @Override public void objectThrown(org.rtk.map.data.BlockList a, int b, int c, int d, int e, int f) { sunyi.objectThrown(a, b, c, d, e, f); }
+        @Override public void scriptDialogReady(User a, org.rtk.map.script.ScriptPlayer b) { sunyi.scriptDialogReady(a, b); }
+        @Override public void npcSaidTo(User a, long b, String c) { sunyi.npcSaidTo(a, b, c); }
+        @Override public void playerStepRejected(User a) { sunyi.playerStepRejected(a); }
+        @Override public void playerStepped(User a, int b, int c, int d) { sunyi.playerStepped(a, b, c, d); }
+        @Override public void playerStepSeen(User a, int b, int c, int d) { sunyi.playerStepSeen(a, b, c, d); }
+        @Override public void areaRedrawRequested(User a, MapData b, int c, int d, int e, int f, int g) { sunyi.areaRedrawRequested(a, b, c, d, e, f, g); }
+        @Override public void playerEquipmentChanged(User a, int b) { sunyi.playerEquipmentChanged(a, b); }
+        @Override public void playerEquipmentCleared(User a, int b) { sunyi.playerEquipmentCleared(a, b); }
+        @Override public void mapTilesChanged(User a) { sunyi.mapTilesChanged(a); }
+        @Override public void weatherChanged(User a, int b) { sunyi.weatherChanged(a, b); }
+        @Override public void groupStatusChanged(User a) { sunyi.groupStatusChanged(a); }
+        @Override public void groupHealthChanged(User a) { sunyi.groupHealthChanged(a); }
+        @Override public void playerSettingsChanged(User a) { sunyi.playerSettingsChanged(a); }
+    }
+
 }

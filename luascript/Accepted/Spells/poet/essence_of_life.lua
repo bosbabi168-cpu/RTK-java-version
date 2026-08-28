@@ -6,10 +6,10 @@ essence_of_life_poet = {
 		end
 		local worked = global_heal.cast(player, target, 20000, 2000, 0)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 	requirements = function(player)
@@ -29,10 +29,10 @@ essence_of_spirit_poet = {
 		end
 		local worked = global_heal.cast(player, target, 20000, 2000, 1)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 	requirements = function(player)
@@ -52,10 +52,10 @@ lifes_embrace_poet = {
 		end
 		local worked = global_heal.cast(player, target, 20000, 2000, 2)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 	requirements = function(player)
@@ -75,10 +75,10 @@ earths_cradle_poet = {
 		end
 		local worked = global_heal.cast(player, target, 20000, 2000, 3)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 	requirements = function(player)

@@ -71,6 +71,32 @@ public class ScriptPlayer {
      * itu disegarkan dari karakter.</p>
      */
     public interface Owner {
+
+        /**
+         * Atribut yang <b>bukan bilangan</b> — string dan boolean.
+         *
+         * <p>Jembatan {@code scriptGetAttr} mengembalikan {@code Long}, jadi
+         * ia tidak bisa membawa {@code speech} (string) maupun
+         * {@code flank}/{@code backstab} (boolean).</p>
+         *
+         * <p>⚠️ Boolean <b>wajib</b> lewat sini, bukan dipaksakan jadi angka:
+         * di Lua <b>angka 0 itu benar</b>, sehingga
+         * {@code if player.flank then} akan selalu masuk kalau nilainya
+         * dikirim sebagai 0. Kesalahan seperti itu tidak melempar error di
+         * mana pun — ia hanya membuat 134 pemakaian {@code flank}/
+         * {@code backstab} di skrip pertarungan berperilaku terbalik.</p>
+         *
+         * @return nilainya, atau null bila atribut ini bukan urusannya
+         */
+        default org.luaj.vm2.LuaValue scriptGetSpecial(String attr) {
+            return null;
+        }
+
+        /** Pasangan tulis {@link #scriptGetSpecial}. */
+        default boolean scriptSetSpecial(String attr, org.luaj.vm2.LuaValue v) {
+            return false;
+        }
+
         void scriptSetLevel(int level);
 
         /**

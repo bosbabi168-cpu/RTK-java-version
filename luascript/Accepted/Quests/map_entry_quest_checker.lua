@@ -7,17 +7,17 @@ map_entry_quest_checker = async(function(player)
 		player:dialogSeq(
 			{
 				t,
-				"Hello and welcome to RetroTK. Please journey south to begin your tutorial quest and get a weapon, armor, and your first spell."
+				"Halo dan selamat datang di RetroTK. Berjalanlah ke selatan untuk memulai tugas tutorialmu dan memperoleh senjata, zirah, serta mantra pertamamu."
 			},
 			1
 		)
-		player:sendMinitext("This area has been designed to help you get started here and to give you the knowledge you need to begin your adventure!")
+		player:sendMinitext("Daerah ini dirancang untuk membantumu memulai dan memberimu pengetahuan yang kau butuhkan untuk memulai petualanganmu!")
 	elseif mapName == "Deep Forest" then
 		local t = {graphic = convertGraphic(87, "monster"), color = 7}
 		player:dialogSeq(
 			{
 				t,
-				"You walk along the path and come across a merchant in a field.\n\nTo talk to merchants in RetroTK you must click on them with your mouse pointer.\n\nTalk to this merchant to continue your learning."
+				"Kau menyusuri jalan setapak dan bertemu seorang pedagang di padang.\n\nUntuk berbicara dengan pedagang di RetroTK, kau harus mengkliknya dengan penunjuk tetikus.\n\nBicaralah dengan pedagang ini untuk melanjutkan pelajaranmu."
 			},
 			1
 		)
@@ -27,8 +27,8 @@ map_entry_quest_checker = async(function(player)
 			player:dialogSeq(
 				{
 					t,
-					"Congratulations!\n\nYou have learned to find your way around. If you look at the bottom right of your screen, the numbers now read 003 002",
-					"Using this system and the Mini Map (Press 'm'), you can find your way around the cities and towns of RetroTK. You can also find the important places by pressing the 'F1' key"
+					"Selamat!\n\nKau sudah belajar menemukan jalan. Kalau kau melihat kanan bawah layarmu, angkanya sekarang menunjukkan 003 002",
+					"Dengan sistem ini dan Peta Kecil (tekan 'm'), kau bisa menemukan jalan di seluruh kota dan desa RetroTK. Tempat-tempat penting juga bisa kau temukan dengan menekan tombol 'F1'"
 				},
 				1
 			)
@@ -45,7 +45,7 @@ map_entry_quest_checker = async(function(player)
 			player:dialogSeq(
 				{
 					t,
-					"As you step out into the sunlight, the glint of the acorn attracts a crow. He snatches it and flies east towards the northern beeches of Dae Shore."
+					"Saat kau melangkah ke bawah sinar matahari, kilau acorn itu menarik perhatian seekor gagak. Ia menyambarnya dan terbang ke timur menuju pepohonan beech utara Dae Shore."
 				},
 				0
 			)

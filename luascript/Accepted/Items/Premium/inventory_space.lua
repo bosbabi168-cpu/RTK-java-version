@@ -13,7 +13,7 @@ inventory_space = {
 			player:dialogSeq(
 				{
 					t,
-					"You are already at the maximum number of slots, which is " .. maxSlots .. "."
+					"Jumlah slotmu sudah mencapai batas maksimum, yaitu " .. maxSlots .. "."
 				},
 				0
 			)
@@ -21,8 +21,8 @@ inventory_space = {
 		end
 
 		local confirm = player:menuSeq(
-			"Are you sure you want to add 5 additional slots to your inventory?",
-			{"Yes, do it.", "Nevermind."},
+			"Kau yakin ingin menambah 5 slot pada kantongmu?",
+			{"Ya, lakukan.", "Nevermind."},
 			{}
 		)
 

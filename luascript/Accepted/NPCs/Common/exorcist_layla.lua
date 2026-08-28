@@ -12,8 +12,8 @@ ExorcistLaylaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Fascinating, these crystals are absolutely captivating...",
-					"If only Spoon was able to get me some samples..."
+					"Menakjubkan, kristal-kristal ini benar-benar memikat...",
+					"Andai saja Spoon bisa mengambilkanku beberapa contoh..."
 				},
 				1
 			)
@@ -22,8 +22,8 @@ ExorcistLaylaNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"I never would have believed something so evil could latch itself onto our world. The crystal you have provided me has given me an idea as to how we can break the hold Calamity has on the statue. I just need some more time.",
-					"If only Spoon wasn't so aloof this could probably be done faster..."
+					"Aku tidak akan pernah percaya sesuatu sejahat itu bisa mencengkeram dunia kita. Kristal yang kau berikan memberiku gagasan cara memutus cengkeraman Calamity pada patung itu. Aku hanya butuh sedikit waktu lagi.",
+					"Andai Spoon tidak begitu acuh, ini mungkin bisa selesai lebih cepat..."
 				},
 				1
 			)
@@ -38,14 +38,14 @@ ExorcistLaylaNpc = {
 			end
 
 			local choice = player:menuString(
-				"Unbelievable! I won't even ask how you were able to obtain this shard! May I have it to study please?",
-				{"Yes", "No way!"}
+				"Luar biasa! Aku bahkan tidak akan bertanya bagaimana kau bisa memperoleh serpihan ini! Boleh kupakai untuk kupelajari?",
+				{"Ya", "Tidak sudi!"}
 			)
-			if choice == "Yes" then
+			if choice == "Ya" then
 				player:dialogSeq(
 					{
 						t,
-						"Beautiful, so beautiful! I will begin my investigation right away. I will inform Spoon we can begin the ritual to seal Calamity within the statue for good."
+						"Indah, indah sekali! Aku akan segera memulai penyelidikanku. Akan kuberitahu Spoon bahwa kita bisa memulai ritual untuk menyegel Calamity di dalam patung itu selamanya."
 					},
 					1
 				)
@@ -55,11 +55,11 @@ ExorcistLaylaNpc = {
 				player:removeItem("crystal_shard", 1)
 				player.quest["reeves_quest"] = 8
 			end
-			if choice == "No way!" then
+			if choice == "Tidak sudi!" then
 				player:dialogSeq(
 					{
 						t,
-						"Oh alright then... Not sure what you plan on doing with it... genius."
+						"Oh, ya sudah... entah apa yang hendak kau lakukan dengannya... jenius."
 					},
 					1
 				)

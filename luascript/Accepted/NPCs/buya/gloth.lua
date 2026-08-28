@@ -10,7 +10,7 @@ GlothNpc = {
 		player.lastClick = npc.ID
 
 		if player.quest["gloth_override"] == 1 then
-			player:dialogSeq({t, "Be well, honorable one."}, 0)
+			player:dialogSeq({t, "Sehat selalu, yang terhormat."}, 0)
 			return
 		end
 
@@ -18,11 +18,11 @@ GlothNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Who is there? Why do you come here?",
-					"You shall not pass by me without permission, for I am the guardian of the secret.",
-					"Only those who shine of virtue shall pass this way.",
-					"You show a glimmer of hope young one. While your time on this world may be but a fraction of mine you show potential.",
-					"Seek the answers from ones who placed me here to guard this path, the two great ones."
+					"Siapa di sana? Untuk apa kau datang ke sini?",
+					"Kau tidak boleh melewatiku tanpa izin, sebab akulah penjaga rahasia itu.",
+					"Hanya mereka yang bersinar oleh kebajikan boleh lewat jalan ini.",
+					"Kau menunjukkan secercah harapan, anak muda. Meski waktumu di dunia ini hanya sepersekian waktuku, kau menunjukkan potensi.",
+					"Carilah jawabannya dari mereka yang menempatkanku di sini menjaga jalan ini, kedua yang agung itu."
 				},
 				1
 			)
@@ -36,14 +36,14 @@ GlothNpc = {
 			if weap.yname == "star_sword" then
 				player.quest["gloth_override"] = 1
 				player:dialogSeq(
-					{t, "You have the sword! You are now free to pass."},
+					{t, "Pedangnya kau bawa! Sekarang kau boleh lewat."},
 					0
 				)
 				return
 			else
 				player:warp(player.m, player.x, player.y - 2)
 				player:dialogSeq(
-					{t, "Without showing me the sword I will not let you pass."},
+					{t, "Tanpa menunjukkan pedangnya kepadaku, kau tidak akan kuizinkan lewat."},
 					0
 				)
 			end
@@ -73,7 +73,7 @@ GlothNpc = {
 				if weap.yname == "star_sword" then
 					player.quest["gloth_override"] = 1
 					player:dialogSeq(
-						{t, "You have the sword! You are now free to pass."},
+						{t, "Pedangnya kau bawa! Sekarang kau boleh lewat."},
 						0
 					)
 					return

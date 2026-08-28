@@ -17,10 +17,10 @@ hellfire_mage = {
 			end
 			player:setAether("hellfire_mage", 19000)
 			player:sendStatus()
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -57,10 +57,10 @@ consume_soul_mage = {
 			end
 			player:setAether("consume_soul_mage", 19000)
 			player:sendStatus()
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -97,10 +97,10 @@ flesh_eaters_mage = {
 			end
 			player:setAether("flesh_eaters_mage", 19000)
 			player:sendStatus()
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -137,10 +137,10 @@ hurricane_mage = {
 			end
 			player:setAether("hurricane_mage", 19000)
 			player:sendStatus()
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 

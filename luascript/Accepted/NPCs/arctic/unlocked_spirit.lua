@@ -16,7 +16,7 @@ UnlockedSpiritNpc = {
 		] > os.time() then
 			-- finished
 			player:dialogSeq(
-				{t, "Your spirit is unlocked! You may proceed."},
+				{t, "Jiwamu sudah terbuka! Kau boleh melanjutkan."},
 				0
 			)
 			return
@@ -40,9 +40,9 @@ UnlockedSpiritNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Only those with an unlocked spirit may enter.",
-					"Do you understand the secrets?",
-					"Listen,\n\nI shall describe each. Then hand me the key that you used to unlock yourself."
+					"Hanya yang jiwanya terbuka boleh masuk.",
+					"Kau memahami rahasianya?",
+					"Dengarkan,\n\nakan kujelaskan satu per satu. Setelah itu serahkan kunci yang kau pakai untuk membuka dirimu."
 				},
 				1
 			)

@@ -8,7 +8,7 @@ assess_opponent_do = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 

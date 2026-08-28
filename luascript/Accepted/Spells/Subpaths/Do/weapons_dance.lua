@@ -6,18 +6,18 @@ weapons_dance = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(lesserFuries) or player.rage > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
 		player.magic = player.magic - magic
 		player:playSound(4)
-		player:sendMinitext("You cast Weapons dance.")
+		player:sendMinitext("Kau merapal Weapons dance.")
 		player:setDuration("weapons_dance", 625000)
 		player:sendAnimation(11)
 		player:sendAction(6, 35)

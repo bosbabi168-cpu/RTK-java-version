@@ -29,6 +29,35 @@ public final class Pc {
      * @return false bila id-nya ternyata milik mob (penjaga yang sama
      *         dengan {@code bl.id >= MOB_START_NUM} di C)
      */
+    /**
+     * pc_checklevel(): panggil kait {@code onLevel} sekali untuk tiap ambang
+     * pengalaman yang sudah terlampaui.
+     *
+     * <p>⚠️ Kenaikan levelnya <b>seluruhnya sisi skrip</b> — di sini tidak
+     * ada satu pun penulisan ke {@code status.level}. Karena itu pula
+     * perulangannya berjalan sampai level tertinggi dan bisa memanggil kait
+     * itu berkali-kali dalam satu panggilan: skripnyalah yang menaikkan
+     * level satu per satu.</p>
+     *
+     * <p>⚠️ {@code path} diambil dari {@code classdb_path} hanya bila id
+     * kelasnya di atas 5 — lima id pertama <b>adalah</b> jalurnya sendiri.</p>
+     */
+    public static void checkLevel(org.rtk.map.script.ScriptEngine engine, User sd) {
+        if (engine == null || sd == null) {
+            return;
+        }
+        int path = sd.status.charClass;
+        if (path > 5) {
+            path = MapServer.classDb.pathOf(path);
+        }
+        var ref = engine.playerRef(sd.scriptPlayer());
+        for (int lv = sd.status.level; lv < org.rtk.map.data.ClassDb.MAX_LEVEL; lv++) {
+            if (sd.status.exp >= MapServer.classDb.level(path, lv)) {
+                engine.doScript("onLevel", null, ref);
+            }
+        }
+    }
+
     public static boolean setPos(User sd, int m, int x, int y) {
         if (sd.id >= User.MOB_START_NUM) {
             return false;
@@ -69,6 +98,47 @@ public final class Pc {
     }
 
     /**
+     * Serahkan pemain ke map server yang memuat peta tujuannya (R3/C3) —
+     * port cabang {@code !map_isloaded} di {@code pc_warp}.
+     *
+     * <p>⚠️ Koordinatnya dijepit ke 1..255 <b>di sini</b>, sebelum dikirim.
+     * Server tujuan memuat pemain dari {@code lastPos} dan tidak punya
+     * kesempatan memperbaiki nilai yang mustahil; C melakukan hal yang sama
+     * dengan komentar "Just for Justin".</p>
+     *
+     * @return false bila tabel {@code Maps} tidak mengenal peta itu sama
+     *         sekali — barulah perpindahannya benar-benar gagal
+     */
+    private static boolean transferKeServerLain(User sd, int m, int x, int y) {
+        Integer server = MapServer.sql == null ? null : MapServer.sql.queryInt(
+                "SELECT `MapServer` FROM `Maps` WHERE `MapId` = ?", m);
+        if (server == null) {
+            log.warn("[PC] {} minta pindah ke peta {} yang tidak dikenal tabel Maps",
+                    sd.name(), m);
+            return false;
+        }
+        if (server == MapServer.serverId) {
+            // Petanya milik server ini tapi tidak termuat — berkasnya hilang
+            // atau gagal dibaca. Mengalihkan pemain ke diri sendiri hanya
+            // membuat gelung sambung-putus.
+            log.error("[PC] peta {} milik server ini tapi TIDAK termuat; "
+                    + "{} tidak dipindahkan", m, sd.name());
+            return false;
+        }
+        int tx = x < 1 || x > 255 ? 1 : x;
+        int ty = y < 1 || y > 255 ? 1 : y;
+        sd.destMap = m;
+        sd.destX = tx;
+        sd.destY = ty;
+        String host = MapServer.mapIpS;
+        int port = MapServer.PORT_MAP_DASAR + server;
+        log.info("[PC] {} dialihkan ke map server #{} ({}:{}) untuk peta {} ({},{})",
+                sd.name(), server, host, port, m, tx, ty);
+        MapServer.clientView.playerTransferred(sd, host, port, m, tx, ty);
+        return true;
+    }
+
+    /**
      * pc_warp(): pindahkan pemain ke peta/koordinat lain.
      *
      * Meniru urutan versi C: validasi & jepit koordinat, cabut dari peta
@@ -78,17 +148,20 @@ public final class Pc {
      *
      * Nilai {@code x == -1} berarti tengah peta, sama seperti di C.
      *
-     * @return false bila peta tujuan tidak dimuat di server ini. Versi C
-     *         pada kasus ini memindahkan pemain ke map server lain
-     *         (mencari `MapServer` di tabel `Maps`); perpindahan antar map
-     *         server belum diport — lihat roadmap.
+     * <p>Peta yang <b>tidak dimuat di server ini</b> ditangani sebagai
+     * perpindahan antar map server (R3/C3): server pemiliknya dicari di
+     * kolom {@code Maps.MapServer}, tujuannya dicatat di
+     * {@code destMap/destX/destY}, lalu klien dialihkan. Posisinya sampai
+     * ke server tujuan lewat jalur simpan — {@code MapIntif.saveChar}
+     * menuliskan tujuan itu sebagai {@code lastPos}.</p>
+     *
+     * @return false hanya bila peta tujuan tidak dimuat di sini DAN tidak
+     *         ada map server yang mengakuinya
      */
     public static boolean warp(MapRegistry world, User sd, int m, int x, int y) {
         MapData dest = world.get(m);
         if (dest == null) {
-            log.warn("[PC] {} minta pindah ke peta {} yang tidak dimuat di server ini "
-                    + "(perpindahan antar map server belum diport)", sd.name(), m);
-            return false;
+            return transferKeServerLain(sd, m, x, y);
         }
 
         if (x == -1) {
@@ -142,7 +215,18 @@ public final class Pc {
 
         MapData map = world.get(m);
         if (map == null) {
-            log.warn("[PC] {} tersimpan di peta {} yang tidak dimuat di server ini", sd.name(), m);
+            // R3/C3: posisi tersimpannya milik map server LAIN — serahkan
+            // pemainnya ke sana, jangan usir.
+            // ⚠️ Di C cabang ini KOSONG (`intif.c:215`, isinya dikomentari),
+            // sehingga pemain yang tersimpan di peta server lain lalu masuk
+            // ke server yang salah akan terdampar: tidak bisa masuk dunia,
+            // dan posisinya tidak pernah berubah sehingga percobaan
+            // berikutnya gagal dengan cara yang sama. Menutup sambungan
+            // tanpa memberi tahu ke mana harus pergi adalah jalan buntu.
+            log.warn("[PC] {} tersimpan di peta {} milik map server lain", sd.name(), m);
+            if (transferKeServerLain(sd, m, x, y)) {
+                sd.pindahTertunda = true;
+            }
             return false;
         }
 
@@ -215,8 +299,11 @@ public final class Pc {
      * Objek pemain milik mesin skrip — satu per pemain, bukan salinan baru
      * tiap panggilan (lihat {@link User#scriptPlayer()}).
      *
-     * TODO(C1): registry yang ditulis skrip belum mengalir balik ke
-     * {@link org.rtk.common.mmo.CharStatus}, jadi belum ikut tersimpan.
+     * <p>Registry yang ditulis skrip mengalir langsung ke
+     * {@link org.rtk.common.mmo.CharStatus}: keduanya <b>objek yang sama</b>,
+     * disambungkan sekali lewat {@code ScriptPlayer.bindRegistries()}
+     * (Trek C1, selesai 21 Agustus 2026). Terbukti ujung-ke-ujung di
+     * {@code dbtest}.</p>
      */
     static org.rtk.map.script.ScriptPlayer scriptPlayerOf(User sd) {
         return sd.scriptPlayer();

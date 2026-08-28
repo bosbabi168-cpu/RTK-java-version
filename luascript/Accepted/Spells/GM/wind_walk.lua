@@ -93,7 +93,7 @@ wind_walk = {
 		end
 		if #same > 20 then
 			anim(player)
-			player:sendMinitext("Can't over than 20 clones in 1 map")
+			player:sendMinitext("Tidak boleh lebih dari 20 kembaran dalam 1 peta")
 			return false
 		end
 		player:spawn("wind_walk", player.x, player.y, 1)

@@ -8,17 +8,17 @@ second_sight_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if player:hasDuration("second_sight_poet") then
-			player:sendMinitext("Not enough time has elapsed. Please try to cast Second Sight again.")
+			player:sendMinitext("Waktunya belum cukup. Coba rapal Second Sight lagi.")
 			return
 		end
 		player:sendAction(6, 20)
 		player:playSound(22)
-		player:sendMinitext("You cast Second Sight.")
+		player:sendMinitext("Kau merapal Second Sight.")
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:setDuration("second_sight_poet", duration)
@@ -33,7 +33,7 @@ second_sight_poet = {
 				for i = 1, #pcs do
 					if pcs[i].state == 2 and distanceSquare(player, pcs[i], dist) then
 						-- invisible
-						player:sendMinitext(pcs[i].name .. " is hidden in the Area")
+						player:sendMinitext(pcs[i].name .. " bersembunyi di daerah ini")
 					end
 				end
 			end
@@ -58,17 +58,17 @@ hear_spirits_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if player:hasDuration("hear_spirits_poet") then
-			player:sendMinitext("Not enough time has elapsed. Please try to cast Hear Spirits again.")
+			player:sendMinitext("Waktunya belum cukup. Coba rapal Hear Spirits lagi.")
 			return
 		end
 		player:sendAction(6, 20)
 		player:playSound(22)
-		player:sendMinitext("You cast Hear Spirits.")
+		player:sendMinitext("Kau merapal Hear Spirits.")
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:setDuration("hear_spirits_poet", duration)
@@ -83,7 +83,7 @@ hear_spirits_poet = {
 				for i = 1, #pcs do
 					if pcs[i].state == 2 and distanceSquare(player, pcs[i], dist) then
 						-- invisible
-						player:sendMinitext(pcs[i].name .. " is hidden in the Area")
+						player:sendMinitext(pcs[i].name .. " bersembunyi di daerah ini")
 					end
 				end
 			end
@@ -108,17 +108,17 @@ improve_sight_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if player:hasDuration("improve_sight_poet") then
-			player:sendMinitext("Not enough time has elapsed. Please try to cast Improve Sight again.")
+			player:sendMinitext("Waktunya belum cukup. Coba rapal Improve Sight lagi.")
 			return
 		end
 		player:sendAction(6, 20)
 		player:playSound(22)
-		player:sendMinitext("You cast Improve Sight.")
+		player:sendMinitext("Kau merapal Improve Sight.")
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:setDuration("improve_sight_poet", duration)
@@ -133,7 +133,7 @@ improve_sight_poet = {
 				for i = 1, #pcs do
 					if pcs[i].state == 2 and distanceSquare(player, pcs[i], dist) then
 						-- invisible
-						player:sendMinitext(pcs[i].name .. " is hidden in the Area")
+						player:sendMinitext(pcs[i].name .. " bersembunyi di daerah ini")
 					end
 				end
 			end
@@ -158,17 +158,17 @@ show_hidden_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if player:hasDuration("show_hidden_poet") then
-			player:sendMinitext("Not enough time has elapsed. Please try to cast Show Hidden again.")
+			player:sendMinitext("Waktunya belum cukup. Coba rapal Show Hidden lagi.")
 			return
 		end
 		player:sendAction(6, 20)
 		player:playSound(22)
-		player:sendMinitext("You cast Show Hidden.")
+		player:sendMinitext("Kau merapal Show Hidden.")
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:setDuration("show_hidden_poet", duration)
@@ -183,7 +183,7 @@ show_hidden_poet = {
 				for i = 1, #pcs do
 					if pcs[i].state == 2 and distanceSquare(player, pcs[i], dist) then
 						-- invisible
-						player:sendMinitext(pcs[i].name .. " is hidden in the Area")
+						player:sendMinitext(pcs[i].name .. " bersembunyi di daerah ini")
 					end
 				end
 			end

@@ -11,7 +11,7 @@ kamikaze = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -24,11 +24,11 @@ kamikaze = {
 
 		global_zap.cast(player, target, damage, 0, 0)
 		if target.blType == BL_PC then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 
 		player.health = 10
 		player:sendStatus()
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 	end
 }

@@ -25,7 +25,7 @@ AlignmentNpc = {
 
 		if player.level < 50 then
 			player:dialogSeq(
-				{t, "You are not ready to make this choice. Return later."},
+				{t, "Kau belum siap membuat pilihan ini. Kembalilah nanti."},
 				0
 			)
 			return
@@ -34,7 +34,7 @@ AlignmentNpc = {
 		if player.alignment ~= 0 then
 			if player.alignment ~= alignCheck then
 				player:dialogSeq(
-					{t, "You are not " .. shrine .. ", I can not help you."},
+					{t, "Kau bukan " .. shrine .. ", aku tidak bisa menolongmu."},
 					0
 				)
 				return
@@ -42,7 +42,7 @@ AlignmentNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Go now young one, and tell your guild master of your choice to be " .. shrine
+						"Pergilah, anak muda, dan beri tahu guild master-mu bahwa kau memilih menjadi " .. shrine
 					},
 					0
 				)
@@ -54,8 +54,8 @@ AlignmentNpc = {
 			{
 				t,
 				"Greetings, magic user.",
-				"You seek to find your true nature?",
-				"First I must know that you understand the nature of your soul."
+				"Kau ingin menemukan sifat sejatimu?",
+				"Pertama aku harus tahu bahwa kau memahami sifat jiwamu."
 			},
 			1
 		)
@@ -63,31 +63,31 @@ AlignmentNpc = {
 		local choice
 		if shrine == "Kwi-Sin" then
 			choice = player:menuSeq(
-				"How many natures are there to choose from?",
+				"Ada berapa sifat yang bisa dipilih?",
 				{
-					"Only one, and that is you.",
-					"Two, you and Ming-Ken",
-					"Three, you, Ming-Ken, and Ohaeng."
+					"Hanya satu, yaitu dirimu.",
+					"Dua, kau dan Ming-Ken",
+					"Tiga, kau, Ming-Ken, dan Ohaeng."
 				},
 				{}
 			)
 		elseif shrine == "Ming-ken" then
 			choice = player:menuSeq(
-				"How many natures are there to choose from?",
+				"Ada berapa sifat yang bisa dipilih?",
 				{
-					"Only one, and that is you.",
-					"Two, you and Ming-Ken",
-					"Three, you, Ohaeng, and Kwi-Sin."
+					"Hanya satu, yaitu dirimu.",
+					"Dua, kau dan Ming-Ken",
+					"Tiga, kau, Ohaeng, dan Kwi-Sin."
 				},
 				{}
 			)
 		elseif shrine == "Ohaeng" then
 			choice = player:menuSeq(
-				"How many natures are there to choose from?",
+				"Ada berapa sifat yang bisa dipilih?",
 				{
-					"Only one, and that is you.",
-					"Two, you and Ming-Ken",
-					"Three, you, Ming-Ken, and Kwi-Sin."
+					"Hanya satu, yaitu dirimu.",
+					"Dua, kau dan Ming-Ken",
+					"Tiga, kau, Ming-Ken, dan Kwi-Sin."
 				},
 				{}
 			)
@@ -97,7 +97,7 @@ AlignmentNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You are incorrect, there are three. Learn about yourself, and of the natures before you go too far. You may only choose once, ever!"
+					"Kau keliru, jumlahnya tiga. Pelajarilah dirimu dan sifat-sifat itu sebelum melangkah terlalu jauh. Kau hanya boleh memilih sekali, selamanya!"
 				},
 				0
 			)
@@ -106,17 +106,17 @@ AlignmentNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Yes, yes. Wise one, you are learning about the natures. But there is more to know before you dedicate to one for life."
+					"Ya, ya. Orang bijak, kau mulai memahami sifat-sifat itu. Tetapi masih ada yang perlu diketahui sebelum kau mengabdikan diri pada salah satunya seumur hidup."
 				},
 				1
 			)
 
 			local subChoice = player:menuSeq(
-				"Each nature represents a different aspect of power, which does " .. shrine .. " represent?",
+				"Tiap sifat mewakili sisi kekuatan yang berbeda; apa yang dilakukan " .. shrine .. " represent?",
 				{
-					shrine .. " is the nature of living.",
-					shrine .. " is the balance of all.",
-					shrine .. " is the nature of the afterlife."
+					shrine .. " adalah sifat kehidupan.",
+					shrine .. " adalah keseimbangan segalanya.",
+					shrine .. " adalah sifat alam baka."
 				},
 				{}
 			)
@@ -134,11 +134,11 @@ AlignmentNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are incorrect, you need to learn of the natures.",
-						"Ming-Ken is the nature of the living.",
-						"Ohaeng is the balance of all.",
-						"Kwi-Sin is the nature of the afterlife.",
-						"Go and study more before you take this step."
+						"Kau keliru; kau perlu mempelajari sifat-sifat itu.",
+						"Ming-Ken adalah sifat kehidupan.",
+						"Ohaeng adalah keseimbangan segalanya.",
+						"Kwi-Sin adalah sifat alam baka.",
+						"Pergilah dan belajarlah lagi sebelum mengambil langkah ini."
 					},
 					0
 				)
@@ -147,18 +147,18 @@ AlignmentNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Yes, you do understand. You are on your way to becoming " .. shrine
+						"Ya, kau memang mengerti. Kau sedang dalam perjalanan menjadi " .. shrine
 					},
 					1
 				)
 
 				local subSubChoice = player:menuSeq(
-					"This is your last chance, from here there is no turning back, you may only choose once in your life.",
+					"Ini kesempatan terakhirmu; dari sini tidak ada jalan kembali, kau hanya boleh memilih sekali seumur hidup.",
 					{
-						"I do not wish to be " .. shrine,
-						"I need to think first.",
-						"I want another nature.",
-						"I will dedicate for life."
+						"Aku tidak ingin menjadi " .. shrine,
+						"Aku perlu berpikir dulu.",
+						"Aku mau sifat yang lain.",
+						"Aku akan mengabdikan diri seumur hidup."
 					},
 					{}
 				)
@@ -167,7 +167,7 @@ AlignmentNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"It is wise that you do not leap into something that will affect you for the rest of your life."
+							"Bijak sekali kau tidak terburu-buru pada sesuatu yang akan memengaruhi seluruh sisa hidupmu."
 						},
 						0
 					)
@@ -187,7 +187,7 @@ AlignmentNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You are now devoted to the nature of " .. shrine .. ", tell your Guildmaster of your decision."
+							"Kini kau mengabdi pada sifat " .. shrine .. ", beri tahu Guildmaster-mu tentang keputusanmu."
 						},
 						0
 					)

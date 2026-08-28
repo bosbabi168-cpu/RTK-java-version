@@ -23,7 +23,7 @@ smelting = {
 				player:dialogSeq(
 					{
 						smeltingagreement,
-						"Not so fast, my friend! Smelting's pretty dangerous you know, I'll let you use my equipment butt first you'll need a smelting agreement to show you understand the dangers."
+						"Jangan buru-buru, kawan! Melebur itu cukup berbahaya. Alatku boleh kau pakai, tetapi lebih dulu kau butuh perjanjian peleburan sebagai bukti kau paham bahayanya."
 					},
 					0
 				)
@@ -34,7 +34,7 @@ smelting = {
 				"Ore [poor]",
 				"Ore [med]",
 				"Ore [high]",
-				"Ore [very high]",
+				"Ore [sangat tinggi]",
 				"Spent metal"
 			}
 
@@ -65,14 +65,14 @@ smelting = {
 				table.insert(matsReq, "gold_ore")
 			end
 
-			local choice = player:menuString("What are you smelting?", opts)
+			local choice = player:menuString("Apa yang kau lebur?", opts)
 
 			local rand = math.random(1, 100)
 			local metal_type = math.random(1, 5)
 
 			if (choice == "Ore [poor]") then
 				if player:hasItem("ore_poor", 1) ~= true then
-					player:dialogSeq({ore, "You have nothing to craft."}, 0)
+					player:dialogSeq({ore, "Tidak ada yang bisa kau buat."}, 0)
 					return
 				end
 				crafting.skillChanceIncrease(player, NPC("Gruff"), "smelting")
@@ -82,26 +82,26 @@ smelting = {
 					if (metal_type == 1) then
 						player:addItem("fine_metal", 1)
 						player:dialogSeq(
-							{metal, "You succeeded masterfully!"},
+							{metal, "Kau berhasil dengan sempurna!"},
 							0
 						)
 					else
 						player:addItem("metal", 1)
 						player:dialogSeq(
-							{metal, "Your efforts were successful!"},
+							{metal, "Usahamu berhasil!"},
 							0
 						)
 					end
 				else
 					player:addItem("slag", 1)
 					player:dialogSeq(
-						{ore, "You have failed in your attempt."},
+						{ore, "Percobaanmu gagal."},
 						0
 					)
 				end
 			elseif (choice == "Ore [med]") then
 				if player:hasItem("ore_med", 1) ~= true then
-					player:dialogSeq({ore, "You have nothing to craft."}, 0)
+					player:dialogSeq({ore, "Tidak ada yang bisa kau buat."}, 0)
 					return
 				end
 				crafting.skillChanceIncrease(player, NPC("Gruff"), "smelting")
@@ -111,26 +111,26 @@ smelting = {
 					if (metal_type == 1) then
 						player:addItem("fine_metal", 1)
 						player:dialogSeq(
-							{metal, "You succeeded masterfully!"},
+							{metal, "Kau berhasil dengan sempurna!"},
 							0
 						)
 					else
 						player:addItem("metal", 1)
 						player:dialogSeq(
-							{metal, "Your efforts were successful!"},
+							{metal, "Usahamu berhasil!"},
 							0
 						)
 					end
 				else
 					player:addItem("slag", 1)
 					player:dialogSeq(
-						{ore, "You have failed in your attempt."},
+						{ore, "Percobaanmu gagal."},
 						0
 					)
 				end
 			elseif (choice == "Ore [high]") then
 				if player:hasItem("ore_high", 1) ~= true then
-					player:dialogSeq({ore, "You have nothing to craft."}, 0)
+					player:dialogSeq({ore, "Tidak ada yang bisa kau buat."}, 0)
 					return
 				end
 				crafting.skillChanceIncrease(player, NPC("Gruff"), "smelting")
@@ -141,26 +141,26 @@ smelting = {
 					if (metal_type == 1) then
 						player:addItem("fine_metal", 1)
 						player:dialogSeq(
-							{metal, "You succeeded masterfully!"},
+							{metal, "Kau berhasil dengan sempurna!"},
 							0
 						)
 					else
 						player:addItem("metal", 1)
 						player:dialogSeq(
-							{metal, "Your efforts were successful!"},
+							{metal, "Usahamu berhasil!"},
 							0
 						)
 					end
 				else
 					player:addItem("slag", 1)
 					player:dialogSeq(
-						{ore, "You have failed in your attempt."},
+						{ore, "Percobaanmu gagal."},
 						0
 					)
 				end
-			elseif (choice == "Ore [very high]") then
+			elseif (choice == "Ore [sangat tinggi]") then
 				if player:hasItem("ore_very_high", 1) ~= true then
-					player:dialogSeq({ore, "You have nothing to craft."}, 0)
+					player:dialogSeq({ore, "Tidak ada yang bisa kau buat."}, 0)
 					return
 				end
 				crafting.skillChanceIncrease(player, NPC("Gruff"), "smelting")
@@ -169,17 +169,17 @@ smelting = {
 
 				if (metal_type == 1) then
 					player:addItem("fine_metal", 1)
-					player:dialogSeq({metal, "You succeeded masterfully!"}, 0)
+					player:dialogSeq({metal, "Kau berhasil dengan sempurna!"}, 0)
 				else
 					player:addItem("metal", 1)
 					player:dialogSeq(
-						{metal, "Your efforts were successful!"},
+						{metal, "Usahamu berhasil!"},
 						0
 					)
 				end
 			elseif choice == "Spent metal" then
 				if player:hasItem("spent_metal", 4) ~= true then
-					player:dialogSeq({ore, "You have nothing to craft."}, 0)
+					player:dialogSeq({ore, "Tidak ada yang bisa kau buat."}, 0)
 					return
 				end
 				crafting.skillChanceIncrease(player, NPC("Gruff"), "smelting")
@@ -191,13 +191,13 @@ smelting = {
 						-- proc 2
 						player:addItem("metal", 2)
 						player:dialogSeq(
-							{metal, "You succeeded masterfully!"},
+							{metal, "Kau berhasil dengan sempurna!"},
 							0
 						)
 					else
 						player:addItem("metal", 1)
 						player:dialogSeq(
-							{metal, "Your efforts were successful!"},
+							{metal, "Usahamu berhasil!"},
 							0
 						)
 					end
@@ -205,7 +205,7 @@ smelting = {
 					player:dialogSeq(
 						{
 							ore,
-							"Your feeble efforts have destroyed that which you meant to enhance."
+							"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 						},
 						0
 					)
@@ -214,7 +214,7 @@ smelting = {
 				-- no skill increases when you smelt silver or gold ore
 				if player:hasItem("silver_ore", 1) ~= true then
 					player:dialogSeq(
-						{ore, "You need (1) silver ore to smelt."},
+						{ore, "Kau butuh (1) silver ore untuk dilebur."},
 						0
 					)
 					return
@@ -230,21 +230,21 @@ smelting = {
 				if roll <= 6 then
 					-- 60% chance for 10 gold
 					player:addGold(10)
-					player:sendMinitext("You have salvaged 10 gold.")
+					player:sendMinitext("Kau menyelamatkan 10 emas.")
 				elseif roll > 6 and roll <= 9 then
 					-- 30% chance for 50 gold
 					player:addGold(50)
-					player:sendMinitext("You have salvaged 50 gold.")
+					player:sendMinitext("Kau menyelamatkan 50 emas.")
 				elseif roll == 10 then
 					-- 10% chance to receive 200 gold
 					player:addGold(200)
-					player:sendMinitext("You have gained 200 gold!")
+					player:sendMinitext("Kau memperoleh 200 emas!")
 				end
 			elseif choice == "Gold ore" then
 				-- no skill increases when you smelt silver or gold ore
 				if player:hasItem("gold_ore", 1) ~= true then
 					player:dialogSeq(
-						{ore, "You need (1) gold ore to smelt."},
+						{ore, "Kau butuh (1) gold ore untuk dilebur."},
 						0
 					)
 					return
@@ -260,11 +260,11 @@ smelting = {
 				if roll <= 9 then
 					-- 90% chance for 10 gold
 					player:addGold(200)
-					player:sendMinitext("You have salvaged 200 gold.")
+					player:sendMinitext("Kau menyelamatkan 200 emas.")
 				elseif roll == 10 then
 					-- 10% chance to receive 200 gold
 					player:addGold(5000)
-					player:sendMinitext("You have gained 5000 gold!")
+					player:sendMinitext("Kau memperoleh 5000 emas!")
 				end
 			else
 				player:dialogSeq({t, "Disabled."}, 0)

@@ -16,10 +16,10 @@ HaguruNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You were great! Thank you so much! Now I can save my friends up there, once I get them out of hiding.",
-					"My name is Haguru, I am the brother of the tutors of the great city.",
-					"Why do you look so surprised? Don't tell me he sent you to look for me! You can go back and tell him that I am fine, and not to worry about me.",
-					"Oh, and thanks again for all your help here today."
+					"Kau hebat! Terima kasih banyak! Sekarang aku bisa menyelamatkan kawan-kawanku di atas sana, begitu mereka keluar dari persembunyian.",
+					"Namaku Haguru, saudara para tutor kota besar itu.",
+					"Kenapa kau tampak terkejut? Jangan bilang ia mengutusmu mencariku! Kembalilah dan katakan padanya aku baik-baik saja, tidak usah mengkhawatirkanku.",
+					"Oh, dan sekali lagi terima kasih atas seluruh bantuanmu hari ini."
 				},
 				1
 			)
@@ -30,11 +30,11 @@ HaguruNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"You just came from my town I see. Did you come to help me with the dark forces?",
-				"Of course you are! What other reason would you have to be in such a place.",
-				"Well, you can help me if you want, but it could be dangerous.",
-				"A few levels up this mountain you will find a pack of wolves. They have trapped my hunting party up there.",
-				"If you can kill a few of them then I can start saving the people. Be very careful, they do a lot of damage to you."
+				"Kulihat kau baru datang dari kotaku. Kau datang membantuku melawan kekuatan gelap itu?",
+				"Tentu saja! Alasan apa lagi yang membuatmu berada di tempat seperti ini.",
+				"Nah, kau boleh membantuku kalau mau, tetapi bisa berbahaya.",
+				"Beberapa tingkat di atas gunung ini kau akan menemukan sekawanan serigala. Mereka mengurung rombongan buruku di sana.",
+				"Kalau kau bisa membunuh beberapa ekor, aku bisa mulai menyelamatkan orang-orangnya. Hati-hati sekali, mereka melukai dengan parah."
 			},
 			1
 		)

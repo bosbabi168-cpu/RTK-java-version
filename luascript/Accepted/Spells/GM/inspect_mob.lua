@@ -5,13 +5,13 @@ inspect_mob_gm = {
 				local focus = player:getBlock(target.target)
 				target:talk(0, focus.name .. " (" .. target.target .. ")")
 			else
-				target:talk(0, "no target (" .. target.target .. ")")
+				target:talk(0, "tanpa sasaran (" .. target.target .. ")")
 			end
 
 			player:sendMinitext("Target: " .. target.name .. "(" .. target.ID .. ") [" .. target.yname .. "] (" .. target.mobType .. "]")
 			player:sendMinitext(" - Vita: [" .. target.health .. "/" .. target.maxHealth .. "]")
 			player:sendMinitext(" - Mana: [" .. target.magic .. "/" .. target.maxMagic .. "]")
-			player:sendMinitext(" Armor: " .. target.armor .. "(" .. target.protection .. ")")
+			player:sendMinitext(" Zirah: " .. target.armor .. "(" .. target.protection .. ")")
 			player:sendMinitext(" DMG: " .. target.minDam .. "/" .. target.maxDam .. " (" .. target.hit .. ") [M:" .. target.might .. " W:" .. target.will .. " G:" .. target.grace .. "]")
 			player:sendMinitext(" Look: [" .. target.look .. "] Color: (" .. target.lookColor .. ")")
 			player:sendMinitext(" starting map: " .. target.startM)

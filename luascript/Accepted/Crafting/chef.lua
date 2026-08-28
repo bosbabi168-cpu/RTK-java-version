@@ -29,7 +29,7 @@ chef = {
 				player:dialogSeq(
 					{
 						tNoodle,
-						"You need to practice food preparation more. Once you know how to prepare the food, then you can cook it."
+						"Kau harus lebih banyak berlatih menyiapkan bahan makanan. Setelah kau tahu cara menyiapkannya, barulah kau bisa memasaknya."
 					},
 					0
 				)
@@ -46,7 +46,7 @@ chef = {
 					player:dialogSeq(
 						{
 							tItemReq,
-							"You have no " .. item.name .. " to prepare, come back when you have some."
+							"Kau tidak punya " .. item.name .. " untuk persiapan, kembalilah kalau kau sudah punya."
 						},
 						0
 					)
@@ -61,9 +61,9 @@ chef = {
 			if math.random(1, 10) == 1 then
 				crafting.skillChanceIncrease(player, npc, "chef")
 				player:addItem("noodles", 1)
-				player:sendMinitext("You were successful.")
+				player:sendMinitext("Kau berhasil.")
 			else
-				player:sendMinitext("You failed in your attempt.")
+				player:sendMinitext("Percobaanmu gagal.")
 			end
 
 			return

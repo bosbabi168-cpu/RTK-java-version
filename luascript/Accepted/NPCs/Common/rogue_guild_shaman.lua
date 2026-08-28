@@ -9,12 +9,12 @@ RogueGuildShamanNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		player:dialogSeq({t, "Don't like the way you look do you?"}, 1)
+		player:dialogSeq({t, "Kau tidak suka penampilanmu, ya?"}, 1)
 
 		local choices = {"Face", "Gender", "Eyes"}
 
 		local choice = player:menuString(
-			"What appearance are you dissatisfied with?",
+			"Penampilan yang mana yang tidak kau sukai?",
 			choices
 		)
 
@@ -47,26 +47,26 @@ RogueGuildShamanNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Under a white moon I slew a powerful man, of the family Ju, that owed me much money",
-					"Yet, still I am not satisfied."
+					"Di bawah bulan putih aku membunuh seorang berkuasa dari keluarga Ju yang berutang banyak uang padaku",
+					"Namun aku masih belum puas."
 				},
 				1
 			)
 
 			if player.quest["white_moon_axe"] == 0 then
 				local choice = player:menuString(
-					"Are you willing to make such a commitment?",
-					{"Yes, I am ready.", "I am busy. Later, perhaps."},
+					"Bersediakah kau mengikat janji semacam itu?",
+					{"Ya, aku siap.", "Aku sibuk. Mungkin nanti."},
 					{}
 				)
 
-				if choice == "Yes, I am ready." then
+				if choice == "Ya, aku siap." then
 					player.quest["white_moon_axe"] = 1
 					player:freeAsync()
 					RogueGuildShamanNpc.onSayClick(player, npc, "moon")
-				elseif choice == "I am busy. Later, perhaps." then
+				elseif choice == "Aku sibuk. Mungkin nanti." then
 					player:dialogSeq(
-						{t, "Then you were not the right person for this task."},
+						{t, "Kalau begitu kau bukan orang yang tepat untuk tugas ini."},
 						0
 					)
 				end
@@ -78,7 +78,7 @@ RogueGuildShamanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"If you knew what venom and speed combined were, perhaps I would consider you."
+							"Kalau kau tahu apa jadinya bisa dan kecepatan bila dipadukan, mungkin akan kupertimbangkan dirimu."
 						},
 						1
 					)
@@ -93,7 +93,7 @@ RogueGuildShamanNpc = {
 								player:dialogSeq(
 									{
 										t,
-										"Your hands are empty! Had you a Lucky coin, perhaps I could trust you would survive."
+										"Tanganmu kosong! Andai kau punya Lucky coin, mungkin aku percaya kau akan selamat."
 									},
 									0
 								)
@@ -107,7 +107,7 @@ RogueGuildShamanNpc = {
 							player:dialogSeq(
 								{
 									t,
-									"Had you slain at least five pale scorpions, you would know."
+									"Andai kau sudah membunuh sedikitnya lima pale scorpion, kau pasti tahu."
 								},
 								0
 							)
@@ -125,13 +125,13 @@ RogueGuildShamanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Someone owes me money. Lots of it.",
-							"He's dead now, but that doesn't matter. This is about honor.",
-							"That night of slaying the Ju family caused the earth to shake. My weapons were filled with the power of the white moon.",
-							"But I never found the money he owed me.",
-							"I'm charging you to torment the family's skeletal remains. Their name in life was Ju.",
-							"Destroy the skeleton of Ju, and we'll talk about you getting my money...",
-							"...and the axe with which I slew the powerful man under a white moon."
+							"Ada yang berutang uang padaku. Banyak sekali.",
+							"Dia sudah mati sekarang, tetapi itu tidak penting. Ini soal kehormatan.",
+							"Malam pembantaian keluarga Ju itu mengguncang bumi. Senjataku dipenuhi kekuatan bulan putih.",
+							"Tapi aku tidak pernah menemukan uang yang ia utangkan padaku.",
+							"Kutugaskan kau menyiksa sisa-sisa kerangka keluarga itu. Semasa hidup nama mereka Ju.",
+							"Hancurkan kerangka Ju, dan kita bicarakan soal kau mengambil uangku...",
+							"...dan kapak yang kupakai membunuh orang berkuasa itu di bawah bulan putih."
 						},
 						0
 					)
@@ -141,23 +141,23 @@ RogueGuildShamanNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Ah, his torment is my music.",
-							"But I still must have the money he owed me, and all I have is this White moon axe.",
-							"It was more than what you have. 20,000 coins in all. Should you repay me the money I am owed, I would give you this axe."
+							"Ah, siksaannya adalah musik bagiku.",
+							"Tapi aku tetap harus mendapat uang yang ia utangkan, sementara yang kupunya hanya White moon axe ini.",
+							"Jumlahnya lebih besar dari yang kau punya. Seluruhnya 20.000 keping. Kalau kau melunasi utang itu untukku, kapak ini kuberikan padamu."
 						},
 						1
 					)
 
 					choice2 = player:menuString(
-						"Are you willing to give me 20,000 gold to replace what I am owed?",
-						{"Yes", "No"},
+						"Bersediakah kau memberiku 20.000 emas sebagai pengganti utang itu?",
+						{"Ya", "Tidak"},
 						{}
 					)
 
-					if choice2 == "Yes" then
+					if choice2 == "Ya" then
 						if player.money < 20000 then
 							player:dialogSeq(
-								{t, "You do not have enough gold to repay me."},
+								{t, "Emasmu tidak cukup untuk melunasinya."},
 								0
 							)
 							return
@@ -169,24 +169,24 @@ RogueGuildShamanNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"There you are rogue. May it inspire you as it has me."
+								"Ini dia, rogue. Semoga ia mengilhamimu seperti ia mengilhamiku."
 							},
 							1
 						)
 						player:dialogSeq(
 							{
 								t,
-								"The moon is white, He's been desecrated. I have a moment of peace."
+								"Bulannya putih, ia sudah dinodai. Aku memperoleh sejenak ketenangan."
 							},
 							0
 						)
 
 						return
-					elseif choice2 == "No" then
+					elseif choice2 == "Tidak" then
 						player:dialogSeq(
 							{
 								t,
-								"Then you were not the right person for this task."
+								"Kalau begitu kau bukan orang yang tepat untuk tugas ini."
 							},
 							0
 						)

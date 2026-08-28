@@ -11,7 +11,7 @@ tranquil_symphony = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -19,7 +19,7 @@ tranquil_symphony = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(5)
-		player:sendMinitext("You cast Tranquil symphony.")
+		player:sendMinitext("Kau merapal Tranquil symphony.")
 
 		local pcs = player:getObjectsInSameMap(BL_PC)
 
@@ -33,8 +33,8 @@ tranquil_symphony = {
 				pcs[i]:sendAnimation(11, 3)
 
 				if pcs[i].id ~= player.ID then
-					pcs[i]:sendMinitext("You have found Sanctuary.")
-					pcs[i]:sendMinitext(player.name .. " casts Tranquil symphony on you.")
+					pcs[i]:sendMinitext("Kau menemukan Sanctuary.")
+					pcs[i]:sendMinitext(player.name .. " merapal Tranquil symphony padamu.")
 				end
 
 				pcs[i]:calcStat()

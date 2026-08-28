@@ -13,8 +13,8 @@ magical_net = {
 				player:dialogSeq(
 					{
 						t,
-						"The winds scream as you throw the net over them, but with the protection of your Kawlana they do little damage.",
-						"You quickly bundle up the wind in the net. Now to find somebody to weave this into a great armor!"
+						"Angin itu menjerit saat kau menjaringnya, tetapi dengan perlindungan Kawlana-mu, lukanya sedikit.",
+						"Kau cepat membungkus angin itu dalam jaring. Sekarang tinggal mencari orang yang bisa menenunnya jadi zirah hebat!"
 					},
 					0
 				)

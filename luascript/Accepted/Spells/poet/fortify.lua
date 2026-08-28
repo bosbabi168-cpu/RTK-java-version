@@ -7,7 +7,7 @@ fortify_poet = {
 		end
 
 		if (player.magic < 200) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -19,11 +19,11 @@ fortify_poet = {
 			local target = Player(player.group[i])
 			local worked = global_heal.cast(player, target, 500, 0, 0)
 			if worked == 2 then
-				target:sendMinitext(player.name .. " casts " .. spellName .. " on you.")
+				target:sendMinitext(player.name .. " casts " .. spellName .. " padamu.")
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 20)
 	end,
 
@@ -44,7 +44,7 @@ ancestors_kiss_poet = {
 		end
 
 		if (player.magic < 200) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -56,11 +56,11 @@ ancestors_kiss_poet = {
 			local target = Player(player.group[i])
 			local worked = global_heal.cast(player, target, 500, 0, 1)
 			if worked == 2 then
-				target:sendMinitext(player.name .. " casts " .. spellName .. " on you.")
+				target:sendMinitext(player.name .. " casts " .. spellName .. " padamu.")
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 20)
 	end,
 
@@ -81,7 +81,7 @@ fertile_soil_poet = {
 		end
 
 		if (player.magic < 200) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -93,11 +93,11 @@ fertile_soil_poet = {
 			local target = Player(player.group[i])
 			local worked = global_heal.cast(player, target, 500, 0, 2)
 			if worked == 2 then
-				target:sendMinitext(player.name .. " casts " .. spellName .. " on you.")
+				target:sendMinitext(player.name .. " casts " .. spellName .. " padamu.")
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 20)
 	end,
 
@@ -118,7 +118,7 @@ waters_of_purity_poet = {
 		end
 
 		if (player.magic < 200) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -130,11 +130,11 @@ waters_of_purity_poet = {
 			local target = Player(player.group[i])
 			local worked = global_heal.cast(player, target, 500, 0, 3)
 			if worked == 2 then
-				target:sendMinitext(player.name .. " casts " .. spellName .. " on you.")
+				target:sendMinitext(player.name .. " casts " .. spellName .. " padamu.")
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 20)
 	end,
 

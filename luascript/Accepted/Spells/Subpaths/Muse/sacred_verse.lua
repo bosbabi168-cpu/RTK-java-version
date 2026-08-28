@@ -11,7 +11,7 @@ sacred_verse = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -19,7 +19,7 @@ sacred_verse = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(5)
-		player:sendMinitext("You cast Sacred verse.")
+		player:sendMinitext("Kau merapal Sacred verse.")
 
 		local pcs = player:getObjectsInSameMap(BL_PC)
 
@@ -33,8 +33,8 @@ sacred_verse = {
 				pcs[i]:sendAnimation(11, 3)
 
 				if pcs[i].id ~= player.ID then
-					pcs[i]:sendMinitext("You have found Sanctuary.")
-					pcs[i]:sendMinitext(player.name .. " casts Sacred verse on you.")
+					pcs[i]:sendMinitext("Kau menemukan Sanctuary.")
+					pcs[i]:sendMinitext(player.name .. " merapal Sacred verse padamu.")
 				end
 
 				pcs[i]:calcStat()

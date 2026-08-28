@@ -17,7 +17,7 @@ onScriptedTilesArena = async(function(player)
 	if player.mapTitle == "Tower Arena" then
 		if os.time() < player.registry["minigameBan"] then
 			player:returnToInn()
-			player:dialogSeq({t, "You may not participate in this event"}, 0)
+			player:dialogSeq({t, "Kau tidak boleh ikut serta dalam acara ini"}, 0)
 			return
 		end
 		if (x >= 1 and x <= 20 and y == 2) then
@@ -39,7 +39,7 @@ onScriptedTilesArena = async(function(player)
 			elseif (core.gameRegistry["minigameEventId"] == 18 and player.level >= 1) then
 				player:warp(3013, 6, 10)
 			else
-				player:sendMinitext("You may not enter this carnage!")
+				player:sendMinitext("Kau tidak boleh memasuki carnage ini!")
 				player:warp(31, 11, 7)
 			end
 		end
@@ -72,20 +72,20 @@ onScriptedTilesArena = async(function(player)
 			if os.time() < player.registry["minigameBan"] then
 				player:returnToInn()
 				player:dialogSeq(
-					{t, "You may not participate in this event"},
+					{t, "Kau tidak boleh ikut serta dalam acara ini"},
 					0
 				)
 				return
 			end
 			if player.level < 6 then
 				player:warp(player.m, player.x, player.y + 5)
-				player:sendMinitext("You need to be at least level 6 in order to play.")
+				player:sendMinitext("Kau harus sedikitnya level 6 untuk bermain.")
 				return
 			end
 
 			if player.money < 500 then
 				player:warp(player.m, player.x, player.y + 5)
-				player:sendMinitext("You need 500 gold to participate in Elixir.")
+				player:sendMinitext("Kau butuh 500 emas untuk ikut Elixir.")
 				return
 			end
 
@@ -99,7 +99,7 @@ onScriptedTilesArena = async(function(player)
 				"participated_in_elixir_wars"
 			] + 1
 			player:addLegend(
-				"Participated in " .. player.registry[
+				"Ikut serta dalam " .. player.registry[
 					"participated_in_elixir_wars"
 				] .. " Elixir Wars",
 				"participated_in_elixir_wars",

@@ -5,8 +5,8 @@ SelNpc = {
 		Tools.configureDialog(player, npc)
 
 		local opts = {
-			"Crafting Skills",
-			"Facets of Gemcutting",
+			"Keahlian Kerajinan",
+			"Seluk-beluk Gemcutting",
 			"Gemcutting Specialization",
 			"Jewelry Devotion"
 		}
@@ -16,20 +16,20 @@ SelNpc = {
 		end
 
 		local menu = player:menuString(
-			"Hello! What would you like to do today?",
+			"Halo! Apa yang ingin kau lakukan hari ini?",
 			opts
 		)
 
-		if menu == "Crafting Skills" then
+		if menu == "Keahlian Kerajinan" then
 			generalNPC.crafting_skills(player, npc)
-		elseif menu == "Facets of Gemcutting" then
+		elseif menu == "Seluk-beluk Gemcutting" then
 			player:dialogSeq(
 				{
-					"Hi there. You want to learn about Gemcutting? Sure, I can tell you a bit more about that.",
-					"Gemcutting is a manufacturing skill. You start with an amber and try to craft it into a pretty form.",
-					"Sometimes, gemcutters make mistakes. An amber might become tarnished, and thus less valuable. On really bad days, the amber will be completely ruined.",
-					"But a crafted amber sells for quite a bit more, so the risk of failure is well worth it. As with any skill, it takes a lot of work to become really good at.",
-					"There are many kinds of ambers, though, and some take quite a bit of skill to craft."
+					"Halo. Kau ingin belajar Gemcutting? Tentu, aku bisa bercerita sedikit.",
+					"Gemcutting adalah keahlian manufacturing. Kau mulai dengan satu amber lalu berusaha mengasahnya jadi bentuk yang indah.",
+					"Kadang pengasah permata membuat kesalahan. Amber bisa jadi kusam sehingga kurang berharga. Pada hari yang benar-benar buruk, amber itu rusak sama sekali.",
+					"Tetapi amber yang sudah diasah terjual jauh lebih mahal, jadi risiko gagalnya sepadan. Seperti keahlian mana pun, butuh banyak kerja untuk benar-benar mahir.",
+					"Ada banyak jenis amber, dan sebagian butuh keahlian cukup tinggi untuk diasah."
 				},
 				0
 			)
@@ -47,14 +47,14 @@ SelNpc = {
 		Tools.configureDialog(player, npc)
 
 		if crafting.checkSpecializationLegend(player, "gemcutting") then
-			player:dialogSeq({"You have already specialized in Gemcutting."}, 0)
+			player:dialogSeq({"Kau sudah mendalami Gemcutting."}, 0)
 			return
 		end
 
 		crafting.checkSpecialization(player, npc, "smelting")
 		crafting.checkSpecialization(player, npc, "weaving")
 
-		player:dialogSeq({"Gemcutters refine rare stones. Do you want to specialize in gemcutting? ((You need to be specialized to become better than 'Accomplished.'))"}, 1)
+		player:dialogSeq({"Pengasah permata mengolah batu langka. Kau mau mendalami gemcutting? ((Kau harus mendalaminya untuk bisa melampaui tingkat 'Accomplished'.))"}, 1)
 
 		crafting.addSpecialization(player, npc, "gemcutting")
 	end,
@@ -63,12 +63,12 @@ SelNpc = {
 		Tools.configureDialog(player, npc)
 
 		if (player.level < 25) then
-			player:dialogSeq({"You are not ready to devote to a craft yet, come back later."}, 0)
+			player:dialogSeq({"Kau belum siap menekuni satu kerajinan. Kembalilah nanti."}, 0)
 			return
 		end
 
 		if crafting.checkSkillLegend(player, "jewelry making") then
-			player:dialogSeq({"You have already devoted yourself to the study of Jewelry making."}, 0)
+			player:dialogSeq({"Kau sudah menekuni ilmu pembuatan perhiasan."}, 0)
 			return
 		end
 
@@ -76,7 +76,7 @@ SelNpc = {
 		crafting.checkSkill(player, npc, "tailoring")
 		crafting.checkSkill(player, npc, "metalworking")
 
-		player:dialogSeq({"Jewelers can make beautiful pieces of jewelry from crafted ambers and gold. Do you wish to become a jeweler?"}, 1)
+		player:dialogSeq({"Perajin perhiasan bisa membuat perhiasan indah dari amber olahan dan emas. Kau ingin menjadi perajin perhiasan?"}, 1)
 
 		crafting.addSkill(player, npc, "jewelry making")
 	end,

@@ -13,12 +13,12 @@ LostLegendChestNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Hum dee do dum do hee...",
-				"Oh, hello there. Come to visit me?",
-				"It's been a while since somebody else came to visit me.",
-				"Oh, the fun I used to have. What a long time ago that was.",
-				"Now all I have to keep me company is this tune in my head... well, if I had a head that is.",
-				"So what is it you seek from me? I hold many secrets you know."
+				"Hum di do dum do hi...",
+				"Oh, halo. Datang menengokku?",
+				"Sudah lama tidak ada yang datang menengokku.",
+				"Oh, betapa serunya dulu. Sudah lama sekali itu.",
+				"Sekarang yang menemaniku hanya nada di kepalaku... yah, kalau aku punya kepala.",
+				"Jadi apa yang kau cari dariku? Aku menyimpan banyak rahasia, tahu."
 			},
 			0
 		)
@@ -47,9 +47,9 @@ LostLegendChestNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ah, the lost legend of the armor. Seems very popular, a lot of people have been asking for it.",
-					"But, I can't just give it to you. It's been magically locked - with a song none the less.",
-					"Without the song you are not getting it."
+					"Ah, legenda zirah yang hilang. Sepertinya sedang digemari; banyak yang menanyakannya.",
+					"Tapi aku tidak bisa begitu saja memberikannya. Ia terkunci secara sihir - dengan sebuah lagu, pula.",
+					"Tanpa lagunya kau tidak akan mendapatkannya."
 				},
 				0
 			)
@@ -86,17 +86,17 @@ LostLegendChestNpc = {
 
 		if speech == song[1] and player.quest["chu_rua_song_stanza"] == 0 then
 			player.quest["chu_rua_song_stanza"] = 2
-			player:dialogSeq({t, "Oh my! You know the song..."}, 0)
+			player:dialogSeq({t, "Astaga! Kau tahu lagunya..."}, 0)
 		elseif speech == song[2] and player.quest["chu_rua_song_stanza"] == 2 then
 			player.quest["chu_rua_song_stanza"] = 3
-			player:dialogSeq({t, "Please continue, it is so wonderful!"}, 0)
+			player:dialogSeq({t, "Lanjutkan, indah sekali!"}, 0)
 		elseif speech == song[3] and player.quest["chu_rua_song_stanza"] == 3 then
 			player.quest["chu_rua_song_stanza"] = 4
-			player:dialogSeq({t, "This is truly music to my ears."}, 0)
+			player:dialogSeq({t, "Ini benar-benar merdu di telingaku."}, 0)
 		elseif speech == song[4] and player.quest["chu_rua_song_stanza"] == 4 then
 			player.quest["chu_rua_song_stanza"] = 5
 			player:dialogSeq(
-				{t, "Louder! Let the room fill with the song of love!"},
+				{t, "Lebih keras! Biarkan ruangan ini penuh lagu cinta!"},
 				0
 			)
 		elseif speech == song[5] and player.quest["chu_rua_song_stanza"] == 5 then
@@ -114,17 +114,17 @@ LostLegendChestNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"That's it! That's the song I have needed to hear, and the one I will always hum.",
-					"Isn't it beautiful?",
-					"Ah, so poetic, so wonderful... if you understand the words.",
-					"Well, as promised, here is the legend you seek."
+					"Itu dia! Itulah lagu yang perlu kudengar, dan yang akan selalu kusenandungkan.",
+					"Indah, bukan?",
+					"Ah, begitu puitis, begitu indah... kalau kau memahami liriknya.",
+					"Nah, seperti yang dijanjikan, ini legenda yang kau cari."
 				},
 				0
 			)
 		else
 			player.quest["chu_rua_song_stanza"] = 0
 			player:dialogSeq(
-				{t, "The chest frowns. Maybe you have missed a line?"},
+				{t, "Peti itu mengerut. Mungkin ada baris yang kau lewatkan?"},
 				0
 			)
 		end

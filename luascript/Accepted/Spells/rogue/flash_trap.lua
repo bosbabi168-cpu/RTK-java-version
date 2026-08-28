@@ -7,7 +7,7 @@ set_flash_trap = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -31,7 +31,7 @@ set_flash_trap = {
 		player:sendStatus()
 		player:sendAction(6, 35)
 
-		player:sendMinitext("You set a trap!")
+		player:sendMinitext("Kau memasang jebakan!")
 	end,
 
 	requirements = function(player)

@@ -57,7 +57,7 @@ cspells = function(player)
 		for i = 1, #spells do
 			player:removeSpell(spells[i])
 		end
-		player:sendMinitext("All spells removed!")
+		player:sendMinitext("Seluruh mantra dihapus!")
 	end
 	player:sendStatus()
 end

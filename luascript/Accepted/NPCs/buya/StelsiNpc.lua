@@ -5,12 +5,12 @@ StelsiNpc = {
 		Tools.configureDialog(player, npc)
 
 		if (Waypoint.isEnabled(player, _waypointId)) then
-            player:sendMinitext("The ghost takes no notice of you.")
+            player:sendMinitext("Hantu itu tidak menghiraukanmu.")
             return
 		end
 
 		local choice = player:menuString(
-			"What do you ask of me?",
+			"Apa yang kau minta dariku?",
 			{"Waypoint"}
         )
 

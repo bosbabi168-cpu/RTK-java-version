@@ -259,6 +259,9 @@ public final class LuaAudit {
                 definedGlobals.size(), definedMethods.size());
 
         // --- lintasan 2: cari masalah ---
+        Set<String> stubGlobals = new TreeSet<>(engine.stubNames());
+        Map<String, Integer> stubUse = new TreeMap<>();
+        Map<String, String> stubSite = new HashMap<>();
         Map<String, Integer> missingGlobalUse = new TreeMap<>();
         Map<String, Integer> dangerUse = new TreeMap<>();
         Map<String, Integer> missingMethodUse = new TreeMap<>();
@@ -271,6 +274,13 @@ public final class LuaAudit {
 
             for (var u : ch.globalReads.entrySet()) {
                 String g = u.getKey();
+                // Dipakai laporan stub di bawah: sebuah stub TERDEFINISI,
+                // jadi ia tidak akan pernah masuk daftar "tak dikenal" —
+                // pemakaiannya harus dihitung terpisah.
+                if (stubGlobals.contains(g)) {
+                    stubUse.merge(g, u.getValue().count, Integer::sum);
+                    stubSite.putIfAbsent(g, name + ":" + u.getValue().line);
+                }
                 if (definedGlobals.contains(g) || ALWAYS_PRESENT.contains(g)) {
                     continue;
                 }
@@ -307,6 +317,7 @@ public final class LuaAudit {
         cetakBahaya(dangerUse, firstSite);
         cetakHilang("GLOBAL", missingGlobalUse, definedGlobals, firstSite, "g:");
         cetakHilang("METHOD", missingMethodUse, definedMethods, firstSite, "m:");
+        cetakStub(stubGlobals, stubUse, stubSite, cNames);
 
         int serius = parseErrors
                 + (int) findings.stream().filter(f -> !f.kind.equals("PARSE")).count();
@@ -315,6 +326,9 @@ public final class LuaAudit {
         log.info("gagal parse         : {}", parseErrors);
         log.info("temuan dalam berkas : {}", serius - parseErrors);
         log.info("global tak dikenal  : {} nama", missingGlobalUse.size());
+        log.info("global masih STUB   : {} nama ({} ada di sl.c)",
+                stubGlobals.size(),
+                stubGlobals.stream().filter(cNames::contains).count());
         log.info("method tak dikenal  : {} nama", missingMethodUse.size());
 
         if (parseErrors > 0) {
@@ -327,6 +341,57 @@ public final class LuaAudit {
     // ------------------------------------------------------------------
     // laporan
     // ------------------------------------------------------------------
+
+    /**
+     * Global yang <b>terpasang sebagai stub</b> — terdefinisi, tetapi tidak
+     * melakukan apa pun.
+     *
+     * <p>⚠️ Ini menutup blind spot yang paling mahal di alat ini. Stub
+     * adalah fungsi yang sah: ia tidak melempar error, hanya menulis WARN
+     * sekali lalu mengembalikan nil. Karena itu ia <b>tidak pernah</b>
+     * muncul di daftar "tak dikenal" maupun "AKAN MELEDAK" — dan sampai
+     * 27 Agustus 2026 audit melaporkan "0 celah global" sementara 61
+     * binding yang terdaftar di {@code sl.c} masih stub, salah satunya
+     * dipakai <b>530x</b>.</p>
+     *
+     * <p>Diurutkan menurut jumlah pemakaian, karena itulah yang menentukan
+     * mana yang paling mahal dibiarkan.</p>
+     */
+    private static void cetakStub(Set<String> stubs, Map<String, Integer> use,
+                                  Map<String, String> site, Set<String> cNames) {
+        if (stubs.isEmpty()) {
+            log.info("--- tidak ada global yang masih stub ---");
+            return;
+        }
+        java.util.List<String> adaDiC = new java.util.ArrayList<>();
+        java.util.List<String> tidakAdaDiC = new java.util.ArrayList<>();
+        java.util.List<String> urut = new java.util.ArrayList<>(stubs);
+        urut.sort((a, b) -> Integer.compare(use.getOrDefault(b, 0), use.getOrDefault(a, 0)));
+        for (String n : urut) {
+            String baris = String.format("%-26s %5dx  (mis. %s)",
+                    n, use.getOrDefault(n, 0), site.getOrDefault(n, "-"));
+            if (cNames.contains(n)) {
+                adaDiC.add(baris);
+            } else {
+                tidakAdaDiC.add(baris);
+            }
+        }
+
+        log.warn("--- GLOBAL masih STUB dan ADA di sl.c (celah port yang TIDAK "
+                + "terlihat di daftar mana pun di atas): {} nama ---", adaDiC.size());
+        long batas = Boolean.getBoolean("rtk.audit.penuh") ? Long.MAX_VALUE : 10;
+        adaDiC.stream().limit(batas).forEach(a -> log.warn("  {}", a));
+        if (adaDiC.size() > batas) {
+            log.warn("  ... dan {} lagi (pakai -Drtk.audit.penuh=true)",
+                    adaDiC.size() - batas);
+        }
+
+        if (!tidakAdaDiC.isEmpty()) {
+            log.info("--- GLOBAL masih stub tetapi TIDAK terdaftar di sl.c "
+                    + "(kode mati di konten): {} nama ---", tidakAdaDiC.size());
+            tidakAdaDiC.stream().limit(batas).forEach(a -> log.info("  {}", a));
+        }
+    }
 
     /** Kumpulkan grup 1 dari setiap kecocokan pola ke dalam {@code out}. */
     private static void tarik(String src, String regex, Set<String> out) {

@@ -5,15 +5,15 @@ dragons_flame_warrior = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		if player:checkIfCast(enchants) or player.enchant > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 
-		player:sendMinitext("Your weapon shines with holy light.")
+		player:sendMinitext("Senjatamu bersinar oleh cahaya suci.")
 		player.magic = player.magic - magic
 		player.enchant = 6
 		player:sendStatus()

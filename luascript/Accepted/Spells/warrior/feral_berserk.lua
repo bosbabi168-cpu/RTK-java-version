@@ -23,7 +23,7 @@ feral_berserk_warrior = {
 		end
 
 		if (currentMana < manaCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -97,7 +97,7 @@ feral_berserk_warrior = {
 			)
 
 			if (worked == 2) then
-				target[1]:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+				target[1]:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				landed = 1
 			end
 		end
@@ -106,7 +106,7 @@ feral_berserk_warrior = {
 		end
 
 		player:sendStatus()
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 	end,
 
 	requirements = function(player)

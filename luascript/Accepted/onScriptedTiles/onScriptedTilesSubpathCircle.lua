@@ -57,7 +57,7 @@ onScriptedTilesSubpathCircle = async(function(player)
 	player:dialogSeq(
 		{
 			t,
-			"You shall choose the person that has the spirit of " .. element .. " who shall Ascend to the next Octave of your Path."
+			"Kau harus memilih orang yang memiliki jiwa " .. element .. " yang akan Naik ke Oktaf berikutnya dalam Jalurmu."
 		},
 		1
 	)
@@ -73,7 +73,7 @@ onScriptedTilesSubpathCircle = async(function(player)
 	local ascendPerson = Player(input)
 
 	if ascendPerson == nil then
-		player:dialogSeq({t, "That person is not present to Ascend"}, 0)
+		player:dialogSeq({t, "Orang itu tidak hadir untuk Naik"}, 0)
 		return
 	end
 

@@ -14,7 +14,7 @@ cartography = {
 				player:dialogSeq(
 					{
 						t,
-						"You are not a cartographer, I can't let you work with my tools."
+						"Kau bukan kartografer; aku tidak bisa membiarkanmu memakai alatku."
 					},
 					0
 				)
@@ -37,7 +37,7 @@ cartography = {
 
 			if amount < 10 then
 				player:dialogSeq(
-					{t, "You do not have enough map fragments."},
+					{t, "Potongan petamu tidak cukup."},
 					0
 				)
 				return
@@ -90,7 +90,7 @@ cartography = {
 				"cartography"
 			)
 
-			player:dialogSeq({t, "You were successful"}, 0)
+			player:dialogSeq({t, "Kau berhasil"}, 0)
 			return
 		end
 	end

@@ -8,7 +8,7 @@ cotw_gorilla_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -43,7 +43,7 @@ kwisin_warrior_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -78,7 +78,7 @@ mingken_warrior_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -113,7 +113,7 @@ ohaeng_warrior_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 

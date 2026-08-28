@@ -12,7 +12,7 @@ slash_warrior = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -63,7 +63,7 @@ slash_warrior = {
 		if (#e > 0 and #alive > 0) then
 			if (player.pvp > 0) then
 				for z = 1, #alive do
-					Player(alive[z]):sendMinitext(player.name .. " casts Slash on you.")
+					Player(alive[z]):sendMinitext(player.name .. " merapal Slash padamu.")
 					Player(alive[z]).attacker = player.ID
 					if (player.group[1] == Player(alive[z]).group[1]) then
 					else
@@ -88,7 +88,7 @@ slash_warrior = {
 		player:sendStatus()
 		player:sendAction(1, 30)
 		player:playSound(sound)
-		player:sendMinitext("You cast Slash.")
+		player:sendMinitext("Kau merapal Slash.")
 		player:setAether("slash_warrior", 1000)
 	end,
 	requirements = function(player)

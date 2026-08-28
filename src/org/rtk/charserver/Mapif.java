@@ -47,9 +47,27 @@ public final class Mapif {
      * kiriman) — belum diport. Paket ber-panjang 0 <b>diabaikan</b>
      * dispatcher, sama seperti di C.</p>
      */
+    /**
+     * ⚠️ Entri 0x3009 (papan) TETAP, bukan −1.
+     *
+     * <p>Port ini sempat menandainya variabel, dan pembaca variabel
+     * mengambil panjangnya dari {@code rfifoL(2)} — offset yang di paket
+     * papan justru berisi <b>fd klien</b>. Akibatnya aliran antar-server
+     * bergeser, paket berikutnya terbaca sebagai opcode 0x0000, dan char
+     * server MEMUTUS sambungan map server. Di C entri ini
+     * {@code sizeof(struct board_show_0) + 2} — juga tetap.</p>
+     *
+     * <p>Ia tidak pernah ketahuan sampai R1 memberi papan jalur masuk yang
+     * pertama: sisi tampilannya sudah lama ada, tapi tidak ada satu pun
+     * yang pernah memintanya.</p>
+     */
+    /** 0x3009: opcode(2) + fd(2) + board(4) + page(4) + flags(4) + popup(1)
+     *  + panjangNama(1) + nama[16] — tetap, seperti struct di C. */
+    public static final int BOARD_SHOW_LEN = 34;
+
     private static final int[] PACKET_LEN_TABLE = {
         72, -1, 20, 24, -1, 6, 255, -1, 28,
-        -1, 0, 4, 0, 4124, 20, 4124};
+        BOARD_SHOW_LEN, 0, 4, 0, 4124, 20, 4124};
 
     /** Panjang tetap balasan 0x3803 sebelum blob: opcode+len+fd. */
     private static final int CHARLOAD_HEADER = 8;

@@ -64,7 +64,7 @@ skill_assessment = {
 		end
 
 		local choice = player:menuSeq(
-			"Please select your skill that you would like to inquire about.",
+			"Pilih keahlian yang ingin kau tanyakan.",
 			hasSkillsNames,
 			{}
 		)
@@ -91,15 +91,15 @@ skill_assessment = {
 			player:dialogSeq(
 				{
 					t,
-					"You are legendary status and cannot increase your skill any further."
+					"Statusmu sudah legendaris dan keahlianmu tidak bisa ditingkatkan lagi."
 				},
 				0
 			)
 			return
 		end
 		leftPoints = nextPts - hasPts
-		player:sendMinitext("Current Skill Progress: ")
-		player:sendMinitext(leftPoints .. " to next rank.")
+		player:sendMinitext("Kemajuan Keahlian Sekarang: ")
+		player:sendMinitext(leftPoints .. " menuju pangkat berikutnya.")
 
 		local percentage = (hasPts / nextPts) * 100
 		percentage = string.format("%.2f", percentage)
@@ -107,7 +107,7 @@ skill_assessment = {
 		player:dialogSeq(
 			{
 				t,
-				"Current Skill Progress:                             " .. leftPoints .. " to next rank."
+				"Kemajuan Keahlian Sekarang:                        " .. leftPoints .. " menuju pangkat berikutnya."
 			},
 			0
 		)

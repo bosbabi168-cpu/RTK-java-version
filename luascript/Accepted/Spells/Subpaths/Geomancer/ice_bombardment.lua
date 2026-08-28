@@ -10,14 +10,14 @@ ice_bombardment = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player.magic = player.magic - 190
 
 		player:sendStatus()
-		player:sendMinitext("You cast Ice bombardment.")
+		player:sendMinitext("Kau merapal Ice bombardment.")
 		player:sendAction(6, 35)
 
 		if target.blType == BL_MOB then
@@ -42,7 +42,7 @@ ice_bombardment = {
 					targets[i]:sendAnimation(anim)
 					targets[i].attacker = player.ID
 					targets[i]:removeHealthExtend(damage, 1, 1, 1, 1, 0)
-					targets[i]:sendMinitext(player.name .. " casts Ice Bombardment on you.")
+					targets[i]:sendMinitext(player.name .. " merapal Ice Bombardment padamu.")
 				end
 			end
 		end

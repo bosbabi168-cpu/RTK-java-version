@@ -16,10 +16,10 @@ title_of_nobility = {
 			return
 		end
 
-		local name = player:inputLetterCheck(player:input("Whom would you like to bestow a title?"))
+		local name = player:inputLetterCheck(player:input("Kepada siapa kau ingin menganugerahkan gelar?"))
 
 		if Player(name) == nil then
-			player:sendMinitext("That player is either not online or unable to be found.")
+			player:sendMinitext("Pemain itu tidak daring atau tidak dapat ditemukan.")
 			return
 		end
 
@@ -29,11 +29,11 @@ title_of_nobility = {
 		end]]
 		--
 
-		local title = player:inputLetterCheck(player:input("What would you choose the title to be?"))
+		local title = player:inputLetterCheck(player:input("Gelar apa yang kau pilih?"))
 
 		if string.len(title) > 16 then
 			player:dialog(
-				"Your entered title must be no greater than 16 characters.",
+				"Gelar yang kau masukkan tidak boleh lebih dari 16 huruf.",
 				{}
 			)
 			return
@@ -48,7 +48,7 @@ title_of_nobility = {
 		)
 
 		player.registry["title_of_nobility_timer"] = os.time() + (60 * 60 * 4)
-		player:sendMinitext("It is done.")
+		player:sendMinitext("Sudah selesai.")
 	end),
 
 	uncast = function(player)

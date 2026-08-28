@@ -8,21 +8,21 @@ bolster_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType ~= BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(disheartens) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 		if target:checkIfCast(bolsters) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -30,10 +30,10 @@ bolster_poet = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(5)
-		player:sendMinitext("You cast Bolster.")
+		player:sendMinitext("Kau merapal Bolster.")
 		target:setDuration("bolster_poet", duration)
 		target:sendAnimation(2, 0)
-		target:sendMinitext(player.name .. " casts Bolster on you.")
+		target:sendMinitext(player.name .. " merapal Bolster padamu.")
 		target:calcStat()
 	end,
 
@@ -65,21 +65,21 @@ dark_armor_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType ~= BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(disheartens) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 		if target:checkIfCast(bolsters) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -87,10 +87,10 @@ dark_armor_poet = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(5)
-		player:sendMinitext("You cast Dark Armor.")
+		player:sendMinitext("Kau merapal Dark Armor.")
 		target:setDuration("dark_armor_poet", duration)
 		target:sendAnimation(111, 0)
-		target:sendMinitext(player.name .. " casts Dark Armor on you.")
+		target:sendMinitext(player.name .. " merapal Dark Armor padamu.")
 		target:calcStat()
 	end,
 
@@ -122,21 +122,21 @@ life_armor_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType ~= BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(disheartens) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 		if target:checkIfCast(bolsters) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -144,10 +144,10 @@ life_armor_poet = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(5)
-		player:sendMinitext("You cast Life Armor.")
+		player:sendMinitext("Kau merapal Life Armor.")
 		target:setDuration("life_armor_poet", duration)
 		target:sendAnimation(110, 0)
-		target:sendMinitext(player.name .. " casts Life Armor on you.")
+		target:sendMinitext(player.name .. " merapal Life Armor padamu.")
 		target:calcStat()
 	end,
 
@@ -179,21 +179,21 @@ armor_of_elements_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType ~= BL_PC) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(disheartens) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 		if target:checkIfCast(bolsters) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -201,10 +201,10 @@ armor_of_elements_poet = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(5)
-		player:sendMinitext("You cast Armor of Elements.")
+		player:sendMinitext("Kau merapal Armor of Elements.")
 		target:setDuration("armor_of_elements_poet", duration)
 		target:sendAnimation(98, 0)
-		target:sendMinitext(player.name .. " casts Armor of Elements on you.")
+		target:sendMinitext(player.name .. " merapal Armor of Elements padamu.")
 		target:calcStat()
 	end,
 

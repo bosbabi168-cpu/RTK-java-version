@@ -1,7 +1,7 @@
 purple_potion = {
 	use = function(player)
 		if player:hasDuration("purple_potion") then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 		player:setDuration("purple_potion", 300000)

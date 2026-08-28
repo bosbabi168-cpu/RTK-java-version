@@ -36,20 +36,20 @@ PathArenaTutorNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 
 		local buyItems, buyPrices = PathArenaTutorNpc.buyItems(npc)
 		local sellItems, sellPrices = PathArenaTutorNpc.sellItems(npc)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buyItems,
 				buyPrices
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				sellItems,
@@ -107,7 +107,7 @@ PathArenaTutorNpc = {
 			end
 
 			local choice = player:menuSeq(
-				"Please select a toggle to turn it on and off.",
+				"Pilih satu saklar untuk menyalakan atau mematikannya.",
 				attribS,
 				{}
 			)
@@ -115,16 +115,16 @@ PathArenaTutorNpc = {
 			if choice == 1 then
 				if currentStatus[choice] == 0 then
 					player.spell = 1
-					player:sendMinitext("Map Spells: ON")
+					player:sendMinitext("Mantra Peta: NYALA")
 				end
 				if currentStatus[choice] == 1 then
 					player.spells = 0
-					player:sendMinitext("Map Spells: OFF")
+					player:sendMinitext("Mantra Peta: MATI")
 				end
 			elseif choice == 2 then
 				if currentStatus[choice] == 0 then
 					player.canEat = 1
-					player:sendMinitext("Eating: ON")
+					player:sendMinitext("Makan: NYALA")
 				end
 				if currentStatus[choice] == 1 then
 					player.canEat = 0
@@ -133,7 +133,7 @@ PathArenaTutorNpc = {
 			elseif choice == 3 then
 				if currentStatus[choice] == 0 then
 					player.canUse = 1
-					player:sendMinitext("Using: ON")
+					player:sendMinitext("Pakai: NYALA")
 				end
 				if currentStatus[choice] == 1 then
 					player.canUse = 0
@@ -142,7 +142,7 @@ PathArenaTutorNpc = {
 			elseif choice == 4 then
 				if currentStatus[choice] == 0 then
 					player.canSmoke = 1
-					player:sendMinitext("Smoking: ON")
+					player:sendMinitext("Merokok: NYALA")
 				end
 				if currentStatus[choice] == 1 then
 					player.canSmoke = 0
@@ -150,8 +150,8 @@ PathArenaTutorNpc = {
 				end
 			elseif choice == 5 then
 				local choice = player:menuSeq(
-					"What would you like to do?",
-					{"Disable lightning setting.", "Enter a number"},
+					"Apa yang ingin kau lakukan?",
+					{"Disable lightning setting.", "Masukkan angka"},
 					{}
 				)
 
@@ -159,7 +159,7 @@ PathArenaTutorNpc = {
 					player.light = 0
 					player:refresh()
 				elseif choice == 2 then
-					local light = player:inputNumberCheck(player:input("Enter a number 0 - 55, 0 for disabled. 1 = pitch black, 40 = full brightness."))
+					local light = player:inputNumberCheck(player:input("Masukkan angka 0 - 55, 0 untuk mati. 1 = gelap gulita, 40 = terang penuh."))
 
 					player.light = light
 					player:refresh()
@@ -227,7 +227,7 @@ PathArenaTutorNpc = {
 	noviceListener = function(player, npc)
 		if player.noviceChat == 0 then
 			player.noviceChat = 1
-			player:sendMinitext("Novice Chat: ON")
+			player:sendMinitext("Obrolan Pemula: NYALA")
 			return
 		end
 		if player.noviceChat == 1 then
@@ -238,14 +238,14 @@ PathArenaTutorNpc = {
 	end,
 
 	tutorNuisance = function(player, npc)
-		local name = string.lower(player:inputLetterCheck(player:input("Who needs removed?")))
+		local name = string.lower(player:inputLetterCheck(player:input("Siapa yang perlu dikeluarkan?")))
 
 		local pcs = npc:getObjectsInSameMap(BL_PC)
 
 		for i = 1, #pcs do
 			if string.lower(pcs[i].name) == name then
 				if pcs[i].tutor == 1 or pcs[i].gmLevel > 0 then
-					player:dialogSeq({"You cannot remove that person."})
+					player:dialogSeq({"Kau tidak bisa mengeluarkan orang itu."})
 					return
 				end
 				pcs[i]:returnToInn()
@@ -264,11 +264,11 @@ PathArenaTutorNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local name = player:inputLetterCheck(player:input("Whom would you like to update their attended classes legend mark?"))
+		local name = player:inputLetterCheck(player:input("Tanda legenda kelas siapa yang ingin kau perbarui?"))
 		local target = Player(name)
 
 		if target == nil then
-			player:dialogSeq({t, "Player not online."}, 0)
+			player:dialogSeq({t, "Pemain tidak daring."}, 0)
 			return
 		end
 		target.registry["tutor_classes_attended"] = target.registry[
@@ -285,7 +285,7 @@ PathArenaTutorNpc = {
 		)
 
 		player:dialogSeq(
-			{t, target.name .. "'s legend mark has been updated."},
+			{t, target.name .. " sudah diperbarui tanda legendanya."},
 			0
 		)
 	end,
@@ -301,7 +301,7 @@ PathArenaTutorNpc = {
 		player.lastClick = npc.ID
 
 		if (not player:canCast(1, 1, 0)) then
-			player:sendMinitext("That doesn't work here.")
+			player:sendMinitext("Itu tidak berlaku di sini.")
 			return
 		end
 
@@ -317,7 +317,7 @@ PathArenaTutorNpc = {
 		)
 
 		if string.len(message) == 0 then
-			player:dialogSeq({t, "You have not entered anything."}, 0)
+			player:dialogSeq({t, "Kau tidak memasukkan apa-apa."}, 0)
 			return
 		end
 
@@ -333,7 +333,7 @@ PathArenaTutorNpc = {
 
 		if string.len(message2) > 38 then
 			player:dialogSeq(
-				{t, "Your second part of your message is too long."},
+				{t, "Bagian kedua pesanmu terlalu panjang."},
 				0
 			)
 			return
@@ -483,7 +483,7 @@ PathArenaTutorNpc = {
 		}
 
 		local choice = player:menuString(
-			"From which mythic cave do you want to spawn?",
+			"Dari gua mythic mana kau ingin memunculkannya?",
 			caves
 		)
 
@@ -517,7 +517,7 @@ PathArenaTutorNpc = {
 			return
 		end
 
-		local mobChoice = player:menuString("Choose a mob to spawn", mobs)
+		local mobChoice = player:menuString("Pilih mob yang akan dimunculkan", mobs)
 
 		mobChoice = string.gsub(mobChoice, " ", "_")
 		mobChoice = string.lower(mobChoice)
@@ -544,7 +544,7 @@ PathArenaTutorNpc = {
 		local mobs = npc:getObjectsInSameMap(BL_MOB)
 
 		if mobs == nil or #mobs == 0 then
-			player:dialogSeq({t, "There are no mobs to kill."}, 0)
+			player:dialogSeq({t, "Tidak ada mob untuk dibunuh."}, 0)
 			return
 		end
 

@@ -45,7 +45,7 @@ metalworking = {
 			--table.insert(opts, "Darts")
 
 			local metalMenu = player:menuString(
-				"Which type of weapon would you like to craft?",
+				"Senjata jenis apa yang ingin kau buat?",
 				opts
 			)
 
@@ -73,23 +73,23 @@ metalworking = {
 							if (fine == 1) then
 								player:addItem("fine_steel_dagger", 1)
 								player:dialogSeq(
-									{dagger, "You have succeeded masterfully!"},
+									{dagger, "Kau berhasil dengan sempurna!"},
 									1
 								)
 							else
 								player:addItem("steel_dagger", 1)
 								player:dialogSeq(
-									{dagger, "Your efforts are successful!"},
+									{dagger, "Usahamu berhasil!"},
 									1
 								)
 							end
 						elseif (rand > (10 + (crafting.getSkillValue(player, "metalworking") * 10))) then
 							if (secondchance == 1) then
 								local seconds = player:menuString(
-									"Your work shows some progress, but you need more materials. Continue your efforts?",
-									{"Yes", "No"}
+									"Kerjamu mulai membuahkan hasil, tetapi bahannya kurang. Lanjutkan usahamu?",
+									{"Ya", "Tidak"}
 								)
-								if (seconds == "Yes") then
+								if (seconds == "Ya") then
 									player:removeItem("metal", 1)
 									crafting.skillChanceIncrease(
 										player,
@@ -102,7 +102,7 @@ metalworking = {
 										player:dialogSeq(
 											{
 												dagger,
-												"Your efforts are successful!"
+												"Usahamu berhasil!"
 											},
 											1
 										)
@@ -113,7 +113,7 @@ metalworking = {
 										player:dialogSeq(
 											{
 												t,
-												"Your feeble efforts have destroyed that which you meant to enhance."
+												"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 											},
 											1
 										)
@@ -126,7 +126,7 @@ metalworking = {
 								player:dialogSeq(
 									{
 										t,
-										"Your feeble efforts have destroyed that which you meant to enhance."
+										"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 									},
 									1
 								)
@@ -147,13 +147,13 @@ metalworking = {
 						if (fine == 1) then
 							player:addItem("fine_steel_dagger", 1)
 							player:dialogSeq(
-								{dagger, "You have succeeded masterfully!"},
+								{dagger, "Kau berhasil dengan sempurna!"},
 								1
 							)
 						else
 							player:addItem("steel_dagger", 1)
 							player:dialogSeq(
-								{dagger, "Your efforts are successful!"},
+								{dagger, "Usahamu berhasil!"},
 								1
 							)
 						end
@@ -164,7 +164,7 @@ metalworking = {
 					player:dialogSeq(
 						{
 							t,
-							"You need two units of metal to craft a Steel dagger."
+							"Kau butuh dua unit logam untuk membuat Steel dagger."
 						},
 						1
 					)
@@ -200,23 +200,23 @@ metalworking = {
 							if (fine == 1) then
 								player:addItem("fine_steel_saber", 1)
 								player:dialogSeq(
-									{dagger, "You have succeeded masterfully!"},
+									{dagger, "Kau berhasil dengan sempurna!"},
 									1
 								)
 							else
 								player:addItem("steel_saber", 1)
 								player:dialogSeq(
-									{dagger, "Your efforts are successful!"},
+									{dagger, "Usahamu berhasil!"},
 									1
 								)
 							end
 						elseif (rand > (10 + (crafting.getSkillValue(player, "metalworking") * 9))) then
 							if (secondchance == 1) then
 								local seconds = player:menuString(
-									"Your work shows some progress, but you need more materials. Continue your efforts?",
-									{"Yes", "No"}
+									"Kerjamu mulai membuahkan hasil, tetapi bahannya kurang. Lanjutkan usahamu?",
+									{"Ya", "Tidak"}
 								)
-								if (seconds == "Yes") then
+								if (seconds == "Ya") then
 									player:removeItem("metal", 1)
 									crafting.skillChanceIncrease(
 										player,
@@ -229,7 +229,7 @@ metalworking = {
 										player:dialogSeq(
 											{
 												dagger,
-												"Your efforts are successful!"
+												"Usahamu berhasil!"
 											},
 											1
 										)
@@ -240,7 +240,7 @@ metalworking = {
 										player:dialogSeq(
 											{
 												t,
-												"Your feeble efforts have destroyed that which you meant to enhance."
+												"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 											},
 											1
 										)
@@ -253,7 +253,7 @@ metalworking = {
 								player:dialogSeq(
 									{
 										t,
-										"Your feeble efforts have destroyed that which you meant to enhance."
+										"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 									},
 									1
 								)
@@ -279,13 +279,13 @@ metalworking = {
 						if (fine == 1) then
 							player:addItem("fine_steel_saber", 1)
 							player:dialogSeq(
-								{dagger, "You have succeeded masterfully!"},
+								{dagger, "Kau berhasil dengan sempurna!"},
 								1
 							)
 						else
 							player:addItem("steel_saber", 1)
 							player:dialogSeq(
-								{dagger, "Your efforts are successful!"},
+								{dagger, "Usahamu berhasil!"},
 								1
 							)
 						end
@@ -296,7 +296,7 @@ metalworking = {
 					player:dialogSeq(
 						{
 							t,
-							"You need three units of metal to craft a Steel saber."
+							"Kau butuh tiga unit logam untuk membuat Steel saber."
 						},
 						1
 					)
@@ -337,23 +337,23 @@ metalworking = {
 							if (fine == 1) then
 								player:addItem("fine_steel_sword", 1)
 								player:dialogSeq(
-									{sword, "You have succeeded masterfully!"},
+									{sword, "Kau berhasil dengan sempurna!"},
 									1
 								)
 							else
 								player:addItem("steel_sword", 1)
 								player:dialogSeq(
-									{sword, "Your efforts are successful!"},
+									{sword, "Usahamu berhasil!"},
 									1
 								)
 							end
 						elseif (rand > (10 + (crafting.getSkillValue(player, "metalworking") * 8))) then
 							if (secondchance == 1) then
 								local seconds = player:menuString(
-									"Your work shows some progress, but you need more materials. Continue your efforts?",
-									{"Yes", "No"}
+									"Kerjamu mulai membuahkan hasil, tetapi bahannya kurang. Lanjutkan usahamu?",
+									{"Ya", "Tidak"}
 								)
-								if (seconds == "Yes") then
+								if (seconds == "Ya") then
 									player:removeItem("metal", 1)
 									crafting.skillChanceIncrease(
 										player,
@@ -366,7 +366,7 @@ metalworking = {
 										player:dialogSeq(
 											{
 												sword,
-												"Your efforts are successful!"
+												"Usahamu berhasil!"
 											},
 											1
 										)
@@ -377,7 +377,7 @@ metalworking = {
 										player:dialogSeq(
 											{
 												t,
-												"Your feeble efforts have destroyed that which you meant to enhance."
+												"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 											},
 											1
 										)
@@ -390,7 +390,7 @@ metalworking = {
 								player:dialogSeq(
 									{
 										t,
-										"Your feeble efforts have destroyed that which you meant to enhance."
+										"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 									},
 									1
 								)
@@ -421,13 +421,13 @@ metalworking = {
 						if (fine == 1) then
 							player:addItem("fine_steel_sword", 1)
 							player:dialogSeq(
-								{sword, "You have succeeded masterfully!"},
+								{sword, "Kau berhasil dengan sempurna!"},
 								1
 							)
 						else
 							player:addItem("steel_sword", 1)
 							player:dialogSeq(
-								{sword, "Your efforts are successful!"},
+								{sword, "Usahamu berhasil!"},
 								1
 							)
 						end
@@ -438,7 +438,7 @@ metalworking = {
 					player:dialogSeq(
 						{
 							t,
-							"You need four units of metal to craft a Steel sword."
+							"Kau butuh empat unit logam untuk membuat Steel sword."
 						},
 						1
 					)
@@ -484,23 +484,23 @@ metalworking = {
 							if (fine == 1) then
 								player:addItem("fine_steel_blade", 1)
 								player:dialogSeq(
-									{sword, "You have succeeded masterfully!"},
+									{sword, "Kau berhasil dengan sempurna!"},
 									1
 								)
 							else
 								player:addItem("steel_blade", 1)
 								player:dialogSeq(
-									{sword, "Your efforts are successful!"},
+									{sword, "Usahamu berhasil!"},
 									1
 								)
 							end
 						elseif (rand > (10 + (crafting.getSkillValue(player, "metalworking") * 7))) then
 							if (secondchance == 1) then
 								local seconds = player:menuString(
-									"Your work shows some progress, but you need more materials. Continue your efforts?",
-									{"Yes", "No"}
+									"Kerjamu mulai membuahkan hasil, tetapi bahannya kurang. Lanjutkan usahamu?",
+									{"Ya", "Tidak"}
 								)
-								if (seconds == "Yes") then
+								if (seconds == "Ya") then
 									player:removeItem("metal", 1)
 									crafting.skillChanceIncrease(
 										player,
@@ -513,7 +513,7 @@ metalworking = {
 										player:dialogSeq(
 											{
 												sword,
-												"Your efforts are successful!"
+												"Usahamu berhasil!"
 											},
 											1
 										)
@@ -524,7 +524,7 @@ metalworking = {
 										player:dialogSeq(
 											{
 												t,
-												"Your feeble efforts have destroyed that which you meant to enhance."
+												"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 											},
 											1
 										)
@@ -537,7 +537,7 @@ metalworking = {
 								player:dialogSeq(
 									{
 										t,
-										"Your feeble efforts have destroyed that which you meant to enhance."
+										"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 									},
 									1
 								)
@@ -573,13 +573,13 @@ metalworking = {
 						if (fine == 1) then
 							player:addItem("fine_steel_blade", 1)
 							player:dialogSeq(
-								{sword, "You have succeeded masterfully!"},
+								{sword, "Kau berhasil dengan sempurna!"},
 								1
 							)
 						else
 							player:addItem("steel_blade", 1)
 							player:dialogSeq(
-								{sword, "Your efforts are successful!"},
+								{sword, "Usahamu berhasil!"},
 								1
 							)
 						end
@@ -590,7 +590,7 @@ metalworking = {
 					player:dialogSeq(
 						{
 							t,
-							"You need five units of metal to craft a Steel blade."
+							"Kau butuh lima unit logam untuk membuat Steel blade."
 						},
 						1
 					)
@@ -600,7 +600,7 @@ metalworking = {
 		elseif speech == "tempa zirah" then
 			if os.time() > player.quest["smith_metal_prepared"] then
 				player:dialogSeq(
-					{t, "You need to prepare three units of metal."},
+					{t, "Kau harus menyiapkan tiga unit logam."},
 					0
 				)
 				return
@@ -618,7 +618,7 @@ metalworking = {
 
 			if target == nil then
 				player:dialogSeq(
-					{t, "The person you entered cannot be found."},
+					{t, "Orang yang kau sebutkan tidak ditemukan."},
 					0
 				)
 				return
@@ -626,7 +626,7 @@ metalworking = {
 
 			if player.m ~= target.m then
 				player:dialogSeq(
-					{t, "Your tailor needs to be with you in this same room."},
+					{t, "Penjahitmu harus berada bersamamu di ruangan yang sama."},
 					0
 				)
 				return
@@ -636,7 +636,7 @@ metalworking = {
 				player:dialogSeq(
 					{
 						t,
-						"Your tailor needs to prepare cloth still or too much time has elapsed"
+						"Penjahitmu masih harus menyiapkan kain, atau waktunya sudah terlalu lama berlalu"
 					},
 					0
 				)
@@ -648,23 +648,23 @@ metalworking = {
 				"War platemail",
 				"Mail dress",
 				"War dress",
-				"Armor",
+				"Zirah",
 				"Armor dress"
 			}
 			local choice = player:menuString(
-				"What type of armor are you trying to fashion?",
+				"Zirah jenis apa yang hendak kau bentuk?",
 				opts
 			)
 
 			if target == nil then
-				player:dialogSeq({t, "Your tailor has logged off."}, 0)
+				player:dialogSeq({t, "Penjahitmu sudah keluar dari permainan."}, 0)
 				return
 			end
 			if player.m ~= target.m then
 				player:dialogSeq(
 					{
 						t,
-						"Your tailor needs to stay with you in this room during this process."
+						"Penjahitmu harus tetap bersamamu di ruangan ini selama proses berlangsung."
 					},
 					0
 				)
@@ -714,7 +714,7 @@ metalworking = {
 					"earth_war_dress",
 					"star_war_dress"
 				}
-			elseif choice == "Armor" then
+			elseif choice == "Zirah" then
 				armors = {
 					"farmer_armor",
 					"royal_armor",
@@ -782,9 +782,9 @@ metalworking = {
 				local randArmor = math.random(1, #finalarmors)
 
 				player:addItem(finalarmors[randArmor], 1)
-				player:sendMinitext("You were successful!")
+				player:sendMinitext("Kau berhasil!")
 			else
-				player:sendMinitext("You were unsuccessful.")
+				player:sendMinitext("Kau tidak berhasil.")
 				return
 			end
 		end

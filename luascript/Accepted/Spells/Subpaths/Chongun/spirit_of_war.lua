@@ -19,7 +19,7 @@ spirit_of_war = {
 		if (player:hasDuration("spirit_of_war") and player.rage == 6) then
 			-- cast rage2
 			if (player.magic < 10000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -28,7 +28,7 @@ spirit_of_war = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 2] You cast Spirit of war.")
+			player:sendMinitext("[Rage 2] Kau merapal Spirit of war.")
 
 			player.registry["spiritofwarlevel"] = 2
 			player:setAether("spirit_of_war", aethers)
@@ -37,7 +37,7 @@ spirit_of_war = {
 		elseif (player:hasDuration("spirit_of_war") and player.rage == 9) then
 			-- cast rage3
 			if (player.magic < 22000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -46,14 +46,14 @@ spirit_of_war = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 3] You cast Spirit of war.")
+			player:sendMinitext("[Rage 3] Kau merapal Spirit of war.")
 			player.registry["spiritofwarlevel"] = 3
 			player:setAether("spirit_of_war", aethers)
 			player:calcStat()
 		elseif (player:hasDuration("spirit_of_war") and player.rage == 12) then
 			-- cast rage4
 			if (player.magic < 38000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -62,14 +62,14 @@ spirit_of_war = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 4] You cast Spirit of war.")
+			player:sendMinitext("[Rage 4] Kau merapal Spirit of war.")
 			player.registry["spiritofwarlevel"] = 4
 			player:setAether("spirit_of_war", aethers)
 			player:calcStat()
 		elseif (player:hasDuration("spirit_of_war") and player.rage == 18) then
 			-- cast rage5
 			if (player.magic < 78000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -78,14 +78,14 @@ spirit_of_war = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 5] You cast Spirit of war.")
+			player:sendMinitext("[Rage 5] Kau merapal Spirit of war.")
 			player.registry["spiritofwarlevel"] = 5
 			player:setAether("spirit_of_war", aethers)
 			player:calcStat()
 		elseif (player:hasDuration("spirit_of_war") and player.rage == 27) then
 			-- cast rage6
 			if (player.magic < 150000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -94,13 +94,13 @@ spirit_of_war = {
 			player:sendAction(act, 35)
 			player:sendAnimation(anim)
 			player:playSound(705)
-			player:sendMinitext("[Rage 6] You cast Spirit of war.")
+			player:sendMinitext("[Rage 6] Kau merapal Spirit of war.")
 			player.registry["spiritofwarlevel"] = 6
 			player:setAether("spirit_of_war", aethers)
 			player:calcStat()
 		elseif (player:hasDuration("spirit_of_war") == false) then
 			if (player.magic < 3000) then
-				player:sendMinitext("Your will is too weak.")
+				player:sendMinitext("Kehendakmu terlalu lemah.")
 				return
 			end
 
@@ -115,7 +115,7 @@ spirit_of_war = {
 			-- setting this to calculate the end ac and vita
 			player:setDuration("spirit_of_war", duration)
 			player:setAether("spirit_of_war", aethers)
-			player:sendMinitext("[Rage 1] You cast Spirit of war.")
+			player:sendMinitext("[Rage 1] Kau merapal Spirit of war.")
 			player:calcStat()
 		end
 	end,

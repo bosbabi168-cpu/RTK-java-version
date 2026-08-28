@@ -8,7 +8,7 @@ AssistantYanNpc = {
 		player.npcColor = t.color
 		player.dialogType = 0
 		player.lastClick = npc.ID
-		player:dialogSeq({t, "H-h-hello? H-h-how can I help you?"}, 1)
+		player:dialogSeq({t, "H-h-halo? A-a-ada yang bisa kubantu?"}, 1)
 	end),
 	onSayClick = async(function(player, npc)
 		local speech = string.lower(player.speech)
@@ -28,7 +28,7 @@ AssistantYanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"T-t-that book is going to be the death of m-m-me! I spent hours researching this with Sp-p-poon the last few nights. What w-w-we found in this book f-f-foret-t-told of the end of the w-w-world at the hands of a d-d-demon named 'Calamity'.After h-h-he read that he took off in a p-p-puff of s-s-smoke after shouting 'MYTHIC'."
+						"B-b-buku itu akan jadi kematianku! Berjam-jam kuteliti bersama Sp-p-poon beberapa malam terakhir. Yang k-k-kami temukan dalam buku ini m-m-meramalkan akhir d-d-dunia di tangan i-i-iblis bernama 'Calamity'. Setelah m-m-membacanya ia menghilang dalam k-k-kepulan a-a-asap sambil berteriak 'MYTHIC'."
 					},
 					0
 				)

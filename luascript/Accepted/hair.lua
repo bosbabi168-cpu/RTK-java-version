@@ -4,11 +4,11 @@ hair = {
 		local opts = {
 			"Browse hair style",
 			"Browse hair color",
-			"Change hair and color to this look",
-			"<< Back"
+			"Ubah rambut dan warnanya jadi gaya ini",
+			"<< Kembali"
 		}
 		local dialog = "<b>[" .. target.name .. "'s hair style]\n\nHair  : " .. npc.gfxHair .. "\nColor : " .. npc.gfxHairC .. "\n\n"
-		option = player:menuSeq(dialog .. "Make your choice", opts, {})
+		option = player:menuSeq(dialog .. "Tentukan pilihanmu", opts, {})
 
 		if not player.ID == 2 or not player.ID == 4 then
 			if target.ID == 2 or target.ID == 4 then
@@ -43,7 +43,7 @@ hair = {
 			target:updateState()
 			target:sendStatus()
 			target:calcStat()
-			target:sendMinitext("Your hair style is changed!")
+			target:sendMinitext("Gaya rambutmu berubah!")
 			player:sendMinitext("Done!!")
 			click.look(player, target, npc)
 		elseif option == 4 then
@@ -53,8 +53,8 @@ hair = {
 
 	browse = function(player, target, npc, dialog)
 		player.dialogType = 2
-		local opts = {"Next >>", "Options", "<< Previous"}
-		menu = player:menuSeq(dialog .. "Make your choice", opts, {})
+		local opts = {"Berikutnya >>", "Pilihan", "<< Sebelumnya"}
+		menu = player:menuSeq(dialog .. "Tentukan pilihanmu", opts, {})
 
 		if menu == 1 then
 			if player.registry["hair_style"] == 1 and player.registry["hair_color"] == 0 then

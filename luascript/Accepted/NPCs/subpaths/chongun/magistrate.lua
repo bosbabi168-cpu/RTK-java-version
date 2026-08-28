@@ -9,14 +9,14 @@ MagistrateNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell"}
+		local opts = {"Beli", "Jual"}
 
 		-- 1 - chongun
 		-- 2 - barbarian
 		-- 3 - do
 		-- subpaths released = 0 means subpaths are out, 1 means we're working on it
 		if player.class == 1 and (player.quest["subpath_trials"] == 0 or player.quest["subpath_trials"] == 14) and (player.gameRegistry["subpaths_released"] == 0 or player.gmLevel == 99) then
-			table.insert(opts, "Join the Chongunate")
+			table.insert(opts, "Bergabung dengan Chongunate")
 		end
 
 		if player.quest["subpath_trials"] == 14 then
@@ -32,22 +32,22 @@ MagistrateNpc = {
 			"tigers_heart"
 		}
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buysellopts
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				buysellopts
 			)
-		elseif menu == "Join the Chongunate" then
+		elseif menu == "Bergabung dengan Chongunate" then
 			if player.level < 50 then
 				player:dialogSeq(
-					{t, "You are too young to join at this time."},
+					{t, "Kau masih terlalu muda untuk bergabung sekarang."},
 					0
 				)
 			end
@@ -56,7 +56,7 @@ MagistrateNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure. Improve your karma and return."
+						"Jiwamu terlalu kotor. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -65,67 +65,67 @@ MagistrateNpc = {
 
 			if player.quest["subpath_trials"] == 0 then
 				local join = player:menuString(
-					"Do you wish to join the Chongunate?",
-					{"Yes", "No"}
+					"Apakah kau ingin bergabung dengan Chongunate?",
+					{"Ya", "Tidak"}
 				)
-				if join == "Yes" then
+				if join == "Ya" then
 					player.quest["subpath_trials"] = 14
 					player:dialogSeq(
 						{
 							t,
-							"Please complete my trials, to understand the ways of the Chongun."
+							"Tuntaskan ujian-ujianku untuk memahami jalan Chongun."
 						},
 						0
 					)
 				else
-					player:dialogSeq({t, "Please do not waste my time."}, 0)
+					player:dialogSeq({t, "Jangan buang waktuku."}, 0)
 				end
 			elseif player.quest["subpath_trials"] == 14 then
 				local trialstable = {}
 				if player:hasLegend("chongun_trial_of_honor") == false then
-					table.insert(trialstable, "Trial of Honor")
+					table.insert(trialstable, "Ujian Kehormatan")
 				end
 				if player:hasLegend("chongun_trial_of_valor") == false then
-					table.insert(trialstable, "Trial of Valor")
+					table.insert(trialstable, "Ujian Keberanian")
 				end
 				if player:hasLegend("chongun_trial_of_wisdom") == false then
-					table.insert(trialstable, "Trial of Wisdom")
+					table.insert(trialstable, "Ujian Kebijaksanaan")
 				end
 				if player:hasLegend("chongun_trial_of_patience") == false then
-					table.insert(trialstable, "Trial of Patience")
+					table.insert(trialstable, "Ujian Kesabaran")
 				end
 
 				local trials = player:menuString(
-					"Do you wish to join the Chongunate?",
+					"Apakah kau ingin bergabung dengan Chongunate?",
 					trialstable
 				)
-				if trials == "Trial of Patience" then
+				if trials == "Ujian Kesabaran" then
 					MagistrateNpc.chongun_trial_of_patience(player)
 				end
-				if trials == "Trial of Honor" then
+				if trials == "Ujian Kehormatan" then
 					MagistrateNpc.chongun_trial_of_honor(player)
 				end
-				if trials == "Trial of Wisdom" then
+				if trials == "Ujian Kebijaksanaan" then
 					MagistrateNpc.chongun_trial_of_wisdom(player)
 				end
-				if trials == "Trial of Valor" then
+				if trials == "Ujian Keberanian" then
 					MagistrateNpc.chongun_trial_of_valor(player)
 				end
 			else
 				player:dialogSeq(
 					{
 						t,
-						"You must abandon your other trials, before starting these."
+						"Kau harus meninggalkan ujianmu yang lain sebelum memulai yang ini."
 					},
 					0
 				)
 			end
 		elseif menu == "Abandon Trials" then
 			local abandon = player:menuString(
-				"Are you sure you want to abandon your trials?",
-				{"Yes", "No"}
+				"Kau yakin ingin meninggalkan ujianmu?",
+				{"Ya", "Tidak"}
 			)
-			if abandon == "Yes" then
+			if abandon == "Ya" then
 				player.quest["subpath_trials"] = 0
 				player.quest["patience_start"] = 0
 				player.quest["chongun_valor"] = 0
@@ -143,7 +143,7 @@ MagistrateNpc = {
 				player:removeLegendbyName("chongun_trial_of_valor")
 				player:removeLegendbyName("chongun_trial_of_wisdom")
 				player:dialogSeq(
-					{t, "Everything you have learned, has now been forgotten."},
+					{t, "Semua yang pernah kau pelajari kini terlupakan."},
 					0
 				)
 			else
@@ -157,7 +157,7 @@ MagistrateNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"In order to pass the trial of patience, you must wait 3 days. Return to me once you have completed it."
+					"Untuk lulus ujian kesabaran, kau harus menunggu 3 hari. Kembalilah kepadaku setelah selesai."
 				},
 				0
 			)
@@ -165,38 +165,38 @@ MagistrateNpc = {
 			if os.time() > player.quest["patience_start"] + 259200 then
 				if player:hasLegend("chongun_trial_of_patience") == false then
 					player:addLegend(
-						"Passed the Chongun trial of Patience",
+						"Lulus ujian Chongun: Kesabaran",
 						"chongun_trial_of_patience",
 						17,
 						15
 					)
 				end
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 			else
-				player:dialogSeq({t, "You have not passed this trial."}, 0)
+				player:dialogSeq({t, "Kau belum lulus ujian ini."}, 0)
 			end
 		end
 	end,
 	chongun_trial_of_honor = function(player)
 		local diag = {
 			t,
-			"As a Chongun, we honor and support our kingdoms, and the people within them. Please seek out and complete 10 minor quests."
+			"Sebagai Chongun, kami menghormati dan mendukung kerajaan kami beserta rakyatnya. Carilah dan tuntaskan 10 tugas kecil."
 		}
 
 		if (player.quest["minorquestcomplete"] >= 10) then
 			if player:hasLegend("chongun_trial_of_honor") == false then
 				player:addLegend(
-					"Passed the Chongun trial of Honor",
+					"Lulus ujian Chongun: Kehormatan",
 					"chongun_trial_of_honor",
 					17,
 					15
 				)
 			end
-			table.insert(diag, "You have done well.")
+			table.insert(diag, "Kau sudah melakukannya dengan baik.")
 		else
 			table.insert(
 				diag,
-				"Please come back when you have completed this task."
+				"Silakan kembali kalau tugas ini sudah kau selesaikan."
 			)
 		end
 
@@ -206,7 +206,7 @@ MagistrateNpc = {
 		-- kill rabbit, monkey and dog bosses
 		local diag = {
 			t,
-			"In order to prove your strength and valor, please go slay the keeper of luck, keeper of roses and keeper of battle protection."
+			"Untuk membuktikan kekuatan dan keberanianmu, bunuhlah penjaga keberuntungan, penjaga mawar, dan penjaga perlindungan pertempuran."
 		}
 
 		if player.quest["chongun_valor"] == 0 then
@@ -268,17 +268,17 @@ MagistrateNpc = {
 				player.quest["chongun_valor_dog3"] = 0
 				if player:hasLegend("chongun_trial_of_valor") == false then
 					player:addLegend(
-						"Passed the Chongun trial of Valor",
+						"Lulus ujian Chongun: Keberanian",
 						"chongun_trial_of_valor",
 						17,
 						15
 					)
 				end
-				table.insert(diag, "You have done well.")
+				table.insert(diag, "Kau sudah melakukannya dengan baik.")
 			else
 				table.insert(
 					diag,
-					"Please come back when you have completed this task."
+					"Silakan kembali kalau tugas ini sudah kau selesaikan."
 				)
 			end
 		end

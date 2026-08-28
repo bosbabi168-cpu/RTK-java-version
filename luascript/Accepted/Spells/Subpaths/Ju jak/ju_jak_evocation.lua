@@ -5,7 +5,7 @@ ju_jak_evocation = {
 		end
 		player.magic = player.maxMagic
 		player:sendAnimation(37, 3)
-		player:sendMinitext("You cast Ju jak evocation.")
+		player:sendMinitext("Kau merapal Ju jak evocation.")
 		player:setAether("ju_jak_evocation", 500000)
 		player:playSound(705)
 		player:updateState()

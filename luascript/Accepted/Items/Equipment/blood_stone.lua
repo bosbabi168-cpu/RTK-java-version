@@ -12,7 +12,7 @@ blood_stone = {
 		local failcheck = 0
 
 		if not player:hasLegend("sealed_blood_oath") then
-			player:sendMinitext("You have no blood oath.")
+			player:sendMinitext("Kau tidak punya sumpah darah.")
 			return
 		end
 
@@ -22,12 +22,12 @@ blood_stone = {
 		end
 
 		if target == nil then
-			player:sendMinitext("Your companion is with you in spirit, but not in body.")
+			player:sendMinitext("Pendampingmu menyertaimu dalam jiwa, tetapi tidak dalam raga.")
 			return
 		end
 
 		if target.partner ~= player.ID then
-			player:sendMinitext("You are no longer in a blood union with that person.")
+			player:sendMinitext("Kau tidak lagi terikat darah dengan orang itu.")
 			return
 		end
 

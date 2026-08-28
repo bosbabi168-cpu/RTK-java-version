@@ -82,7 +82,7 @@ removeSpotTraps = async(function(player)
 	local npcsToRemove = {}
 
 	local type = player:menuString(
-		"Please choose npc spawners (warriors) or traps (rogues)",
+		"Pilih pemunculan npc (warrior) atau jebakan (rogue)",
 		{"npc spawners", "traps"}
 	)
 

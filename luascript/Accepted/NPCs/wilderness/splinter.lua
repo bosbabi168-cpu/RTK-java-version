@@ -5,11 +5,11 @@ SplinterNpc = {
 		Tools.configureDialog(player, npc)
 
 		local opts = {
-			"Buy",
-			"Sell",
-			"Crafting Skills",
+			"Beli",
+			"Jual",
+			"Keahlian Kerajinan",
 			"Gathering Wood",
-			"Don't Knock Woodworking",
+			"Jangan Remehkan Woodworking",
 			"Woodworking Devotion"
 		}
 
@@ -18,36 +18,36 @@ SplinterNpc = {
 		end
 
 		local menu = player:menuString(
-			"Hello! What would you like to do today?",
+			"Halo! Apa yang ingin kau lakukan hari ini?",
 			opts
 		)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				SplinterNpc.buyItems()
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				SplinterNpc.sellItems()
 			)
-		elseif menu == "Crafting Skills" then
+		elseif menu == "Keahlian Kerajinan" then
 			generalNPC.crafting_skills(player, npc)
 		elseif menu == "Gathering Wood" then
 			player:dialogSeq(
 				{
-					"Yup, I know about that. Go to a place with trees and hack at 'em with your axe.",
-					"Sometimes you'll find stuff. You should find a 'grove' to cut lumber in. There are a few around in the different forests.",
-					"For example, there's one near Buya at 46, 20 and one near Kugnae at 111, 178. I doubt you'll have much luck lumbering outside of the groves."
+					"Ya, aku tahu soal itu. Pergilah ke tempat berpohon dan tebas dengan kapakmu.",
+					"Kadang kau menemukan sesuatu. Sebaiknya kau cari 'rumpun' untuk menebang kayu. Ada beberapa di berbagai hutan.",
+					"Misalnya ada satu dekat Buya di 46, 20 dan satu dekat Kugnae di 111, 178. Kurasa kau tidak akan beruntung menebang di luar rumpun."
 				},
 				0
 			)
 			return
-		elseif menu == "Don't Knock Woodworking" then
+		elseif menu == "Jangan Remehkan Woodworking" then
 			player:dialogSeq(
 				{
-					"A fine skill. Sure, you can make any armor, or those so-called 'superior' metal weapons. But we woodworkers are much more versatile.",
+					"Keahlian yang bagus. Memang kau bisa membuat zirah apa pun, atau senjata logam yang katanya 'lebih unggul' itu. Tapi kami tukang kayu jauh lebih serbabisa.",
 					"Pertukangan kayu memungkinkanmu membuat senjata kayu dan anak panah. Selain itu, pertukangan kayu dibutuhkan untuk membuat alat tenun. Kalau kau sudah siap, katakan saja 'kayu' padaku.",
 					"Kalau kerjamu buruk, yang tersisa cuma rongsokan kayu. Tunjukkan padaku, tanyakan 'rongsokan' dan kita lihat apa yang masih bisa diselamatkan."
 				},
@@ -65,12 +65,12 @@ SplinterNpc = {
 		Tools.configureDialog(player, npc)
 
 		if (player.level < 25) then
-			player:dialogSeq({"You are not ready to devote to a craft yet, come back later."}, 0)
+			player:dialogSeq({"Kau belum siap menekuni satu kerajinan. Kembalilah nanti."}, 0)
 			return
 		end
 
 		if crafting.checkSkillLegend(player, "woodworking") then
-			player:dialogSeq({"You have already devoted yourself to the study of Woodworking."}, 0)
+			player:dialogSeq({"Kau sudah menekuni ilmu Woodworking."}, 0)
 			return
 		end
 
@@ -78,7 +78,7 @@ SplinterNpc = {
 		crafting.checkSkill(player, npc, "tailoring")
 		crafting.checkSkill(player, npc, "metalworking")
 
-		player:dialogSeq({"Woodworkers can make wooden weapons, bows, arrows, and weaving tools. Do you wish to become a woodworker?"}, 1)
+		player:dialogSeq({"Tukang kayu bisa membuat senjata kayu, busur, anak panah, dan alat tenun. Kau ingin menjadi tukang kayu?"}, 1)
 
 		crafting.addSkill(player, npc, "woodworking")
 	end,

@@ -3617,9 +3617,9 @@ local _handleDragonEssenceLoot = function(player)
 				pc:addItem("dragon_essence", 1)
 				pc:sendAnimation(151)
 			elseif (pc:hasItem("dragon_essence", 5) == true) then
-				pc:sendMinitext("You cannot gather any more of the dragon's energy.")
+				pc:sendMinitext("Kau tidak bisa mengumpulkan tenaga naga itu lagi.")
 			else
-				pc:sendMinitext("You attempted to gather the dragon's energy, but your bags are full.")
+				pc:sendMinitext("Kau mencoba mengumpulkan tenaga naga itu, tetapi kantongmu penuh.")
 			end
 		end
 	end

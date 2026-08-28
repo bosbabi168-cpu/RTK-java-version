@@ -84,5 +84,5 @@ cotw_SpawnSetThreat = function(player, mobID, spawnDuration)
 		player:setThreat(player.attacker, threat + attacker.damage)
 	end
 
-	player:sendMinitext("You summon a " .. mob[1].name)
+	player:sendMinitext("Kau memanggil " .. mob[1].name)
 end

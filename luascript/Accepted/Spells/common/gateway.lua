@@ -18,12 +18,12 @@ gateway = {
 		end
 		if player.warpOut == 0 then
 			player:sendAnimation(246)
-			player:sendMinitext("It doesn't work here")
+			player:sendMinitext("Ini tidak berlaku di sini")
 			return
 		end
 
 		if player.region >= 6 then
-			player:sendMinitext("Cannot find any gates!")
+			player:sendMinitext("Tidak ada gerbang yang ditemukan!")
 			return
 		end
 
@@ -141,7 +141,7 @@ gateway = {
 
 		player:sendAnimationXY(16, player.x, player.y)
 		player:warp(map, x, y)
-		player:sendMinitext("You have arrived at " .. gate .. " Gate of " .. city)
+		player:sendMinitext("Kau tiba di " .. gate .. " Gerbang " .. city)
 		player:playSound(29)
 		player:sendAnimation(16)
 		player:sendAction(6, 20)

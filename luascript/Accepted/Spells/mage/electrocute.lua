@@ -10,7 +10,7 @@ electrocute_mage = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 250) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -37,12 +37,12 @@ electrocute_mage = {
 			if #target > 0 then
 				local worked = global_zap.cast(player, target[1], damage, 0, 0)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -67,7 +67,7 @@ eater_of_the_dead_mage = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 250) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -94,12 +94,12 @@ eater_of_the_dead_mage = {
 			if #target > 0 then
 				local worked = global_zap.cast(player, target[1], damage, 0, 1)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -125,7 +125,7 @@ forests_discord_mage = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 250) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -152,12 +152,12 @@ forests_discord_mage = {
 			if #target > 0 then
 				local worked = global_zap.cast(player, target[1], damage, 0, 2)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -183,7 +183,7 @@ shatter_storm_mage = {
 		local y = {0, -1, 0, 1}
 
 		if (player.magic < 250) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -210,12 +210,12 @@ shatter_storm_mage = {
 			if #target > 0 then
 				local worked = global_zap.cast(player, target[1], damage, 0, 3)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 

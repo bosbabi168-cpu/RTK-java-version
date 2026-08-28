@@ -16,7 +16,7 @@ chung_ryongs_rage = {
 		if (player:hasDuration("chung_ryongs_rage") == true and player.rage == 8) then
 			-- cast rage2
 			if (player.magic < 7200) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 
@@ -24,7 +24,7 @@ chung_ryongs_rage = {
 			player.magic = player.magic - 7200
 			player:sendAnimation(36)
 			player:playSound(705)
-			player:sendMinitext("[Rage 2] Chung Ryong's power grows within you.")
+			player:sendMinitext("[Rage 2] Chung Ryong's power tumbuh di dalam dirimu.")
 			player:sendAction(6, 35)
 			player.registry["chungryongragelevel"] = 2
 			player:setAether("chung_ryongs_rage", aethers)
@@ -33,7 +33,7 @@ chung_ryongs_rage = {
 		elseif (player:hasDuration("chung_ryongs_rage") == true and player.rage == 14) then
 			-- cast rage3
 			if (player.magic < 18050) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 
@@ -41,7 +41,7 @@ chung_ryongs_rage = {
 			player.magic = player.magic - 18050
 			player:sendAnimation(36)
 			player:playSound(705)
-			player:sendMinitext("[Rage 3] Great rage inspires you.")
+			player:sendMinitext("[Rage 3] Great rage mengilhamimu.")
 			player.registry["chungryongragelevel"] = 3
 			player:setAether("chung_ryongs_rage", aethers)
 
@@ -52,7 +52,7 @@ chung_ryongs_rage = {
 		elseif (player:hasDuration("chung_ryongs_rage") == true and player.rage == 20) then
 			-- cast rage4
 			if (player.magic < 33800) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 
@@ -60,7 +60,7 @@ chung_ryongs_rage = {
 			player.magic = player.magic - 33800
 			player:sendAnimation(36)
 			player:playSound(705)
-			player:sendMinitext("[Rage 4] Your body trembles with incredible strength.")
+			player:sendMinitext("[Rage 4] Tubuhmu bergetar oleh kekuatan luar biasa.")
 			player:sendAction(6, 35)
 			player.registry["chungryongragelevel"] = 4
 			player:setAether("chung_ryongs_rage", aethers)
@@ -70,7 +70,7 @@ chung_ryongs_rage = {
 		elseif (player:hasDuration("chung_ryongs_rage") == true and player.rage == 26) then
 			-- cast rage5
 			if (player.magic < 72200) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 
@@ -78,7 +78,7 @@ chung_ryongs_rage = {
 			player.magic = player.magic - 72200
 			player:sendAnimation(36)
 			player:playSound(705)
-			player:sendMinitext("[Rage 5] You enter a mindless frenzy.")
+			player:sendMinitext("[Rage 5] Kau masuk ke amukan tanpa nalar.")
 			player:sendAction(6, 35)
 			player.registry["chungryongragelevel"] = 5
 			player:setAether("chung_ryongs_rage", aethers)
@@ -88,7 +88,7 @@ chung_ryongs_rage = {
 		elseif (player:hasDuration("chung_ryongs_rage") == true and player.rage == 36) then
 			-- cast rage6
 			if (player.magic < 145800) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 
@@ -98,7 +98,7 @@ chung_ryongs_rage = {
 			player.magic = 0
 			player:sendAnimation(36)
 			player:playSound(705)
-			player:sendMinitext("[Rage 6] Your body is torn apart with Chung Ryong's power.")
+			player:sendMinitext("[Rage 6] Tubuhmu tercabik oleh Chung Ryong's power.")
 			player:sendAction(6, 35)
 			player.registry["chungryongragelevel"] = 6
 			player:setAether("chung_ryongs_rage", aethers)
@@ -107,7 +107,7 @@ chung_ryongs_rage = {
 			player:calcStat()
 		elseif (player:hasDuration("chung_ryongs_rage") == false) then
 			if (player.magic < 2000) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 
@@ -121,7 +121,7 @@ chung_ryongs_rage = {
 			-- setting this to calculate the end ac and vita
 			player:setDuration("chung_ryongs_rage", duration)
 			player:setAether("chung_ryongs_rage", aethers)
-			player:sendMinitext("[Rage 1] You cast Chung Ryong's rage.")
+			player:sendMinitext("[Rage 1] Kau merapal amarah Chung Ryong.")
 			player:sendAction(6, 35)
 			player:calcStat()
 		end

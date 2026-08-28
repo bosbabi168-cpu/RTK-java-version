@@ -8,7 +8,7 @@ cotw_fluffy_dog_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -43,7 +43,7 @@ kwisin_assistant_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -78,7 +78,7 @@ mingken_assistant_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -113,7 +113,7 @@ ohaeng_assistant_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 

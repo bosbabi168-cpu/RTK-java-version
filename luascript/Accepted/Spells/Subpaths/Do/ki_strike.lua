@@ -14,7 +14,7 @@ ki_strike = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -22,7 +22,7 @@ ki_strike = {
 
 		player:setAether("ki_strike", aethers)
 		player:sendStatus()
-		player:sendMinitext("You cast Ki strike.")
+		player:sendMinitext("Kau merapal Ki strike.")
 		player:sendAction(6, 35)
 
 		if target.blType == BL_MOB then
@@ -47,7 +47,7 @@ ki_strike = {
 					targets[i]:sendAnimation(anim)
 					targets[i].attacker = player.ID
 					targets[i]:removeHealthExtend(damage, 1, 1, 1, 1, 0)
-					targets[i]:sendMinitext(player.name .. " casts Ki strike on you.")
+					targets[i]:sendMinitext(player.name .. " merapal Ki strike padamu.")
 				end
 			end
 		end

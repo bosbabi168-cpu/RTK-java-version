@@ -9,7 +9,7 @@ SnareTrapNpc = {
 			if not block:canPK(block) then
 				return
 			end
-			block:sendMinitext("You stepped on a trap!")
+			block:sendMinitext("Kau menginjak jebakan!")
 			removeTrapItem(npc)
 			npc:delete()
 			if block:checkIfCast(protections) then

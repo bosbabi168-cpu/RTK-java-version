@@ -12,17 +12,17 @@ sanctuary_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType == BL_MOB) then
-			player:sendMinitext("You can't cast that now.")
+			player:sendMinitext("Kau tidak bisa merapal itu sekarang.")
 			return
 		end
 
 		if target:checkIfCast(sanctuaries) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -31,12 +31,12 @@ sanctuary_poet = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(5)
-			player:sendMinitext("You cast Sanctuary.")
+			player:sendMinitext("Kau merapal Sanctuary.")
 			target:setDuration("sanctuary_poet", duration)
 			target:sendAnimation(11, 0)
 			if target.id ~= player.id then
-				target:sendMinitext("You have found Sanctuary.")
-				target:sendMinitext(player.name .. " casts Sanctuary on you.")
+				target:sendMinitext("Kau menemukan Sanctuary.")
+				target:sendMinitext(player.name .. " merapal Sanctuary padamu.")
 			end
 
 			target:calcStat()
@@ -76,17 +76,17 @@ protect_soul_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType == BL_MOB) then
-			player:sendMinitext("You can't cast that now.")
+			player:sendMinitext("Kau tidak bisa merapal itu sekarang.")
 			return
 		end
 
 		if target:checkIfCast(sanctuaries) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -95,12 +95,12 @@ protect_soul_poet = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(106)
-			player:sendMinitext("You cast Protect Soul.")
+			player:sendMinitext("Kau merapal Protect Soul.")
 			target:setDuration("protect_soul_poet", duration)
 			target:sendAnimation(61, 0)
 			if target.id ~= player.id then
-				target:sendMinitext("You have found Sanctuary.")
-				target:sendMinitext(player.name .. " casts Protect Soul on you.")
+				target:sendMinitext("Kau menemukan Sanctuary.")
+				target:sendMinitext(player.name .. " merapal Protect Soul padamu.")
 			end
 			target:calcStat()
 		end
@@ -139,17 +139,17 @@ guard_life_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType == BL_MOB) then
-			player:sendMinitext("You can't cast that now.")
+			player:sendMinitext("Kau tidak bisa merapal itu sekarang.")
 			return
 		end
 
 		if target:checkIfCast(sanctuaries) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -158,12 +158,12 @@ guard_life_poet = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(77)
-			player:sendMinitext("You cast Guard Life.")
+			player:sendMinitext("Kau merapal Guard Life.")
 			target:setDuration("guard_life_poet", duration)
 			target:sendAnimation(56, 0)
 			if target.id ~= player.id then
-				target:sendMinitext("You have found Sanctuary.")
-				target:sendMinitext(player.name .. " casts Guard Life on you.")
+				target:sendMinitext("Kau menemukan Sanctuary.")
+				target:sendMinitext(player.name .. " merapal Guard Life padamu.")
 			end
 			target:calcStat()
 		end
@@ -202,17 +202,17 @@ magic_shield_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1 or target.blType == BL_MOB) then
-			player:sendMinitext("You can't cast that now.")
+			player:sendMinitext("Kau tidak bisa merapal itu sekarang.")
 			return
 		end
 
 		if target:checkIfCast(sanctuaries) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
@@ -221,12 +221,12 @@ magic_shield_poet = {
 			player.magic = player.magic - magicCost
 			player:sendStatus()
 			player:playSound(70)
-			player:sendMinitext("You cast Magic Shield.")
+			player:sendMinitext("Kau merapal Magic Shield.")
 			target:setDuration("magic_shield_poet", duration)
 			target:sendAnimation(59, 0)
 			if target.id ~= player.id then
-				target:sendMinitext("You have found Sanctuary.")
-				target:sendMinitext(player.name .. " casts Magic Shield on you.")
+				target:sendMinitext("Kau menemukan Sanctuary.")
+				target:sendMinitext(player.name .. " merapal Magic Shield padamu.")
 			end
 			target:calcStat()
 		end

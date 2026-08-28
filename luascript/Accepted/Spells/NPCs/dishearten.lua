@@ -8,16 +8,16 @@ dishearten = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(disheartens) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 		if player:checkIfCast(protections) then
-			player:sendMinitext("The target is already protected.")
+			player:sendMinitext("Sasaran itu sudah terlindungi.")
 			return
 		end
 
@@ -25,7 +25,7 @@ dishearten = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(5)
-		player:sendMinitext("You cast Dishearten.")
+		player:sendMinitext("Kau merapal Dishearten.")
 		player:setDuration("dishearten", duration)
 		player:sendAnimation(1, 0)
 		if player.blType == BL_PC then

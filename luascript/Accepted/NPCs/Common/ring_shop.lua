@@ -9,22 +9,22 @@ RingShopNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell"}
+		local opts = {"Beli", "Jual"}
 
 		local buyopts = RingShopNpc.buyItems(npc)
 		local sellopts = RingShopNpc.sellItems(npc)
 
 		local menu = player:menuString(
-			"Hello! What would you like to do today?",
+			"Halo! Apa yang ingin kau lakukan hari ini?",
 			opts
 		)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buyopts
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend("What are you willing to sell today?", sellopts)
 		end
 	end),
@@ -120,8 +120,8 @@ RingShopNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"I heard you were coming to ask me about this, so I have already started to get ready.",
-						"The shards were basically a hollowed out Amethyst, with a magical enchantment to absorb the essence of the dragons."
+						"Kudengar kau akan datang menanyakan ini, jadi aku sudah mulai bersiap.",
+						"Serpihan itu pada dasarnya Amethyst yang dilubangi, dengan jampi sihir untuk menyerap sari para naga."
 					},
 					1
 				)
@@ -130,7 +130,7 @@ RingShopNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"I still have the tools I used to create them, but you will need to bring me an Amethyst to convert."
+							"Alat yang dulu kupakai membuatnya masih ada, tetapi kau harus membawakan satu Amethyst untuk diubah."
 						},
 						0
 					)
@@ -138,8 +138,8 @@ RingShopNpc = {
 				end
 
 				local choice = player:menuSeq(
-					"I will need 2,000 gold for my time and effort, would you like me to change your Amethyst into a shard?",
-					{"Yes", "No"},
+					"Aku butuh 2.000 emas untuk waktu dan tenagaku. Mau kuubah Amethyst-mu jadi serpihan?",
+					{"Ya", "Tidak"},
 					{}
 				)
 
@@ -148,7 +148,7 @@ RingShopNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Very well, bring me 2,000 gold and we can get started."
+								"Baiklah, bawakan 2.000 emas dan kita bisa mulai."
 							},
 							0
 						)
@@ -162,7 +162,7 @@ RingShopNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"There you go, only use it when you are around one of the great dragons, or it will shatter."
+							"Ini dia. Pakai hanya saat kau berada di dekat salah satu naga besar, kalau tidak ia akan pecah."
 						},
 						0
 					)

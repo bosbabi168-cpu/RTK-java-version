@@ -8,7 +8,7 @@ chance_rogue = {
 			aether = 0
 		end
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -24,7 +24,7 @@ chance_rogue = {
 		player:sendAction(6, 35)
 		player.magic = player.magic - magicCost
 		player:sendStatus()
-		player:sendMinitext("You cast Chance.")
+		player:sendMinitext("Kau merapal Chance.")
 		player:setAether("chance_rogue", 62000)
 	end,
 
@@ -106,7 +106,7 @@ randomness_rogue = {
 			aether = 0
 		end
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -122,7 +122,7 @@ randomness_rogue = {
 		player:sendAction(6, 35)
 		player.magic = player.magic - magicCost
 		player:sendStatus()
-		player:sendMinitext("You cast Randomness.")
+		player:sendMinitext("Kau merapal Randomness.")
 		player:setAether("randomness_rogue", 62000)
 	end,
 
@@ -204,7 +204,7 @@ natures_choice_rogue = {
 			aether = 0
 		end
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -220,7 +220,7 @@ natures_choice_rogue = {
 		player:sendAction(6, 35)
 		player.magic = player.magic - magicCost
 		player:sendStatus()
-		player:sendMinitext("You cast Nature's choice.")
+		player:sendMinitext("Kau merapal Nature's choice.")
 		player:setAether("natures_choice_rogue", 62000)
 	end,
 
@@ -302,7 +302,7 @@ trial_by_fire_rogue = {
 			aether = 0
 		end
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -318,7 +318,7 @@ trial_by_fire_rogue = {
 		player:sendAction(6, 35)
 		player.magic = player.magic - magicCost
 		player:sendStatus()
-		player:sendMinitext("You cast Trial by fire.")
+		player:sendMinitext("Kau merapal Trial by fire.")
 		player:setAether("trial_by_fire_rogue", 62000)
 	end,
 

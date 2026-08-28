@@ -253,9 +253,41 @@ Kalau tidak, questnya jadi tidak bisa diselesaikan pemain — dan gagalnya
 senyap: NPC tetap menjawab, hanya tidak pernah pada kata yang dianjurkannya
 sendiri.
 
-**Belum dikerjakan: sisa teks dialog (~3.800 titik, 903 di antaranya di 56
-berkas yang kata kuncinya sudah tersentuh).** Yang tersisa bersifat prosa —
-tidak memutus permainan, hanya belum berbahasa Indonesia.
+**28 Agustus 2026 — SELURUH TEKS DIALOG SELESAI (R4).**
+**0 dari 9.812 titik dialog** di 665 berkas masih berbahasa Inggris.
+
+Cara mengerjakannya, supaya bisa diulang dan diperiksa:
+
+1. **Katalog, bukan sunting satu-satu.** 3.980 entri di
+   `tools/terjemahan/kamus-*.json` memetakan teks Inggris → Indonesia.
+   Satu string yang sama diterjemahkan sekali dan berlaku di mana pun ia
+   muncul — konsisten menurut konstruksi, bukan menurut ingatan.
+2. **Penerapan POSISIONAL, bukan cari-ganti.** `tools/terjemahan/terapkan.py`
+   hanya mengganti literal yang berdiri di argumen yang benar-benar tampil
+   di layar (aturan per-panggilan di `inventaris.py`). Karena itu
+   `characterLog.lua` yang menulis " for " ke berkas log tetap utuh
+   sementara kalimat toko diterjemahkan.
+3. **Pembanding ikut diterjemahkan.** Nilai balik `menuString` adalah
+   STRING OPSINYA, jadi `pilihan == "Yes"` diganti bersama opsinya —
+   kalau tidak, menunya berbahasa Indonesia tetapi tidak ada cabang yang
+   cocok, dan gagalnya senyap.
+4. **Empat penjaga, dijalankan setiap kali menyentuh dialog:**
+   `inventaris.py` (berapa titik & berapa yang masih Inggris),
+   `separuh.py` (baris yang separuh terjemah — bahaya khas potongan
+   sambungan), `petunjuk-ketik.py` (kalimat yang menyuruh mengetik harus
+   menyebut kata kunci `speech` yang benar), dan `./run.sh scripttest`.
+5. **Yang memutuskan tetap klien sungguhan.** `livetest` kini menuntut
+   dialog DAN opsi menu yang sampai ke pemain berbahasa Indonesia; ia
+   tiga kali menemukan menu Inggris yang dilaporkan "nol sisa" oleh alat
+   statis (Peringatan #114), dan `scripttest` menangkap `next`/`previous`
+   yang ternyata nilai protokol (Peringatan #116).
+
+**Yang SENGAJA dibiarkan Inggris** (`tools/terjemahan/dikecualikan.json`):
+nama barang (`Scroll of Protection`, `Juk-do`, `Armor of the Winds`), nama
+stat (`Will`), dan nilai protokol (`next`, `previous`, `quit`). Nama barang
+diterjemahkan di kolom `ItmDescription` seperti aturan di atas — kalau
+diterjemahkan di skrip saja, menu dan kantong akan menyebut benda yang
+sama dengan dua nama berbeda.
 
 ## Berkas yang sudah diterjemahkan penuh (dialog + kata kunci)
 

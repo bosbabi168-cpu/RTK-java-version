@@ -6,10 +6,10 @@ refresh_rogue = {
 		end
 		local worked = global_heal.cast(player, target, 600, 400, 0)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -30,10 +30,10 @@ souls_awakening_rogue = {
 		end
 		local worked = global_heal.cast(player, target, 600, 400, 1)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -54,10 +54,10 @@ healing_waters_rogue = {
 		end
 		local worked = global_heal.cast(player, target, 600, 400, 2)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -78,10 +78,10 @@ fire_dance_rogue = {
 		end
 		local worked = global_heal.cast(player, target, 600, 400, 3)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 

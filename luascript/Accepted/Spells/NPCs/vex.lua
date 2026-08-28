@@ -19,7 +19,7 @@ vex = {
 			target.armor = target.armor + 30
 			target.cursed = 1
 		elseif (target.blType == BL_PC) then
-			target:sendMinitext(block.name .. " attacks you with Vex spell.")
+			target:sendMinitext(block.name .. " menyerangmu dengan mantra Vex.")
 			target:calcStat()
 		end
 	end,

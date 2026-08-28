@@ -69,7 +69,7 @@ onGetExp = function(player, mob)
 		end
 		finalxp = math.ceil(finalxp)
 		if (#player.group > 12) then
-			Player(groupMembersInRangeAndAlive[i].id):sendMinitext("You can not gain experience in a group of this size.")
+			Player(groupMembersInRangeAndAlive[i].id):sendMinitext("Kau tidak bisa memperoleh pengalaman dalam grup sebesar ini.")
 		else
 			if Player(groupMembersInRangeAndAlive[i].id).level < 99 then
 				local exp = getXPforLevel(
@@ -129,7 +129,7 @@ onGetExp = function(player, mob)
 		end
 		if mob.isBoss == 1 then
 			-- bosses
-			Player(groupMembersInRangeAndAlive[i].id):sendMinitext("You have killed " .. (Player(groupMembersInRangeAndAlive[i].id):killCount(mob.mobID)) .. " " .. mob.name)
+			Player(groupMembersInRangeAndAlive[i].id):sendMinitext("Kau telah membunuh " .. (Player(groupMembersInRangeAndAlive[i].id):killCount(mob.mobID)) .. " " .. mob.name)
 		end
 	end
 

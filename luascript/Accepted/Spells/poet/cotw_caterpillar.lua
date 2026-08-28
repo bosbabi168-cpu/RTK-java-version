@@ -9,7 +9,7 @@ cotw_giasomo_bird_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -36,7 +36,7 @@ cotw_caterpillar_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -71,7 +71,7 @@ kwisin_companion_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -106,7 +106,7 @@ mingken_companion_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -141,7 +141,7 @@ ohaeng_companion_poet = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 

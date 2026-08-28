@@ -1,19 +1,19 @@
 ice_beast = {
 	on_spawn = function(mob)
-		mob:talk(0, "Ice Beast: Ho, ho! It is good to be back!")
+		mob:talk(0, "Ice Beast: Ho, ho! Senang bisa kembali!")
 	end,
 
 	move = function(mob, target)
 		if target ~= nil then
 			if distanceSquare(mob, target, 3) then
 				if math.random(1, 20) == 10 then
-					mob:talk(0, "Ice Beast: I'm coming to eat you!")
+					mob:talk(0, "Ice Beast: Aku datang untuk memakanmu!")
 				end
 			else
 				mob.target = 0
 				mob.returning = true
 				if math.random(1, 20) == 15 then
-					mob:talk(0, "Ice Beast: Where did it go?")
+					mob:talk(0, "Ice Beast: Ke mana perginya?")
 					return
 				end
 			end

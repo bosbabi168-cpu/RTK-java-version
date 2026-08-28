@@ -7,7 +7,7 @@ meat_scrap = {
 		player:addHealthExtend(health, 0, 0, 0, 0, 0)
 
 		if player.health == player.maxHealth then
-			player:sendMinitext("You still feel hungry.")
+			player:sendMinitext("Kau masih merasa lapar.")
 		end
 	end
 }

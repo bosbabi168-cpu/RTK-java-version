@@ -37,7 +37,7 @@ brown_present = {
 			end
 		end
 
-		player:sendMinitext("You opened a present.")
+		player:sendMinitext("Kau membuka sebuah hadiah.")
 		player:removeItemSlot(player.invSlot, 1, 6)
 	end
 }

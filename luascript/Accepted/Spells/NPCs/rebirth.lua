@@ -6,7 +6,7 @@ rebirth = {
 		end
 
 		if target.blType == BL_PC then
-			target:sendMinitext(player.name .. " casts Rebirth on you!")
+			target:sendMinitext(player.name .. " merapal Rebirth padamu!")
 		end
 		target.attacker = target.ID
 		target:addHealthExtend(target.maxHealth, 1, 1, 1, 1, 0)

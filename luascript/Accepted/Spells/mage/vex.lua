@@ -8,27 +8,27 @@ vex_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType == BL_PC and not player:canPK(target)) or target.blType == BL_NPC then
-			player:sendMinitext("You cannot attack that target.")
+			player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 			return
 		end
 
 		if target:checkIfCast(curses) then
-			player:sendMinitext("Another spell of this type is in effect.")
+			player:sendMinitext("Mantra lain sejenis ini sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is already protected.")
+			player:sendMinitext("Sasaran itu sudah terlindungi.")
 			return
 		end
 
@@ -36,7 +36,7 @@ vex_mage = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(43)
-		player:sendMinitext("You cast Vex.")
+		player:sendMinitext("Kau merapal Vex.")
 		target:setDuration("vex_mage", duration)
 		target:sendAnimation(1, 0)
 
@@ -44,7 +44,7 @@ vex_mage = {
 			target.armor = target.armor + 30
 			target.cursed = 1
 		elseif (target.blType == BL_PC and player:canPK(target)) then
-			target:sendMinitext(player.name .. " casts Vex on you.")
+			target:sendMinitext(player.name .. " merapal Vex padamu.")
 			target:calcStat()
 		end
 	end,
@@ -85,27 +85,27 @@ deaths_face_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType == BL_PC and not player:canPK(target)) or target.blType == BL_NPC then
-			player:sendMinitext("You cannot attack that target.")
+			player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 			return
 		end
 
 		if target:checkIfCast(curses) then
-			player:sendMinitext("Another spell of this type is in effect.")
+			player:sendMinitext("Mantra lain sejenis ini sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is already protected.")
+			player:sendMinitext("Sasaran itu sudah terlindungi.")
 			return
 		end
 
@@ -113,7 +113,7 @@ deaths_face_mage = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(43)
-		player:sendMinitext("You cast Death's Face.")
+		player:sendMinitext("Kau merapal Death's Face.")
 		target:setDuration("deaths_face_mage", duration)
 		target:sendAnimation(53, 0)
 
@@ -121,7 +121,7 @@ deaths_face_mage = {
 			target.armor = target.armor + 30
 			target.cursed = 1
 		elseif (target.blType == BL_PC and player:canPK(target)) then
-			target:sendMinitext(player.name .. " casts Death's Face on you.")
+			target:sendMinitext(player.name .. " merapal Death's Face padamu.")
 			target:calcStat()
 		end
 	end,
@@ -162,27 +162,27 @@ unnatural_selection_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType == BL_PC and not player:canPK(target)) or target.blType == BL_NPC then
-			player:sendMinitext("You cannot attack that target.")
+			player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 			return
 		end
 
 		if target:checkIfCast(curses) then
-			player:sendMinitext("Another spell of this type is in effect.")
+			player:sendMinitext("Mantra lain sejenis ini sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is already protected.")
+			player:sendMinitext("Sasaran itu sudah terlindungi.")
 			return
 		end
 
@@ -190,7 +190,7 @@ unnatural_selection_mage = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(44)
-		player:sendMinitext("You cast Unnatural Selection.")
+		player:sendMinitext("Kau merapal Unnatural Selection.")
 		target:setDuration("unnatural_selection_mage", duration)
 		target:sendAnimation(101, 0)
 
@@ -198,7 +198,7 @@ unnatural_selection_mage = {
 			target.armor = target.armor + 30
 			target.cursed = 1
 		elseif (target.blType == BL_PC and player:canPK(target)) then
-			target:sendMinitext(player.name .. " casts Unnatural Selection on you.")
+			target:sendMinitext(player.name .. " merapal Unnatural Selection padamu.")
 			target:calcStat()
 		end
 	end,
@@ -239,27 +239,27 @@ flaw_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("That is no longer useful.")
+			player:sendMinitext("Itu sudah tidak berguna lagi.")
 			return
 		end
 
 		if (target.blType == BL_PC and not player:canPK(target)) or target.blType == BL_NPC then
-			player:sendMinitext("You cannot attack that target.")
+			player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 			return
 		end
 
 		if target:checkIfCast(curses) then
-			player:sendMinitext("Another spell of this type is in effect.")
+			player:sendMinitext("Mantra lain sejenis ini sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is already protected.")
+			player:sendMinitext("Sasaran itu sudah terlindungi.")
 			return
 		end
 
@@ -267,7 +267,7 @@ flaw_mage = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(26)
-		player:sendMinitext("You cast Flaw.")
+		player:sendMinitext("Kau merapal Flaw.")
 		target:setDuration("flaw_mage", duration)
 		target:sendAnimation(79, 0)
 
@@ -275,7 +275,7 @@ flaw_mage = {
 			target.armor = target.armor + 30
 			target.cursed = 1
 		elseif (target.blType == BL_PC and player:canPK(target)) then
-			target:sendMinitext(player.name .. " casts Flaw on you.")
+			target:sendMinitext(player.name .. " merapal Flaw padamu.")
 			target:calcStat()
 		end
 	end,

@@ -529,9 +529,9 @@ elixir = {
 			pcs[i].gfxWeap = 20000
 			pcs[i].registry["elixir_flag"] = 0
 			pcs[i].registry["elixir_arrows"] = 36
-			pcs[i]:sendMinitext("You have been loaded with 36 arrows.")
+			pcs[i]:sendMinitext("Kau dibekali 36 anak panah.")
 			pcs[i]:updateState()
-			pcs[i]:sendMinitext("Good luck!")
+			pcs[i]:sendMinitext("Semoga berhasil!")
 		end
 	end,
 
@@ -603,7 +603,7 @@ elixir = {
 						end
 					end
 				else
-					player:sendMinitext("You are out of arrows!")
+					player:sendMinitext("Anak panahmu habis!")
 				end
 			end
 		end
@@ -766,7 +766,7 @@ elixir = {
 		elixir.teamDye(player, player.registry["elixirTeam"])
 		player.gfxWeap = 20000
 		player.registry["elixir_arrows"] = 0
-		player:sendMinitext("You have been warped to sidelines.")
+		player:sendMinitext("Kau dipindahkan ke pinggir lapangan.")
 
 		if player.registry["elixirHitBy"] > 0 then
 			if (core.gameRegistry["elixirState"] == 13) then
@@ -809,8 +809,8 @@ elixir = {
 			if core.gameRegistry["elixirState"] ~= 101 then
 				-- end state
 				local confirm = player:menuSeq(
-					"Are you sure you wish to abandon your team?",
-					{"Yes", "No"},
+					"Kau yakin ingin meninggalkan regumu?",
+					{"Ya", "Tidak"},
 					{}
 				)
 				if confirm == 1 then

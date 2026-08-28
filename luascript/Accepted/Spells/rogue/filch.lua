@@ -7,7 +7,7 @@ filch_rogue = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -15,7 +15,7 @@ filch_rogue = {
 		player:playSound(4)
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:talk(2, "I'll take that")
+		player:talk(2, "Aku ambil yang itu")
 
 		for i = 1, spaces do
 			local pc = {}
@@ -107,7 +107,7 @@ filch_rogue = {
 						end
 						item[j]:delete()
 					else
-						player:sendMinitext("But that would be stealing.")
+						player:sendMinitext("Tapi itu namanya mencuri.")
 					end
 				end
 			end
@@ -132,7 +132,7 @@ spirits_hand_rogue = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -140,7 +140,7 @@ spirits_hand_rogue = {
 		player:playSound(4)
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:talk(2, "I'll take that")
+		player:talk(2, "Aku ambil yang itu")
 
 		for i = 1, spaces do
 			local pc = {}
@@ -232,7 +232,7 @@ spirits_hand_rogue = {
 						end
 						item[j]:delete()
 					else
-						player:sendMinitext("But that would be stealing.")
+						player:sendMinitext("Tapi itu namanya mencuri.")
 					end
 				end
 			end
@@ -257,7 +257,7 @@ quick_fingers_rogue = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -265,7 +265,7 @@ quick_fingers_rogue = {
 		player:playSound(4)
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:talk(2, "I'll take that")
+		player:talk(2, "Aku ambil yang itu")
 
 		for i = 1, spaces do
 			local pc = {}
@@ -357,7 +357,7 @@ quick_fingers_rogue = {
 						end
 						item[j]:delete()
 					else
-						player:sendMinitext("But that would be stealing.")
+						player:sendMinitext("Tapi itu namanya mencuri.")
 					end
 				end
 			end
@@ -382,7 +382,7 @@ light_touch_rogue = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -390,7 +390,7 @@ light_touch_rogue = {
 		player:playSound(4)
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:talk(2, "I'll take that")
+		player:talk(2, "Aku ambil yang itu")
 
 		for i = 1, spaces do
 			local pc = {}
@@ -482,7 +482,7 @@ light_touch_rogue = {
 						end
 						item[j]:delete()
 					else
-						player:sendMinitext("But that would be stealing.")
+						player:sendMinitext("Tapi itu namanya mencuri.")
 					end
 				end
 			end

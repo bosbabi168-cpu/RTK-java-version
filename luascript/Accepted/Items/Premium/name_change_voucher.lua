@@ -9,22 +9,22 @@ name_change_voucher = {
 		player.dialogType = 0
 
 		if not player:canCast(1, 1, 0) then
-			player:sendMinitext("You can't use this.")
+			player:sendMinitext("Kau tidak bisa memakai ini.")
 			return
 		end
 
-		local name = player:inputLetterCheck(player:input("What do you want your name to be called?"))
+		local name = player:inputLetterCheck(player:input("Kau ingin namamu menjadi apa?"))
 
 		if string.len(name) < 3 then
 			player:dialogSeq(
-				{t, "You cannot enter a name shorter than 3 characters."},
+				{t, "Kau tidak bisa memasukkan nama yang kurang dari 3 huruf."},
 				0
 			)
 			return
 		end
 		if string.len(name) > 12 then
 			player:dialogSeq(
-				{t, "You cannot enter a name longer than 12 characters."},
+				{t, "Kau tidak bisa memasukkan nama yang lebih dari 12 huruf."},
 				0
 			)
 			return
@@ -34,21 +34,21 @@ name_change_voucher = {
 
 		if nameCheck ~= false then
 			player:dialogSeq(
-				{t, "Name already exists. Please try a different name."},
+				{t, "Nama itu sudah ada. Coba nama lain."},
 				0
 			)
 			return
 		end
 
 		local confirm = player:menuSeq(
-			"Are you sure you want " .. name .. " to be your new name?",
-			{"Yes", "No"},
+			"Kau yakin ingin " .. name .. " menjadi nama barumu?",
+			{"Ya", "Tidak"},
 			{}
 		)
 
 		if confirm == 1 then
 			if player:hasItem("name_change_voucher", 1) ~= true then
-				player:dialogSeq({t, "You are missing the voucher."}, 0)
+				player:dialogSeq({t, "Vouchernya tidak ada padamu."}, 0)
 				return
 			end
 
@@ -58,7 +58,7 @@ name_change_voucher = {
 			player:updateMail(oldName)
 			characterLog.nameChangeWrite(player, oldName)
 
-			player:dialogSeq({t, "Please relog to update your character."}, 0)
+			player:dialogSeq({t, "Masuk ulang untuk memperbarui karaktermu."}, 0)
 		end
 	end)
 }

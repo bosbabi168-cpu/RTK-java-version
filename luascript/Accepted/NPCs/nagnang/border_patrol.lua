@@ -13,7 +13,7 @@ BorderPatrolNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Just doin' my job here. Keep yer nose clean and I won't have to do my job on you."
+					"Aku cuma menjalankan tugas di sini. Jaga sikapmu, dan aku tidak perlu menjalankan tugasku padamu."
 				},
 				0
 			)
@@ -23,8 +23,8 @@ BorderPatrolNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Eh? What's that? Sorry Stranger, we don't let anyone past our borders here.",
-					"Hmmm, you have the scent of the Leviathans on you. Perhaps I could look the other way if you were to hand me one of those lovely pelts the green squirrels drop."
+					"Eh? Apa itu? Maaf, Orang Asing, kami tidak membiarkan siapa pun melewati perbatasan ini.",
+					"Hmmm, kau berbau Leviathan. Mungkin aku bisa pura-pura tidak lihat kalau kau menyerahkan satu kulit indah yang dijatuhkan tupai hijau itu."
 				},
 				1
 			)
@@ -48,7 +48,7 @@ BorderPatrolNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Well thank you kindly! Now be on your way and I don't know you. Oh, and look out for those tricky Fox spirits. They enjoy their little games."
+					"Wah, terima kasih banyak! Sekarang lanjutkan jalanmu dan aku tidak mengenalmu. Oh, hati-hati dengan roh Rubah yang licik itu. Mereka suka permainan kecilnya."
 				},
 				1
 			)

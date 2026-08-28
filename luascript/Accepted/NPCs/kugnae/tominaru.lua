@@ -18,7 +18,7 @@ TominaruNpc = {
 		}
 
 		local choice = player:menuSeq(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts,
 			{}
 		)
@@ -27,19 +27,19 @@ TominaruNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Welcome. I am glad to see your young soul grow. There are many here who can teach you the ordinary ways of life. I can teach you the ways of conscience or your Karma.",
-					"All that you think and do can affect your Karma. You can choose to be kind or choose to do evil. Both affect your conscience.",
-					"There are many ways you can add or subtract from your Karma. Whether you choose to crawl like the cursed of the Earth or become one with the Gods, there are many ways to find your current Karma level.",
-					"Monks, Geomancers and Diviners can access your soul. They can tell you if you have Snake or Shunnyo ((angel)) Karma. Not even the mercahnts will speak with one having Snake Karma",
-					"If you struggle mightily and with great courage your Karma will soar. If you flee from challenges or commit illegal acts your Karma will plummet.",
-					"It is even possible for you to allow others to gain Karma. Many in the lands will seek to help young ones like",
-					"Your fellow citizens who have greater experience can Mentor you by increasing your skill levels and knowledge.",
-					"Those who strive for true Karma do not perform these acts for money but from a desire to help. The vice Greed is an example of a mindset that prevents gains of Karma.",
-					"Protect your soul by not allowing gold or items to be paid for or by Mentors. Greed has nothing to do with true enlightment of the soul.",
-					"As you progress in wisdom and knowledge your karma can be at many levels. Allying with one of the Mythic creatures is one way that can bring you much Karma.",
-					"Abusing laws is commonly understood to lower Karma but many do not know that breaking a vow, such as joining a subpath and then leaving the circle, can also affect your Karma.",
-					"Learn from others; both citizens, MEntors and Tutors and choose the wise path. A good soul can take you a long way towards your path in life.",
-					"May the Gods bless your life."
+					"Selamat datang. Aku senang melihat jiwa mudamu tumbuh. Di sini banyak yang bisa mengajarkanmu cara hidup yang biasa. Aku bisa mengajarkanmu jalan hati nurani, atau Karma-mu.",
+					"Semua yang kau pikirkan dan lakukan bisa memengaruhi Karma-mu. Kau bisa memilih berbuat baik atau berbuat jahat. Keduanya memengaruhi nuranimu.",
+					"Ada banyak cara menambah atau mengurangi Karma-mu. Entah kau memilih merangkak seperti yang terkutuk di Bumi atau menyatu dengan para Dewa, ada banyak cara mengetahui tingkat Karma-mu saat ini.",
+					"Para Monk, Geomancer, dan Diviner bisa menjangkau jiwamu. Mereka bisa memberitahumu apakah Karma-mu Snake atau Shunnyo ((malaikat)). Bahkan pedagang pun enggan berbicara dengan pemilik Karma Snake",
+					"Kalau kau berjuang keras dengan keberanian besar, Karma-mu melambung. Kalau kau lari dari tantangan atau melanggar hukum, Karma-mu terjun bebas.",
+					"Kau bahkan bisa membuat orang lain memperoleh Karma. Banyak orang di negeri ini berusaha menolong yang muda seperti",
+					"Sesama warga yang lebih berpengalaman bisa membimbingmu dengan menaikkan tingkat keahlian dan pengetahuanmu.",
+					"Mereka yang mengejar Karma sejati tidak melakukannya demi uang, melainkan karena hasrat menolong. Ketamakan adalah contoh sikap yang menghalangi bertambahnya Karma.",
+					"Jagalah jiwamu dengan tidak membiarkan emas atau barang dibayarkan kepada atau oleh Pembimbing. Ketamakan tidak ada hubungannya dengan pencerahan jiwa yang sejati.",
+					"Seiring kebijaksanaan dan pengetahuanmu bertambah, karmamu bisa berada di banyak tingkat. Bersekutu dengan salah satu makhluk Mythic adalah satu cara yang bisa mendatangkan banyak Karma.",
+					"Menyalahgunakan hukum umum diketahui menurunkan Karma, tetapi banyak yang tidak tahu bahwa mengingkari janji, misalnya bergabung dengan subjalur lalu meninggalkannya, juga memengaruhi Karma-mu.",
+					"Belajarlah dari orang lain: sesama warga, Pembimbing, maupun Tutor, lalu pilihlah jalan yang bijak. Jiwa yang baik akan membawamu jauh di jalan hidupmu.",
+					"Semoga para Dewa memberkati hidupmu."
 				},
 				1
 			)
@@ -51,16 +51,16 @@ TominaruNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Life is a great adventure! You don't have to face it alone! You may be alright soloing at first but as time passes on you will find that life just gets too boring or the enemies too tough to defeat by yourself.",
-					"You are asking now what is the solution? Well that is easy. You can find yourself other people to group with. ((Hit shift and the letter g to turn your group on.))",
-					"How do you group? Well that is the easy part. One way and the most common way is to tap on the shoulder of the person you wish to group with. ((Left click on the person you wish to group with and click on the box that looks like 2 P's facing each other.",
-					"If this box is not highlighted then they do not have their group turned on. You will need to ask them to turn it on in order to group.",
-					"You may group up to nine other players! So a total of ten players may form a group, you being the tenth.",
-					"((The other choice to group a player is to hit g on your keyboard and type the name of the person you wish to group with, again if they do not have their group on you will need to ask them to do this.))",
-					"When players are grouped each player gets a small portion of the experience from slaying a monster. Although the experience is split, being in a group will allow you to slay monsters faster and can help gain experience even faster.",
-					"Oh! I almost forgot to tell you! Obviously it will be easier making a group if you have friends to group with. Keep track of your friends with your list. ((Press F3 on your keyboard or click menu and friends to bring up the list.))",
-					"Your friends name will appear in blue on the heroes list ((Press ctrl w or click menu userlist to see the people online.))",
-					"Happy grouping and good luck!"
+					"Hidup adalah petualangan besar! Kau tidak harus menghadapinya sendirian! Mungkin awalnya kau baik-baik saja sendiri, tetapi lama-kelamaan hidup jadi terlalu membosankan atau musuhnya terlalu tangguh untuk kau kalahkan seorang diri.",
+					"Kau bertanya apa jalan keluarnya? Mudah saja: carilah orang lain untuk bergrup denganmu. ((Tekan shift dan huruf g untuk menyalakan grupmu.))",
+					"Bagaimana caranya bergrup? Itu bagian yang mudah. Cara yang paling umum adalah menepuk bahu orang yang ingin kau ajak. ((Klik kiri orang itu lalu klik kotak yang bentuknya seperti dua huruf P saling berhadapan.",
+					"Kalau kotak itu tidak menyala, berarti grupnya belum dinyalakan. Kau harus memintanya menyalakannya dulu supaya bisa bergrup.",
+					"Kau bisa bergrup dengan sampai sembilan pemain lain! Jadi satu grup bisa terdiri dari sepuluh pemain, denganmu sebagai yang kesepuluh.",
+					"((Cara lain adalah menekan g pada papan ketik lalu mengetik nama orang yang ingin kau ajak. Sekali lagi, kalau grupnya belum menyala, kau harus memintanya menyalakannya.))",
+					"Saat pemain bergrup, tiap orang mendapat sebagian kecil pengalaman dari monster yang dibunuh. Meski pengalamannya terbagi, bergrup membuatmu membunuh monster lebih cepat, sehingga pengalaman justru terkumpul lebih cepat pula.",
+					"Oh! Hampir lupa! Tentu saja membentuk grup lebih mudah kalau kau punya kawan. Catat kawan-kawanmu dalam daftar. ((Tekan F3 pada papan ketik, atau klik menu lalu friends untuk membuka daftarnya.))",
+					"Nama kawanmu akan tampil biru di daftar pahlawan ((Tekan ctrl w atau klik menu userlist untuk melihat siapa yang sedang daring.))",
+					"Selamat bergrup dan semoga berhasil!"
 				},
 				1
 			)
@@ -72,14 +72,14 @@ TominaruNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You're so young that you have barely a legend to your name! What is a legend you ask yourself? Well, it is a reflection of your time here in the Kingdoms. It keeps track of all the things you have accomplished both good and bad.",
-					"((To see your legend, click on the estatus tab or press s on your keyboard to see the status menu. Then click the right-facing arrow in the bottom corner twice.))",
-					"((To see the legend of others click on a player and then click on the right-facing arrow three times.))",
-					"You can gather marks on your legend many ways. Completing quests, being recognized by members of your community, witnessing a great event or taking positions of responsibility such as judge, game host, or guide of a subpath. All these things will earn a new notch on your legend.",
-					"But beware! There are also red legend marks which tell the community of your foul deeds. These are collected by being jailed, but can also be given out by subpaths for something disrespectfully done to their group.",
-					"The more red marks you collect, the less privileges you will find you have in the Kingdoms, and too many could lead to your eventual banishment!",
-					"Many clans and subpaths will not allow players to join their group if a red marks scar is on their legend.",
-					"Remember to stay on the right side of the law in order to keep your legend neat and clean. I would hate to see someone with as much potential as yourself lose it to any wrong doing."
+					"Kau masih terlalu muda sehingga legendamu hampir belum ada! Apa itu legenda? Ia cermin dari waktumu di Kerajaan-kerajaan ini, mencatat segala yang kau capai, baik maupun buruk.",
+					"((Untuk melihat legendamu, klik tab status atau tekan s pada papan ketik untuk membuka menu status. Lalu klik panah ke kanan di sudut bawah dua kali.))",
+					"((Untuk melihat legenda orang lain, klik pemainnya lalu klik panah ke kanan tiga kali.))",
+					"Ada banyak cara mengumpulkan tanda pada legendamu: menuntaskan tugas, diakui anggota masyarakatmu, menyaksikan peristiwa besar, atau memegang jabatan seperti hakim, penyelenggara permainan, atau pemandu subjalur. Semua itu menambah satu takik baru pada legendamu.",
+					"Tapi hati-hati! Ada juga tanda legenda merah yang memberitahu masyarakat tentang perbuatan burukmu. Tanda itu didapat karena dipenjara, tetapi bisa juga diberikan subjalur atas perbuatan tidak hormat terhadap kelompok mereka.",
+					"Makin banyak tanda merah yang kau kumpulkan, makin sedikit hak yang kau miliki di Kerajaan-kerajaan ini, dan terlalu banyak bisa berujung pada pengusiranmu!",
+					"Banyak klan dan subjalur menolak menerima pemain yang legendanya bercacat tanda merah.",
+					"Ingatlah untuk tetap berada di sisi hukum yang benar agar legendamu rapi dan bersih. Aku tidak ingin melihat orang sepotensial dirimu kehilangan itu karena perbuatan salah."
 				},
 				1
 			)
@@ -91,11 +91,11 @@ TominaruNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Why are you staring at me with that blank look on your face? I guess you have even forgotten how to express yourself.",
-					"When you interact with those around you not only can you communicate through words but also through facial expressions. A great way to show your feelings!",
-					"((To make an emotion press : or shift ; then choose a letter a through p. There is a different emotion for each letter.",
-					"((Here is a list of each letter and what emotion it will make your character do.",
-					"a - Happy",
+					"Kenapa kau menatapku dengan wajah kosong begitu? Sepertinya kau bahkan lupa cara mengungkapkan perasaanmu.",
+					"Saat berhubungan dengan orang di sekitarmu, kau bisa berkomunikasi bukan hanya lewat kata, tetapi juga lewat air muka. Cara yang bagus untuk menunjukkan perasaanmu!",
+					"((Untuk membuat ekspresi, tekan : atau shift ; lalu pilih huruf a sampai p. Tiap huruf menghasilkan ekspresi yang berbeda.",
+					"((Ini daftar tiap huruf dan ekspresi yang akan dilakukan karaktermu.",
+					"a - Senang",
 					"b - Sad",
 					"c - Embarrased",
 					"d - Wink",
@@ -103,7 +103,7 @@ TominaruNpc = {
 					"f - Tired",
 					"g - Surprised",
 					"h - Angry",
-					"i - Sarcastic",
+					"i - Sinis",
 					"j - Shrug",
 					"k - Annoyed",
 					"l - Dance",
@@ -122,19 +122,19 @@ TominaruNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"It is important to always remain aware of your current physical state in order to maintain your health and more efficiently fight the foes you may come across.",
-					"((To see your status, click on the 'Status' tab, or press 's' on your keyboard.))",
-					"Your vitality is how much energy you have. THe more vitality you have, the longer it will take for you to be killed should you be attacked.",
-					"Your mana is the amount of intellect you have acquired. The more mana you have, the more magic and special abilities you will be able to perform.",
-					"Some items you were will give you a greater chance to hit your foe and others will increase the amount of damage you deal with a melee weapon.",
-					"These are two things that Rogues and Warriors more than any other should pay special attention to.",
-					"In addition to your probability to  land a blow and the amount of damage dealt, might and grace are two more things that melee classes shoould keep in mind.",
-					"The more might you have will allow you to carry stronger weapons and increase the amount of damage you deal to foes as well.",
-					"The more grace you have the more nimble you are on your feet. This will allow you to dodge melee attacks against you more easily.",
-					"Strength of will is necesesary for spell casters such as Mages and Poets.",
-					"The stronger your will, the less likely it is that your spells and enchantments will fail against the opponent you are facing.",
-					"All of the armor and equipment you wear may affect how hard you take blows of any kind. This is called your armor class.",
-					"The lower your armor's class is the less severe any damage you take will be. ((This is commonly referred to as your AC.))"
+					"Penting untuk selalu menyadari keadaan jasmanimu agar kesehatanmu terjaga dan kau bisa melawan musuh dengan lebih efisien.",
+					"((Untuk melihat statusmu, klik tab 'Status', atau tekan 's' pada papan ketik.))",
+					"Vitality adalah seberapa besar tenagamu. Makin besar vitality-mu, makin lama waktu yang dibutuhkan untuk membunuhmu bila kau diserang.",
+					"Mana adalah seberapa besar kecerdasan yang kau peroleh. Makin besar mana-mu, makin banyak sihir dan kemampuan khusus yang bisa kau lakukan.",
+					"Sebagian barang yang kau kenakan menambah peluangmu mengenai musuh, sebagian lain menambah kerusakan yang kau timbulkan dengan senjata jarak dekat.",
+					"Kedua hal itu paling perlu diperhatikan oleh Rogue dan Warrior dibanding jalur mana pun.",
+					"Selain peluang mengenai sasaran dan besarnya kerusakan, might dan grace adalah dua hal lain yang perlu diingat kelas jarak dekat.",
+					"Makin besar might-mu, makin kuat senjata yang bisa kau bawa, dan makin besar pula kerusakan yang kau timbulkan pada musuh.",
+					"Makin besar grace-mu, makin lincah kakimu, sehingga kau lebih mudah mengelak dari serangan jarak dekat.",
+					"Kekuatan will diperlukan oleh perapal mantra seperti Mage dan Poet.",
+					"Makin kuat will-mu, makin kecil kemungkinan mantra dan jampimu gagal terhadap lawan yang kau hadapi.",
+					"Seluruh zirah dan perlengkapan yang kau kenakan memengaruhi seberapa berat pukulan yang kau terima. Itu disebut armor class.",
+					"Makin rendah armor class-mu, makin ringan kerusakan yang kau terima. ((Ini biasa disebut AC-mu.))"
 				},
 				1
 			)

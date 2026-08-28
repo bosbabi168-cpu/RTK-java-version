@@ -288,17 +288,17 @@ RabbitInvasionNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Join Queue", "Leave Queue"}
+		local opts = {"Masuk Antrean", "Keluar Antrean"}
 
 		local menu = player:menuString(
-			"Can you help me stop the rabbits attacking my crops?",
+			"Bisakah kau membantuku menghentikan kelinci yang menyerang tanamanku?",
 			opts
 		)
 
-		if menu == "Join Queue" then
+		if menu == "Masuk Antrean" then
 			player.registry["rabbit_invasion"] = 0
 			RabbitInvasionNpc.addToQueue(player.name)
-		elseif menu == "Leave Queue" then
+		elseif menu == "Keluar Antrean" then
 			RabbitInvasionNpc.removeFromQueue(player.name)
 		end
 	end),
@@ -369,7 +369,7 @@ RabbitInvasionNpc = {
 					]
 					player:removeLegendbyName("rabbitinvasionhighscore")
 					player:addLegend(
-						"Highest score in rabbit invasion " .. player.registry[
+						"Nilai tertinggi dalam serbuan kelinci " .. player.registry[
 							"rabbit_invasion_highest_score"
 						],
 						"rabbitinvasionhighscore",

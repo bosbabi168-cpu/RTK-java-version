@@ -11,11 +11,11 @@ global_heal = {
 		-- maximum 10 tiles away in either direction (verified on NTK)
 
 		if (player.magic < manacost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return 0
 		end
 		if (target.state == 1) then
-			player:sendMinitext("You need a different type of cure.")
+			player:sendMinitext("Kau butuh jenis penawar yang lain.")
 			return 0
 		end
 

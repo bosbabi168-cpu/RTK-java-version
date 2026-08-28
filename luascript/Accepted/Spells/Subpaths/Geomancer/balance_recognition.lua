@@ -11,7 +11,7 @@ balance_recognition = {
 		local magicCost = 100
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -33,11 +33,11 @@ balance_recognition = {
 		local target = Player(input)
 
 		if target == nil then
-			player:dialogSeq({t, "That player is currently not online."}, 0)
+			player:dialogSeq({t, "Pemain itu sedang tidak daring."}, 0)
 			return
 		end
 		if target.ID == player.ID then
-			player:dialogSeq({t, "You cannot provide your own recognition."}, 0)
+			player:dialogSeq({t, "Kau tidak bisa memberi pengakuan untuk dirimu sendiri."}, 0)
 			return
 		end
 
@@ -49,7 +49,7 @@ balance_recognition = {
 		local legendMarkyname = {"keeper_of_balance", "disruptor_of_balance"}
 		local legendMarks = {"Keeper of Balance", "Disruptor of Balance"}
 		local choice = player:menuString(
-			"What do you wish to bestow on them?",
+			"Apa yang ingin kau anugerahkan kepadanya?",
 			opts
 		)
 
@@ -57,7 +57,7 @@ balance_recognition = {
 			target:removeLegendbyName("disruptor_of_balance")
 			target:removeLegendbyName("keeper_of_balance")
 			target:addLegend(
-				"Keeper of Balance, Marked by $player",
+				"Penjaga Keseimbangan, Ditandai oleh $player",
 				"keeper_of_balance",
 				11,
 				1,
@@ -66,7 +66,7 @@ balance_recognition = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has been recognized as a \"Keeper of Balance\""
+					target.name .. " telah diakui sebagai \"Penjaga Keseimbangan\""
 				},
 				0
 			)
@@ -75,7 +75,7 @@ balance_recognition = {
 			target:removeLegendbyName("keeper_of_balance")
 			target:removeLegendbyName("disruptor_of_balance")
 			target:addLegend(
-				"Disruptor of Balance, Marked by $player",
+				"Pengganggu Keseimbangan, Ditandai oleh $player",
 				"disruptor_of_balance",
 				11,
 				4,
@@ -84,7 +84,7 @@ balance_recognition = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has been recognized as a \"Disruptor of Balance\""
+					target.name .. " telah diakui sebagai \"Pengganggu Keseimbangan\""
 				},
 				0
 			)
@@ -98,7 +98,7 @@ balance_recognition = {
 			end
 
 			local lmChoice = player:menuString(
-				"Which recognition would you like to remove?",
+				"Pengakuan mana yang ingin kau hapus?",
 				foundLegendMarks
 			)
 
@@ -112,7 +112,7 @@ balance_recognition = {
 			player:dialogSeq(
 				{
 					t,
-					target.name .. " has had their recognition removed for " .. lmChoice
+					target.name .. " kehilangan pengakuannya karena " .. lmChoice
 				},
 				0
 			)

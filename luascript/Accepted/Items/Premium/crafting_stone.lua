@@ -1,7 +1,7 @@
 crafting_stone = {
 	use = function(player)
 		if player:hasDuration("crafting_bonus") then
-			player:sendMinitext("Crafting bonus already in effect.")
+			player:sendMinitext("Bonus kerajinan sedang berlaku.")
 			return
 		end
 

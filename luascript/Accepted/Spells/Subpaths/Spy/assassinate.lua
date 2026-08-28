@@ -20,7 +20,7 @@ assassinate = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -33,7 +33,7 @@ assassinate = {
 
 		player.magic = player.magic - magicCost
 		player:sendStatus()
-		player:sendMinitext("You cast Assassinate.")
+		player:sendMinitext("Kau merapal Assassinate.")
 
 		player:setAether("assassinate", aethers)
 		player:sendAction(1, 30)
@@ -57,7 +57,7 @@ assassinate = {
 			targetpc.attacker = player.ID
 			targetpc:removeHealthExtend(damage, 1, 1, 1, 1, 0)
 			targetpc:sendStatus()
-			targetpc:sendMinitext(player.name .. " attacks you with Assassinate spell.")
+			targetpc:sendMinitext(player.name .. " menyerangmu dengan mantra Assassinate.")
 			player:talk(talktype, player.name .. ": Ka~~!")
 		elseif targetmob ~= nil then
 			player.health = math.ceil(player.health * (2 / 3))

@@ -11,11 +11,11 @@ PoemNpc = {
 
 		local opts = {}
 
-		table.insert(opts, "Vote on a poem")
+		table.insert(opts, "Pilih sebuah puisi")
 
 		if player.gmLevel > 0 then
 			table.insert(opts, "Clear votes")
-			table.insert(opts, "Close voting session")
+			table.insert(opts, "Tutup sesi pemungutan suara")
 		end
 
 		local poems = getPoems()
@@ -47,19 +47,19 @@ PoemNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 
-		if choice == "Vote on a poem" then
+		if choice == "Pilih sebuah puisi" then
 			local choice2 = player:menuSeq(
-				"Which poem would you like to vote for?",
+				"Puisi mana yang ingin kau pilih?",
 				poemTopics,
 				{}
 			)
 			local choice3 = player:menuSeq(
-				"Are you sure you want to cast this vote?",
-				{"Yes, cast my vote.", "No, I'm not ready."},
+				"Kau yakin ingin memberikan suara ini?",
+				{"Ya, berikan suaraku.", "Tidak, aku belum siap."},
 				{}
 			)
 
@@ -86,7 +86,7 @@ PoemNpc = {
 			player:returnFunc()
 		end
 
-		if choice == "Close voting session" then
+		if choice == "Tutup sesi pemungutan suara" then
 			PoemNpc.closeVotingSession()
 		end
 

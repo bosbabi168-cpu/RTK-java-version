@@ -17,7 +17,7 @@ FishNpc = {
 			Tools.checkKarma(player)
 
 			if player.state == 1 then
-				player:dialogSeq({t, "Come back to me when you are alive."}, 0)
+				player:dialogSeq({t, "Temui aku lagi kalau kau sudah hidup."}, 0)
 				return
 			end
 
@@ -25,7 +25,7 @@ FishNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You're still a youngin'! If you take up fishing now, you'll never amount to anything. Oh, why not? Here's some string and worms for you to try with, good luck!"
+						"Kau masih terlalu muda! Kalau sekarang kau menekuni memancing, kau tidak akan jadi apa-apa. Ah, ya sudah. Ini benang dan cacing untuk kau coba, semoga berhasil!"
 					},
 					1
 				)
@@ -35,12 +35,12 @@ FishNpc = {
 				if (random <= 5) then
 					player.quest["learned_to_fish"] = 1
 					player:addItem("minnow", 1)
-					player:dialogSeq({t, "You caught a fish!"}, 0)
+					player:dialogSeq({t, "Kau mendapat seekor ikan!"}, 0)
 				else
 					player:dialogSeq(
 						{
 							t,
-							"You fish for quite a while, but with little success."
+							"Kau memancing cukup lama, tetapi hasilnya sedikit."
 						},
 						0
 					)
@@ -50,14 +50,14 @@ FishNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You like to fish, do you? Tell you what...I don't have any spare equipment for sale, but I'll let you borrow some."
+						"Kau suka memancing, ya? Begini saja... aku tidak punya perlengkapan cadangan untuk dijual, tetapi kau boleh meminjam."
 					},
 					1
 				)
 
 				if player.baseHealth < 10 then
 					player:dialogSeq(
-						{t, "You need at least 10 base health to fish."},
+						{t, "Kau butuh kesehatan dasar sedikitnya 10 untuk memancing."},
 						0
 					)
 					return
@@ -70,7 +70,7 @@ FishNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You seem to be putting on some weight. Your health begins to suffer from your laziness."
+							"Sepertinya berat badanmu bertambah. Kesehatanmu mulai terganggu oleh kemalasanmu."
 						},
 						1
 					)
@@ -79,36 +79,36 @@ FishNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You start to feel very guilty about fishing so much and ignoring your other responsibilities."
+							"Kau mulai merasa sangat bersalah karena terlalu banyak memancing dan mengabaikan tanggung jawabmu yang lain."
 						},
 						1
 					)
 				end
 
 				local poles = {
-					"Just a piece of string (1 gold)",
-					"Stick and string (10 gold)",
-					"Stick and good string (100 gold)",
-					"Good stick and good string (1000 gold)"
+					"Sekadar seutas benang (1 emas)",
+					"Tongkat dan benang (10 emas)",
+					"Tongkat dan benang bagus (100 emas)",
+					"Tongkat bagus dan benang bagus (1000 emas)"
 				}
 				local polesCost = {1, 10, 100, 1000}
 
 				local bates = {
-					"None (0 gold)",
-					"Worms (5 gold)",
-					"Bugs (50 gold)",
-					"Gourmet bait (500 gold)"
+					"Tidak ada (0 emas)",
+					"Cacing (5 emas)",
+					"Serangga (50 emas)",
+					"Umpan istimewa (500 emas)"
 				}
 				local batesCost = {0, 5, 50, 500}
 
 				local poleChoice = player:menuSeq(
-					"What type of pole would you like?",
+					"Joran jenis apa yang kau mau?",
 					poles,
 					{}
 				)
 
 				local bateChoice = player:menuSeq(
-					"Now what kind of bait would you like?",
+					"Sekarang, umpan jenis apa yang kau mau?",
 					bates,
 					{}
 				)
@@ -127,7 +127,7 @@ FishNpc = {
 				local totalCost = polesCost[poleChoice] + batesCost[bateChoice]
 				if player.money < totalCost then
 					player:dialogSeq(
-						{t, "Come back when you have enough gold."},
+						{t, "Kembalilah kalau emasmu sudah cukup."},
 						0
 					)
 					return
@@ -234,8 +234,8 @@ FishNpc = {
 
 						core.gameRegistry["fishing_magical_fish"] = magicalFishChance
 						local magicalFishChoice = player:menuSeq(
-							"You have caught a magical fish! What do you do?",
-							{"Keep the fish.", "Throw the fish back."},
+							"Kau menangkap ikan bersihir! Apa yang kau lakukan?",
+							{"Simpan ikannya.", "Lepaskan ikannya kembali."},
 							{}
 						)
 
@@ -267,8 +267,8 @@ FishNpc = {
 						core.gameRegistry["fishing_line_stuck"] = lineStuckChance
 
 						local stuckChoice = player:menuSeq(
-							"Your line seems to have gotten caught on something. Do you:",
-							{"Try to force it free.", "Discard your line."},
+							"Sepertinya senarmu tersangkut sesuatu. Kau:",
+							{"Mencoba menariknya paksa.", "Membuang senarmu."},
 							{}
 						)
 
@@ -336,7 +336,7 @@ FishNpc = {
 								player:dialogSeq(
 									{
 										titem,
-										"What luck! Your line had gotten caught on a " .. item.name .. "!!! After a draining struggle, the " .. item.name .. " is yours!"
+										"Beruntung sekali! Senarmu tersangkut pada " .. item.name .. "!!! Setelah perjuangan yang melelahkan, " .. item.name .. " jadi milikmu!"
 									},
 									0
 								)
@@ -346,7 +346,7 @@ FishNpc = {
 									-1,
 									"[SYSTEM]: " .. player.name .. " has met their demise from a stuck fishing line."
 								)
-								player:sendMinitext("Your line dislodged and killed you in the process.")
+								player:sendMinitext("Senarmu terlepas dan membunuhmu dalam prosesnya.")
 								player.health = 0
 								onDeathPlayer(player)
 							end
@@ -360,10 +360,10 @@ FishNpc = {
 
 					player:addItem(chosenFish, 1)
 
-					player:dialogSeq({t, "You caught a fish!"}, 0)
+					player:dialogSeq({t, "Kau mendapat seekor ikan!"}, 0)
 				else
 					player:dialogSeq(
-						{t, "You fish for a while, but with little success."},
+						{t, "Kau memancing sebentar, tetapi hasilnya sedikit."},
 						0
 					)
 					return

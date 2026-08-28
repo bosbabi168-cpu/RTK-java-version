@@ -409,6 +409,32 @@ public final class MobRegistry {
      *
      * @return jumlah mob yang baru saja mati pada tik ini
      */
+    /**
+     * Bagian kedua {@code mobdb_drops()}: tumpahkan isi inventaris mob ke
+     * petak kematiannya, lalu kosongkan daftarnya.
+     *
+     * <p>Dijatuhkan lewat jalur <b>jatuhan mob</b> ({@code mobdb_dropitem}),
+     * bukan jalur inventaris pemain — jadi aturan gabungnya id saja
+     * (Peringatan #31).</p>
+     */
+    static void jatuhkanInventaris(Mob mob) {
+        if (mob.inventory.isEmpty()) {
+            return;
+        }
+        for (org.rtk.common.mmo.Item it : mob.inventory) {
+            if (it.id != 0 && it.amount >= 1) {
+                MapServer.floorItems.drop(mob, it.id, it.amount, it.dura,
+                        it.protectedFlag, it.owner, mob.m, mob.x, mob.y);
+            }
+        }
+        mob.inventory.clear();
+    }
+
+    /** Pintu masuk {@link #jatuhkanInventaris} untuk uji regresi. */
+    public void jatuhkanInventarisUji(Mob mob) {
+        jatuhkanInventaris(mob);
+    }
+
     private int reapDead(org.rtk.map.script.ScriptEngine engine, MapRegistry world) {
         int mati = 0;
         for (Mob mob : mobs) {
@@ -441,6 +467,27 @@ public final class MobRegistry {
                     engine.doScript(mob.scriptName(), "on_death", mobRef, plRef);
                     // mobdb_drops(): jatuhan barang seluruhnya sisi skrip
                     engine.doScript("HandleMobDrops", null, plRef, mobRef);
+                    // ...kecuali isi inventaris mob, yang di C dijatuhkan
+                    // oleh mobdb_drops sendiri tepat setelah kait itu.
+                    // Inilah yang mengembalikan barang yang pernah
+                    // diserahkan pemain kepada mob ini.
+                    jatuhkanInventaris(mob);
+
+                    // ⚠️ clif.c:2469-2489 — TIGA langkah yang selama ini
+                    // hilang seluruhnya dari port ini: daftar bunuh, kait
+                    // pengalaman, lalu periksa level. Tanpa `onGetExp` mob
+                    // yang mati tidak pernah memberi pengalaman sama
+                    // sekali, dan itu tidak menimbulkan error apa pun —
+                    // gerbang luring tidak bisa melihat sesuatu yang tidak
+                    // terjadi.
+                    daftarBunuh(pembunuh, mob);
+                    try {
+                        engine.doScript("onGetExp", null, plRef, mobRef);
+                    } catch (RuntimeException e) {
+                        log.error("[MOB] kait onGetExp pada '{}' gagal",
+                                mob.displayName(), e);
+                    }
+                    periksaLevel(engine, pembunuh);
                 } else {
                     // mati tanpa pembunuh yang bisa dilacak (mis. skrip
                     // membunuhnya langsung): kait tetap dipanggil
@@ -453,6 +500,62 @@ public final class MobRegistry {
             mob.attacker = 0;
         }
         return mati;
+    }
+
+    /**
+     * addtokillreg() / clif_addtokillreg(): catat satu ekor ke hitungan
+     * bunuh.
+     *
+     * <p>⚠️ Pemain <b>sendirian</b> hanya mencatat bila mob itu memang
+     * memberi pengalaman ({@code if (mob->exp)}); pemain <b>bergrup</b>
+     * mencatat tanpa syarat itu, untuk setiap anggota di peta yang sama.
+     * Bedanya ada di C dan tidak jelas disengaja, tapi ditiru: skrip quest
+     * membaca hitungan ini.</p>
+     */
+    private static void daftarBunuh(User pembunuh, Mob mob) {
+        long jenis = mob.data == null ? 0 : mob.data.id;
+        if (jenis == 0) {
+            return;
+        }
+        if (pembunuh.groupId == 0) {
+            if (mob.data.exp > 0) {
+                tambahSatu(pembunuh, jenis);
+            }
+            return;
+        }
+        for (User t : Groups.anggotaOnline(pembunuh)) {
+            if (t.m == pembunuh.m) {
+                tambahSatu(t, jenis);
+            }
+        }
+    }
+
+    /** {@code MAX_KILLREG} di mmo.h: tabelnya penuh pada 5000 jenis. */
+    private static final int MAX_KILLREG = 5000;
+
+    private static void tambahSatu(User sd, long jenis) {
+        Long ada = sd.status.killReg.get(jenis);
+        if (ada == null && sd.status.killReg.size() >= MAX_KILLREG) {
+            return;   // tabel penuh: C diam-diam berhenti mencatat
+        }
+        sd.status.killReg.merge(jenis, 1L, Long::sum);
+    }
+
+    /**
+     * pc_checklevel() untuk pembunuh, atau untuk tiap anggota grup yang ada
+     * di peta yang sama dan tidak sedang jadi hantu.
+     */
+    private static void periksaLevel(org.rtk.map.script.ScriptEngine engine,
+                                     User pembunuh) {
+        if (pembunuh.groupId == 0) {
+            Pc.checkLevel(engine, pembunuh);
+            return;
+        }
+        for (User t : Groups.anggotaOnline(pembunuh)) {
+            if (t.m == pembunuh.m && t.status.state != 1) {
+                Pc.checkLevel(engine, t);
+            }
+        }
     }
 
     /**

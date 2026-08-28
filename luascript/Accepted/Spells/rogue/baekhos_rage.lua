@@ -7,12 +7,12 @@ baekhos_rage_rogue = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		if player:checkIfCast(lesserFuries) or player.rage > 1 then
-			player:sendMinitext("This spell is already active.")
+			player:sendMinitext("Mantra ini sudah aktif.")
 			return
 		end
 

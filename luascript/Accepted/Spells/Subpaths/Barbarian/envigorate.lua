@@ -9,7 +9,7 @@ envigorate = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -21,7 +21,7 @@ envigorate = {
 		player:sendAnimation(11, 25)
 		player.attacker = player.ID
 		player:addHealthExtend(healAmount, 0, 0, 0, 0, 0)
-		player:sendMinitext("You cast Envigorate.")
+		player:sendMinitext("Kau merapal Envigorate.")
 	end,
 
 	requirements = function(player)

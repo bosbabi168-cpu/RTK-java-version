@@ -88,7 +88,7 @@ blade_crawl = {
 				pc:removeHealthExtend(damage, 1, 1, 1, 1, 0)
 				pc:sendAnimation(307)
 				pc:playSound(354)
-				pc:sendMinitext(owner.name .. " attack you with Blade Crawl!")
+				pc:sendMinitext(owner.name .. " menyerangmu dengan Blade Crawl!")
 			end
 		end
 		if mob ~= nil then

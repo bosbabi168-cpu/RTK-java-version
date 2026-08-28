@@ -60,6 +60,7 @@ public final class RtkLauncher {
             case "cliftest" -> ClifTest.main(rest);
             case "dbtest" -> org.rtk.charserver.DbTest.main(rest);
             case "luaaudit" -> org.rtk.map.script.LuaAudit.main(rest);
+            case "wiresync" -> org.rtk.map.proto.WireSyncTest.main(rest);
             default -> {
                 log.error("Server tidak dikenal: {}", args[0]);
                 usage();

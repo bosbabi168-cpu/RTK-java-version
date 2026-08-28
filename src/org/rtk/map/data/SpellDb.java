@@ -24,6 +24,7 @@ public final class SpellDb {
     private final Map<Integer, String> displayById = new HashMap<>();
     private final Map<Integer, Integer> tickerById = new HashMap<>();
     private final Map<Integer, Integer> dispelById = new HashMap<>();
+    private final Map<Integer, Integer> levelById = new HashMap<>();
 
     /** magicdb_id(): id mantra dari namanya, atau 0 bila tak dikenal. */
     public int idOf(String name) {
@@ -61,6 +62,64 @@ public final class SpellDb {
      * {@code flushDuration(dis, ...)} melewati mantra yang nilainya lebih
      * besar dari {@code dis} — makin tinggi, makin sulit dihapus.
      */
+    /**
+     * magicdb_level(): level mantra menurut <b>nama skripnya</b>.
+     *
+     * <p>Mengembalikan 0 bila namanya tak dikenal — di C juga begitu, dan
+     * skrip memakainya sebagai "mantra ini tidak ada".</p>
+     */
+    public int levelOf(String yname) {
+        Integer id = idByName.get(yname == null ? "" : yname.toLowerCase());
+        return id == null ? 0 : levelById.getOrDefault(id, 0);
+    }
+
+    /**
+     * {@code magicdb_type()}: bentuk mantra, yang menentukan muatan apa yang
+     * dibawa perintah merapal.
+     *
+     * <ul>
+     *   <li><b>1</b> — mantra bertanya: klien mengirim teks jawaban;</li>
+     *   <li><b>2</b> — mantra bersasaran: klien mengirim id sasaran;</li>
+     *   <li><b>5</b> — mantra ke diri sendiri: tanpa muatan.</li>
+     * </ul>
+     *
+     * <p>⚠️ Ragam lain di C langsung {@code return 0} — mantranya tidak
+     * dirapal sama sekali. Itu ditiru, bukan "diperbaiki" jadi menerima
+     * semuanya: ragam yang tidak dikenal berarti datanya salah, dan merapal
+     * dengan muatan yang salah bentuk lebih buruk daripada tidak merapal.</p>
+     */
+    public int typeOf(int id) {
+        return typeById.getOrDefault(id, 0);
+    }
+
+    /** {@code magicdb_mute()}: ambang bisu yang membungkam mantra ini. */
+    public int muteOf(int id) {
+        return muteById.getOrDefault(id, 0);
+    }
+
+    /**
+     * {@code magicdb_question()}: teks pertanyaan mantra ragam 1
+     * ({@code SplQuestion}); "" bila tidak bertanya.
+     */
+    public String questionOf(int id) {
+        return questionById.getOrDefault(id, "");
+    }
+
+    /** {@code magicdb_canfail()}: mantra ini bisa ditangkis sasarannya. */
+    public boolean canFail(int id) {
+        return canFailById.getOrDefault(id, 0) != 0;
+    }
+
+    /** {@code magicdb_aether()}: jeda aether bawaan mantra ini, milidetik. */
+    public int aetherOf(int id) {
+        return aetherById.getOrDefault(id, 0);
+    }
+
+    /** Mantra yang dinonaktifkan tidak boleh dirapal sama sekali. */
+    public boolean isActive(int id) {
+        return activeById.getOrDefault(id, 0) != 0;
+    }
+
     public int dispelOf(int id) {
         return dispelById.getOrDefault(id, 0);
     }
@@ -134,6 +193,13 @@ public final class SpellDb {
      * tanpa database — nama pertama menang bila ada id/nama ganda, sama
      * seperti pencarian berurutan di C.
      */
+    private final java.util.Map<Integer, Integer> typeById = new java.util.HashMap<>();
+    private final java.util.Map<Integer, Integer> muteById = new java.util.HashMap<>();
+    private final java.util.Map<Integer, String> questionById = new java.util.HashMap<>();
+    private final java.util.Map<Integer, Integer> canFailById = new java.util.HashMap<>();
+    private final java.util.Map<Integer, Integer> aetherById = new java.util.HashMap<>();
+    private final java.util.Map<Integer, Integer> activeById = new java.util.HashMap<>();
+
     public void register(int id, String yname, String display, int ticker, int dispel) {
         if (yname == null || yname.isEmpty()) {
             return;
@@ -147,17 +213,35 @@ public final class SpellDb {
 
     public int load(Sql sql) {
         long t0 = System.currentTimeMillis();
+        typeById.clear();
+        muteById.clear();
+        canFailById.clear();
+        aetherById.clear();
+        activeById.clear();
         idByName.clear();
         nameById.clear();
         displayById.clear();
         tickerById.clear();
         dispelById.clear();
+        levelById.clear();
         int rows = sql.forEachRow(
-                "SELECT `SplId`,`SplIdentifier`,`SplDescription`,`SplTicker`,`SplDispel`"
-                + " FROM `Spells`",
-                rs -> register(rs.getInt("SplId"), rs.getString("SplIdentifier"),
-                        rs.getString("SplDescription"), rs.getInt("SplTicker"),
-                        rs.getInt("SplDispel")));
+                "SELECT `SplId`,`SplIdentifier`,`SplDescription`,`SplTicker`,"
+                + "`SplDispel`,`SplLevel`,`SplType`,`SplMute`,`SplCanFail`,"
+                + "`SplAether`,`SplActive`,`SplQuestion` FROM `Spells`",
+                rs -> {
+                    int id = rs.getInt("SplId");
+                    register(id, rs.getString("SplIdentifier"),
+                            rs.getString("SplDescription"), rs.getInt("SplTicker"),
+                            rs.getInt("SplDispel"));
+                    levelById.put(id, rs.getInt("SplLevel"));
+                    typeById.put(id, rs.getInt("SplType"));
+                    muteById.put(id, rs.getInt("SplMute"));
+                    canFailById.put(id, rs.getInt("SplCanFail"));
+                    aetherById.put(id, rs.getInt("SplAether"));
+                    activeById.put(id, rs.getInt("SplActive"));
+                    String tanya = rs.getString("SplQuestion");
+                    questionById.put(id, tanya == null ? "" : tanya);
+                });
         if (rows < 0) {
             log.error("[SPELL] gagal membaca tabel Spells");
             return 0;

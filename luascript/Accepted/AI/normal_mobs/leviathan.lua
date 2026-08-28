@@ -17,7 +17,7 @@ leviathan = {
 			if attacker.quest["leviathan"] ~= 0 then
 				-- on lev quest
 				attacker:addLegend(
-					"Sworn enemy of the Leviathans (" .. curT() .. ")",
+					"Musuh bebuyutan para Leviathan (" .. curT() .. ")",
 					"leviathan_sworn_enemy",
 					7,
 					4
@@ -25,7 +25,7 @@ leviathan = {
 				attacker:dialogSeq(
 					{
 						t,
-						"You promised to not attack us! You are now a sworn enemy of the Leviathan."
+						"Kau berjanji tidak menyerang kami! Kini kau musuh bebuyutan Leviathan."
 					},
 					0
 				)

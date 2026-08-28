@@ -48,7 +48,7 @@ new_years_npc2 = {
 			player:dialogSeq(
 				{
 					t,
-					"You are too young for anything I have to offer, return when you are level 20."
+					"Kau terlalu muda untuk apa pun yang kutawarkan; kembalilah kalau kau sudah level 20."
 				},
 				0
 			)
@@ -57,13 +57,13 @@ new_years_npc2 = {
 
 		if npc.m ~= 41 then
 			if player:hasItem("annual_pass", 1) == true then
-				player:dialogSeq({t, "You have all that I can offer you!"}, 1)
+				player:dialogSeq({t, "Semua yang bisa kutawarkan sudah kau miliki!"}, 1)
 				return
 			end
 			if player:hasLegend("year_of_the_pig") and player:hasItem("annual_pass", 1) ~= true then
 				player:addItem("annual_pass", 1, 0, 0, os.time() + 3628800)
 				player:dialogSeq(
-					{t, "It seems you lost your pass... let me help you out."},
+					{t, "Sepertinya surat jalanmu hilang... biar kubantu."},
 					1
 				)
 				return
@@ -71,11 +71,11 @@ new_years_npc2 = {
 			player:dialogSeq(
 				{
 					t,
-					"You've made it far, adventurer.",
-					"I have an item here that will permit you to pass these portals.",
-					"It will allow you to enter this place every day, until it closes.",
-					"If you bring me 1 Scribe's book and 20 Ambers, I will let you have it.",
-					"I would also accept a Hyun moo key in place of the Scribe's book."
+					"Kau sudah sampai jauh, petualang.",
+					"Aku punya benda yang memungkinkanmu melewati portal-portal ini.",
+					"Benda itu memungkinkanmu masuk ke tempat ini setiap hari, sampai ia ditutup.",
+					"Kalau kau membawakan 1 Scribe's book dan 20 Amber, benda itu kuberikan padamu.",
+					"Aku juga menerima Hyun moo key sebagai pengganti Scribe's book."
 				},
 				1
 			)
@@ -91,7 +91,7 @@ new_years_npc2 = {
 				end
 				player:addItem("annual_pass", 1, 0, 0, os.time() + 3628800)
 				player:addLegend(
-					"Celebrated the year of the Pig (" .. curT() .. ")",
+					"Merayakan tahun Babi (" .. curT() .. ")",
 					"year_of_the_pig",
 					144,
 					9
@@ -99,8 +99,8 @@ new_years_npc2 = {
 				player:dialogSeq(
 					{
 						t,
-						"Excellent! Thank you for your efforts, I'll warn you, below this area",
-						"Many dangers await! Proceed with caution."
+						"Bagus sekali! Terima kasih atas jerih payahmu. Kuperingatkan, di bawah daerah ini",
+						"Banyak bahaya menanti! Melangkahlah dengan hati-hati."
 					},
 					1
 				)
@@ -119,8 +119,8 @@ new_years_npc2 = {
 		player:dialogSeq(
 			{
 				t,
-				"Greetings, adventurer! To celebrate this coming year of the Pig, the Jade Citadel is open.",
-				"If you would like to enter, bring me 20 snake meat and I will give you a pass."
+				"Salam, petualang! Untuk merayakan tahun Babi yang akan datang, Jade Citadel dibuka.",
+				"Kalau kau ingin masuk, bawakan aku 20 snake meat dan akan kuberi surat jalan."
 			},
 			1
 		)
@@ -136,7 +136,7 @@ new_years_npc2 = {
 				player:dialogSeq(
 					{
 						t,
-						"You have no room for this, make some room and talk to me again."
+						"Tidak ada ruang untuk ini; kosongkan sedikit lalu bicaralah lagi kepadaku."
 					},
 					0
 				)
@@ -145,7 +145,7 @@ new_years_npc2 = {
 			player:removeItem("snake_meat", 20)
 			player:addItem("annual_ticket", 1, 0, 0, os.time() + 86400)
 			player:dialogSeq(
-				{t, "Thank you so much! Here is your pass, it lasts for 1 day."},
+				{t, "Terima kasih banyak! Ini surat jalanmu, berlaku 1 hari."},
 				1
 			)
 		end
@@ -161,15 +161,15 @@ received_fortune = {
 good_fortune = {
 	use = function(player)
 		if not (player.m >= 59000 and player.m <= 59030) then
-			player:sendMinitext("This cannot be used here.")
+			player:sendMinitext("Ini tidak bisa dipakai di sini.")
 			return
 		end
 		if player.state == 1 then
-			player:sendMinitext("Spirit's can't do that.")
+			player:sendMinitext("Arwah tidak bisa melakukan itu.")
 			return
 		end
 		if player:hasAether("received_fortune") == true then
-			player:sendMinitext("You must wait to do this.")
+			player:sendMinitext("Kau harus menunggu untuk melakukan ini.")
 			return
 		end
 		received_fortune.cast(player)
@@ -201,11 +201,11 @@ good_fortune = {
 rich_fortune = {
 	use = function(player)
 		if player.state == 1 then
-			player:sendMinitext("Spirit's can't do that.")
+			player:sendMinitext("Arwah tidak bisa melakukan itu.")
 			return
 		end
 		if player:hasAether("received_fortune") == true then
-			player:sendMinitext("You must wait to do this.")
+			player:sendMinitext("Kau harus menunggu untuk melakukan ini.")
 			return
 		end
 		received_fortune.cast(player)
@@ -363,10 +363,10 @@ rich_fortune = {
 		player:removeItem("rich_fortune", 1)
 		local spoil = Item(rewarded).stackAmount
 		if spoil > 1 and player:hasItem(rewarded, spoil) == true then
-			player:sendMinitext("You would have received " .. spoil .. " " .. Item(rewarded).name .. " but you already had too many!")
+			player:sendMinitext("Kau semestinya menerima " .. spoil .. " " .. Item(rewarded).name .. " tetapi punyamu sudah terlalu banyak!")
 			return
 		end
-		player:sendMinitext("You received " .. spoil .. " " .. Item(rewarded).name)
+		player:sendMinitext("Kau menerima " .. spoil .. " " .. Item(rewarded).name)
 		player:addItem(rewarded, spoil)
 	end
 }

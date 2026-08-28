@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,6 +77,12 @@ public final class DbTest {
         "src/org/rtk/map/MapServer.java",
         "src/org/rtk/login/LoginClif.java",
         "src/org/rtk/login/LoginIntif.java",
+        // Ditambahkan 27 Agustus 2026 bersama 59 binding global: seluruhnya
+        // menyentuh tabel game (Clans, Character, Boards, Auctions,
+        // MapModifiers, WisdomStar, ItemSets, BoardLocations, Registry,
+        // Spawns<serverid>). Tanpa baris ini, nama kolom yang salah baru
+        // ketahuan saat skrip memanggilnya di server hidup.
+        "src/org/rtk/map/script/WorldBindings.java",
     };
 
     private static int failures;
@@ -137,6 +144,9 @@ public final class DbTest {
         auditSql(conf);
         worldData(sql);
         spellQueries(sql);
+        pathQueries(sql);
+        itemReqQueries(sql);
+        worldBindingTest(sql, conf);
         parcelTest(sql);
         boardTest(sql);
         clanBankTest(sql);
@@ -154,8 +164,40 @@ public final class DbTest {
      * inilah cara memeriksa 300-an nama kolom tanpa menyalinnya ke dalam uji
      * (salinan seperti itu akan basi diam-diam saat kode berubah).
      */
+    /**
+     * Bungkus sebuah pernyataan jadi {@code EXPLAIN} supaya <b>server</b>
+     * yang memeriksa nama tabel dan kolomnya.
+     *
+     * <p>⚠️ <b>Ini perbaikan atas jaminan palsu.</b> Sampai 27 Agustus 2026
+     * audit ini memakai {@code prepareStatement()} + 
+     * {@code getParameterMetaData()}, dan keduanya dikerjakan
+     * <b>di sisi klien</b> oleh connector MySQL — bahkan
+     * {@code SELECT * FROM `TabelNgawur`} lolos. Jadi kalimat "nama
+     * tabel/kolom divalidasi MySQL sendiri" tidak pernah benar; yang
+     * diperiksa hanya sintaksnya.</p>
+     *
+     * <p>Ketahuan karena sebuah kueri dengan kolom {@code RegKey} (nama
+     * aslinya {@code RegIdentifier}) lolos audit dan baru gagal saat
+     * benar-benar dijalankan di tahap 2.</p>
+     *
+     * <p>{@code EXPLAIN} memaksa server mem-parse dan me-resolve nama —
+     * untuk SELECT, INSERT, UPDATE, maupun DELETE — tanpa menyentuh satu
+     * baris data pun. Parameternya diganti {@code NULL} karena EXPLAIN
+     * tidak menerima placeholder.</p>
+     */
+    private static String explainOf(String sql) {
+        String q = sql.replace("?", "NULL");
+        // ⚠️ `LIMIT NULL` bukan SQL yang sah, jadi placeholder di LIMIT dan
+        // OFFSET harus jadi ANGKA — kalau tidak, EXPLAIN menolak pernyataan
+        // yang sebenarnya benar dan auditnya berbohong ke arah sebaliknya.
+        q = q.replaceAll("(?i)LIMIT\\s+NULL\\s*,\\s*NULL", "LIMIT 0, 1");
+        q = q.replaceAll("(?i)LIMIT\\s+NULL", "LIMIT 1");
+        q = q.replaceAll("(?i)OFFSET\\s+NULL", "OFFSET 0");
+        return "EXPLAIN " + q;
+    }
+
     private static void auditSql(Conf conf) throws IOException {
-        log.info("=== tahap 1: audit SQL terhadap skema hidup ===");
+        log.info("=== tahap 1: audit SQL terhadap skema hidup (EXPLAIN) ===");
 
         String url = "jdbc:mysql://" + conf.ip + ":" + conf.port + "/" + conf.db
                 + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
@@ -184,8 +226,8 @@ public final class DbTest {
                         continue;
                     }
                     total++;
-                    try (PreparedStatement ps = c.prepareStatement(st.sql())) {
-                        ps.getParameterMetaData();
+                    try (Statement chk = c.createStatement()) {
+                        chk.execute(explainOf(st.sql()));
                     } catch (SQLException e) {
                         bad++;
                         badHere++;
@@ -330,6 +372,85 @@ public final class DbTest {
         var takAda = db.classSpells(sql, 9999);
         check("getAllClassSpells: jalur tak dikenal mengembalikan kosong",
                 takAda.isEmpty());
+    }
+
+    /**
+     * Kolom syarat di tabel {@code Items} — dibaca, bukan sekadar di-SELECT.
+     *
+     * <p>Audit SQL tahap 1 membuktikan kuerinya <b>bisa di-prepare</b>;
+     * ia tidak membuktikan hasilnya sampai ke {@code Reqs}. Beda itu nyata:
+     * salah nama ladang di sisi Java tetap lolos audit. Karena itu di sini
+     * diperiksa bahwa data aslinya benar-benar terbaca.</p>
+     */
+    private static void itemReqQueries(Sql sql) {
+        log.info("=== tahap 2b3: syarat barang (kolom Items) ===");
+
+        org.rtk.map.data.ItemDb db = new org.rtk.map.data.ItemDb();
+        int n = db.load(sql);
+        check("tabel Items termuat", n > 0);
+
+        int berlevel = 0;
+        int berjalur = 0;
+        int terkunci = 0;
+        int bisaDilempar = 0;
+        for (org.rtk.map.data.ItemDb.Info info : db.all()) {
+            var r = info.reqs();
+            if (r.level() > 0) {
+                berlevel++;
+            }
+            if (r.path() > 0) {
+                berjalur++;
+            }
+            if (r.unequip() == 1) {
+                terkunci++;
+            }
+            if (r.thrown() != 0) {
+                bisaDilempar++;
+            }
+        }
+        log.info("[DBTEST] syarat barang: {} berlevel, {} berjalur, {} terkunci, "
+                + "{} bisa dilempar", berlevel, berjalur, terkunci, bisaDilempar);
+        check("ItmLevel terbaca: ada barang bersyarat level", berlevel > 0);
+        check("ItmPthId terbaca: ada barang bersyarat jalur", berjalur > 0);
+        check("ItmSex bawaan 2 tidak menolak siapa pun secara massal",
+                db.all().stream().filter(i -> i.reqs().sex() == 2).count() > 0);
+    }
+
+    /**
+     * Tabel {@code Paths} — gelar per tanda dan bendera saluran subpath.
+     *
+     * <p>⚠️ Kueri ini <b>disusun runtime</b> (enam belas kolom
+     * {@code PthMark0..15} dirangkai dalam perulangan), sehingga audit SQL
+     * di tahap 1 <b>tidak melihatnya</b> — ia hanya menyapu literal string
+     * dari sumbernya. Persis kelemahan yang sama dengan
+     * {@code CharPersistence.reg()}. Karena itu jalurnya diuji di sini,
+     * lewat pemanggilan sungguhan ke server.</p>
+     */
+    private static void pathQueries(Sql sql) {
+        log.info("=== tahap 2b2: tabel Paths (gelar & saluran subpath) ===");
+
+        org.rtk.map.data.ClassDb db = new org.rtk.map.data.ClassDb();
+        int n = db.loadPaths(sql);
+        check("tabel Paths termuat", n > 0);
+
+        // classdb_name(): sedikitnya satu kelas harus punya gelar terisi,
+        // kalau tidak berarti kolom PthMark* tidak benar-benar terbaca.
+        boolean adaGelar = false;
+        for (int kelas = 1; kelas <= 32 && !adaGelar; kelas++) {
+            for (int tanda = 0; tanda < org.rtk.map.data.ClassDb.MAX_MARKS; tanda++) {
+                if (!db.pathName(kelas, tanda).isEmpty()) {
+                    adaGelar = true;
+                    break;
+                }
+            }
+        }
+        check("classdb_name: ada kelas yang punya gelar terisi", adaGelar);
+        check("classdb_name: tanda di luar 0..15 dijawab kosong, bukan meledak",
+                db.pathName(1, 99).isEmpty() && db.pathName(1, -1).isEmpty());
+        check("classdb_name: kelas tak dikenal dijawab kosong",
+                db.pathName(9999, 0).isEmpty());
+        check("classdb_chat: kelas tak dikenal tidak punya saluran",
+                !db.hasSubpathChat(9999));
     }
 
     /**
@@ -716,9 +837,22 @@ public final class DbTest {
             eq("id mantra di slot 0", c.spells[0], r.spells[0]);
         }
 
-        if (!c.inventory.isEmpty() && !r.inventory.isEmpty()) {
-            Item a = c.inventory.get(0);
-            Item b = r.inventory.get(0);
+        // ⚠️ Dibandingkan menurut SLOT, bukan indeks daftar. Membandingkan
+        // get(0) dengan get(0) melintasi simpan/muat adalah kekeliruan yang
+        // sama dengan yang sedang diuji: pemuatan mengurutkan ORDER BY
+        // InvPosition, jadi urutan daftarnya berubah.
+        check("slot 0 bertahan walau bukan elemen pertama saat disimpan",
+                r.inventoryAt(0) != null && r.inventoryAt(0).id == 43);
+        check("slot berlubang bertahan utuh (5 dan 26)",
+                r.inventoryAt(5) != null && r.inventoryAt(5).id == 42
+                        && r.inventoryAt(26) != null && r.inventoryAt(26).id == 44);
+        check("tidak ada slot yang bertabrakan setelah putar-balik",
+                r.inventory.stream().map(x -> x.pos).distinct().count()
+                        == r.inventory.size());
+
+        if (c.inventoryAt(5) != null && r.inventoryAt(5) != null) {
+            Item a = c.inventoryAt(5);
+            Item b = r.inventoryAt(5);
             eq("barang: id", a.id, b.id);
             eq("barang: jumlah", a.amount, b.amount);
             eq("barang: daya tahan", a.dura, b.dura);
@@ -769,14 +903,31 @@ public final class DbTest {
         CharStatus r2 = CharPersistence.load(sql, id);
         eq("simpan dua kali tidak menggandakan inventaris",
                 r.inventory.size(), r2 == null ? -1 : r2.inventory.size());
-        int invRows = sql.rowCount("SELECT COUNT(*) FROM `Inventory` WHERE `InvChaId` = ?", id);
-        eq("baris Inventory di database sesuai jumlah barang", c.inventory.size(), invRows);
+        // ⚠️ queryInt, BUKAN rowCount. `Sql.rowCount` menghitung berapa BARIS
+        // HASIL yang dikembalikan kueri, dan `SELECT COUNT(*)` selalu
+        // mengembalikan tepat satu baris — jadi bentuk lamanya selalu bernilai
+        // 1, apa pun isi tabelnya. Ia lulus bertahun-tahun hanya karena
+        // contoh ujinya kebetulan berisi tepat SATU barang. Pemeriksaan yang
+        // jawabannya tidak pernah bergantung pada yang diperiksa bukan
+        // pemeriksaan.
+        Integer invRows = sql.queryInt("SELECT COUNT(*) FROM `Inventory` WHERE `InvChaId` = ?", id);
+        eq("baris Inventory di database sesuai jumlah barang",
+                c.inventory.size(), invRows == null ? -1 : invRows);
         scriptRegistryTest(sql, id);
         scriptItemTest(sql, id);
         bindingTest(sql, id);
 
-        int regRows = sql.rowCount("SELECT COUNT(*) FROM `Registry` WHERE `RegChaId` = ?", id);
-        eq("baris Registry di database sesuai jumlah entri", c.registry.size(), regRows);
+        // Sama seperti di atas: rowCount atas COUNT(*) selalu 1.
+        //
+        // ⚠️ Dibandingkan dengan karakter yang DIMUAT ULANG, bukan dengan
+        // contoh `c`. `scriptRegistryTest` di atas menambah entri registry ke
+        // database, jadi jumlah barisnya memang sudah bukan jumlah entri
+        // contohnya lagi. Yang sahih dibandingkan adalah dua pembacaan atas
+        // keadaan database yang SAMA.
+        Integer regRows = sql.queryInt("SELECT COUNT(*) FROM `Registry` WHERE `RegChaId` = ?", id);
+        CharStatus r3 = CharPersistence.load(sql, id);
+        eq("baris Registry di database sesuai jumlah entri yang dimuat",
+                r3 == null ? -1 : r3.registry.size(), regRows == null ? -1 : regRows);
     }
 
     /**
@@ -1128,6 +1279,12 @@ public final class DbTest {
         c.lastPos = new Point(1, 12, 34);
         c.destPos = new Point(1, 12, 34);
 
+        // ⚠️ Kantong sengaja BERLUBANG, dan barang slot 0 sengaja BUKAN
+        // elemen pertama daftar. Contoh lama cuma satu barang di slot 0 —
+        // data terlalu jinak, dan pada data seperti itu indeks daftar
+        // kebetulan selalu sama dengan nomor slot. Empat tempat yang
+        // memperlakukan keduanya sebagai hal yang sama lolos berbulan-bulan
+        // karena tidak ada uji yang membedakannya. Lihat Peringatan #85.
         Item it = new Item();
         it.id = 42;
         it.amount = 5;
@@ -1135,7 +1292,29 @@ public final class DbTest {
         it.owner = 12345;
         it.note = "catatan uji";
         it.realName = "ukiran uji";
+        it.pos = 5;
         c.inventory.add(it);
+
+        Item it0 = new Item();
+        it0.id = 43;
+        it0.amount = 1;
+        it0.dura = 900;
+        it0.pos = 0;
+        // ⚠️ InvNote dan InvEngrave NOT NULL. Membiarkannya null membuat
+        // seluruh batch INSERT gagal dan barangnya hilang tanpa pesan yang
+        // menunjuk ke sini — gejalanya cuma "baris Inventory tidak sesuai".
+        it0.note = "";
+        it0.realName = "";
+        c.inventory.add(it0);
+
+        Item it26 = new Item();
+        it26.id = 44;
+        it26.amount = 2;
+        it26.dura = 800;
+        it26.pos = 26;
+        it26.note = "";
+        it26.realName = "";
+        c.inventory.add(it26);
 
         Item eq0 = new Item();
         eq0.id = 7;
@@ -1240,4 +1419,204 @@ public final class DbTest {
             return new Conf(id, pw, ip, port, db);
         }
     }
+
+    /**
+     * Binding dunia yang seluruhnya SQL — klan, lelang, puisi, pengubah
+     * peta, karakter offline.
+     *
+     * <p>Tahap 1 sudah membuktikan kuerinya bisa di-prepare; yang diuji di
+     * sini apakah hasilnya benar-benar sampai ke tabel Lua. Beda itu nyata:
+     * salah nomor kolom di sisi Java tetap lolos audit.</p>
+     *
+     * <p>Memakai id di luar rentang data asli lalu membersihkan sendiri
+     * barisnya — tidak menyentuh data yang sudah ada.</p>
+     */
+    private static void worldBindingTest(Sql sql, Conf conf) {
+        log.info("=== tahap 2f: binding dunia (WorldBindings) ===");
+
+        final long chaId = 999000777L;
+        final int clanId = 999001;
+
+        org.rtk.map.script.ScriptEngine engine = new org.rtk.map.script.ScriptEngine();
+        // ⚠️ MapServer.sql adalah instance TERSENDIRI dan final — binding
+        // dunia memakainya, bukan `sql` milik uji ini. Jadi ia harus
+        // disambungkan sendiri ke database yang sama, kalau tidak seluruh
+        // kuerinya gagal dengan pesan yang menyesatkan.
+        org.rtk.map.MapServer.sql.connect(conf.id(), conf.pw(), conf.ip(),
+                conf.port(), conf.db());
+        org.rtk.map.MapServer.scriptEngine = engine;
+        org.rtk.map.MapServer.classDb.loadPaths(sql);
+        // ⚠️ Tabel pengalaman datang dari BERKAS (db/level_db.txt), bukan
+        // dari SQL — tanpa memuatnya getXPforLevel menjawab 0 dan ujinya
+        // akan menyalahkan bindingnya.
+        org.rtk.map.MapServer.classDb.load(org.rtk.map.MapServer.dbPath);
+        org.rtk.map.MapServer.spellDb.load(sql);
+
+        // bersihkan sisa uji sebelumnya
+        sql.update("DELETE FROM `Clans` WHERE `ClnId` = ?", clanId);
+        sql.update("DELETE FROM `Character` WHERE `ChaId` = ?", chaId);
+        sql.update("DELETE FROM `MapModifiers` WHERE `ModMapId` = ?", 999002);
+
+        // ---- klan ----
+        sql.update("INSERT INTO `Clans` (`ClnId`,`ClnName`) VALUES (?,?)",
+                clanId, "Klan Uji");
+        eq("getClanName membaca nama klan", "Klan Uji",
+                panggil(engine, "getClanName", clanId).tojstring());
+        check("setClanName menulisnya kembali",
+                panggil(engine, "setClanName", clanId, "Klan Baru").toboolean());
+        eq("nama barunya terbaca", "Klan Baru",
+                panggil(engine, "getClanName", clanId).tojstring());
+        check("getClanName untuk klan yang tidak ada dijawab 0",
+                panggil(engine, "getClanName", 999999).toint() == 0);
+
+        check("setClanTribute menulis tribut",
+                panggil(engine, "setClanTribute", clanId, 100).toboolean());
+        eq("getClanTribute membacanya", 100,
+                panggil(engine, "getClanTribute", clanId).toint());
+        check("addClanTribute MENAMBAH, bukan menimpa",
+                panggil(engine, "addClanTribute", clanId, 50).toboolean());
+        eq("tributnya jadi 150", 150,
+                panggil(engine, "getClanTribute", clanId).toint());
+
+        check("setClanBankSlots menulis jumlah slot",
+                panggil(engine, "setClanBankSlots", clanId, 42).toboolean());
+        eq("getClanBankSlots membacanya", 42,
+                panggil(engine, "getClanBankSlots", clanId).toint());
+
+        // ---- keanggotaan klan & jalur ----
+        sql.update("INSERT INTO `Character` (`ChaId`,`ChaName`,`ChaPthId`) "
+                + "VALUES (?,?,?)", chaId, "UjiDunia", 1);
+        check("addClanMember memasukkan karakter",
+                panggil(engine, "addClanMember", chaId, clanId).toboolean());
+        Object[] baris = sql.queryRow("SELECT `ChaClnId`,`ChaClnRank`,`ChaClanTitle` "
+                + "FROM `Character` WHERE `ChaId` = ?", 3, chaId);
+        check("bergabung menyetel klan, rank 1, DAN mengosongkan gelar",
+                baris != null && ((Number) baris[0]).intValue() == clanId
+                && ((Number) baris[1]).intValue() == 1
+                && "".equals(String.valueOf(baris[2])));
+
+        check("updateClanMemberTitle menulis gelar",
+                panggil(engine, "updateClanMemberTitle", chaId, "Tetua").toboolean());
+        eq("gelarnya tersimpan", "Tetua",
+                sql.queryString("SELECT `ChaClanTitle` FROM `Character` WHERE `ChaId` = ?",
+                        chaId));
+        check("updateClanMemberRank menulis pangkat",
+                panggil(engine, "updateClanMemberRank", chaId, 3).toboolean());
+
+        // ⚠️ Ketiga ladang bergerak BERSAMA saat keluar; menyisakan gelarnya
+        // membuat gelar klan lama menempel pada pemain yang sudah keluar.
+        check("removeClanMember mencabutnya", 
+                panggil(engine, "removeClanMember", chaId).toboolean());
+        baris = sql.queryRow("SELECT `ChaClnId`,`ChaClnRank`,`ChaClanTitle` "
+                + "FROM `Character` WHERE `ChaId` = ?", 3, chaId);
+        check("keluar mengosongkan klan, pangkat, DAN gelar sekaligus",
+                baris != null && ((Number) baris[0]).intValue() == 0
+                && ((Number) baris[1]).intValue() == 0
+                && "".equals(String.valueOf(baris[2])));
+
+        // ---- karakter offline: dua arah, satu nama ----
+        eq("getOfflineID(angka) mengembalikan NAMA", "UjiDunia",
+                panggil(engine, "getOfflineID", chaId).tojstring());
+        eq("getOfflineID(teks) mengembalikan ID", (int) chaId,
+                panggil(engine, "getOfflineID", "UjiDunia").toint());
+        check("getOfflineID untuk nama yang tidak ada dijawab false",
+                !panggil(engine, "getOfflineID", "TidakAdaSamaSekali").toboolean());
+
+        check("setOfflinePlayerRegistry menulis registry karakter offline",
+                panggil(engine, "setOfflinePlayerRegistry", chaId, "ujiDunia", 77)
+                        .toboolean());
+        Integer regVal = sql.queryInt("SELECT `RegValue` FROM `Registry` "
+                + "WHERE `RegChaId` = ? AND `RegIdentifier` = ?", chaId, "ujiDunia");
+        check("nilainya sampai ke tabel Registry", regVal != null && regVal == 77);
+        sql.update("DELETE FROM `Registry` WHERE `RegChaId` = ?", chaId);
+
+        // ---- pengubah peta ----
+        check("addMapModifier menambah baris",
+                panggil(engine, "addMapModifier", 999002, "ujiMod", 5).toboolean());
+        var mods = panggil(engine, "getMapModifiers", 999002);
+        check("getMapModifiers mengembalikan pasangan nama+nilai",
+                mods.istable() && "ujiMod".equals(mods.get(1).tojstring())
+                && mods.get(2).toint() == 5);
+        check("removeMapModifier menghapusnya",
+                panggil(engine, "removeMapModifier", 999002, "ujiMod").toboolean());
+        check("daftarnya kosong lagi",
+                panggil(engine, "getMapModifiers", 999002).get(1).isnil());
+
+        // ---- lelang ----
+        int lelangSebelum = jumlahBaris(sql, "SELECT COUNT(*) FROM `Auctions`");
+        check("listAuction memasukkan lelang", panggilBanyak(engine, "listAuction",
+                chaId, 7101, 1, 100, 5000, "ukiran", 0, 0, 0, 0, 0, 0, 0).toboolean());
+        check("jumlah lelang bertambah satu",
+                jumlahBaris(sql, "SELECT COUNT(*) FROM `Auctions`") == lelangSebelum + 1);
+        var lelang = panggil(engine, "getAuctions");
+        check("getAuctions mengembalikan 14 ladang per lelang", lelang.istable()
+                && lelang.get(14).toint() >= 0 && !lelang.get(1).isnil());
+        Integer idLelang = sql.queryInt(
+                "SELECT MAX(`AuctionId`) FROM `Auctions` WHERE `AuctionChaId` = ?", chaId);
+        check("removeAuction menghapusnya",
+                idLelang != null
+                && panggil(engine, "removeAuction", idLelang).toboolean());
+        check("jumlahnya kembali seperti semula",
+                jumlahBaris(sql, "SELECT COUNT(*) FROM `Auctions`") == lelangSebelum);
+
+        // ---- bintang kebijaksanaan ----
+        Double wsLama = sql.queryDouble("SELECT `WSMultiplier` FROM `WisdomStar`");
+        panggil(engine, "setWisdomStarMultiplier", 2.5);
+        check("setWisdomStarMultiplier lalu getWisdomStarMultiplier bolak-balik",
+                Math.abs(panggil(engine, "getWisdomStarMultiplier").todouble() - 2.5) < 0.001);
+        if (wsLama != null) {
+            panggil(engine, "setWisdomStarMultiplier", wsLama);
+        }
+
+        // ---- getXPforLevel: tabel level yang memang sudah ada ----
+        double xp1 = panggil(engine, "getXPforLevel", 1, 10).todouble();
+        check("getXPforLevel menjawab dari tabel level, bukan 0", xp1 > 0);
+        int subpath = -1;
+        for (int k = 6; k < 40 && subpath < 0; k++) {
+            if (org.rtk.map.MapServer.classDb.pathOf(k) == 1) {
+                subpath = k;
+            }
+        }
+        check("kelas subpath dipetakan ke jalur induknya", subpath < 0
+                || panggil(engine, "getXPforLevel", subpath, 10).todouble() == xp1);
+
+        // ---- getSpellLevel ----
+        check("getSpellLevel untuk mantra yang tidak ada dijawab 0",
+                panggil(engine, "getSpellLevel", "mantra_tidak_ada").toint() == 0);
+
+        // ---- getSetItems: SELALU lima pasang ----
+        var set = panggil(engine, "getSetItems", 999999);
+        check("getSetItems selalu 10 entri walau set-nya tidak ada",
+                set.istable() && !set.get(10).isnil() && set.get(1).toint() == 0);
+
+        // ---- bersih-bersih ----
+        sql.update("DELETE FROM `Clans` WHERE `ClnId` = ?", clanId);
+        sql.update("DELETE FROM `Character` WHERE `ChaId` = ?", chaId);
+        sql.update("DELETE FROM `MapModifiers` WHERE `ModMapId` = ?", 999002);
+        org.rtk.map.MapServer.scriptEngine = null;
+    }
+
+    private static int jumlahBaris(Sql sql, String q) {
+        Integer n = sql.queryInt(q);
+        return n == null ? 0 : n;
+    }
+
+    private static org.luaj.vm2.LuaValue panggil(
+            org.rtk.map.script.ScriptEngine engine, String nama, Object... args) {
+        return panggilBanyak(engine, nama, args);
+    }
+
+    /** Panggil global Lua dengan argumen sebanyak apa pun. */
+    private static org.luaj.vm2.LuaValue panggilBanyak(
+            org.rtk.map.script.ScriptEngine engine, String nama, Object... args) {
+        org.luaj.vm2.LuaValue[] v = new org.luaj.vm2.LuaValue[args.length];
+        for (int i = 0; i < args.length; i++) {
+            v[i] = args[i] instanceof String t
+                    ? org.luaj.vm2.LuaValue.valueOf(t)
+                    : org.luaj.vm2.LuaValue.valueOf(((Number) args[i]).doubleValue());
+        }
+        return engine.globals().get(nama)
+                .invoke(org.luaj.vm2.LuaValue.varargsOf(v)).arg1();
+    }
+
 }

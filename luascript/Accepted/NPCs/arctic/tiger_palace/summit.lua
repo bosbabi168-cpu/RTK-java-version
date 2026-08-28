@@ -19,24 +19,24 @@ SummitNpc = {
 
 		if player.level < 99 or player.baseHealth < 20000 or player.baseMagic < 10000 or player.alignment == 0 then
 			-- below minimum stats or no alignment
-			player:dialogSeq({t, "I am unable to help you."}, 0)
+			player:dialogSeq({t, "Aku tidak bisa menolongmu."}, 0)
 			return
 		end
 
 		player:dialogSeq(
 			{
 				t,
-				"Hahaha.. so the great one returns to me, does he master?",
-				"Got yourself into a spot of trouble, so you come running back to me?",
-				"Yes, from this level of \"life\" I can see into your soul, I can see your soul is not pure.",
-				"I take it you want me to help you again, after what you did to me?"
+				"Hahaha.. jadi yang agung kembali kepadaku, ya, Tuan?",
+				"Terjerat masalah, lalu berlari kembali kepadaku?",
+				"Ya, dari tingkat \"kehidupan\" ini aku bisa melihat ke dalam jiwamu, dan kulihat jiwamu tidak murni.",
+				"Kuanggap kau ingin kubantu lagi, setelah apa yang kau lakukan padaku?"
 			},
 			1
 		)
 
 		local choice = player:menuSeq(
-			"Well, do you really want me to help you? You know it will cost you greatly.",
-			{"Yes, I need help.", "No, I need no help."},
+			"Nah, kau sungguh ingin kubantu? Kau tahu itu akan sangat mahal bagimu.",
+			{"Ya, aku butuh bantuan.", "Tidak, aku tidak butuh bantuan."},
 			{}
 		)
 
@@ -51,9 +51,9 @@ SummitNpc = {
 			player:sendStatus()
 			player:swapAlignment(0)
 
-			player:dialogSeq({t, "You are now unaligned."}, 0)
+			player:dialogSeq({t, "Kini kau tidak berpihak ke mana pun."}, 0)
 		elseif choice == 2 then
-			player:dialogSeq({t, "Come back to me if you change your mind."}, 0)
+			player:dialogSeq({t, "Temui aku lagi kalau kau berubah pikiran."}, 0)
 			return
 		end
 	end,

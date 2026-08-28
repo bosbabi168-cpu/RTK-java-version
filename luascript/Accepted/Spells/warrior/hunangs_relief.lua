@@ -6,7 +6,7 @@ hunangs_relief_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 800, 800, 0)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -27,7 +27,7 @@ from_the_brink_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 800, 800, 1)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -48,7 +48,7 @@ natures_slave_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 800, 800, 2)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -69,7 +69,7 @@ lifes_essence_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 800, 800, 3)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 

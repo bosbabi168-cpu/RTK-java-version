@@ -94,6 +94,44 @@ public interface ClientView {
     void playerSpellRemoved(User sd, int slot);
 
     /**
+     * Satu slot buku mantra terisi/berubah (K3.2) — pasangan
+     * {@link #playerSpellRemoved}. Dikirim untuk tiap slot terisi saat
+     * masuk dunia (cermin {@code pc_loadmagic}) dan saat skrip menambah
+     * mantra ({@code pcl_addspell} → {@code clif_sendmagic} di C).
+     */
+    void playerSpellSlotChanged(User sd, int slot);
+
+    /**
+     * Profil pemain sendiri (R1) — pengganti {@code sendMyStatus} TAHAP 1.
+     * Isinya yang TIDAK bisa dihitung klien: nama kelas, gelar, klan,
+     * pasangan, sisa pengalaman ke tingkat berikutnya, dan persen bilah XP.
+     */
+    void playerProfile(User sd);
+
+    /**
+     * Pemain dialihkan ke map server lain (R3/C3) — {@code clif_transfer}.
+     *
+     * <p>Server ini tidak memuat peta tujuannya; klien diberi alamat server
+     * yang memuatnya lalu menyambung ke sana. Posisi tujuannya sendiri ikut
+     * lewat jalur simpan ({@code destMap/destX/destY} → {@code lastPos}),
+     * bukan lewat paket ini.</p>
+     */
+    void playerTransferred(User sd, String host, int port, int m, int x, int y);
+
+    /** Kalender dunia berubah (R2) — {@code clif_sendtime}. */
+    void worldTimeChanged(User sd);
+
+    /** Daftar kota (R1); namanya saja, seperti {@code clif_sendtowns}. */
+    void townListToPlayer(User sd, java.util.List<String> kota);
+
+    /**
+     * Papan peringkat (R1).
+     *
+     * @param baris tiap baris {@code {int peringkat, String nama, long nilai}}
+     */
+    void rankingToPlayer(User sd, String judul, java.util.List<Object[]> baris);
+
+    /**
      * Satu baris obrolan yang <b>hanya pemain ini</b> yang melihatnya,
      * seolah diucapkan oleh benda tertentu.
      *
@@ -118,6 +156,35 @@ public interface ClientView {
      */
     void boardListToPlayer(User sd, int board, int flags1, int flags2,
                            java.util.List<Clif.BoardEntry> isi);
+
+    // ------------------------------------------------------------------
+    // Pertukaran barang antar pemain
+    // ------------------------------------------------------------------
+
+    /** Jendela pertukaran terbuka antara dua pemain. */
+    void exchangeOpened(User sd, User target);
+
+    /**
+     * Satu barang dititipkan ke pertukaran — <b>kedua pihak</b> perlu
+     * melihatnya, tetapi dengan tampilan berbeda: yang menitipkan melihat
+     * jumlahnya, lawannya hanya melihat namanya.
+     *
+     * @param slotInList nomor urut barang itu di daftar titipan (1-basis)
+     */
+    void exchangeItemOffered(User sd, User target, org.rtk.common.mmo.Item item,
+                             int slotInList);
+
+    /** Jumlah emas yang ditawarkan berubah. */
+    void exchangeGoldOffered(User sd, User target, long gold);
+
+    /**
+     * Salah satu pihak menekan "tukar".
+     *
+     * @param completed false = baru satu pihak yang setuju (barang belum
+     *                  berpindah); true = keduanya setuju dan pertukarannya
+     *                  sudah terjadi
+     */
+    void exchangeConfirmed(User sd, User target, boolean completed);
 
     /** Daftar peta yang bisa dipilih pemain (peta rumah, teleporter). */
     void mapSelectionToPlayer(User sd, String title,
@@ -294,4 +361,135 @@ public interface ClientView {
      * {@link #floorItemAppeared}.
      */
     void objectThrown(BlockList from, int toX, int toY, int icon, int color, int action);
+
+    // ------------------------------------------------------------------
+    // Dialog NPC
+    // ------------------------------------------------------------------
+
+    /**
+     * Skrip berhenti di tengah dan menitipkan sesuatu untuk ditampilkan —
+     * menu, kotak dialog, isian teks, atau daftar toko.
+     *
+     * <p>Yang mana persisnya ada di {@code p.pendingDialog}; menerjemahkannya
+     * jadi paket adalah urusan lapisan protokol. Logika hanya melaporkan
+     * bahwa skripnya <b>sudah punya sesuatu untuk ditunjukkan</b>.</p>
+     *
+     * <p>Dipanggil setiap kali skrip mungkin telah berhenti: sesudah klik
+     * NPC dan sesudah tiap jawaban pemain. Aman bila tidak ada apa-apa yang
+     * tertunda — implementasinya tidak melakukan apa pun.</p>
+     */
+    void scriptDialogReady(User sd, org.rtk.map.script.ScriptPlayer p);
+
+    /**
+     * Satu NPC berbicara langsung kepada seorang pemain, tanpa tombol
+     * lanjut/kembali — kotak dialog sekali baca.
+     *
+     * <p>Terpisah dari {@link #scriptDialogReady} karena tidak berasal dari
+     * skrip yang tertunda: ini penolakan yang diputuskan server sendiri.</p>
+     */
+    void npcSaidTo(User sd, long npcId, String text);
+
+    // ------------------------------------------------------------------
+    // Langkah pemain
+    // ------------------------------------------------------------------
+
+    /**
+     * Langkah pemain <b>ditolak</b> — klien harus dikembalikan ke posisi
+     * yang dipegang server.
+     *
+     * <p>Dua sebab, dan keduanya berakhir di sini: klien menyebut koordinat
+     * yang tidak cocok dengan catatan server, atau petak tujuannya
+     * terhalang. Logika tidak membedakan keduanya ke arah klien.</p>
+     */
+    void playerStepRejected(User sd);
+
+    /** Langkah pemain diterima — dilaporkan kepada pemain itu sendiri. */
+    void playerStepped(User sd, int direction, int fromX, int fromY);
+
+    /**
+     * Langkah pemain terlihat oleh sekitarnya.
+     *
+     * <p>Terpisah dari {@link #playerStepped} karena tidak selalu terjadi:
+     * pemain yang terjepit di tepi peta tetap menghadap arah baru tanpa
+     * benar-benar berpindah petak.</p>
+     */
+    void playerStepSeen(User sd, int direction, int fromX, int fromY);
+
+    /**
+     * ⚠️ <b>Kebocoran protokol yang disengaja.</b> Klien RetroTK menitipkan
+     * permintaan menggambar ulang sepetak wilayah pada paket langkah yang
+     * sama, dan urutannya mengikat — lihat catatan di
+     * {@code ClientCommands.playerWalks}. Protokol baru tidak akan
+     * membutuhkan ini; server tahu sendiri apa yang baru terlihat.
+     */
+    void areaRedrawRequested(User sd, MapData map, int x, int y,
+                             int width, int height, int checksum);
+
+    // ------------------------------------------------------------------
+    // Perlengkapan
+    // ------------------------------------------------------------------
+
+    /**
+     * Satu slot perlengkapan pemain kini berisi sesuatu yang lain
+     * ({@code clif_equipit}).
+     *
+     * <p>Terpisah dari {@link #objectAppearanceChanged}: yang itu soal
+     * bagaimana pemain <b>terlihat oleh orang lain</b>, yang ini soal panel
+     * perlengkapan miliknya sendiri. Mengganti cincin mengubah panelnya
+     * tanpa mengubah gambarnya sedikit pun.</p>
+     */
+    void playerEquipmentChanged(User sd, int slot);
+
+    /** Satu slot perlengkapan pemain kini kosong ({@code clif_unequipit}). */
+    void playerEquipmentCleared(User sd, int slot);
+
+    // ------------------------------------------------------------------
+    // Perubahan peta saat berjalan
+    // ------------------------------------------------------------------
+
+    /**
+     * Petak di sekitar pemain berubah — lantai, objek, atau penghalangnya.
+     *
+     * <p>Dipicu {@code setTile}/{@code setObject}/{@code setPass} dari
+     * skrip. Berbeda dari {@link #playerViewRefreshed}: yang itu menggambar
+     * ulang <b>segalanya</b> termasuk benda dan pemain; yang ini hanya
+     * tanahnya.</p>
+     */
+    void mapTilesChanged(User sd);
+
+    /**
+     * Cuaca di peta pemain berubah.
+     *
+     * <p>⚠️ Pemain yang mematikan setelan cuaca tetap menerima
+     * peristiwanya — yang menyaring lapisan protokol, sama seperti efek
+     * mantra pada {@link #objectAnimationSeenBy}.</p>
+     */
+    void weatherChanged(User sd, int weather);
+
+    /**
+     * Jendela grup pemain berubah — anggota masuk, keluar, atau grupnya
+     * bubar ({@code clif_groupstatus}).
+     *
+     * <p>Dikirim juga saat grup baru saja bubar: daftar kosong adalah cara
+     * memberi tahu klien untuk menutup jendelanya.</p>
+     */
+    void groupStatusChanged(User sd);
+
+    /**
+     * Darah dan mana anggota grup berubah ({@code clif_grouphealth_update}).
+     *
+     * <p>⚠️ Terpisah dari {@link #groupStatusChanged} karena dipanggil tiap
+     * detak selama pemain bergrup, sedangkan susunan grup jarang berubah.</p>
+     */
+    void groupHealthChanged(User sd);
+
+    /**
+     * Setelan pemain berubah ({@code clif_changestatus}).
+     *
+     * <p>⚠️ Hanya RTK2 yang mengirim apa pun untuk ini. Di RetroTK kata
+     * setelan <b>menumpang</b> paket status ({@code clif_sendstatus} menulis
+     * {@code settingFlags} di offset 22 dan 51), jadi peristiwa ini tidak
+     * punya paket sendiri di sana — bukan karena terlewat.</p>
+     */
+    void playerSettingsChanged(User sd);
 }

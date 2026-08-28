@@ -9,7 +9,7 @@ heavens_kiss_poet = {
 		end
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -26,12 +26,12 @@ heavens_kiss_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 1000, 0, 0)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -55,7 +55,7 @@ clan_of_souls_poet = {
 		end
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -72,12 +72,12 @@ clan_of_souls_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 1000, 0, 1)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -101,7 +101,7 @@ healing_hand_poet = {
 		end
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -118,12 +118,12 @@ healing_hand_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 1000, 0, 2)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 
@@ -147,7 +147,7 @@ earths_embrace_poet = {
 		end
 
 		if (player.magic < 390) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
@@ -164,12 +164,12 @@ earths_embrace_poet = {
 			if #target > 0 then
 				local worked = global_heal.cast(player, target[1], 1000, 0, 3)
 				if worked == 2 then
-					target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+					target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 				end
 			end
 		end
 
-		player:sendMinitext("You cast " .. spellName .. ".")
+		player:sendMinitext("Kau merapal " .. spellName .. ".")
 		player:sendAction(6, 35)
 	end,
 

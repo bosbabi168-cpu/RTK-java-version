@@ -17,15 +17,15 @@ MageTrainerNpc = {
 			if player.level < 99 then
 				table.insert(opts, "Divine Secret")
 			end
-			table.insert(opts, "Learn Secret")
+			table.insert(opts, "Pelajari Rahasia")
 		end
 
 		table.insert(opts, "Forget Secret")
 		table.insert(opts, "Become Noble")
-		table.insert(opts, "Minor Quest")
+		table.insert(opts, "Tugas Kecil")
 
 		if (player.registryString["minor_quest"] ~= "") then
-			table.insert(opts, "Complete Minor Quest")
+			table.insert(opts, "Tuntaskan Tugas Kecil")
 		end
 
 		if player.baseClass == 3 then
@@ -83,7 +83,7 @@ MageTrainerNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 		local choice2
@@ -93,7 +93,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are still young, and not ready for this yet. Return when you have gained your 75th level."
+						"Kau masih muda dan belum siap untuk ini. Kembalilah kalau sudah mencapai level 75."
 					},
 					1
 				)
@@ -101,16 +101,16 @@ MageTrainerNpc = {
 			else
 				general_npc_funcs.setTitle(player, npc)
 			end
-		elseif choice == "Minor Quest" then
+		elseif choice == "Tugas Kecil" then
 			MinorQuest.quest(player, npc)
-		elseif choice == "Complete Minor Quest" then
+		elseif choice == "Tuntaskan Tugas Kecil" then
 			MinorQuest.complete(player, npc)
 		elseif choice == "Become a Mage" then
 			if player.level < 5 then
 				player:dialogSeq(
 					{
 						t,
-						"Hail, little one! Please return to me when you have reached the 5th insight."
+						"Salam, anak kecil! Kembalilah kepadaku kalau kau sudah mencapai pencerahan kelima."
 					},
 					0
 				)
@@ -119,23 +119,23 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Hail, mighty one! Welcome to my sanctuary, the sanctuary of the great magic users.",
-					"Have you come to pick your path? I think you would make a great mage, and a great hero."
+					"Salam, yang perkasa! Selamat datang di tempat sucian ku, tempat sucian para pengguna sihir agung.",
+					"Kau datang untuk memilih jalurmu? Kurasa kau akan jadi mage yang hebat, sekaligus pahlawan besar."
 				},
 				1
 			)
 			choice2 = player:menuString(
-				"Will you join the path of the mage?",
-				{"Yes", "Tell me more", "No"}
+				"Maukah kau menempuh jalur mage?",
+				{"Ya", "Ceritakan lebih banyak", "Tidak"}
 			)
 		elseif choice == "Divine Secret" then
 			player:futureSpells(npc)
-		elseif choice == "Learn Secret" then
+		elseif choice == "Pelajari Rahasia" then
 			player:learnSpell(npc)
 		elseif choice == "Forget Secret" then
 			player:forgetSpell(npc)
 		elseif choice == "Strangers" then
-			player:sendMinitext("I have nothing for you, Stranger.")
+			player:sendMinitext("Aku tidak punya apa-apa untukmu, Orang Asing.")
 		elseif choice == "Ward" then
 			if player.quest["mage_ward"] == 1 then
 				if player.quest["zapped_yin_mouse"] == 0 or player.quest["zapped_yang_mouse"] == 0 or player.quest[
@@ -144,7 +144,7 @@ MageTrainerNpc = {
 					"rose",
 					1
 				) ~= true or player:hasItem("ore_high", 1) ~= true then
-					player:sendMinitext("You have not completed all of the tasks handed to you.")
+					player:sendMinitext("Kau belum menuntaskan semua tugas yang diberikan kepadamu.")
 					return
 				end
 
@@ -153,7 +153,7 @@ MageTrainerNpc = {
 
 				if not player:hasLegend("family_nangen_mages") then
 					player:addLegend(
-						"Family to the Nangen Mages (" .. curT() .. ")",
+						"Keluarga para Nangen Mage (" .. curT() .. ")",
 						"family_nangen_mages",
 						3,
 						128
@@ -172,8 +172,8 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have learned well and earned the protection of the Nangen Mages. Take this ward, forged long ago by the same prophets who instructed you in our ways.",
-						"It will not only boost your magical strength but also shield you in your upcoming battles. This is the only one I shall ever give you."
+						"Kau belajar dengan baik dan telah memperoleh perlindungan para Nangen Mage. Ambil jimat ini, ditempa lama berselang oleh nabi-nabi yang sama yang mengajarimu jalan kami.",
+						"Jimat ini bukan hanya menambah kekuatan sihirmu, tetapi juga melindungimu dalam pertempuran mendatang. Hanya ini satu-satunya yang akan kuberikan padamu."
 					},
 					0
 				)
@@ -184,13 +184,13 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ah, I see that you have come for the knowledge of the Mages of Nagnang."
+					"Ah, kulihat kau datang mencari pengetahuan para Mage Nagnang."
 				},
 				1
 			)
 			local choice = player:menuSeq(
-				"Well, I am not the person who has the knowledge, merely the one who tells those who are worthy where to seek out that knowledge. Are you such a worthy person?",
-				{"Yes, I am worthy", "No, I am not worthy."},
+				"Aku bukan pemegang pengetahuan itu, hanya orang yang memberi tahu mereka yang layak ke mana harus mencarinya. Apakah kau orang yang layak?",
+				{"Ya, aku layak", "Tidak, aku tidak layak."},
 				{}
 			)
 
@@ -198,28 +198,28 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Well then, I will tell you where to find the knowledge you seek. Above this cave, there is another. Inside of it is the home to three prohets.",
-						"Each embodies a mystical force. One is for Yin, the other, Yang and the third is the Void. Each of them will evaluate your potential and will then instruct you on what to do.",
-						"If you follow their instructions, and prove to me that you are honorable and wise by returning here after completing all of their tasks, I will reward you with a protective ward.",
-						"To visit each prophet, you need to first attack one of the mice with a spell and then curse that same immortal mouse. The creature will die as an offering and you can then enter.",
-						"Take care to curse only ONE creature before entering each room. If you curse more, the wise men will not speak with you and you will need to return to me.",
-						"I also implore you, listen to ALL of them and all they have to say. If you do not, I will not grant you the ward."
+						"Kalau begitu akan kuberitahu di mana pengetahuan yang kau cari berada. Di atas gua ini ada gua lain. Di dalamnya tinggal tiga nabi.",
+						"Masing-masing mewujudkan satu daya gaib. Satu untuk Yin, satu untuk Yang, dan yang ketiga untuk Kehampaan. Mereka masing-masing akan menilai potensimu lalu memberimu petunjuk.",
+						"Kalau kau mengikuti petunjuk mereka dan membuktikan kepadaku bahwa kau terhormat dan bijaksana dengan kembali ke sini setelah menuntaskan seluruh tugas mereka, akan kuberi kau jimat pelindung.",
+						"Untuk menemui tiap nabi, kau harus lebih dulu menyerang salah satu tikus dengan mantra lalu mengutuk tikus abadi yang sama. Makhluk itu akan mati sebagai persembahan, dan kau baru bisa masuk.",
+						"Hati-hati, kutuklah HANYA SATU makhluk sebelum memasuki tiap ruang. Kalau lebih, para bijak tidak akan berbicara denganmu dan kau harus kembali kepadaku.",
+						"Aku juga memohon, dengarkan SEMUANYA dan segala yang mereka katakan. Kalau tidak, jimat itu tidak akan kuberikan."
 					},
 					1
 				)
 				player.quest["mage_ward"] = 1
-				player:sendMinitext("Good luck.")
+				player:sendMinitext("Semoga berhasil.")
 			elseif choice == 2 then
-				player:sendMinitext("I admire your honesty.")
+				player:sendMinitext("Aku mengagumi kejujuranmu.")
 				return
 			end
 		end
 
-		if choice2 == "Yes" then
+		if choice2 == "Ya" then
 			player:dialogSeq(
 				{
 					t,
-					"Great! You have made a great decision. I see you becoming a great hero in these lands. Now let me set you up with some supplies."
+					"Bagus! Itu keputusan yang tepat. Aku melihatmu kelak jadi pahlawan besar di tanah ini. Sekarang biar kubekali kau dengan perlengkapan."
 				},
 				1
 			)
@@ -243,42 +243,42 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Here is some armor, and a weapon. These are specific to the mage path, and will help get you started.",
-					"I have also given you some gold, it's all I can spare right now. It will help you with repairs, and getting some other equipment like rings.",
-					"You also have four herb pipes, these will replenish your mana. Once they are used up you should buy some more, shop keepers around town sell them",
-					"If you wish to learn some skills let me know, I can teach you many things to help you in battle."
+					"Ini zirah dan senjata untukmu. Keduanya khusus jalur penyihir dan akan membantumu memulai.",
+					"Kuberi juga sedikit emas, hanya itu yang bisa kusisihkan sekarang. Emas itu akan membantumu memperbaiki barang dan membeli perlengkapan lain seperti cincin.",
+					"Kau juga punya empat pipa herbal; benda itu memulihkan manamu. Kalau sudah habis, belilah lagi, para pedagang di kota menjualnya",
+					"Kalau kau ingin mempelajari beberapa keahlian, bilang saja. Banyak yang bisa kuajarkan untuk membantumu bertarung."
 				},
 				1
 			)
-		elseif choice2 == "Tell me more" then
+		elseif choice2 == "Ceritakan lebih banyak" then
 			player:dialogSeq(
 				{
 					t,
-					"Tell you about mages? Well, mages are the magic users of the land, combining great offensive and defensive magic.",
-					"We use magic to subdue our foes, and to conquer all who stand before us. We can also use our great powers defensively, to heal and save ourselves, or others.",
-					"The mage is a self contained hunter, and can easily solo hunt without the aid of others, however it is always best to join others - safety in numbers!"
+					"Bercerita soal mage? Nah, mage adalah pengguna sihir di tanah ini, memadukan sihir serang dan sihir bertahan yang hebat.",
+					"Kami memakai sihir untuk menundukkan musuh dan menaklukkan siapa pun yang menghadang. Kekuatan kami juga bisa dipakai bertahan, untuk menyembuhkan dan menyelamatkan diri sendiri maupun orang lain.",
+					"Mage adalah pemburu yang mandiri dan mudah berburu sendirian, tetapi selalu lebih baik bergabung dengan yang lain - banyak orang berarti lebih aman!"
 				},
 				1
 			)
 
 			local choice3 = player:menuString(
-				"Will you join us now?",
-				{"Yes", "No"}
+				"Maukah kau bergabung dengan kami sekarang?",
+				{"Ya", "Tidak"}
 			)
 
-			if choice3 == "No" then
+			if choice3 == "Tidak" then
 				player:dialogSeq(
 					{
 						t,
-						"Very well, I will be waiting here if you change your mind. I am seeking great people all the time to join this great path."
+						"Baiklah, aku menunggu di sini kalau kau berubah pikiran. Aku selalu mencari orang-orang hebat untuk bergabung dengan jalan yang agung ini."
 					},
 					1
 				)
-			elseif choice3 == "Yes" then
+			elseif choice3 == "Ya" then
 				player:dialogSeq(
 					{
 						t,
-						"Great! You have made a great decision. I see you becoming a great hero in these lands. Now let me set you up with some supplies."
+						"Bagus! Itu keputusan yang tepat. Aku melihatmu kelak jadi pahlawan besar di tanah ini. Sekarang biar kubekali kau dengan perlengkapan."
 					},
 					1
 				)
@@ -301,19 +301,19 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Here is some armor, and a weapon. These are specific to the mage path, and will help get you started.",
-						"I have also given you some gold, it's all I can spare right now. It will help you with repairs, and getting some other equipment like rings.",
-						"You also have four herb pipes, these will replenish your mana. Once they are used up you should buy some more, shop keepers around town sell them",
-						"If you wish to learn some skills let me know, I can teach you many things to help you in battle."
+						"Ini zirah dan senjata untukmu. Keduanya khusus jalur penyihir dan akan membantumu memulai.",
+						"Kuberi juga sedikit emas, hanya itu yang bisa kusisihkan sekarang. Emas itu akan membantumu memperbaiki barang dan membeli perlengkapan lain seperti cincin.",
+						"Kau juga punya empat pipa herbal; benda itu memulihkan manamu. Kalau sudah habis, belilah lagi, para pedagang di kota menjualnya",
+						"Kalau kau ingin mempelajari beberapa keahlian, bilang saja. Banyak yang bisa kuajarkan untuk membantumu bertarung."
 					},
 					1
 				)
 			end
-		elseif choice2 == "No" then
+		elseif choice2 == "Tidak" then
 			player:dialogSeq(
 				{
 					t,
-					"Very well, I will be waiting here if you change your mind. I am seeking great people all the time to join this great path."
+					"Baiklah, aku menunggu di sini kalau kau berubah pikiran. Aku selalu mencari orang-orang hebat untuk bergabung dengan jalan yang agung ini."
 				},
 				1
 			)
@@ -334,15 +334,15 @@ MageTrainerNpc = {
 
 			player.quest["star_armor"] = 1
 
-			player:dialogSeq({t, "Every man and woman is a star."}, 1)
-			player:dialogSeq({star, "You wish to twinkle?"}, 1)
-			player:dialogSeq({t, "Everyone does. Yet many have failed."}, 1)
+			player:dialogSeq({t, "Setiap lelaki dan perempuan adalah bintang."}, 1)
+			player:dialogSeq({star, "Kau ingin berkelip?"}, 1)
+			player:dialogSeq({t, "Semua orang ingin. Namun banyak yang gagal."}, 1)
 
 			if not player:karmaCheck("rabbit") then
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -351,7 +351,7 @@ MageTrainerNpc = {
 
 			if player:killCount("skeleton_mage") >= 1 and player:killCount("skeleton_warrior") >= 1 then
 				player.quest["star_armor"] = 2
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 
 				return
 			end
@@ -359,7 +359,7 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Among the failures are the Skeleton Mage and Skeleton Warrior. Slay both of them, then return."
+					"Di antara yang gagal ada Skeleton Mage dan Skeleton Warrior. Bunuh keduanya, lalu kembalilah."
 				},
 				0
 			)
@@ -370,7 +370,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -380,14 +380,14 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have the speed of a star, but have you its strength? Bring me two holy rings."
+					"Kau punya kecepatan bintang, tetapi punyakah kau kekuatannya? Bawakan aku dua holy ring."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -396,7 +396,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are missing the rings. Please return when you have them."
+						"Cincinnya belum ada. Kembalilah kalau sudah kau punya."
 					},
 					0
 				)
@@ -405,7 +405,7 @@ MageTrainerNpc = {
 
 			player:removeItem("holy_ring", 2)
 			player.quest["star_armor"] = 3
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Mage Star 3" then
@@ -413,7 +413,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -435,21 +435,21 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"To truly shine with the light of the stars, you must also bring the staff that glows with the star's light."
+					"Untuk benar-benar bersinar dengan cahaya bintang, kau juga harus membawa tongkat yang berpendar oleh cahaya bintang."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
 
 			if player:hasItem("star_staff", 1) ~= true then
 				player:dialogSeq(
-					{t, "Please come back when you have a Star-staff."},
+					{t, "Kembalilah kalau kau sudah punya Star-staff."},
 					0
 				)
 				return
@@ -460,7 +460,7 @@ MageTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armor,
-					"You want to wear this armor? It shall cost you some of your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Harganya sebagian kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -472,12 +472,12 @@ MageTrainerNpc = {
 				player.quest["star_armor"] = 0
 				player.registry["flushed_kills"] = 0
 				player:addLegend(
-					"Mastered the stars (" .. curT() .. ")",
+					"Menguasai bintang (" .. curT() .. ")",
 					"mastered_the_stars",
 					5,
 					128
 				)
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				player:calcStat()
 			end
 		end
@@ -495,15 +495,15 @@ MageTrainerNpc = {
 			player.quest["moon_armor"] = 1
 
 			player:dialogSeq(
-				{t, "You have returned for guidance from the moon?"},
+				{t, "Kau kembali untuk memohon bimbingan bulan?"},
 				1
 			)
 			player:dialogSeq(
-				{t, "Very well, but the sacrifices shall be much greater!"},
+				{t, "Baiklah, tetapi pengorbanannya akan jauh lebih besar!"},
 				1
 			)
 			player:dialogSeq(
-				{t, "You follow the path of Magic. Prove yours."},
+				{t, "Kau menempuh jalur Sihir. Buktikan dirimu."},
 				1
 			)
 
@@ -511,7 +511,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -521,19 +521,19 @@ MageTrainerNpc = {
 			if player:killCount("li") >= 1 then
 				player.quest["moon_armor"] = 2
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"A foul beast has stolen light from the moon to serve his vanity. Slay the monster with the shortest name in all the lands to free the moon's power."
+					"Seekor binatang keji mencuri cahaya bulan demi kesombongannya. Bunuh monster bernama terpendek di seluruh negeri untuk membebaskan kekuatan bulan."
 				},
 				1
 			)
 			player:dialogSeq(
-				{t, "Please return to me when you have completed this task."},
+				{t, "Kembalilah kepadaku kalau tugas ini sudah kau selesaikan."},
 				0
 			)
 		end
@@ -543,7 +543,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -553,19 +553,19 @@ MageTrainerNpc = {
 			if player:killCount("white_wolf") >= 1 then
 				player.quest["moon_armor"] = 3
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"A foul beast has stolen light from the moon to serve his vanity. Slay the slowest creature in all the lands to free the moon's power."
+					"Seekor binatang keji mencuri cahaya bulan demi kesombongannya. Bunuh makhluk terlambat di seluruh negeri untuk membebaskan kekuatan bulan."
 				},
 				1
 			)
 			player:dialogSeq(
-				{t, "Please return to me when you have completed this task."},
+				{t, "Kembalilah kepadaku kalau tugas ini sudah kau selesaikan."},
 				0
 			)
 		end
@@ -575,7 +575,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -585,14 +585,14 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"For this next task, I will require that you bring me complete key set"
+					"Untuk tugas berikutnya, kau harus membawakan satu set kunci lengkap"
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"I will need:\nKey to Earth\nKey to Fire\nKey to Heaven\nKey to Mountain\nKey to Wind\nKey to Pond\nKey to Thunder\nKey to Water\nSute's Key"
+					"Aku butuh:\nKey to Earth\nKey to Fire\nKey to Heaven\nKey to Mountain\nKey to Wind\nKey to Pond\nKey to Thunder\nKey to Water\nSute's Key"
 				},
 				1
 			)
@@ -612,7 +612,7 @@ MageTrainerNpc = {
 			for i = 1, #keys do
 				if player:hasItem(keys[i], 1) ~= true then
 					player:dialogSeq(
-						{t, "Please return when you have all the keys."},
+						{t, "Kembalilah kalau seluruh kuncinya sudah kau punya."},
 						0
 					)
 					return
@@ -624,7 +624,7 @@ MageTrainerNpc = {
 			end
 
 			player.quest["moon_armor"] = 4
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Mage Moon 4" then
@@ -632,7 +632,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -642,7 +642,7 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"For this next task, I will require that you bring me 2 Star-staves and a holy ring."
+					"Untuk tugas berikutnya, kau harus membawakan 2 Star-stave dan satu holy ring."
 				},
 				1
 			)
@@ -651,7 +651,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Please return to me when you have the star-staves and a holy ring."
+						"Kembalilah kepadaku kalau star-stave dan holy ring itu sudah kau punya."
 					},
 					0
 				)
@@ -662,7 +662,7 @@ MageTrainerNpc = {
 			player:removeItem("holy_ring", 1)
 
 			player.quest["moon_armor"] = 5
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Mage Moon 5" then
@@ -670,7 +670,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -694,21 +694,21 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The moon's power is not harnessed so easily! Bring me your unequipped " .. armor.name .. "."
+					"Kekuatan bulan tidak semudah itu ditundukkan! Bawakan aku, dalam keadaan tidak dikenakan, " .. armor.name .. "."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
 
 			if player:hasItem(armor.yname, 1) ~= true then
 				player:dialogSeq(
-					{t, "Please return when you have the required item."},
+					{t, "Silakan kembali kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -718,7 +718,7 @@ MageTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armorg,
-					"You want to wear this armor? It shall cost you some of your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Harganya sebagian kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -730,12 +730,12 @@ MageTrainerNpc = {
 				player.quest["moon_armor"] = 0
 				player.registry["flushed_kills"] = 0
 				player:addLegend(
-					"Understood the moon (" .. curT() .. ")",
+					"Memahami bulan (" .. curT() .. ")",
 					"understood_the_moon",
 					5,
 					128
 				)
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				player:calcStat()
 			end
 		end
@@ -771,11 +771,11 @@ MageTrainerNpc = {
 			player.quest["sun_armor"] = 1
 
 			player:dialogSeq(
-				{t, "The sun is the mightiest and fiercest of all."},
+				{t, "Matahari adalah yang terperkasa dan paling ganas di antara semuanya."},
 				1
 			)
 			player:dialogSeq(
-				{t, "Only the very best and most true can master it."},
+				{t, "Hanya yang terbaik dan paling tulus yang bisa menguasainya."},
 				1
 			)
 
@@ -783,7 +783,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -795,16 +795,16 @@ MageTrainerNpc = {
 			] then
 				player.quest["sun_armor"] = 2
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"I do not envy you, mage. For to prove your worthiness, you must slay " .. mobAmounts[
+					"Aku tidak iri padamu, mage. Sebab untuk membuktikan kelayakanmu, kau harus membunuh " .. mobAmounts[
 						1
-					] .. " " .. mobName1 .. " and " .. mobAmounts[2] .. " " .. mobName2 .. "."
+					] .. " " .. mobName1 .. " dan " .. mobAmounts[2] .. " " .. mobName2 .. "."
 				},
 				1
 			)
@@ -816,7 +816,7 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Next I will require three items with \"Star\" in the name."
+					"Berikutnya aku minta tiga barang yang namanya mengandung \"Star\"."
 				},
 				1
 			)
@@ -824,7 +824,7 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -833,7 +833,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -857,7 +857,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"I need three items with the word \"Star\" in the name."
+						"Aku butuh tiga barang yang namanya mengandung kata \"Star\"."
 					},
 					0
 				)
@@ -870,7 +870,7 @@ MageTrainerNpc = {
 			end
 
 			player.quest["sun_armor"] = 3
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Mage Sun 3" then
@@ -890,7 +890,7 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Please kill a creature with the word \"Slow\" in its name."
+					"Bunuhlah makhluk yang namanya mengandung kata \"Slow\"."
 				},
 				1
 			)
@@ -899,7 +899,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -909,13 +909,13 @@ MageTrainerNpc = {
 			if player:killCount(mobsToKill[1]) >= 1 or player:killCount(mobsToKill[2]) >= 1 or player:killCount(mobsToKill[3]) >= 1 then
 				player.quest["sun_armor"] = 4
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			else
 				player:dialogSeq(
 					{
 						t,
-						"You have not slain a creature with the word \"Slow\" in its name."
+						"Kau belum membunuh makhluk yang namanya mengandung kata \"Slow\"."
 					},
 					0
 				)
@@ -926,7 +926,7 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Next I will require 20 White Ambers, 4 Holy Rings, 5 Star-staves, and 2 Corrupted staves."
+					"Berikutnya aku minta 20 White Amber, 4 Holy Ring, 5 Star-stave, dan 2 Corrupted stave."
 				},
 				1
 			)
@@ -934,7 +934,7 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -943,7 +943,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -955,7 +955,7 @@ MageTrainerNpc = {
 				5
 			) ~= true or player:hasItem("corrupted_staff", 2) ~= true then
 				player:dialogSeq(
-					{t, "Return when you have all the required items."},
+					{t, "Kembalilah kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -967,7 +967,7 @@ MageTrainerNpc = {
 			player:removeItem("corrupted_staff", 2)
 
 			player.quest["sun_armor"] = 5
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Mage Sun 5" then
@@ -977,7 +977,7 @@ MageTrainerNpc = {
 			end
 
 			player:dialogSeq(
-				{t, "Please kill the Massive Scorpion in Kugnae Spider cave."},
+				{t, "Bunuhlah Massive Scorpion di Kugnae Spider cave."},
 				1
 			)
 
@@ -985,7 +985,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -995,11 +995,11 @@ MageTrainerNpc = {
 			if player:killCount("massive_scorpion") >= 1 then
 				player.quest["sun_armor"] = 6
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			else
 				player:dialogSeq(
-					{t, "You have not slain the Massive Scorpion."},
+					{t, "Kau belum membunuh Massive Scorpion."},
 					0
 				)
 			end
@@ -1012,7 +1012,7 @@ MageTrainerNpc = {
 			end
 
 			player:dialogSeq(
-				{t, "Please kill 200 rabbits and return to me."},
+				{t, "Bunuhlah 200 kelinci lalu kembalilah kepadaku."},
 				1
 			)
 
@@ -1020,7 +1020,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -1030,11 +1030,11 @@ MageTrainerNpc = {
 			if player:killCount("rabbit") >= 200 then
 				player.quest["sun_armor"] = 7
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			else
 				player:dialogSeq(
-					{t, "You have not slain at least 200 rabbits."},
+					{t, "Kau belum membunuh sedikitnya 200 kelinci."},
 					0
 				)
 			end
@@ -1049,7 +1049,7 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Please get me 14 gold acorns while you kill 200 squirrels and then return to me."
+					"Ambilkan aku 14 gold acorn sambil membunuh 200 tupai, lalu kembalilah kepadaku."
 				},
 				1
 			)
@@ -1058,7 +1058,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -1066,7 +1066,7 @@ MageTrainerNpc = {
 			end
 
 			if player:hasItem("gold_acorn", 14) ~= true then
-				player:dialogSeq({t, "You are missing the gold acorns."}, 0)
+				player:dialogSeq({t, "Gold acorn-nya belum ada."}, 0)
 				return
 			end
 
@@ -1074,11 +1074,11 @@ MageTrainerNpc = {
 				player:removeItem("gold_acorn", 14)
 				player.quest["sun_armor"] = 8
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			else
 				player:dialogSeq(
-					{t, "You have not slain at least 200 squirrels."},
+					{t, "Kau belum membunuh sedikitnya 200 tupai."},
 					0
 				)
 			end
@@ -1099,12 +1099,12 @@ MageTrainerNpc = {
 
 			local armorg = {graphic = item.icon, color = item.iconC}
 
-			player:dialogSeq({t, "Please present your moon garment"}, 1)
+			player:dialogSeq({t, "Tunjukkan busana bulanmu"}, 1)
 
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -1113,7 +1113,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -1122,7 +1122,7 @@ MageTrainerNpc = {
 
 			if player:hasItem(armor.yname, 1) ~= true then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -1133,7 +1133,7 @@ MageTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have persevered through many trials. A mighty reward is almost yours!"
+					"Kau bertahan melewati banyak ujian. Sebentar lagi ganjaran besar jadi milikmu!"
 				},
 				1
 			)
@@ -1141,7 +1141,7 @@ MageTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armorg,
-					"You want to wear this armor? It shall drain your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Ia akan menguras kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -1155,12 +1155,12 @@ MageTrainerNpc = {
 				player.registry["flushed_kills"] = 0
 				player.quest["sun_armor"] = 0
 				player:addLegend(
-					"Survived the sun (" .. curT() .. ")",
+					"Bertahan di bawah matahari (" .. curT() .. ")",
 					"survived_the_sun",
 					5,
 					128
 				)
-				player:dialogSeq({t, "It is yours."}, 0)
+				player:dialogSeq({t, "Itu milikmu."}, 0)
 				player:calcStat()
 			end
 		end
@@ -1184,7 +1184,7 @@ MageTrainerNpc = {
 			if player:hasItem("sutes_key", 1) == true and player:hasLegend("slew_mighty_sute") == false then
 				player:removeItem("sutes_key", 1)
 				player:addLegend(
-					"Slew the mighty Sute (" .. curT() .. ")",
+					"Membunuh Sute yang perkasa (" .. curT() .. ")",
 					"slew_mighty_sute",
 					5,
 					16
@@ -1195,7 +1195,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You have done well and all will know of your efforts. Unfortunately, I have learned that his spirit is not yet at rest. Sute will soon be reborn."
+						"Kerjamu bagus dan semua orang akan tahu jerih payahmu. Sayangnya aku baru tahu bahwa jiwanya belum tenang. Sute akan segera terlahir kembali."
 					},
 					0
 				)
@@ -1206,7 +1206,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Not enough time has passed. If I apply more powder now, it will kill you. Return later."
+						"Waktunya belum cukup. Kalau kuoleskan bubuk lagi sekarang, kau akan mati. Kembalilah nanti."
 					},
 					0
 				)
@@ -1222,7 +1222,7 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Eldritch's face looks grim. 'You are still too young to learn of that.'"
+						"Wajah Eldritch tampak muram. 'Kau masih terlalu muda untuk mengetahui hal itu.'"
 					},
 					0
 				)
@@ -1230,60 +1230,60 @@ MageTrainerNpc = {
 			end
 
 			local choice = player:menuString(
-				"Yes, I can tell you about Sute. Do you wish to hear the whole story?",
-				{"Please enlighten me.", "No, just tell me what must be done."},
+				"Ya, aku bisa bercerita tentang Sute. Kau ingin mendengar kisah selengkapnya?",
+				{"Tolong ceritakan.", "Tidak, katakan saja apa yang harus dilakukan."},
 				{}
 			)
 			local choice2
 
-			if choice == "Please enlighten me." then
+			if choice == "Tolong ceritakan." then
 				player:dialogSeq(
 					{
 						t,
-						"'Ah, Sute...' the mage sighs sadly. Sute was once a great pupil of mine. He had an incredible talent for magic. But he also had too much confidence, too much pride.'",
-						"'About two decades ago, the Northern Ogres launched a massive surprise assault against Buya. They used elaborate tactics and were supported by strange magics.'",
-						"Eldritch gazes upward, recalling the old memories. 'The very gates of Buya fell and we were forced to withdraw into the palace. After the initial attack, we were able to survive, but could not overcome the Ogres.'",
-						"'We know the Ogre must havve been united by some more cunning power to attack us so effectively. We suspected it was a corrupt mage eof some sort, but never leeared the truth.'",
-						"'As we were developing plans to overcome this threat, the impatient Sute, who had just earned his Ancient clothes, headed alone to the Arctic Land. Before we realized he had left, the Ogres mysteriously retreated.'",
-						"'We assumed Sute dead and were amazed that he somehow was successful. Two years after, what was once eSute returned. His body was frozeeen and he babbled incoherently.'",
-						"'A poet, Lintong, tried to heal him, but Sute smote ehim with a powerful ice spell.'",
-						"'As we tried to subdue him, Sute flew into an insane rage and fled to that cave on the north side of Buya, though we did not know where he had gone to at the time. He formed a virtual army of bizarre creations.'",
-						"'Strangely, he did not use them to attack, but to mine the cave for silver, which he reportedly hoarded. But we were worried about Sute's future plans.'",
-						"'Several groups of heroes were sent into the cave to put Sute out of his misery, but all failed.'",
-						"'Many died. Some were even able to defeat Sutee, but his body would later rise again. There was no other choice,' Eldritch says with regret. 'I sealed Sute and his creations in the cave.'",
-						"'Some incredibly evil force has polluted Sute's soul. I doubt that you will be able to finally put him to rest, but, if you are brave enough, I will help you try.'",
-						"'I can coat you with a special powder that wiill allow you to enter Sute's cave. I have one batch of powder available, but it will only let you into the cave once.'",
-						"'If you leave the cave, you will have to recoated and it is dangerous to apply the powder more than once per hour. It will cost 200 gold for the powder.'"
+						"'Ah, Sute...' sang mage mengembuskan napas sedih. 'Sute dulu murid hebatku. Bakat sihirnya luar biasa. Tetapi kepercayaan dirinya berlebihan, kesombongannya pun.'",
+						"'Sekitar dua dasawarsa lalu, para Ogre Utara melancarkan serangan mendadak besar-besaran ke Buya. Mereka memakai siasat rumit dan didukung sihir yang aneh.'",
+						"Eldritch menatap ke atas, mengenang masa lalu. 'Gerbang Buya sendiri jebol dan kami terpaksa mundur ke istana. Setelah serangan pertama kami bertahan hidup, tetapi tidak sanggup mengalahkan para Ogre.'",
+						"'Kami tahu para Ogre pasti disatukan oleh kekuatan yang lebih licik untuk menyerang sedemikian efektif. Kami menduga itu semacam mage yang rusak jiwanya, tetapi tak pernah tahu kebenarannya.'",
+						"'Selagi kami menyusun rencana mengatasi ancaman itu, Sute yang tidak sabar, yang baru saja memperoleh pakaian Ancient-nya, berangkat sendirian ke Arctic Land. Sebelum kami sadar ia pergi, para Ogre mundur secara misterius.'",
+						"'Kami mengira Sute tewas dan takjub bahwa entah bagaimana ia berhasil. Dua tahun kemudian, sesuatu yang dulunya Sute kembali. Tubuhnya membeku dan ia meracau tak keruan.'",
+						"'Seorang poet, Lintong, mencoba menyembuhkannya, tetapi Sute menghantamnya dengan mantra es yang dahsyat.'",
+						"'Ketika kami mencoba menundukkannya, Sute mengamuk gila dan kabur ke gua di sisi utara Buya, meski saat itu kami tidak tahu ke mana ia pergi. Ia membentuk semacam pasukan dari makhluk-makhluk ganjil.'",
+						"'Anehnya, mereka tidak dipakai menyerang, melainkan menambang perak di gua itu, yang konon ia timbun. Tetapi kami khawatir akan rencana Sute selanjutnya.'",
+						"'Beberapa rombongan pahlawan dikirim ke dalam gua untuk mengakhiri penderitaan Sute, tetapi semuanya gagal.'",
+						"'Banyak yang tewas. Beberapa bahkan sanggup mengalahkan Sute, tetapi tubuhnya kemudian bangkit lagi. Tidak ada pilihan lain,' kata Eldritch dengan sesal. 'Kusegel Sute dan makhluk ciptaannya di dalam gua itu.'",
+						"'Ada kekuatan jahat luar biasa yang mencemari jiwa Sute. Aku ragu kau bisa membuatnya tenang selamanya, tetapi kalau kau cukup berani, akan kubantu kau mencobanya.'",
+						"'Aku bisa melumurimu dengan bubuk khusus yang memungkinkanmu memasuki gua Sute. Aku punya satu takaran bubuk, tetapi hanya cukup untuk sekali masuk.'",
+						"'Kalau kau keluar dari gua, kau harus dilumuri lagi, dan berbahaya memakai bubuk itu lebih dari sekali dalam sejam. Bubuknya seharga 200 emas.'"
 					},
 					1
 				)
 
 				choice2 = player:menuString(
-					"Do you want me to apply it to you?",
-					{"Yes, I am willing to pay.", "No thank you."},
+					"Mau kuoleskan padamu?",
+					{"Ya, aku bersedia membayar.", "Tidak, terima kasih."},
 					{}
 				)
-			elseif choice == "No, just tell me what must be done." then
+			elseif choice == "Tidak, katakan saja apa yang harus dilakukan." then
 				player:dialogSeq(
 					{
 						t,
-						"'Some incredibly evil force has polluted Sute's soul. I doubt that you will be able to finally put him to rest, but, if you are brave enough, I will help you try.'",
-						"'I can coat you with a special powder that wiill allow you to enter Sute's cave. I have one batch of powder available, but it will only let you into the cave once.'",
-						"'If you leave the cave, you will have to recoated and it is dangerous to apply the powder more than once per hour. It will cost 200 gold for the powder.'"
+						"'Ada kekuatan jahat luar biasa yang mencemari jiwa Sute. Aku ragu kau bisa membuatnya tenang selamanya, tetapi kalau kau cukup berani, akan kubantu kau mencobanya.'",
+						"'Aku bisa melumurimu dengan bubuk khusus yang memungkinkanmu memasuki gua Sute. Aku punya satu takaran bubuk, tetapi hanya cukup untuk sekali masuk.'",
+						"'Kalau kau keluar dari gua, kau harus dilumuri lagi, dan berbahaya memakai bubuk itu lebih dari sekali dalam sejam. Bubuknya seharga 200 emas.'"
 					},
 					1
 				)
 				choice2 = player:menuString(
-					"Do you want me to apply it to you?",
-					{"Yes, I am willing to pay.", "No thank you."},
+					"Mau kuoleskan padamu?",
+					{"Ya, aku bersedia membayar.", "Tidak, terima kasih."},
 					{}
 				)
 			end
 
-			if (choice2 == "Yes, I am willing to pay.") then
+			if (choice2 == "Ya, aku bersedia membayar.") then
 				if player.money < 200 then
 					player:dialogSeq(
-						{t, "Sorry but you do not have enough gold."},
+						{t, "Maaf, emasmu tidak cukup."},
 						0
 					)
 					return
@@ -1293,7 +1293,7 @@ MageTrainerNpc = {
 
 				if armor == nil then
 					player:dialogSeq(
-						{t, "You must be wearing an armor for me to dye you."},
+						{t, "Kau harus mengenakan zirah agar aku bisa mewarnaimu."},
 						0
 					)
 					return
@@ -1309,8 +1309,8 @@ MageTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"The powder turns your clothing a strange color.",
-						"If you manage to kill Sute, return to me and I will see that your efforts are acknowledged."
+						"Bubuk itu mengubah warna pakaianmu jadi aneh.",
+						"Kalau kau berhasil membunuh Sute, kembalilah kepadaku dan akan kupastikan jerih payahmu diakui."
 					},
 					1
 				)

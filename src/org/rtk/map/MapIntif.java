@@ -91,12 +91,47 @@ public final class MapIntif {
      *
      * Tata letak: W(0)=0x3003, W(2)=fd klien, L(4)=id karakter, nama[16]@8.
      */
+    /**
+     * Permintaan data karakter yang sedang menunggu jawaban, per fd klien.
+     *
+     * <p>⚠️ Ini yang menutup satu lubang serius. Balasan char server hanya
+     * membawa <b>nomor fd</b>, dan nomor fd <b>dipakai ulang</b>: begitu
+     * sebuah sesi ditutup, {@code newFd()} memberikan slot terkecil yang
+     * kosong ke sambungan berikutnya. Kalau pemain memutus tepat setelah
+     * memperkenalkan diri, balasannya tiba saat fd itu <b>sudah milik orang
+     * lain</b> — dan tanpa penjaga, karakter pemain pertama dipasang ke
+     * sambungan pemain kedua.</p>
+     *
+     * <p>Yang disimpan bukan hanya namanya melainkan <b>objek sesinya</b>:
+     * sambungan baru selalu objek {@link Session} yang berbeda, jadi
+     * perbandingan identitas menutup kasus "orang yang sama menyambung
+     * ulang" sekalipun.</p>
+     */
+    private record Menunggu(String nama, Session sesi) {
+    }
+
+    private static final java.util.Map<Integer, Menunggu> menunggu =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Lupakan permintaan yang menggantung saat pemain memutus.
+     *
+     * <p>Tanpa ini, entri untuk fd yang sudah mati menumpuk sampai fd itu
+     * dipakai ulang. Bukan kebocoran besar — jumlah fd terbatas — tetapi
+     * entri basi membuat penjaga di {@code parseCharLoad} menilai keadaan
+     * yang sudah tidak ada.</p>
+     */
+    public static void lupakanPermintaan(int clientFd) {
+        menunggu.remove(clientFd);
+    }
+
     public static int requestChar(int clientFd, long charId, String name) {
         Session s = net.session(charFd);
         if (s == null) {
             log.error("[MAP] tidak bisa minta karakter: belum terhubung ke char server");
             return -1;
         }
+        menunggu.put(clientFd, new Menunggu(name, net.session(clientFd)));
         s.wfifoW(0, 0x3003);
         s.wfifoW(2, clientFd);
         s.wfifoL(4, (int) charId);
@@ -128,19 +163,55 @@ public final class MapIntif {
             return 0;
         }
 
+        // ⚠️ Pastikan fd ini MASIH milik sesi yang meminta. Lihat catatan di
+        // `menunggu`: fd dipakai ulang, dan balasan yang terlambat bisa
+        // memasang karakter orang lain ke sambungan yang sedang hidup.
+        // ⚠️ LIHAT dulu, baru hapus — dan hanya hapus kalau memang COCOK.
+        //
+        // Versi pertama penjaga ini memakai `remove()` di baris pertama, dan
+        // itu bug yang lebih halus daripada yang diperbaikinya: balasan BASI
+        // untuk fd yang sama (dari sambungan sebelumnya yang sudah mati)
+        // ikut menghapus entri milik permintaan yang MASIH HIDUP di fd itu.
+        // Balasan basinya ditolak dengan benar, lalu balasan yang sah tiba
+        // dan tidak menemukan entri apa pun — sehingga ikut dibuang.
+        //
+        // Gejalanya: pemain kedua menyambung, server mencatat perkenalannya,
+        // dan setelah itu ia tidak pernah menerima satu byte pun. Nol error.
+        // Itu Peringatan #96, dan sebabnya ada di sini.
+        Menunggu m = menunggu.get(clientFd);
+        Session cs0 = net.session(clientFd);
+        if (m == null || cs0 == null || cs0 != m.sesi()
+                || !c.name.equalsIgnoreCase(m.nama())) {
+            log.warn("[MAP] data karakter {} untuk fd {} dibuang: bukan jawaban bagi "
+                    + "permintaan yang sedang menunggu di fd itu", c.name, clientFd);
+            return 0;
+        }
+        menunggu.remove(clientFd);
+
         // bangun pemain runtime lalu tempatkan di dunia (pc_setpos + clif_spawn)
         org.rtk.map.User sd = new org.rtk.map.User(clientFd, c);
+        // Protokolnya sudah dipilih saat perkenalan, jauh sebelum datanya
+        // tiba dari char server; di sinilah keduanya bertemu.
+        sd.rtk2 = MapServer.rtk2Fds.remove(clientFd);
         MapServer.onlineChars.put(clientFd, sd);
 
         log.info("[MAP] karakter dimuat: {} (level {}, {} barang) untuk fd {}",
                 c.name, c.level, c.inventory.size(), clientFd);
 
         if (!org.rtk.map.Pc.enterWorld(MapServer.world, sd)) {
-            log.error("[MAP] {} gagal ditempatkan di dunia — koneksi ditutup", c.name);
             MapServer.onlineChars.remove(clientFd);
-            Session cs = net.session(clientFd);
-            if (cs != null) {
-                cs.eof = true;
+            if (sd.pindahTertunda) {
+                // ⚠️ Sambungannya TIDAK ditutup seketika: paket alihannya
+                // masih di outbox, dan `sessionEof` menutup soket tanpa
+                // menunggu ia terkirim. Klien yang tidak pernah menerima
+                // alamat tujuannya hanya melihat sambungan mati.
+                log.info("[MAP] {} dialihkan ke map server lain — sambungan "
+                        + "ditutup setelah paketnya terkirim", c.name);
+                MapServer.timers.insert(TUTUP_SETELAH_ALIH_MS, 0,
+                        (a, b) -> tutupSesi(clientFd), 0, 0);
+            } else {
+                log.error("[MAP] {} gagal ditempatkan di dunia — koneksi ditutup", c.name);
+                tutupSesi(clientFd);
             }
         }
         return 0;
@@ -305,17 +376,37 @@ public final class MapIntif {
             log.error("[MAP] tidak bisa membuka papan: belum terhubung ke char server");
             return false;
         }
+        // ⚠️ Panjangnya TETAP 34 byte dengan ladang nama 16 byte — bukan
+        // "18 + panjang nama". Tabel panjang di char server tidak bisa
+        // menebak ukuran variabel untuk opcode ini (ladang [2] berisi fd,
+        // bukan panjang), dan paket sepanjang isi membuat aliran
+        // antar-server bergeser lalu sambungannya diputus. Di C strukturnya
+        // juga berukuran tetap.
         byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int n = Math.min(nama.length, 16);
         s.wfifoW(0, 0x3009);
         s.wfifoW(2, sd.fd);
         s.wfifoL(4, board);
         s.wfifoL(8, page);
         s.wfifoL(12, flags);
         s.wfifoB(16, popup ? 1 : 0);
-        s.wfifoB(17, nama.length);
-        s.wfifoBytes(18, nama);
-        s.wfifoSet(18 + nama.length);
+        s.wfifoB(17, n);
+        for (int i = 0; i < 16; i++) {
+            s.wfifoB(18 + i, i < n ? nama[i] : 0);
+        }
+        s.wfifoSet(org.rtk.charserver.Mapif.BOARD_SHOW_LEN);
         return true;
+    }
+
+    /** Jeda sebelum menutup sambungan yang sedang dialihkan (R3/C3). */
+    private static final long TUTUP_SETELAH_ALIH_MS = 500;
+
+    private static int tutupSesi(int fd) {
+        Session cs = net.session(fd);
+        if (cs != null) {
+            cs.eof = true;
+        }
+        return 0;
     }
 
     /**

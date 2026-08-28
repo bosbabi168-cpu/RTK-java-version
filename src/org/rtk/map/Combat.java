@@ -427,6 +427,7 @@ public final class Combat {
             kait(engine, sd, MapServer.itemDb.info(it.id).name(), "on_break");
 
             // pc_delitem(sd, x, 1, 9): 9 = "diberikan/hilang"
+            sd.clearInventorySlot(x);
             MapServer.clientView.playerInventorySlotCleared(sd, x, 9);
             MapServer.clientView.messageToPlayer(sd, 5, "Barangmu hancur!");
             MapServer.clientView.objectAppearanceChanged(sd);
@@ -462,6 +463,7 @@ public final class Combat {
                 MapServer.clientView.messageToPlayer(sd, 5,
                         "Masa berlaku barangmu sudah habis.");
                 // pc_delitem(sd, x, 1, 8): 8 = "lapuk"
+                sd.clearInventorySlot(x);
                 MapServer.clientView.playerInventorySlotCleared(sd, x, 8);
             }
         }

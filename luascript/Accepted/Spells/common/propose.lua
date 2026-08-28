@@ -18,7 +18,7 @@ propose = {
 		player.npcColor = 0
 
 		if player:hasLegend("engaged") or player:hasLegend("married") or player:hasLegend("forged_blood_oath") or player:hasLegend("sealed_blood_oath") or player.partner ~= 0 then
-			player:dialog("You are already committed to someone else!", {})
+			player:dialog("Kau sudah terikat dengan orang lain!", {})
 			return
 		end
 
@@ -34,14 +34,14 @@ propose = {
 			return
 		end
 		if choice == player.name then
-			player:dialog("You can't marry yourself.", {})
+			player:dialog("Kau tidak bisa menikahi dirimu sendiri.", {})
 			return
 		end
 
 		local target = Player(choice)
 
 		if target == nil then
-			player:dialog("Player is not valid or not online.", {})
+			player:dialog("Pemain tidak sah atau tidak daring.", {})
 			return
 		end
 
@@ -60,14 +60,14 @@ propose = {
 
 		if target:hasLegend("engaged") or target:hasLegend("married") or target:hasLegend("forged_blood_oath") or target:hasLegend("sealed_blood_oath") or target.partner ~= 0 then
 			player:dialog(
-				target.name .. " is already committed to someone else!",
+				target.name .. " sudah terikat dengan orang lain!",
 				{}
 			)
 			return
 		end
 
 		if target:hasItem("engagement_ring", 1) ~= true and not target:hasEquipped("engagement_ring") then
-			player:dialog("You have not given them an engagement ring yet.", {})
+			player:dialog("Kau belum memberinya cincin pertunangan.", {})
 			return
 		end
 
@@ -79,21 +79,21 @@ propose = {
 	prompt = async(function(target)
 		local proposer = Player(target.registry["proposer"])
 		local accept = target:menuSeq(
-			proposer.name .. " proposes marriage. Do you accept?",
-			{"Yes! I am madly in love.", "I must decline."},
+			proposer.name .. " melamarmu. Kau terima?",
+			{"Ya! Aku jatuh cinta setengah mati.", "I must decline."},
 			{"close"}
 		)
 
 		if accept == 1 then
 			target:addLegend(
-				"Engaged to $player (" .. curT() .. ")",
+				"Bertunangan dengan $player (" .. curT() .. ")",
 				"engaged",
 				6,
 				1,
 				proposer.ID
 			)
 			proposer:addLegend(
-				"Engaged to $player (" .. curT() .. ")",
+				"Bertunangan dengan $player (" .. curT() .. ")",
 				"engaged",
 				6,
 				1,

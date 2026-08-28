@@ -18,7 +18,7 @@ break_jaw = {
 		player:setAether("break_jaw", aethers)
 		player:sendAction(1, 30)
 		player:sendStatus()
-		player:sendMinitext("You cast Break jaw.")
+		player:sendMinitext("Kau merapal Break jaw.")
 
 		local target = getTargetFacing(player, BL_ALL)
 
@@ -27,14 +27,14 @@ break_jaw = {
 				if not target:hasDuration("break_jaw") then
 					target:sendAnimation(44)
 					target:setDuration("break_jaw", duration)
-					target:sendMinitext(player.name .. " lands a swift blow to your jaw.")
+					target:sendMinitext(player.name .. " melayangkan pukulan cepat ke rahangmu.")
 				end
 			end
 		end
 	end,
 
 	uncast = function(block)
-		block:sendMinitext("Your jaw feels better.")
+		block:sendMinitext("Rahangmu terasa lebih baik.")
 	end,
 
 	requirements = function(player)

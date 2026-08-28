@@ -158,6 +158,24 @@ final class Bindings {
                         p.questUdata = engine.newInstance(engine.questClass, p);
                     }
                     return p.questUdata;
+                case "group": {
+                    // ⚠️ Pemain SENDIRIAN menjawab daftar berisi dirinya
+                    // sendiri, bukan tabel kosong (sl.c:7058, cabang else).
+                    // Empat belas skrip memutari daftar ini dan `exp.lua`
+                    // membagi pengalaman lewatnya — tabel kosong membuat
+                    // pemain sendirian tidak dapat apa-apa, tanpa error.
+                    //
+                    // Disusun ulang tiap akses, seperti di C: susunan grup
+                    // bisa berubah di tengah skrip yang panjang.
+                    org.luaj.vm2.LuaTable t = new org.luaj.vm2.LuaTable();
+                    java.util.List<Long> ids = p.owner instanceof org.rtk.map.User u
+                            ? org.rtk.map.Groups.daftarSkrip(u)
+                            : java.util.List.of((long) p.id);
+                    for (int i = 0; i < ids.size(); i++) {
+                        t.rawset(i + 1, LuaValue.valueOf(ids.get(i).doubleValue()));
+                    }
+                    return t;
+                }
                 case "gameRegistry":
                     return engine.gameRegistryUdata;
                 case "mapRegistry":
@@ -170,10 +188,34 @@ final class Bindings {
                     }
                     return p.mapRegistryUdata;
                 default:
+                    // ⚠️ Atribut PETA tempat pemain berdiri, diteruskan
+                    // seperti `bll_getattr` di C (sl.c:4350) yang membaginya
+                    // ke pemain, mob, NPC, dan barang lantai. Sebelumnya
+                    // hanya objek Map yang punya, sehingga `player.mapTitle`
+                    // (141×), `player.region` (15×), dan `player.warpOut`
+                    // (6×) semuanya nil — dan mantra `gateway` gagal dengan
+                    // "attempt to compare nil with number" di berkasnya
+                    // sendiri, bukan di sini.
+                    LuaValue peta = org.rtk.map.script.WorldBindings
+                            .atributPeta(p.m, attr);
+                    if (peta != null) {
+                        return peta;
+                    }
                     // Atribut karakter yang tersimpan (money, health, ...)
                     // dijawab pemiliknya; null berarti belum diport, jadi
                     // pencarian lanjut ke prototype / data table.
+                    LuaValue idp = idBenda(p, attr);
+                    if (idp != null) {
+                        return idp;
+                    }
                     if (p.owner instanceof ScriptPlayer.Owner o) {
+                        // String & boolean lebih dulu: jembatan angka di
+                        // bawah tidak bisa membawa keduanya, dan boolean
+                        // yang lolos jadi angka akan SELALU benar di Lua.
+                        LuaValue khusus = o.scriptGetSpecial(attr);
+                        if (khusus != null) {
+                            return khusus;
+                        }
                         Long v = o.scriptGetAttr(attr);
                         if (v != null) {
                             return LuaValue.valueOf(v.doubleValue());
@@ -198,9 +240,16 @@ final class Bindings {
                 // sehingga ia hilang dari pandangan pemain lain. Skrip
                 // memindahkan pemain lewat method warp(), bukan atribut.
                 default:
-                    if (p.owner instanceof ScriptPlayer.Owner o
-                            && o.scriptSetAttr(attr, (long) value.todouble())) {
-                        return true;
+                    if (p.owner instanceof ScriptPlayer.Owner o) {
+                        // speech.lua menulis balik `speech` saat pemain
+                        // memakai pintasan /s; flank & backstab ditulis
+                        // skrip pertarungan sebagai boolean.
+                        if (o.scriptSetSpecial(attr, value)) {
+                            return true;
+                        }
+                        if (o.scriptSetAttr(attr, (long) value.todouble())) {
+                            return true;
+                        }
                     }
                     return false; // jatuh ke data table
             }
@@ -570,7 +619,22 @@ final class Bindings {
             String dialog = args.optjstring(2, "");
             java.util.List<String> nama = luaListString(args.arg(3));
             java.util.List<Integer> harga = luaListInt(args.arg(4));
-            var d = new ScriptPlayer.PendingDialog("buy", dialog, nama);
+
+            // ⚠️ Skrip menyebut barang dengan IDENTIFIER, tetapi yang dikirim
+            // ke klien harus NAMA TAMPILAN — C memakai `itemdb_name()`
+            // (clif.c:12455). Bukan sekadar soal enak dibaca: `buyExtend`
+            // mencocokkan jawaban pemain dengan `Item(x).name`, yang juga
+            // nama tampilan. Mengirim identifier membuat perbandingan itu
+            // tidak pernah cocok, `x` tetap 0, dan fungsinya `return nil` —
+            // toko terbuka, pemain memilih, lalu tidak terjadi apa-apa.
+            java.util.List<String> tampil = new java.util.ArrayList<>(nama.size());
+            for (String n : nama) {
+                var info = org.rtk.map.MapServer.itemDb == null
+                        ? null : org.rtk.map.MapServer.itemDb.infoByName(n);
+                tampil.add(info == null || info.tampilan().isEmpty() ? n : info.tampilan());
+            }
+
+            var d = new ScriptPlayer.PendingDialog("buy", dialog, tampil);
             d.prices = harga;
             return engine.yieldBlocking(p, d);
         });
@@ -1057,6 +1121,23 @@ final class Bindings {
             return LuaValue.NONE;
         });
 
+        /**
+         * pcl_getexchangeitem(n): satu barang dari titipan pertukaran
+         * pemain, atau nil bila indeksnya kosong.
+         *
+         * <p>Yang dibaca titipan <b>miliknya sendiri</b> — barang yang ia
+         * tawarkan, bukan yang ditawarkan lawannya.</p>
+         */
+        player.addMethod("getExchangeItem", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            int n = args.optint(2, -1);
+            if (u == null || n < 0 || n >= u.exchange.items.size()) {
+                return LuaValue.NIL;
+            }
+            return engine.newInstance(engine.boundItemClass,
+                    new ScriptItem(u.exchange.items.get(n)));
+        });
+
         // ---- sisa administratif ----
 
         /**
@@ -1190,6 +1271,53 @@ final class Bindings {
                     "SELECT `ChaCaptchaKey` FROM `Character` WHERE `ChaId` = ?",
                     u.status.id);
             return LuaValue.valueOf(k == null ? "" : k);
+        });
+
+        /**
+         * pcl_equip(): pasang barang yang sudah disiapkan {@code onEquip}.
+         *
+         * <p>⚠️ <b>Tanpa argumen</b>, dan itu bukan penyederhanaan: barang
+         * mana yang dipasang datang dari keadaan pemain
+         * ({@code equipId} + {@code invSlot}) yang diisi
+         * {@code Items.equipItem} tepat sebelum kaitnya dipanggil. Skrip
+         * hanya menentukan <b>kapan</b>, bukan apa.</p>
+         */
+        player.addMethod("equip", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Items.equipScript(u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_takeoff(): lepas slot yang sudah ditandai {@code onUnequip}.
+         *
+         * <p>Pasangan {@code equip} di atas, dan sama-sama tanpa argumen —
+         * slotnya ada di {@code takeOffId}. Kalau {@code equipId} juga
+         * terisi, keduanya <b>ditukar</b> sekaligus.</p>
+         */
+        player.addMethod("takeOff", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Items.unequipScript(u);
+            }
+            return LuaValue.NONE;
+        });
+
+        /**
+         * pcl_throwitem(): lemparkan isi {@code invSlot} ke
+         * {@code throwX}/{@code throwY}.
+         *
+         * <p>Ketiganya diisi penangan lempar sebelum kait {@code onThrow}
+         * dipanggil, sehingga skrip bisa memindahkan tujuannya lebih dulu.</p>
+         */
+        player.addMethod("throwItem", (self, args) -> {
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Items.throwScript(u);
+            }
+            return LuaValue.NONE;
         });
 
         /**
@@ -1552,9 +1680,19 @@ final class Bindings {
                     org.rtk.map.MapServer.clientView.messageToPlayer(u, 5,
                             nama + " milikmu hancur.");
                 } else {
+                    // ⚠️ Slot barang yang dilepas paksa harus POSISI kosong
+                    // pertama, bukan `inventory.size() - 1`: yang kedua
+                    // adalah indeks DAFTAR, dan pada kantong berlubang ia
+                    // menunjuk slot milik barang lain. `it.pos` sendiri masih
+                    // berisi nomor slot PERLENGKAPAN saat masuk ke sini.
+                    int slotBaru = u.status.firstFreeInventorySlot(u.status.maxInv);
+                    if (slotBaru < 0) {
+                        return LuaValue.NONE;   // tidak ada tempat
+                    }
+                    it.pos = slotBaru;
                     u.status.inventory.add(it);
                     org.rtk.map.MapServer.clientView.playerInventorySlotChanged(u,
-                            u.status.inventory.size() - 1);
+                            slotBaru);
                     org.rtk.map.MapServer.clientView.messageToPlayer(u, 5,
                             nama + " milikmu terlepas paksa.");
                 }
@@ -2038,7 +2176,7 @@ final class Bindings {
                     return o.ctorArgs.arg1();
                 }
             }
-            return null;
+            return idBenda(self, attr);
         };
         klass.setter = (self, attr, value) -> {
             // Mob mengubah nyawanya sendiri lewat sini — itulah cara skrip
@@ -2287,8 +2425,10 @@ final class Bindings {
      * mengatur siapa berhak memungut.</p>
      */
     static void defineFloorItem(ScriptEngine engine, ScriptClass klass) {
-        klass.getter = (self, attr) ->
-                self instanceof ScriptAttrs a ? a.scriptAttr(attr) : null;
+        klass.getter = (self, attr) -> {
+            LuaValue v = self instanceof ScriptAttrs a ? a.scriptAttr(attr) : null;
+            return v != null ? v : idBenda(self, attr);
+        };
         klass.setter = (self, attr, value) ->
                 self instanceof ScriptAttrs a && a.scriptSetAttr(attr, value);
 
@@ -2467,6 +2607,26 @@ final class Bindings {
     }
 
     /** Benda skrip -&gt; benda peta; pemain lewat pemiliknya. */
+    /**
+     * {@code ID} — <b>id BENDA</b> di dunia ({@code bl->id} di C).
+     *
+     * <p>⚠️ Jangan tertukar dengan {@code id} huruf kecil, yang berarti hal
+     * yang sama sekali berbeda tergantung jenisnya: id JENIS barang untuk
+     * benda lantai, id mob untuk mob. Skrip memakai {@code .ID} <b>1.292
+     * kali di 347 berkas</b> — dan sebelum ini tidak ada satu pun yang
+     * menjawabnya, jadi semuanya menerima nil secara diam-diam. Yang paling
+     * kelihatan: {@code onPickup.lua} memanggil
+     * {@code player:pickUp(groundItems[i].ID)}, sehingga <b>memungut barang
+     * dari tanah tidak pernah berhasil</b> — tanpa satu pun pesan galat.</p>
+     */
+    private static LuaValue idBenda(Object self, String attr) {
+        if (!"ID".equals(attr)) {
+            return null;
+        }
+        org.rtk.map.data.BlockList bl = blockOf(self);
+        return bl == null ? null : LuaValue.valueOf((double) bl.id);
+    }
+
     private static org.rtk.map.data.BlockList blockOf(Object self) {
         if (self instanceof org.rtk.map.data.BlockList bl) {
             return bl;

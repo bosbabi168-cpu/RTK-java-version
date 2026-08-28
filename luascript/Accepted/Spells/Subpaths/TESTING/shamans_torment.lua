@@ -8,7 +8,7 @@ shamans_torment = {
 		end
 
 		if (player.magic < player.maxMagic *.025) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 		player.magic = player.magic - magic
@@ -23,7 +23,7 @@ shamans_torment = {
 		end
 		player:sendMinitext("total siphon: " .. player.registry["totalsiphon"])
 		if (target.blType == BL_PC) then
-			player:sendMinitext("This target's soul is too pure for this magic.")
+			player:sendMinitext("Jiwa sasaran ini terlalu murni untuk sihir ini.")
 		else
 			target:setDuration(
 				"shamans_torment",

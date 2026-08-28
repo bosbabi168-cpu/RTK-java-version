@@ -35,12 +35,12 @@ local _bonHwaLimits = {
 }
 
 local _showInsufficientExp = function(player, cost)
-	player:dialogSeq({"You do not understand enough of your true nature to unleash your potential any further. Please return when you possess at least " .. Tools.formatNumber(cost) .. " experience."}, 1)
+	player:dialogSeq({"Kau belum cukup memahami hakikat dirimu untuk melepaskan potensimu lebih jauh. Kembalilah kalau kau sudah memiliki setidaknya " .. Tools.formatNumber(cost) .. " experience."}, 1)
 end
 
 local _promptShadowCount = function(player, statLabel, baseStatValue, maxShadowsPossible)
 	local shadowCount = player:inputNumberCheck(
-		player:input("Your natural " .. statLabel .. " is " .. Tools.formatNumber(baseStatValue) .. ".\n\nYou can unleash your shadow potential up to " .. Tools.formatNumber(maxShadowsPossible) .. " times.\n\nHow many times do you choose?")
+		player:input("" .. statLabel .. "-mu yang alami adalah " .. Tools.formatNumber(baseStatValue) .. ".\n\nKau bisa melepaskan potensi bayanganmu sampai " .. Tools.formatNumber(maxShadowsPossible) .. " kali.\n\nBerapa kali yang kau pilih?")
 	)
 
 	return shadowCount
@@ -48,8 +48,8 @@ end
 
 local _confirmShadowCount = function(player, statLabel, newStatValue, expCost)
 	local confirmation = player:menuString(
-		"Your " .. statLabel .. " will permanently increase to " .. Tools.formatNumber(newStatValue) .. ".\n\n" .. Tools.formatNumber(expCost) .. " experience will be irrevocably sacrificed.\n\nAre you sure?",
-		{"Yes", "No"},
+		"" .. statLabel .. " akan naik secara permanen menjadi " .. Tools.formatNumber(newStatValue) .. ".\n\n" .. Tools.formatNumber(expCost) .. " pengalaman akan dikorbankan tanpa bisa ditarik kembali.\n\nKau yakin?",
+		{"Ya", "Tidak"},
 		{}
 	)
 
@@ -89,7 +89,7 @@ local _awardBonuses = function(player, nextCost, iterations)
 		player.exp = player.exp + bonusExp
 		player:addKarma(bonusKarma)
 		player:sendStatus()
-		player:dialogSeq({"Your training was very efficient. It cost you " .. Tools.formatNumber(bonusExp) .. " experience less than expected."})
+		player:dialogSeq({"Latihanmu sangat efisien. Biayanya " .. Tools.formatNumber(bonusExp) .. " experience less than expected."})
 	end
 end
 
@@ -121,7 +121,7 @@ local _shadowStat = function(player, statIndex, statMaxValue, statCost)
 
 	local confirmation = _confirmShadowCount(player, statLabel, newStatValue, expCost)
 
-	if (confirmation ~= "Yes") then
+	if (confirmation ~= "Ya") then
 		return
 	end
 
@@ -204,7 +204,7 @@ local _shadowVitaOrMana = function(player, statIndex)
 
 	if (shadowsPossible < 1) then
 		if (isMinor and statValueCap - currentValue < statInterval) then
-			player:dialogSeq({"You have reached your limit for now, young one. Return to me when you have achieved the final insight."})
+			player:dialogSeq({"Untuk sekarang kau sudah mencapai batasmu, anak muda. Kembalilah kepadaku kalau kau sudah meraih pencerahan terakhir."})
 		end
 
 		_showInsufficientExp(player, tempCost)
@@ -227,7 +227,7 @@ local _shadowVitaOrMana = function(player, statIndex)
 
 	local confirmed = _confirmShadowCount(player, statLabel, newValue, expCost)
 
-	if (confirmed ~= "Yes") then
+	if (confirmed ~= "Ya") then
 		return
 	end
 
@@ -281,7 +281,7 @@ ExpSellerNpc = {
 
 		if player.level < 90 then
 			player:dialogSeq(
-				{t, "There is nothing I can do for you, young one. Come back when you have achieved the 90th insight."},
+				{t, "Tidak ada yang bisa kulakukan untukmu, anak muda. Kembalilah kalau kau sudah meraih pencerahan ke-90."},
 				0
 			)
 			return
@@ -290,7 +290,7 @@ ExpSellerNpc = {
 		local opts = {"Shadow Stats", "Shadow Vitality", "Shadow Mana"}
 
 		local choice = player:menuSeq(
-			"Welcome, great one. How may I be of service?",
+			"Selamat datang, yang agung. Ada yang bisa saya layani?",
 			opts,
 			{}
 		)
@@ -356,7 +356,7 @@ ExpSellerNpc = {
 		end
 
 		local choice = player:menuString(
-			"Which aspect of your potential do you seek to unleash?",
+			"Sisi potensimu yang mana yang ingin kau lepaskan?",
 			opts,
 			{}
 		)
@@ -394,7 +394,7 @@ ExpSellerNpc = {
 
 			if player.quest["wind_armor"] == 0 or player.quest["min_kawlana"] == 0 or not player:karmaCheck("spirit") then
 				player:dialogSeq(
-					{t, "I really have no idea what you are talking about."},
+					{t, "Aku sungguh tidak paham apa yang kau bicarakan."},
 					0
 				)
 				return
@@ -404,12 +404,12 @@ ExpSellerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You seek Kawlana? Now there is a word I have not heard in so long.",
-						"The race of people who used that term are long gone now, faded into time, never to be seen again.",
-						"Kawlana is your own spirit, your being, your life force.",
-						"To get what you seek you will need to lose some of your life force, and bottle it.",
-						"This ritual is highly sacred, and before you undertake such a task you should be able to show an understanding of your belief in all that is holy.",
-						"If you still wish to do this you will need to bring me a few things."
+						"Kau mencari Kawlana? Sudah lama sekali aku tidak mendengar kata itu.",
+						"Bangsa yang memakai istilah itu sudah lama lenyap, pudar ditelan waktu, tak pernah terlihat lagi.",
+						"Kawlana adalah jiwamu sendiri, keberadaanmu, daya hidupmu.",
+						"Untuk mendapatkan yang kau cari, kau harus melepaskan sebagian daya hidupmu dan membotolkannya.",
+						"Ritual ini sangat suci, dan sebelum menjalaninya kau harus bisa menunjukkan pemahaman atas kepercayaanmu pada segala yang kudus.",
+						"Kalau kau masih ingin melakukannya, kau harus membawakan beberapa hal."
 					},
 					1
 				)
@@ -418,12 +418,12 @@ ExpSellerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You will need a bottle to hold it in, something that holds power to heal the body from evil.",
-						"You will need a fine steel dagger, to cut into your chest, so you may bleed your life essence into the vial.",
-						"To maintain accuracy, and keep from excessive damage, you will need a bracelet of grace.",
-						"Much power is needed to bury the dagger deep enough to get to the heart. You will need an item of strength for this...",
-						"Finally, a healing cloth will be required to tend the wounds you suffer, or your soul shall bleed until it fades away.",
-						"Bring all this, and prepare yourself, as this will weaken you in ways you do not know."
+						"Kau butuh botol untuk menampungnya, sesuatu yang menyimpan daya menyembuhkan tubuh dari kejahatan.",
+						"Kau butuh fine steel dagger untuk menyayat dadamu, supaya sari hidupmu mengalir ke dalam botol.",
+						"Untuk menjaga ketepatan dan menghindari luka berlebih, kau butuh gelang grace.",
+						"Butuh kekuatan besar untuk menancapkan belati cukup dalam hingga mencapai jantung. Kau butuh barang kekuatan untuk ini...",
+						"Terakhir, kain penyembuh diperlukan untuk merawat lukamu, atau jiwamu akan terus berdarah sampai pudar.",
+						"Bawa semua itu dan siapkan dirimu, sebab ini akan melemahkanmu dengan cara yang belum kau ketahui."
 					},
 					0
 				)
@@ -439,7 +439,7 @@ ExpSellerNpc = {
 					1
 				) ~= true or player:hasItem("sen_glove", 1) ~= true then
 					player:dialogSeq(
-						{t, "You do not have all the required items."},
+						{t, "Barang yang diperlukan belum lengkap."},
 						0
 					)
 					return
@@ -448,14 +448,14 @@ ExpSellerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ahh, you have all you need but are you ready to begin?"
+						"Ahh, semua yang kau butuhkan sudah ada, tetapi kau siap memulai?"
 					},
 					1
 				)
 
 				local choice = player:menuSeq(
-					"Do you wish to collect your Kawlana now?",
-					{"Yes, I do.", "No, I do not."},
+					"Kau ingin mengambil Kawlana-mu sekarang?",
+					{"Ya, aku mau.", "Tidak, aku tidak mau."},
 					{}
 				)
 
@@ -466,11 +466,11 @@ ExpSellerNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"Your soul is not strong enough for what you ask. You will need to heal and grow stronger before you attempt to collect your Kawlana.",
-								"You have " .. playerQuestTimerValues(
+								"Jiwamu belum cukup kuat untuk yang kau minta. Kau harus pulih dan menguat sebelum mencoba mengambil Kawlana-mu.",
+								"Kau punya " .. playerQuestTimerValues(
 									player,
 									"kawlana_timer"
-								) .. " remaining until you can get another Kawlana."
+								) .. " lagi sampai kau bisa memperoleh Kawlana berikutnya."
 							},
 							1
 						)
@@ -481,26 +481,26 @@ ExpSellerNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"You do not have enough vita to continue the ritual."
+								"Vita-mu tidak cukup untuk melanjutkan ritual."
 							},
 							0
 						)
 						return
 					end
 
-					player:dialogSeq({t, "Then the ceremony shall begin..."}, 1)
+					player:dialogSeq({t, "Maka upacaranya dimulai..."}, 1)
 
 					player:dialogSeq(
 						{
 							t,
-							"With this holy item respect is shown for the ceremony."
+							"Dengan benda suci ini, hormat ditunjukkan kepada upacara."
 						},
 						1
 					)
 					player:removeItem("holy_ring", 1)
 
 					player:dialogSeq(
-						{t, "With this dagger you shall bleed your soul."},
+						{t, "Dengan belati ini kau akan mengalirkan darah jiwamu."},
 						1
 					)
 					player:removeItem("fine_steel_dagger", 1)
@@ -508,7 +508,7 @@ ExpSellerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"With these gloves do you find the power to cut deep within your soul."
+							"Dengan sarung tangan ini kau menemukan kekuatan menyayat dalam ke jiwamu."
 						},
 						1
 					)
@@ -517,7 +517,7 @@ ExpSellerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"With this bracelet you find the skill to guide the blade."
+							"Dengan gelang ini kau menemukan kecakapan menuntun bilahnya."
 						},
 						1
 					)
@@ -526,7 +526,7 @@ ExpSellerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"In this vial you shall collect the power you need to protect and heal."
+							"Dalam botol ini kau akan mengumpulkan kekuatan yang kau butuhkan untuk melindungi dan menyembuhkan."
 						},
 						1
 					)
@@ -535,7 +535,7 @@ ExpSellerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"With this cloth glove you tend your wounds. Now hold still, as the power is contained."
+							"Dengan sarung tangan kain ini kau merawat lukamu. Sekarang diamlah, selagi kekuatannya ditampung."
 						},
 						1
 					)
@@ -551,14 +551,14 @@ ExpSellerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Behold! You have collected your own Kawlana. Go now, and heal. Your body has weaked from this ordeal."
+							"Lihatlah! Kau sudah mengumpulkan Kawlana-mu sendiri. Pergilah dan pulihkan dirimu. Tubuhmu melemah karena ujian ini."
 						},
 						0
 					)
 				elseif choice == 2 then
 					-- no
 					player:dialogSeq(
-						{t, "Very well. Return when you are ready."},
+						{t, "Baiklah. Kembalilah kalau kau sudah siap."},
 						0
 					)
 					return

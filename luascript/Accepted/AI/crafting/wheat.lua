@@ -84,7 +84,7 @@ very_tall_wheat = {
 					end
 				end
 			else
-				attacker:sendMinitext("You cannot farm with an empty hand.")
+				attacker:sendMinitext("Kau tidak bisa bertani dengan tangan kosong.")
 			end
 		end
 	end,
@@ -110,7 +110,7 @@ very_tall_wheat = {
 			attacker:addItem("peas", 1)
 		end
 
-		attacker:sendMinitext("You have gathered some Wheat.")
+		attacker:sendMinitext("Kau mengumpulkan beberapa Wheat.")
 	end,
 
 	on_spawn = function(mob)
@@ -232,7 +232,7 @@ tall_wheat = {
 					end
 				end
 			else
-				attacker:sendMinitext("You cannot farm with an empty hand.")
+				attacker:sendMinitext("Kau tidak bisa bertani dengan tangan kosong.")
 			end
 		end
 	end,
@@ -250,7 +250,7 @@ tall_wheat = {
 			attacker:addItem("peas", 1)
 		end
 
-		attacker:sendMinitext("You have gathered some Wheat.")
+		attacker:sendMinitext("Kau mengumpulkan beberapa Wheat.")
 	end,
 
 	on_spawn = function(mob)
@@ -372,7 +372,7 @@ damp_wheat = {
 					end
 				end
 			else
-				attacker:sendMinitext("You cannot farm with an empty hand.")
+				attacker:sendMinitext("Kau tidak bisa bertani dengan tangan kosong.")
 			end
 		end
 	end,
@@ -390,7 +390,7 @@ damp_wheat = {
 			attacker:addItem("peas", 1)
 		end
 
-		attacker:sendMinitext("You have gathered some Wheat.")
+		attacker:sendMinitext("Kau mengumpulkan beberapa Wheat.")
 	end,
 
 	on_spawn = function(mob)
@@ -512,7 +512,7 @@ bent_grain = {
 					end
 				end
 			else
-				attacker:sendMinitext("You cannot farm with an empty hand.")
+				attacker:sendMinitext("Kau tidak bisa bertani dengan tangan kosong.")
 			end
 		end
 	end,
@@ -538,7 +538,7 @@ bent_grain = {
 			attacker:addItem("peas", 1)
 		end
 
-		attacker:sendMinitext("You have gathered some Rice.")
+		attacker:sendMinitext("Kau mengumpulkan beberapa Rice.")
 	end,
 
 	on_spawn = function(mob)

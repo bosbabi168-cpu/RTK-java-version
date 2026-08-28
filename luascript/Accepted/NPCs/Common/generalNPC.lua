@@ -10,15 +10,15 @@ generalNPC = {
 		player.lastClick = npc.ID
 
 		local craftingskills = {
-			"General information on crafting skills.",
-			"Gathering skills.",
-			"Manufacturing skills.",
-			"Refining skills.",
-			"Thanks, nothing for now."
+			"Keterangan umum tentang keahlian kerajinan.",
+			"Keahlian pengumpulan.",
+			"Keahlian pembuatan.",
+			"Keahlian pengolahan.",
+			"Terima kasih, tidak ada untuk sekarang."
 		}
 
 		local choice = player:menuSeq(
-			"I would be happy to tell you about crafting skills. What would you like to learn about?",
+			"Dengan senang hati kuceritakan soal keahlian kerajinan. Apa yang ingin kau pelajari?",
 			craftingskills,
 			{}
 		)
@@ -27,11 +27,11 @@ generalNPC = {
 			player:dialogSeq(
 				{
 					t,
-					"There are three types of crafting skills: Gathering, Manufacturing, and Refining. Initially, you have no training in any skills.",
-					"As you successfully use a skill, your ability in that skill will gradually increase. You will notice improvements occur faster when your skill level is still low.",
-					"As you become better, it takes longer to improve your ability. Becoming a 'Master', or higher, take sa very long time.",
-					"As your skill improves, you will fail less often and have positive results more often. Most skills require some tools or materials.",
-					"Throughout RTK, you will find merchants who know different skills. Each merchant will explain to you the details of how his or her specific skill is performed."
+					"Ada tiga jenis keahlian kerajinan: Gathering, Manufacturing, dan Refining. Pada mulanya kau tidak terlatih pada satu pun.",
+					"Setiap kali kau berhasil memakai satu keahlian, kemampuanmu pada keahlian itu perlahan meningkat. Peningkatannya terasa lebih cepat selagi tingkat keahlianmu masih rendah.",
+					"Makin mahir kau, makin lama waktu yang dibutuhkan untuk meningkat. Menjadi 'Master' atau lebih tinggi memakan waktu sangat lama.",
+					"Seiring keahlianmu membaik, kau makin jarang gagal dan makin sering berhasil. Sebagian besar keahlian membutuhkan alat atau bahan.",
+					"Di seluruh RTK kau akan menemukan pedagang yang menguasai berbagai keahlian. Tiap pedagang akan menjelaskan rincian cara keahliannya dijalankan."
 				},
 				1
 			)
@@ -39,9 +39,9 @@ generalNPC = {
 			player:dialogSeq(
 				{
 					t,
-					"Gathering skills are the simplest of all skills to acquire. Even unskilled people can perform these fairly well. They involve getting raw materials to sell or to use for more advanced skills.",
-					"Eventually, everyone can become a master at all gathering skills. Gathering skillls usually require tools.",
-					"You must be at least level 8 to gather materials."
+					"Keahlian Gathering paling mudah diperoleh. Bahkan orang tanpa keahlian pun bisa melakukannya dengan lumayan. Isinya mengumpulkan bahan mentah untuk dijual atau dipakai pada keahlian yang lebih tinggi.",
+					"Pada akhirnya semua orang bisa menjadi master pada seluruh keahlian gathering. Keahlian gathering biasanya membutuhkan alat.",
+					"Kau harus sedikitnya level 8 untuk mengumpulkan bahan."
 				},
 				1
 			)
@@ -49,10 +49,10 @@ generalNPC = {
 			player:dialogSeq(
 				{
 					t,
-					"Manufacturing skills involve turning raw materials into more valuable forms. You can reach the 'Accomplished' skill level in any manufacturing skill.",
-					"You can also specialize in one specific manufacturing skill. With enough work, you can become a 'Master' or higher, in that one skill.",
-					"You will find that you still sometimes fail at manufacturing skills in which you possess great experience. Overall, however, you will be making better products and earning more money as you improve.",
-					"You  must be at least level 25 to perform a manufacturing skill."
+					"Keahlian Manufacturing mengubah bahan mentah menjadi bentuk yang lebih berharga. Kau bisa mencapai tingkat 'Accomplished' pada keahlian manufacturing mana pun.",
+					"Kau juga bisa mendalami satu keahlian manufacturing tertentu. Dengan kerja yang cukup, kau bisa menjadi 'Master' atau lebih tinggi pada keahlian itu.",
+					"Kau akan mendapati bahwa kadang kau tetap gagal pada keahlian manufacturing yang pengalamanmu sudah besar. Namun secara keseluruhan, hasil kerjamu makin baik dan uangmu makin banyak seiring kemajuanmu.",
+					"Kau harus sedikitnya level 25 untuk menjalankan keahlian manufacturing."
 				},
 				1
 			)
@@ -60,8 +60,8 @@ generalNPC = {
 			player:dialogSeq(
 				{
 					t,
-					"Refining skills are the most advanced of all skills. You can only learn one refining skill. These skills allow you to create useful items, like weapons and armor.",
-					"You must be at least level 50 to learn a refining skill."
+					"Keahlian Refining paling tinggi di antara semuanya. Kau hanya bisa mempelajari satu keahlian refining. Keahlian ini memungkinkanmu membuat barang berguna seperti senjata dan zirah.",
+					"Kau harus sedikitnya level 50 untuk mempelajari keahlian refining."
 				},
 				1
 			)

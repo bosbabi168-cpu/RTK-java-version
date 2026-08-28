@@ -12,13 +12,13 @@ phoenix_flames = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player.magic = player.magic - magicCost
 		player:sendStatus()
-		player:sendMinitext("You cast Phoenix flames.")
+		player:sendMinitext("Kau merapal Phoenix flames.")
 		player:setAether("phoenix_flame", aethers)
 
 		local targets = getTargetsAround(player, BL_ALL)
@@ -30,7 +30,7 @@ phoenix_flames = {
 						targets[i]:sendAnimation(anim)
 						targets[i].attacker = player.ID
 						targets[i]:removeHealthExtend(damage, 1, 1, 1, 1, 0)
-						targets[i]:sendMinitext(player.name .. " casts Hailstorm on you.")
+						targets[i]:sendMinitext(player.name .. " merapal Hailstorm padamu.")
 					end
 				end
 			end

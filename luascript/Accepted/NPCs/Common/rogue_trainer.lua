@@ -17,14 +17,14 @@ RogueTrainerNpc = {
 			if player.level < 99 then
 				table.insert(opts, "Divine Secret")
 			end
-			table.insert(opts, "Learn Secret")
+			table.insert(opts, "Pelajari Rahasia")
 		end
 		table.insert(opts, "Forget Secret")
 		table.insert(opts, "Become Noble")
-		table.insert(opts, "Minor Quest")
+		table.insert(opts, "Tugas Kecil")
 
 		if (player.registryString["minor_quest"] ~= "") then
-			table.insert(opts, "Complete Minor Quest")
+			table.insert(opts, "Tuntaskan Tugas Kecil")
 		end
 
 		if (npc.mapTitle == "Dagger" and player.baseClass == 2 and player.quest["dagger_blue_rooster"] ~= 0 and not player:hasLegend("dagger_guild_member")) then
@@ -78,7 +78,7 @@ RogueTrainerNpc = {
 		end
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts
 		)
 		local choice2
@@ -88,7 +88,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are still young, and not ready for this yet. Return when you have gained your 75th level."
+						"Kau masih muda dan belum siap untuk ini. Kembalilah kalau sudah mencapai level 75."
 					},
 					1
 				)
@@ -96,16 +96,16 @@ RogueTrainerNpc = {
 			else
 				general_npc_funcs.setTitle(player, npc)
 			end
-		elseif choice == "Minor Quest" then
+		elseif choice == "Tugas Kecil" then
 			MinorQuest.quest(player, npc)
-		elseif choice == "Complete Minor Quest" then
+		elseif choice == "Tuntaskan Tugas Kecil" then
 			MinorQuest.complete(player, npc)
 		elseif choice == "Become a Rogue" then
 			if player.level < 5 then
 				player:dialogSeq(
 					{
 						t,
-						"Hail, little one! Please return to me when you have reached the 5th insight."
+						"Salam, anak kecil! Kembalilah kepadaku kalau kau sudah mencapai pencerahan kelima."
 					},
 					0
 				)
@@ -115,14 +115,14 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Hail, mighty one! Welcome to my sanctuary, the sanctuary of the deadliest of all fighters!.",
-					"Have you come to pick your path? I think you would make a great rogue, and a great hero."
+					"Salam, yang perkasa! Selamat datang di tempat sucianku, tempat sucian petarung paling mematikan!",
+					"Kau datang untuk memilih jalurmu? Kurasa kau akan jadi rogue yang hebat, sekaligus pahlawan besar."
 				},
 				1
 			)
 			choice2 = player:menuString(
-				"Will you join the path of the rogue?",
-				{"Yes", "Tell me more", "No"}
+				"Maukah kau menempuh jalur rogue?",
+				{"Ya", "Ceritakan lebih banyak", "Tidak"}
 			)
 		elseif choice == "Divine Secret" then
 			if npc.mapTitle == "Dagger" and player.alignment == 0 then
@@ -136,7 +136,7 @@ RogueTrainerNpc = {
 			else
 				player:futureSpells(npc)
 			end
-		elseif choice == "Learn Secret" then
+		elseif choice == "Pelajari Rahasia" then
 			if npc.mapTitle == "Dagger" and player.mark >= 2 and player.alignment == 0 then
 				player:learnSpell(npc, {"daggers_remedy_rogue"})
 			elseif npc.mapTitle == "Dagger" and player.mark >= 2 and player.alignment == 1 then
@@ -166,19 +166,19 @@ RogueTrainerNpc = {
 			end
 
 			if player.quest["dagger_clicked"] == 0 then
-				player:sendMinitext("I shall not speak with you Ever.")
+				player:sendMinitext("Aku tidak akan pernah berbicara denganmu.")
 				player.quest["dagger_clicked"] = 1
 				return
 			end
 
 			if player.quest["dagger_clicked"] == 1 then
-				player:sendMinitext("Bother me again, and you shall die seeing what hides in the shadows.")
+				player:sendMinitext("Ganggu aku lagi, dan kau akan mati sambil melihat apa yang bersembunyi dalam bayang-bayang.")
 				player.quest["dagger_clicked"] = 2
 				return
 			end
 
 			if player.quest["dagger_clicked"] == 2 then
-				player:sendMinitext("This  is what you get for your annoyance. Attack!")
+				player:sendMinitext("Ini balasan atas kelakuanmu yang menyebalkan. Serang!")
 				player.quest["dagger_clicked"] = 3
 
 				-- spawn 3 mobs that look just like npc, despawn after 5 seconds if player goes out of range
@@ -193,7 +193,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"So, you still return to me even after the assault. You have a glimmer of promise... or stupidity. Return when you see a Blue Rooster."
+						"Jadi kau tetap kembali kepadaku bahkan setelah serangan itu. Ada secercah harapan padamu... atau kebodohan. Kembalilah kalau kau melihat Blue Rooster."
 					},
 					0
 				)
@@ -205,7 +205,7 @@ RogueTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"I am still waiting for you to finish your last task."
+							"Aku masih menunggumu menuntaskan tugas terakhirmu."
 						},
 						0
 					)
@@ -214,7 +214,7 @@ RogueTrainerNpc = {
 
 				player:addItem("round_buckler", 1, 0, player.ID)
 				player:addLegend(
-					"Member of Dagger's guild (" .. curT() .. ")",
+					"Anggota guild Dagger (" .. curT() .. ")",
 					"dagger_guild_member",
 					9,
 					128
@@ -229,9 +229,9 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Very good! You have shown yourself to be worthy of the Daggers' protection.",
-						"Take this shield. It offers protection without hindering your agility or stealth.",
-						"May it aid you in your future missions. This is the only one I shall ever give you."
+						"Bagus sekali! Kau membuktikan diri layak mendapat perlindungan para Dagger.",
+						"Ambil perisai ini. Ia melindungi tanpa mengurangi kegesitan atau kesenyapanmu.",
+						"Semoga ia membantumu dalam tugas-tugas mendatang. Hanya ini satu-satunya yang akan kuberikan padamu."
 					},
 					1
 				)
@@ -243,8 +243,8 @@ RogueTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"First, go to that pretender Maro in Kugnae.",
-							"He keeps in his pocket a Silver acorn for good luck. Snatch it for me to show that even your prowness is better than his."
+							"Pertama, temui si pura-pura Maro di Kugnae.",
+							"Ia menyimpan Silver acorn di sakunya sebagai jimat keberuntungan. Rebut untukku, sebagai bukti bahwa kepiawaianmu pun melampaui dia."
 						},
 						0
 					)
@@ -258,9 +258,9 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"So you have managed to capture the acorn from that fool, Maro, eh? Good for you. Now it is time for you to pull the wool over Maso's eyes in Buya.",
-						"I'll take that acorn and place it somewhere safe. Take this scroll and slide it into Maso's pocket. It is easy to be a pickpocket, a bit harder to be a put-pocket.",
-						"If you finish with that, and return to me with the ability to learn a spell, then you will be worthy of wearing the uniform of the Daggers."
+						"Jadi kau berhasil merebut acorn dari si tolol Maro itu? Bagus. Sekarang saatnya kau mengelabui Maso di Buya.",
+						"Acorn itu kuambil dan kusimpan di tempat aman. Bawa gulungan ini dan selipkan ke saku Maso. Jadi pencopet itu mudah; menyelipkan barang ke saku orang sedikit lebih sulit.",
+						"Kalau itu selesai dan kau kembali kepadaku dengan kemampuan mempelajari mantra, kau layak mengenakan seragam para Dagger."
 					},
 					0
 				)
@@ -269,7 +269,7 @@ RogueTrainerNpc = {
 
 			if player.quest["seen_blue_rooster"] == 0 then
 				player:dialogSeq(
-					{t, "Return to me when you see a Blue Rooster."},
+					{t, "Temui aku lagi kalau kau melihat Blue Rooster."},
 					0
 				)
 				return
@@ -279,20 +279,20 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ah, seen the Blue Rooster have you? That is good that you came at my summoning.",
-					"I have decided that many of you Strangers may make very good additions to my little clan. Perhaps the ways of the Night will not be lost.",
-					"But first, I need to see if you have what it takes. The other so called Rogue masters are merely pretenders. First, go to that pretender Maro in Kugnae.",
-					"He keeps in his pocket a Silver acorn for good luck. Snatch it for me to show that even your prowness is better than his."
+					"Ah, sudah melihat Blue Rooster rupanya? Bagus kau datang atas panggilanku.",
+					"Aku memutuskan bahwa banyak dari kalian Orang Asing bisa jadi tambahan yang baik bagi klan kecilku. Mungkin jalan Malam tidak akan hilang.",
+					"Tapi pertama-tama aku perlu tahu apakah kau punya bakatnya. Para yang mengaku guru Rogue itu cuma pura-pura. Pertama, temui si pura-pura Maro di Kugnae.",
+					"Ia menyimpan Silver acorn di sakunya sebagai jimat keberuntungan. Rebut untukku, sebagai bukti bahwa kepiawaianmu pun melampaui dia."
 				},
 				0
 			)
 		end
 
-		if choice2 == "Yes" then
+		if choice2 == "Ya" then
 			player:dialogSeq(
 				{
 					t,
-					"Great! You have made a great decision. I see you becoming a great hero in these lands. Now let me set you up with some supplies."
+					"Bagus! Itu keputusan yang tepat. Aku melihatmu kelak jadi pahlawan besar di tanah ini. Sekarang biar kubekali kau dengan perlengkapan."
 				},
 				1
 			)
@@ -314,42 +314,42 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Here is some armor, and a weapon. These are specific to the rogue path, and will help get you started.",
-					"I have also given you some gold, it's all I can spare right now. It will help you with repairs, and getting some other equipment like rings.",
-					"I have also given you some Bear's livers, these will help you keep your strength up. Eat one when you are feeling weak, and near death. Shop keepers around town sell them if you need more.",
-					"If you wish to learn some skills let me know, I can teach you many things to help you in battle."
+					"Ini zirah dan senjata untukmu. Keduanya khusus jalur rogue dan akan membantumu memulai.",
+					"Kuberi juga sedikit emas, hanya itu yang bisa kusisihkan sekarang. Emas itu akan membantumu memperbaiki barang dan membeli perlengkapan lain seperti cincin.",
+					"Kuberi juga beberapa hati beruang; benda itu menjaga kekuatanmu. Makanlah satu saat kau lemah dan hampir mati. Para pedagang di kota menjualnya kalau kau butuh lagi.",
+					"Kalau kau ingin mempelajari beberapa keahlian, bilang saja. Banyak yang bisa kuajarkan untuk membantumu bertarung."
 				},
 				1
 			)
-		elseif choice2 == "Tell me more" then
+		elseif choice2 == "Ceritakan lebih banyak" then
 			player:dialogSeq(
 				{
 					t,
-					"Tell you about rogues? Well, they are the deadliest of the fighter classes. Nible, agile, fast, and unmatched one on one, a true assassin.",
-					"Rogues use some magic during their battles, and many skills for attacking a foe. We only attack one at a time, but we kill quickly, and efficiently, moving too quick to be hit easily.",
-					"We can solo single creatures with great skill, for larger battles we need a little help from a healer."
+					"Bercerita soal rogue? Mereka yang paling mematikan di antara kelas petarung. Lincah, gesit, cepat, dan tak tertandingi dalam duel; pembunuh sejati.",
+					"Rogue memakai sedikit sihir dalam pertempuran dan banyak keahlian untuk menyerang musuh. Kami menyerang satu per satu, tetapi membunuh cepat dan efisien, bergerak terlalu gesit untuk mudah dikenai.",
+					"Kami bisa menghadapi makhluk tunggal seorang diri dengan cakap; untuk pertempuran besar kami butuh sedikit bantuan penyembuh."
 				},
 				1
 			)
 
 			local choice3 = player:menuString(
-				"Will you join us now?",
-				{"Yes", "No"}
+				"Maukah kau bergabung dengan kami sekarang?",
+				{"Ya", "Tidak"}
 			)
 
-			if choice3 == "No" then
+			if choice3 == "Tidak" then
 				player:dialogSeq(
 					{
 						t,
-						"Very well, I will be waiting here if you change your mind. I am seeking great people all the time to join this great path."
+						"Baiklah, aku menunggu di sini kalau kau berubah pikiran. Aku selalu mencari orang-orang hebat untuk bergabung dengan jalan yang agung ini."
 					},
 					1
 				)
-			elseif choice3 == "Yes" then
+			elseif choice3 == "Ya" then
 				player:dialogSeq(
 					{
 						t,
-						"Great! You have made a great decision. I see you becoming a great hero in these lands. Now let me set you up with some supplies."
+						"Bagus! Itu keputusan yang tepat. Aku melihatmu kelak jadi pahlawan besar di tanah ini. Sekarang biar kubekali kau dengan perlengkapan."
 					},
 					1
 				)
@@ -371,19 +371,19 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Here is some armor, and a weapon. These are specific to the warrior path, and will help get you started.",
-						"I have also given you some gold, it's all I can spare right now. It will help you with repairs, and getting some other equipment like rings.",
-						"I have also given you some Bear's livers, these will help you keep your strength up. Eat one when you are feeling weak, and near death. Shop keepers around town sell them if you need more.",
-						"If you wish to learn some skills let me know, I can teach you many things to help you in battle."
+						"Ini zirah dan senjata untukmu. Keduanya khusus jalur prajurit dan akan membantumu memulai.",
+						"Kuberi juga sedikit emas, hanya itu yang bisa kusisihkan sekarang. Emas itu akan membantumu memperbaiki barang dan membeli perlengkapan lain seperti cincin.",
+						"Kuberi juga beberapa hati beruang; benda itu menjaga kekuatanmu. Makanlah satu saat kau lemah dan hampir mati. Para pedagang di kota menjualnya kalau kau butuh lagi.",
+						"Kalau kau ingin mempelajari beberapa keahlian, bilang saja. Banyak yang bisa kuajarkan untuk membantumu bertarung."
 					},
 					1
 				)
 			end
-		elseif choice2 == "No" then
+		elseif choice2 == "Tidak" then
 			player:dialogSeq(
 				{
 					t,
-					"Very well, I will be waiting here if you change your mind. I am seeking great people all the time to join this great path."
+					"Baiklah, aku menunggu di sini kalau kau berubah pikiran. Aku selalu mencari orang-orang hebat untuk bergabung dengan jalan yang agung ini."
 				},
 				1
 			)
@@ -404,15 +404,15 @@ RogueTrainerNpc = {
 
 			player.quest["star_armor"] = 1
 
-			player:dialogSeq({t, "Every man and woman is a star."}, 1)
-			player:dialogSeq({star, "You wish to twinkle?"}, 1)
-			player:dialogSeq({t, "Everyone does. Yet many have failed."}, 1)
+			player:dialogSeq({t, "Setiap lelaki dan perempuan adalah bintang."}, 1)
+			player:dialogSeq({star, "Kau ingin berkelip?"}, 1)
+			player:dialogSeq({t, "Semua orang ingin. Namun banyak yang gagal."}, 1)
 
 			if not player:karmaCheck("rabbit") then
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -421,7 +421,7 @@ RogueTrainerNpc = {
 
 			if player:killCount("slime_ogre") >= 2 or player:killCount("muck_ogre") >= 2 then
 				player.quest["star_armor"] = 2
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 
 				return
 			end
@@ -429,7 +429,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Among the failures are the ogres. Even the most agile ones lack light. Slay 2 of the Slime Ogres or 2 of the Muck Ogres, then return."
+					"Di antara yang gagal ada para ogre. Bahkan yang paling gesit pun kekurangan cahaya. Bunuh 2 Slime Ogre atau 2 Muck Ogre, lalu kembalilah."
 				},
 				0
 			)
@@ -441,7 +441,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -451,14 +451,14 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have proven your strength, but what of your grace? Bring me two of the silent bands."
+					"Kau sudah membuktikan kekuatanmu, tetapi bagaimana kelenturanmu? Bawakan aku dua silent band."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -467,7 +467,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You are missing the bracelets. Please return when you have them."
+						"Gelangnya belum ada. Kembalilah kalau sudah kau punya."
 					},
 					0
 				)
@@ -476,7 +476,7 @@ RogueTrainerNpc = {
 
 			player:removeItem("whisper_bracelet", 2)
 			player.quest["star_armor"] = 3
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 		end
 
 		if choice == "Rogue Star 3" then
@@ -484,7 +484,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to master the stars. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk menguasai bintang. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -506,21 +506,21 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"To truly shine with the light of the stars, you must also bring the sword that glows with the star's light."
+					"Untuk benar-benar bersinar dengan cahaya bintang, kau juga harus membawa pedang yang berpendar oleh cahaya bintang."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
 
 			if player:hasItem("steelthorn", 1) ~= true then
 				player:dialogSeq(
-					{t, "Please come back when you have a Steelthorn."},
+					{t, "Kembalilah kalau kau sudah punya Steelthorn."},
 					0
 				)
 				return
@@ -531,7 +531,7 @@ RogueTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armor,
-					"You want to wear this armor? It shall cost you some of your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Harganya sebagian kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -543,12 +543,12 @@ RogueTrainerNpc = {
 				player.quest["star_armor"] = 0
 				player.quest["flushed_kills"] = 0
 				player:addLegend(
-					"Mastered the stars (" .. curT() .. ")",
+					"Menguasai bintang (" .. curT() .. ")",
 					"mastered_the_stars",
 					5,
 					128
 				)
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				player:calcStat()
 			end
 		end
@@ -569,15 +569,15 @@ RogueTrainerNpc = {
 			player.quest["moon_armor"] = 1
 
 			player:dialogSeq(
-				{t, "You have returned for guidance from the moon?"},
+				{t, "Kau kembali untuk memohon bimbingan bulan?"},
 				1
 			)
 			player:dialogSeq(
-				{t, "Very well, but the sacrifices shall be much greater!"},
+				{t, "Baiklah, tetapi pengorbanannya akan jauh lebih besar!"},
 				1
 			)
 			player:dialogSeq(
-				{t, "You follow the path of Riches. Prove your worth."},
+				{t, "Kau menempuh jalur Riches. Buktikan kelayakanmu."},
 				1
 			)
 
@@ -585,7 +585,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -595,7 +595,7 @@ RogueTrainerNpc = {
 			if player:killCount("dog_assassin") >= 1 or player:killCount("dog_cutthroat") >= 1 or player:killCount("dog_avenger") >= 1 then
 				player.quest["moon_armor"] = 2
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 
@@ -603,7 +603,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -613,7 +613,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Dogs in town teach secrets to many. But most animals are not so pure. Slay the Dog that defiles the beautiful rose by carrying it in his mouth."
+					"Anjing-anjing di kota mengajarkan rahasia kepada banyak orang. Tetapi kebanyakan binatang tidak sesuci itu. Bunuh Anjing yang menodai mawar indah dengan menggigitnya di mulut."
 				},
 				1
 			)
@@ -624,7 +624,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -634,18 +634,18 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You follow the path of Riches. Prove your worth. Bring to me all of the following AT THE SAME TIME."
+					"Kau menempuh jalur Riches. Buktikan kelayakanmu. Bawakan aku semua berikut ini SEKALIGUS."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"The full moon drips upon the earth, seeping into the ground. Bring fifty spheres of sweet amber.",
-					"The dark moon drips still deeper into the earth. Bring ten of this darker amber.",
-					"Only the stealthiest can don this garment. Bring two whisper bracelets to quiet your hands.",
-					"Bring me two steelthorns to cut the moon's material.",
-					"The moon favors the lucky. Bring also one of the lucky coins."
+					"Bulan purnama menetes ke bumi, meresap ke dalam tanah. Bawakan lima puluh bulatan sweet amber.",
+					"Bulan gelap menetes lebih dalam lagi ke bumi. Bawakan sepuluh amber yang lebih gelap ini.",
+					"Hanya yang paling senyap bisa mengenakan busana ini. Bawakan dua whisper bracelet untuk menyenyapkan tanganmu.",
+					"Bawakan aku dua steelthorn untuk memotong bahan bulan.",
+					"Bulan berpihak pada yang beruntung. Bawakan juga satu lucky coin."
 				},
 				1
 			)
@@ -653,7 +653,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -668,7 +668,7 @@ RogueTrainerNpc = {
 				10
 			) ~= true or player:hasItem("lucky_coin", 1) ~= true or player.money < 15000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -684,7 +684,7 @@ RogueTrainerNpc = {
 
 			player.quest["moon_armor"] = 3
 			player.registry["flushed_kills"] = 0
-			player:dialogSeq({t, "You have proven your material worth."}, 0)
+			player:dialogSeq({t, "Kau sudah membuktikan kelayakan bendawimu."}, 0)
 		end
 
 		if choice == "Rogue Moon 3" then
@@ -692,7 +692,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -702,13 +702,13 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Soon, my impatient rogue friend. Now display to me your White Moon Axe. I will bond it to your soul, so that no otheer may wield it."
+					"Sabar, kawan rogue-ku yang tidak sabaran. Sekarang perlihatkan White Moon Axe-mu. Akan kuikat ia pada jiwamu, supaya tak seorang pun bisa memakainya."
 				},
 				1
 			)
 
 			if player:hasItem("white_moon_axe", 1) ~= true then
-				player:dialogSeq({t, "Please return when you have the axe."}, 0)
+				player:dialogSeq({t, "Kembalilah kalau kapaknya sudah kau punya."}, 0)
 				return
 			end
 
@@ -716,7 +716,7 @@ RogueTrainerNpc = {
 			player:addItem("white_moon_axe", 1, 0, player.ID)
 			player.quest["moon_armor"] = 4
 			player.registry["flushed_kills"] = 0
-			player:dialogSeq({t, "You have done well."}, 0)
+			player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 			return
 		end
 
@@ -725,7 +725,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to understand the moon. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk memahami bulan. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -749,21 +749,21 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The moon's power is not harnessed so easily! Bring me your star blouse."
+					"Kekuatan bulan tidak semudah itu ditundukkan! Bawakan aku star blouse-mu."
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
 
 			if player:hasItem(armor.yname, 1) ~= true then
 				player:dialogSeq(
-					{t, "Please return when you have the required item."},
+					{t, "Silakan kembali kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -774,7 +774,7 @@ RogueTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armorg,
-					"You want to wear this armor? It shall cost you some of your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Harganya sebagian kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -785,12 +785,12 @@ RogueTrainerNpc = {
 				player:addItem(item.yname, 1, 0, player.ID)
 				player.quest["moon_armor"] = 0
 				player:addLegend(
-					"Understood the moon (" .. curT() .. ")",
+					"Memahami bulan (" .. curT() .. ")",
 					"understood_the_moon",
 					5,
 					128
 				)
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				player:calcStat()
 			end
 		end
@@ -810,11 +810,11 @@ RogueTrainerNpc = {
 			player.quest["sun_armor"] = 1
 
 			player:dialogSeq(
-				{t, "The sun is the mightiest and fiercest of all."},
+				{t, "Matahari adalah yang terperkasa dan paling ganas di antara semuanya."},
 				1
 			)
 			player:dialogSeq(
-				{t, "Only the very best and most true can master it."},
+				{t, "Hanya yang terbaik dan paling tulus yang bisa menguasainya."},
 				1
 			)
 
@@ -822,7 +822,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -832,20 +832,20 @@ RogueTrainerNpc = {
 			if player:killCount("ice_panther") >= 12 and player:killCount("ogre_citelam") >= 1 then
 				player.quest["sun_armor"] = 2
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			elseif player:killCount("ice_panther") < 12 then
 				player:dialogSeq(
 					{
 						t,
-						"You have not killed enough Ice panthers. You need to slay 12 of them and return to me."
+						"Ice panther yang kau bunuh belum cukup. Kau harus membunuh 12 ekor lalu kembali kepadaku."
 					},
 					0
 				)
 				return
 			elseif player:killCount("ogre_citelam") < 1 then
 				player:dialogSeq(
-					{t, "I am still waiting for you to slay Citelam."},
+					{t, "Aku masih menunggumu membunuh Citelam."},
 					0
 				)
 				return
@@ -854,7 +854,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"I do not envy you, rogue. For to prove your worthiness, you must slay a dozen ice panthers and the dreaded Citelam! If you survive, return so that we may continue."
+					"Aku tidak iri padamu, rogue. Sebab untuk membuktikan kelayakanmu, kau harus membunuh selusin ice panther dan Citelam yang ditakuti! Kalau kau selamat, kembalilah supaya kita bisa melanjutkan."
 				},
 				1
 			)
@@ -901,14 +901,14 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have proven your melee prowess. But there is much more to being a rogue, is there not?"
+					"Kau sudah membuktikan kepiawaianmu bertarung jarak dekat. Tetapi menjadi rogue jauh lebih dari itu, bukan?"
 				},
 				1
 			)
 			player:dialogSeq(
 				{
 					t,
-					"Prove now your skill and stealth. Slay the two leaders of the rats, WITHOUT killing any other creatures in the rats cave."
+					"Sekarang buktikan keahlian dan kesenyapanmu. Bunuh kedua pemimpin tikus itu, TANPA membunuh makhluk lain di gua tikus."
 				},
 				1
 			)
@@ -917,7 +917,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -931,7 +931,7 @@ RogueTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You slew a beast you should not have touched. Try again."
+							"Kau membunuh binatang yang seharusnya tidak kau sentuh. Coba lagi."
 						},
 						0
 					)
@@ -942,7 +942,7 @@ RogueTrainerNpc = {
 			if ((player:killCount("mythic_rat") >= 1 and player:killCount("mighty_mouse") >= 1) or (player:killCount("divine_rat") >= 1 and player:killCount("rat_lord") >= 1) or (player:killCount("spirit_rat") >= 1 and player:killCount("rat_avenger") >= 1)) then
 				player.quest["sun_armor"] = 3
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 		end
@@ -1000,7 +1000,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Ah, but it is easy to defeat the clumsy rats with stealth! Now for a real challenge."
+					"Ah, tetapi mengalahkan tikus yang kikuk dengan kesenyapan itu mudah! Sekarang tantangan yang sesungguhnya."
 				},
 				1
 			)
@@ -1008,7 +1008,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Slay the crafty " .. mobboss1 .. " and " .. mobboss2 .. ", WITHOUT killing any other creatures in that cave."
+					"Bunuh si licik " .. mobboss1 .. " dan " .. mobboss2 .. ", TANPA membunuh makhluk lain di gua itu."
 				},
 				1
 			)
@@ -1017,7 +1017,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -1032,7 +1032,7 @@ RogueTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"You slew a beast you should not have touched. Try again."
+							"Kau membunuh binatang yang seharusnya tidak kau sentuh. Coba lagi."
 						},
 						0
 					)
@@ -1043,7 +1043,7 @@ RogueTrainerNpc = {
 			if ((player:killCount("mythic_hare") >= 1 and player:killCount("hare_witch") >= 1) or (player:killCount("divine_rabbit") >= 1 and player:killCount("rabbit_witch") >= 1) or (player:killCount("spirit_rabbit") >= 1 and player:killCount("rabbit_avenger") >= 1)) then
 				player.quest["sun_armor"] = 4
 				player.registry["flushed_kills"] = 0
-				player:dialogSeq({t, "You have done well."}, 0)
+				player:dialogSeq({t, "Kau sudah melakukannya dengan baik."}, 0)
 				return
 			end
 		end
@@ -1052,7 +1052,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Your stealth is impressive! But your Path is that of Riches, not stealth. Bring me 50,000 gold coins, eight steelthorns, five whisper bracelets and six corrupted rings."
+					"Kesenyapanmu mengesankan! Tetapi Jalurmu adalah Riches, bukan kesenyapan. Bawakan aku 50.000 keping emas, delapan steelthorn, lima whisper bracelet, dan enam corrupted ring."
 				},
 				1
 			)
@@ -1060,7 +1060,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -1069,7 +1069,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -1077,7 +1077,7 @@ RogueTrainerNpc = {
 			end
 
 			if player.money < 50000 then
-				player:dialogSeq({t, "Return when you have enough gold."}, 0)
+				player:dialogSeq({t, "Kembalilah kalau emasmu sudah cukup."}, 0)
 				return
 			end
 
@@ -1086,7 +1086,7 @@ RogueTrainerNpc = {
 				5
 			) ~= true or player:hasItem("corrupted_ring", 6) ~= true then
 				player:dialogSeq(
-					{t, "Return when you have all the required items."},
+					{t, "Kembalilah kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -1099,7 +1099,7 @@ RogueTrainerNpc = {
 
 			player.quest["sun_armor"] = 5
 			player:dialogSeq(
-				{t, "You have done well. I'll let ya keep most of the goods."},
+				{t, "Kerjamu bagus. Sebagian besar barangnya boleh kau simpan."},
 				0
 			)
 		end
@@ -1122,7 +1122,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Did you think it was so easy? Your work is still very far from complete. But your pride is too strong. Your greed is too strong also. I see."
+					"Kau pikir semudah itu? Pekerjaanmu masih jauh dari selesai. Tetapi kesombonganmu terlalu kuat. Ketamakanmu juga. Aku mengerti."
 				},
 				1
 			)
@@ -1130,7 +1130,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Humble yourself. Collect 20 gold acorns while you kill 200 squirrels. When you return, bring your unequipped moon garment with you."
+					"Rendahkan hatimu. Kumpulkan 20 gold acorn sambil membunuh 200 tupai. Saat kembali, bawa moon garment-mu dalam keadaan tidak dikenakan."
 				},
 				1
 			)
@@ -1138,7 +1138,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"((Press \"Next\" ONLY if you are ready to have your items taken. Otherwise, Press \"Quit\".))"
+					"((Tekan \"Lanjut\" HANYA kalau kau siap barangmu diambil. Kalau tidak, tekan \"Keluar\".))"
 				},
 				1
 			)
@@ -1147,7 +1147,7 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Your soul is too impure to survive the sun. Improve your karma and return."
+						"Jiwamu terlalu kotor untuk bertahan di bawah matahari. Perbaiki karmamu lalu kembalilah."
 					},
 					0
 				)
@@ -1156,7 +1156,7 @@ RogueTrainerNpc = {
 
 			if player:killCount("squirrel") < 200 then
 				player:dialogSeq(
-					{t, "Return when you have slain 200 squirrels."},
+					{t, "Kembalilah kalau kau sudah membunuh 200 tupai."},
 					0
 				)
 				return
@@ -1164,7 +1164,7 @@ RogueTrainerNpc = {
 
 			if player:hasItem(armor.yname, 1) ~= true or player:hasItem("gold_acorn", 20) ~= true then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
@@ -1176,7 +1176,7 @@ RogueTrainerNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"You have persevered through many trials. A mighty reward is almost yours!"
+					"Kau bertahan melewati banyak ujian. Sebentar lagi ganjaran besar jadi milikmu!"
 				},
 				1
 			)
@@ -1184,7 +1184,7 @@ RogueTrainerNpc = {
 			local choice2 = player:dialogSeq(
 				{
 					armorg,
-					"You want to wear this armor? It shall drain your abilities and some karma."
+					"Kau ingin mengenakan zirah ini? Ia akan menguras kemampuanmu dan sebagian karmamu."
 				},
 				1
 			)
@@ -1197,12 +1197,12 @@ RogueTrainerNpc = {
 				player.registry["flushed_kills"] = 0
 				player.quest["sun_armor"] = 0
 				player:addLegend(
-					"Survived the sun (" .. curT() .. ")",
+					"Bertahan di bawah matahari (" .. curT() .. ")",
 					"survived_the_sun",
 					5,
 					128
 				)
-				player:dialogSeq({t, "It is yours."}, 0)
+				player:dialogSeq({t, "Itu milikmu."}, 0)
 				player:calcStat()
 			end
 		end
@@ -1232,11 +1232,11 @@ RogueTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"So, you need a lock pick eh? Who told you I could make it?",
-							"It doesn't matter, I will find out myself. Anyways, you need one, huh?",
-							"I usually keep these just for special people, but since you already know about it, I guess it wouldn't hurt.",
-							"It's not like you have the skill needed for it, it usually takes more than just a \"jiggle\" to get a door open.",
-							"Now let's see, I will need a piece of Wood for it, and a Fine steel dagger to carve it with."
+							"Jadi kau butuh pencongkel kunci? Siapa yang bilang aku bisa membuatnya?",
+							"Tidak penting, akan kucari tahu sendiri. Jadi, kau butuh satu, ya?",
+							"Biasanya benda ini kusimpan untuk orang istimewa saja, tetapi karena kau sudah tahu, kurasa tidak apa-apa.",
+							"Bukannya kau punya keahlian yang diperlukan; membuka pintu biasanya butuh lebih dari sekadar \"goyangan\".",
+							"Nah, coba lihat, aku butuh sepotong Wood untuk itu, dan Fine steel dagger untuk mengukirnya."
 						},
 						0
 					)
@@ -1248,7 +1248,7 @@ RogueTrainerNpc = {
 						player:dialogSeq(
 							{
 								t,
-								"I can make you the lockpick as soon as you have the required items, a wood scrap and a fine steel dagger."
+								"Aku bisa membuatkan pencongkel kunci begitu barang yang diperlukan ada padamu: satu wood scrap dan satu fine steel dagger."
 							},
 							0
 						)
@@ -1262,7 +1262,7 @@ RogueTrainerNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"There you go, good luck using it... and don't break it, it's very delicate."
+							"Ini dia, semoga berhasil memakainya... dan jangan sampai patah, benda ini rapuh sekali."
 						},
 						0
 					)
@@ -1294,8 +1294,8 @@ RogueTrainerNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"\".....Eh? What is this?....\"",
-						"\"That arrogant fool! Does Maro really believe that he can destroy me?!!! I will have to take some actions against him...\""
+						"\".....Eh? Apa ini?....\"",
+						"\"Si tolol sombong itu! Apa Maro sungguh mengira bisa menghancurkanku?!!! Aku harus mengambil tindakan terhadapnya...\""
 					},
 					0
 				)

@@ -12,7 +12,7 @@ Art of war is a class taught by chonguns. 4 lessons with HW assignments. pass ex
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 

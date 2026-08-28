@@ -14,11 +14,11 @@ white_amber = {
 			player.fakeDrop = 1
 			player:sendAnimation(18, 5)
 			player:sendAnimation(11, 5)
-			player:sendMinitext("Energy from the stars fills your body.")
-			player:sendMinitext("The white amber is absorbed in a flash of light")
+			player:sendMinitext("Tenaga dari bintang memenuhi tubuhmu.")
+			player:sendMinitext("White amber itu terserap dalam kilatan cahaya")
 
 			player:addLegend(
-				"Was blessed by the stars (" .. curT() .. ")",
+				"Diberkati para bintang (" .. curT() .. ")",
 				"blessed_by_the_stars",
 				3,
 				128

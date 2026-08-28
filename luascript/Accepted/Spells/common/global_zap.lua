@@ -12,11 +12,11 @@ global_zap = {
 		-- maximum 10 tiles away in either direction (verified on NTK)
 
 		if (player.magic < manacost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return 0
 		end
 		if (target.state == 1) then
-			player:sendMinitext("It is already dead.")
+			player:sendMinitext("Ia sudah mati.")
 			return 0
 		end
 
@@ -25,7 +25,7 @@ global_zap = {
 			player:setThreat(target.ID, threat + damage)
 		elseif target.blType == BL_PC then
 			if (not player:canPK(target)) then
-				player:sendMinitext("You cannot attack that target.")
+				player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 				return 0
 			end
 		end

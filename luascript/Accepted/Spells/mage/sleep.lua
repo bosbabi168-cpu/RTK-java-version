@@ -8,12 +8,12 @@ sleep_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if target:checkIfCast(sleeps) or target.sleep > 1 then
-			player:sendMinitext("This spell is already in effect.")
+			player:sendMinitext("Mantra ini sedang bekerja.")
 			return
 		end
 
@@ -23,7 +23,7 @@ sleep_mage = {
 			if (target.isBoss ~= 0) then
 				duration = 2000
 			end
-			player:sendMinitext("You cast Sleep.")
+			player:sendMinitext("Kau merapal Sleep.")
 			player.magic = player.magic - magicCost
 			target:setDuration("sleep_mage", duration)
 			target:sendAnimation(2)
@@ -76,12 +76,12 @@ sweet_musings_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if target:checkIfCast(sleeps) or target.sleep > 1 then
-			player:sendMinitext("This spell is already in effect.")
+			player:sendMinitext("Mantra ini sedang bekerja.")
 			return
 		end
 
@@ -91,7 +91,7 @@ sweet_musings_mage = {
 			if (target.isBoss ~= 0) then
 				duration = 2000
 			end
-			player:sendMinitext("You cast Sweet Musings.")
+			player:sendMinitext("Kau merapal Sweet Musings.")
 			player.magic = player.magic - magicCost
 			target:setDuration("sweet_musings_mage", duration)
 			target:sendAnimation(2)
@@ -144,12 +144,12 @@ essence_of_poppies_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if target:checkIfCast(sleeps) or target.sleep > 1 then
-			player:sendMinitext("This spell is already in effect.")
+			player:sendMinitext("Mantra ini sedang bekerja.")
 			return
 		end
 
@@ -159,7 +159,7 @@ essence_of_poppies_mage = {
 			if (target.isBoss ~= 0) then
 				duration = 2000
 			end
-			player:sendMinitext("You cast Essence of Poppies.")
+			player:sendMinitext("Kau merapal Essence of Poppies.")
 			player.magic = player.magic - magicCost
 			target:setDuration("essence_of_poppies_mage", duration)
 			target:sendAnimation(2)
@@ -212,12 +212,12 @@ stillness_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if target:checkIfCast(sleeps) or target.sleep > 1 then
-			player:sendMinitext("This spell is already in effect.")
+			player:sendMinitext("Mantra ini sedang bekerja.")
 			return
 		end
 
@@ -227,7 +227,7 @@ stillness_mage = {
 			if (target.isBoss ~= 0) then
 				duration = 2000
 			end
-			player:sendMinitext("You cast Stillness.")
+			player:sendMinitext("Kau merapal Stillness.")
 			player.magic = player.magic - magicCost
 			target:setDuration("stillness_mage", duration)
 			target:sendAnimation(2)

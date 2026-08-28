@@ -6,13 +6,13 @@ bless_warrior = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player:removeDuras(blessings)
 
-		player:sendMinitext("You cast Bless.")
+		player:sendMinitext("Kau merapal Bless.")
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
 		player:setDuration("bless_warrior", 625000)
@@ -45,13 +45,13 @@ sanctification_warrior = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player:removeDuras(blessings)
 
-		player:sendMinitext("You cast Sanctification.")
+		player:sendMinitext("Kau merapal Sanctification.")
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
 		player:setDuration("sanctification_warrior", 625000)
@@ -84,13 +84,13 @@ tribal_gathering_warrior = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player:removeDuras(blessings)
 
-		player:sendMinitext("You cast Tribal gathering.")
+		player:sendMinitext("Kau merapal Tribal gathering.")
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
 		player:setDuration("tribal_gathering_warrior", 625000)
@@ -123,13 +123,13 @@ strength_of_purpose_warrior = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
 		player:removeDuras(blessings)
 
-		player:sendMinitext("You cast Strength of purpose.")
+		player:sendMinitext("Kau merapal Strength of purpose.")
 		player:sendAction(6, 35)
 		player.magic = player.magic - magic
 		player:setDuration("strength_of_purpose_warrior", 625000)

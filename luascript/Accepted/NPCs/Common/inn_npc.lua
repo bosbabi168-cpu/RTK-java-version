@@ -21,42 +21,42 @@ InnNpc = {
 		Tools.configureDialog(player, npc)
 
 		local opts = {
-			"Buy",
-			"Sell",
-			"Banking",
-			"Transport",
-			"Date & Time"
+			"Beli",
+			"Jual",
+			"Simpanan",
+			"Perjalanan",
+			"Tanggal & Waktu"
 		}
 
 		local waypointId = _getWaypointId(player, npc)
 
 		if os.time() >= player.registry["gave_fragile_orb_of_world_shout_time"] then
-			table.insert(opts, "Free World Shout")
+			table.insert(opts, "World Shout Gratis")
 		end
 
 		if (not Waypoint.isEnabled(player, waypointId)) then
 			table.insert(opts, "Waypoint")
 		end
 
-		local choice = player:menuString("Hello! How can I help you today?", opts)
+		local choice = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				InnNpc.buyItems()
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				InnNpc.sellItems()
 			)
-		elseif choice == "Banking" then
+		elseif choice == "Simpanan" then
 			bank.show_main_menu(player, npc)
-		elseif choice == "Transport" then
+		elseif choice == "Perjalanan" then
 			Waypoint.click(player, npc)
-		elseif choice == "Date & Time" then
+		elseif choice == "Tanggal & Waktu" then
 			general_npc_funcs.time(player)
-		elseif choice == "Free World Shout" then
+		elseif choice == "World Shout Gratis" then
 			general_npc_funcs.freeWorldShout(player, npc)
 		elseif choice == "Waypoint" then
 			Waypoint.add(player, npc, waypointId)

@@ -10,10 +10,10 @@ retribution_poet = {
 			player.magic = 0
 			player:setAether("retribution_poet", 24000)
 			player:sendStatus()
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -38,10 +38,10 @@ spirit_puppet_poet = {
 			player.magic = 0
 			player:setAether("spirit_puppet_poet", 24000)
 			player:sendStatus()
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -66,10 +66,10 @@ palm_of_life_poet = {
 			player.magic = 0
 			player:setAether("palm_of_life_poet", 24000)
 			player:sendStatus()
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 
@@ -94,10 +94,10 @@ tornado_poet = {
 			player.magic = 0
 			player:setAether("tornado_poet", 24000)
 			player:sendStatus()
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 

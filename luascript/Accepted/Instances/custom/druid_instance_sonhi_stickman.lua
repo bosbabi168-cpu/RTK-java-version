@@ -34,7 +34,7 @@ druid_instance_sonhi_stickman = {
 	after_death = function(mob, block)
 		local rand = math.random(1, 10)
 		if rand == 1 then
-			mob:talk(0, "Sonhi Stickman: You will not stop us!")
+			mob:talk(0, "Sonhi Stickman: Kalian tidak akan menghentikan kami!")
 		end
 	end
 }

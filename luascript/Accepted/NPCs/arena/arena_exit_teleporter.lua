@@ -11,13 +11,13 @@ ArenaExitTeleporterNpc = {
 		player.lastClick = npc.ID
 
 		local opts = {}
-		table.insert(opts, "Let me out of this place")
+		table.insert(opts, "Keluarkan aku dari tempat ini")
 		menu = player:menuString(
-			name .. "Are a chicken like me, BAA-CAWWWWWWKKKKKKK!",
+			name .. "Penakut seperti aku, BAA-KOKOKOKOKKKKK!",
 			opts
 		)
 
-		if (menu == "Let me out of this place") then
+		if (menu == "Keluarkan aku dari tempat ini") then
 			minigame_powers.resetPlayer(player)
 		end
 	end)
@@ -48,17 +48,17 @@ minigame_powers = {
 		table.insert(opts, "Set Minigame Ban")
 
 		menu = player:menuString(
-			"<b>[MINIGAME POWERS]\nWhat would you like to  do?",
+			"<b>[KUASA MINIGAME]\nApa yang ingin kau lakukan?",
 			opts
 		)
 
 		if menu == "Add Player" then
-			playerToAdd = player:input("Who needs to be added to the minigame?")
+			playerToAdd = player:input("Siapa yang perlu dimasukkan ke minigame?")
 			if Player(playerToAdd) ~= nil then
 				minigame_powers.addPlayer(player, Player(playerToAdd))
 			end
 		elseif menu == "Remove Player" then
-			playerToKick = player:input("Who needs to be removed from the minigame?")
+			playerToKick = player:input("Siapa yang perlu dikeluarkan dari minigame?")
 			if Player(playerToKick) ~= nil then
 				minigame_powers.kickPlayer(Player(playerToKick))
 			end
@@ -81,8 +81,8 @@ minigame_powers = {
 		elseif menu == "Check Online Bans" then
 			minigame_powers.checkBans(player)
 		elseif menu == "Set Minigame Ban" then
-			playerToBan = Player(player:input("Ban who?"))
-			banTime = player:input("Ban for how many hours?")
+			playerToBan = Player(player:input("Siapa yang dicekal?"))
+			banTime = player:input("Dicekal berapa jam?")
 			playerToBan.registry["minigame_ban_timer"] = os.time() + (banTime * 3600)
 			player:popUp("" .. playerToBan.name .. " has been banned from minigames for " .. banTime .. " hours.")
 		end
@@ -108,7 +108,7 @@ minigame_powers = {
 
 				calc = hour .. ":" .. minute .. ":" .. second
 
-				table.insert(banned, "" .. pc[i].name .. " banned for " .. calc)
+				table.insert(banned, "" .. pc[i].name .. " dicekal selama " .. calc)
 
 				--Player(4):talk(0,""..pc[i].name.." banned for "..calc)
 			end
@@ -164,7 +164,7 @@ minigame_powers = {
 
 	kickPlayer = function(player)
 		minigame_powers.resetPlayer(player)
-		player:sendMinitext("You have been booted from the minigame.")
+		player:sendMinitext("Kau dikeluarkan dari minigame.")
 	end,
 
 	addPlayer = function(player, target)
@@ -215,7 +215,7 @@ minigame_powers = {
 				target:dialogSeq(
 					{
 						t,
-						n .. "Allright, your character is registered for Flag Freeze Tag."
+						n .. "Baik, karaktermu terdaftar untuk Flag Freeze Tag."
 					},
 					1
 				)

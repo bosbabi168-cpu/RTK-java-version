@@ -12,11 +12,11 @@ WoodlandAngelNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"There you are at last.\n\nThis marks the end of your training with us. The great tutors of the cities will now continue your training.",
-				"Remember that there is a great deal more that you have yet to learn. Make sure you read the laws of this land and follow them. Also learn all that tutors have to offer you.",
-				"If you should die out there press Shift + <F1> and selecting 'Silver Thread' you can choose to travel to one of the Shamans that shall give life once more.\n\nShould you need any other help use <F1>",
-				"The last thing I have to teach you is how to talk and whisper to other people. To talk to all the people around you type ' (this is the \" key without pressing shift).\n\nTo whisper to another person, press \" and type in that person's name.",
-				"To exit this area, use the ' key and say the word 'Finish'."
+				"Akhirnya kau sampai juga.\n\nIni menandai akhir latihanmu bersama kami. Para tutor besar di kota akan melanjutkan latihanmu.",
+				"Ingatlah, masih sangat banyak yang belum kau pelajari. Pastikan kau membaca hukum tanah ini dan menaatinya. Pelajari juga segala yang ditawarkan para tutor.",
+				"Kalau kau mati di luar sana, tekan Shift + <F1> lalu pilih 'Silver Thread'; kau bisa memilih pergi ke salah satu Dukun yang akan menghidupkanmu kembali.\n\nKalau butuh bantuan lain, pakai <F1>",
+				"Yang terakhir kuajarkan adalah cara berbicara dan berbisik kepada orang lain. Untuk berbicara kepada semua orang di sekitarmu, ketik ' (ini tombol \" tanpa menekan shift).\n\nUntuk berbisik kepada seseorang, tekan \" lalu ketik namanya.",
+				"Untuk keluar dari daerah ini, pakai tombol ' lalu ucapkan kata 'Selesaikan'."
 			},
 			{}
 		)
@@ -49,15 +49,15 @@ WoodlandAngelNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Good luck, I now leave you in the hands of the tutors from the town, JadeSpear and Ironheart.",
-					"Now it's time to choose your nation. Do not worry if you are not familiar with the nations. You can always change it later."
+					"Semoga berhasil; kini kuserahkan kau ke tangan para tutor kota, JadeSpear dan Ironheart.",
+					"Sekarang saatnya memilih negerimu. Jangan khawatir kalau kau belum mengenal negeri-negeri itu; kau selalu bisa mengubahnya nanti."
 				},
 				1
 			)
 
 			local choice = player:menuSeq(
-				"Where do you wish to live?",
-				{"Neutral", "Koguryo", "Buya", "I don't know yet"},
+				"Di mana kau ingin tinggal?",
+				{"Neutral", "Koguryo", "Buya", "Aku belum tahu"},
 				{}
 			)
 
@@ -75,7 +75,7 @@ WoodlandAngelNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"We will now send you to the town tutor and give you a special spell to get you around the Kingdoms. Good luck."
+						"Sekarang kau akan kami kirim ke tutor kota dan kami beri mantra khusus untuk berkeliling Kerajaan-kerajaan ini. Semoga berhasil."
 					},
 					1
 				)
@@ -87,14 +87,14 @@ WoodlandAngelNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"I understand that you don't want to leave here, yet. Come back to me if you change your mind."
+						"Aku mengerti kau belum mau pergi dari sini. Temui aku lagi kalau kau berubah pikiran."
 					},
 					0
 				)
 				return
 			else
 				player:dialogSeq(
-					{t, "You must choose Koguryo or Buya currently."},
+					{t, "Untuk saat ini kau harus memilih Koguryo atau Buya."},
 					0
 				)
 				return

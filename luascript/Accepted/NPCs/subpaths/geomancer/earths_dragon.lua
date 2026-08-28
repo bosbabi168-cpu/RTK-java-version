@@ -10,40 +10,40 @@ NpcSubpathGeomancerEarthsDragonNpc = {
 		player.lastClick = npc.ID
 
 		local options = {
-			"Buy",
-			"Sell",
-			"Fix Item",
-			"Fix All Items",
-			"Keeper of Red Soil",
+			"Beli",
+			"Jual",
+			"Perbaiki Barang",
+			"Perbaiki Semua Barang",
+			"Penjaga Tanah Merah",
 			"Reincarnate",
 			"Observe"
 		}
 		local buysellopts = {"shu_jing"}
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			options
 		)
 
-		if choice == "Buy" then
+		if choice == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buysellopts
 			)
-		elseif choice == "Sell" then
+		elseif choice == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				buysellopts
 			)
-		elseif choice == "Fix Item" then
+		elseif choice == "Perbaiki Barang" then
 			player:repairExtend()
-		elseif choice == "Fix All Items" then
+		elseif choice == "Perbaiki Semua Barang" then
 			player:repairAll(npc)
 		elseif choice == "Keeper of the Red Soil" then
 			player:dialogSeq(
 				{
 					t,
-					"I seek only those who are keepers of the balance and followers of the great mother Tap."
+					"Aku hanya mencari mereka yang menjaga keseimbangan dan mengikuti ibu agung Tap."
 				},
 				0
 			)

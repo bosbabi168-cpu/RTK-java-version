@@ -20,13 +20,13 @@ call_companion = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		player:sendAction(6, 25)
 		player:playSound(22)
-		player:sendMinitext("You cast Call companion.")
+		player:sendMinitext("Kau merapal Call companion.")
 
 		player.magic = player.magic - magicCost
 		player:sendStatus()
@@ -43,7 +43,7 @@ call_companion = {
 		}
 
 		local choice = player:menuString(
-			"Which creature do you wish to call?",
+			"Makhluk mana yang ingin kau panggil?",
 			opts
 		)
 

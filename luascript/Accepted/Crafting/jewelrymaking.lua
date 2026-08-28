@@ -19,7 +19,7 @@ jewelrymaking = {
 				table.remove(choices)
 			end
 			local choice = player:menuSeq(
-				"What would you like to craft?",
+				"Apa yang ingin kau buat?",
 				choices,
 				{}
 			)
@@ -217,7 +217,7 @@ jewelrymaking = {
 		end
 
 		local choice = player:menuSeq(
-			"What would you like to craft?",
+			"Apa yang ingin kau buat?",
 			choices,
 			{}
 		)
@@ -231,7 +231,7 @@ jewelrymaking = {
 				player:dialogSeq(
 					{
 						{graphic = Item(3).icon, color = Item(item).iconC},
-						"You do not have enough gold for this."
+						"Emasmu tidak cukup untuk ini."
 					},
 					0
 				)
@@ -273,7 +273,7 @@ jewelrymaking = {
 									graphic = Item("large_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("large_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -289,7 +289,7 @@ jewelrymaking = {
 									graphic = Item("medium_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("medium_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -305,7 +305,7 @@ jewelrymaking = {
 									graphic = Item("small_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("small_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -324,7 +324,7 @@ jewelrymaking = {
 								graphic = Item("large_amber_ring").icon,
 								color = Item("large_amber_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -336,7 +336,7 @@ jewelrymaking = {
 								graphic = Item("medium_amber_ring").icon,
 								color = Item("medium_amber_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -348,7 +348,7 @@ jewelrymaking = {
 								graphic = Item("small_amber_ring").icon,
 								color = Item("small_amber_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -359,7 +359,7 @@ jewelrymaking = {
 								graphic = Item(item).icon,
 								color = Item(item).iconC
 							},
-							"Your feeble efforts have destroyed that which you meant to enhance."
+							"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 						},
 						0
 					)
@@ -373,7 +373,7 @@ jewelrymaking = {
 								graphic = Item("large_amber_ring").icon,
 								color = Item("large_amber_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -385,7 +385,7 @@ jewelrymaking = {
 								graphic = Item("medium_amber_ring").icon,
 								color = Item("medium_amber_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -397,7 +397,7 @@ jewelrymaking = {
 								graphic = Item("small_amber_ring").icon,
 								color = Item("small_amber_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -408,7 +408,7 @@ jewelrymaking = {
 								graphic = Item(item).icon,
 								color = Item(item).iconC
 							},
-							"Your feeble efforts have destroyed that which you meant to enhance."
+							"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 						},
 						0
 					)
@@ -425,7 +425,7 @@ jewelrymaking = {
 				player:dialogSeq(
 					{
 						{graphic = Item(3).icon, color = Item(item).iconC},
-						"You do not have enough gold for this."
+						"Emasmu tidak cukup untuk ini."
 					},
 					0
 				)
@@ -467,7 +467,7 @@ jewelrymaking = {
 									graphic = Item("large_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("large_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -483,7 +483,7 @@ jewelrymaking = {
 									graphic = Item("medium_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("medium_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -499,7 +499,7 @@ jewelrymaking = {
 									graphic = Item("small_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("small_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -518,7 +518,7 @@ jewelrymaking = {
 								graphic = Item("large_dark_ring").icon,
 								color = Item("large_dark_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -530,7 +530,7 @@ jewelrymaking = {
 								graphic = Item("medium_dark_ring").icon,
 								color = Item("medium_dark_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -542,7 +542,7 @@ jewelrymaking = {
 								graphic = Item("small_dark_ring").icon,
 								color = Item("small_dark_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -553,7 +553,7 @@ jewelrymaking = {
 								graphic = Item(item).icon,
 								color = Item(item).iconC
 							},
-							"Your feeble efforts have destroyed that which you meant to enhance."
+							"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 						},
 						0
 					)
@@ -567,7 +567,7 @@ jewelrymaking = {
 								graphic = Item("large_dark_ring").icon,
 								color = Item("large_dark_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -579,7 +579,7 @@ jewelrymaking = {
 								graphic = Item("medium_dark_ring").icon,
 								color = Item("medium_dark_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -591,7 +591,7 @@ jewelrymaking = {
 								graphic = Item("small_dark_ring").icon,
 								color = Item("small_dark_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -602,7 +602,7 @@ jewelrymaking = {
 								graphic = Item(item).icon,
 								color = Item(item).iconC
 							},
-							"Your feeble efforts have destroyed that which you meant to enhance."
+							"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 						},
 						0
 					)
@@ -619,7 +619,7 @@ jewelrymaking = {
 				player:dialogSeq(
 					{
 						{graphic = Item(3).icon, color = Item(item).iconC},
-						"You do not have enough gold for this."
+						"Emasmu tidak cukup untuk ini."
 					},
 					0
 				)
@@ -661,7 +661,7 @@ jewelrymaking = {
 									graphic = Item("large_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("large_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -677,7 +677,7 @@ jewelrymaking = {
 									graphic = Item("medium_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("medium_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -693,7 +693,7 @@ jewelrymaking = {
 									graphic = Item("small_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("small_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -712,7 +712,7 @@ jewelrymaking = {
 								graphic = Item("large_white_ring").icon,
 								color = Item("large_white_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -724,7 +724,7 @@ jewelrymaking = {
 								graphic = Item("medium_white_ring").icon,
 								color = Item("medium_white_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -736,7 +736,7 @@ jewelrymaking = {
 								graphic = Item("small_white_ring").icon,
 								color = Item("small_white_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -747,7 +747,7 @@ jewelrymaking = {
 								graphic = Item(item).icon,
 								color = Item(item).iconC
 							},
-							"Your feeble efforts have destroyed that which you meant to enhance."
+							"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 						},
 						0
 					)
@@ -761,7 +761,7 @@ jewelrymaking = {
 								graphic = Item("large_white_ring").icon,
 								color = Item("large_white_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -773,7 +773,7 @@ jewelrymaking = {
 								graphic = Item("medium_white_ring").icon,
 								color = Item("medium_white_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -785,7 +785,7 @@ jewelrymaking = {
 								graphic = Item("small_white_ring").icon,
 								color = Item("small_white_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -796,7 +796,7 @@ jewelrymaking = {
 								graphic = Item(item).icon,
 								color = Item(item).iconC
 							},
-							"Your feeble efforts have destroyed that which you meant to enhance."
+							"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 						},
 						0
 					)
@@ -813,7 +813,7 @@ jewelrymaking = {
 				player:dialogSeq(
 					{
 						{graphic = Item(3).icon, color = Item(item).iconC},
-						"You do not have enough gold for this."
+						"Emasmu tidak cukup untuk ini."
 					},
 					0
 				)
@@ -855,7 +855,7 @@ jewelrymaking = {
 									graphic = Item("large_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("large_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -871,7 +871,7 @@ jewelrymaking = {
 									graphic = Item("medium_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("medium_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -887,7 +887,7 @@ jewelrymaking = {
 									graphic = Item("small_" .. totems[picktotem] .. "_ring").icon,
 									color = Item("small_" .. totems[picktotem] .. "_ring").iconC
 								},
-								"Your efforts were successful!"
+								"Usahamu berhasil!"
 							},
 							0
 						)
@@ -906,7 +906,7 @@ jewelrymaking = {
 								graphic = Item("large_yellow_ring").icon,
 								color = Item("large_yellow_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -918,7 +918,7 @@ jewelrymaking = {
 								graphic = Item("medium_yellow_ring").icon,
 								color = Item("medium_yellow_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -930,7 +930,7 @@ jewelrymaking = {
 								graphic = Item("small_yellow_ring").icon,
 								color = Item("small_yellow_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -941,7 +941,7 @@ jewelrymaking = {
 								graphic = Item(item).icon,
 								color = Item(item).iconC
 							},
-							"Your feeble efforts have destroyed that which you meant to enhance."
+							"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 						},
 						0
 					)
@@ -955,7 +955,7 @@ jewelrymaking = {
 								graphic = Item("large_yellow_ring").icon,
 								color = Item("large_yellow_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -967,7 +967,7 @@ jewelrymaking = {
 								graphic = Item("medium_yellow_ring").icon,
 								color = Item("medium_yellow_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -979,7 +979,7 @@ jewelrymaking = {
 								graphic = Item("small_yellow_ring").icon,
 								color = Item("small_yellow_ring").iconC
 							},
-							"Your efforts were successful!"
+							"Usahamu berhasil!"
 						},
 						0
 					)
@@ -990,7 +990,7 @@ jewelrymaking = {
 								graphic = Item(item).icon,
 								color = Item(item).iconC
 							},
-							"Your feeble efforts have destroyed that which you meant to enhance."
+							"Usahamu yang lemah malah menghancurkan benda yang hendak kau tingkatkan."
 						},
 						0
 					)

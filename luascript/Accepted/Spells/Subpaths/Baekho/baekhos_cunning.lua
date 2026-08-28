@@ -17,76 +17,76 @@ baekhos_cunning = {
 		if (player:hasDuration("baekhos_cunning") == true and cunlevel == 1) then
 			-- cast cunning 2
 			if (player.magic < 4200) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.magic = player.magic - 4200
 			player:setAether("baekhos_cunning", aether)
 			player:sendAnimation(35)
 			player:playSound(705)
-			player:sendMinitext("[Cunning 2] Baekho increases your awareness and skill.")
+			player:sendMinitext("[Cunning 2] Baekho menambah kewaspadaan dan kecakapanmu.")
 			player.registry["baekhos_cunning"] = 2
 			player:sendAction(6, 35)
 			player:calcStat()
 		elseif (player:hasDuration("baekhos_cunning") == true and cunlevel == 2) then
 			-- cast cunning 3
 			if (player.magic < 15634) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.magic = player.magic - 15634
 			player:setAether("baekhos_cunning", aether)
 			player:sendAnimation(35)
 			player:playSound(705)
-			player:sendMinitext("[Cunning 3] Baekho increases your awareness and skill.")
+			player:sendMinitext("[Cunning 3] Baekho menambah kewaspadaan dan kecakapanmu.")
 			player.registry["baekhos_cunning"] = 3
 			player:sendAction(6, 35)
 			player:calcStat()
 		elseif (player:hasDuration("baekhos_cunning") == true and cunlevel == 3) then
 			-- cast cunning 4
 			if (player.magic < 46658) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.magic = player.magic - 46658
 			player:setAether("baekhos_cunning", aether)
 			player:sendAnimation(35)
 			player:playSound(705)
-			player:sendMinitext("[Cunning 4] Baekho increases your awareness and skill.")
+			player:sendMinitext("[Cunning 4] Baekho menambah kewaspadaan dan kecakapanmu.")
 			player.registry["baekhos_cunning"] = 4
 			player:sendAction(6, 35)
 			player:calcStat()
 		elseif (player:hasDuration("baekhos_cunning") == true and cunlevel == 4) then
 			-- cast cunning 5
 			if (player.magic < 117667) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.magic = player.magic - 117667
 			player:setAether("baekhos_cunning", aether)
 			player:sendAnimation(35)
 			player:playSound(705)
-			player:sendMinitext("[Cunning 5] Baekho increases your awareness and skill.")
+			player:sendMinitext("[Cunning 5] Baekho menambah kewaspadaan dan kecakapanmu.")
 			player.registry["baekhos_cunning"] = 5
 			player:sendAction(6, 35)
 			player:calcStat()
 		elseif (player:hasDuration("baekhos_cunning") == true and cunlevel == 5) then
 			-- cast cunning 6 TESTING ONLY
 			if (player.magic < 265000) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player.magic = player.magic - 265000
 			player:setAether("baekhos_cunning", aether)
 			player:sendAnimation(35)
 			player:playSound(705)
-			player:sendMinitext("[Cunning 6] Baekho's power overwhelms your body.")
+			player:sendMinitext("[Cunning 6] Kekuatan Baekho membanjiri tubuhmu.")
 			player.registry["baekhos_cunning"] = 6
 			player:sendAction(6, 35)
 			player:calcStat()
 		elseif (player:hasDuration("baekhos_cunning") == false) then
 			if (player.magic < 3000) then
-				player:sendMinitext("You do not have enough mana.")
+				player:sendMinitext("Manamu tidak cukup.")
 				return
 			end
 			player:setDuration("wolfs_fury_rogue", 0)
@@ -98,12 +98,12 @@ baekhos_cunning = {
 			player:playSound(705)
 			player:setDuration("baekhos_cunning", 938000)
 			player:setAether("baekhos_cunning", aether)
-			player:sendMinitext("[Cunning 1] You feel your fighting skills improve.")
+			player:sendMinitext("[Cunning 1] Kau merasakan kecakapan bertarungmu meningkat.")
 			player.registry["baekhos_cunning"] = 1
 			player:sendAction(6, 35)
 			player:calcStat()
 		else
-			player:sendMinitext("You have reached your max potential.")
+			player:sendMinitext("Kau sudah mencapai potensi tertinggimu.")
 		end
 	end,
 

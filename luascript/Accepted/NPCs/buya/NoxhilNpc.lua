@@ -5,12 +5,12 @@ NoxhilNpc = {
 		Tools.configureDialog(player, npc)
 
 		if (Waypoint.isEnabled(player, _waypointId)) then
-            player:sendMinitext("Welcome back, traveler.")
+            player:sendMinitext("Selamat datang kembali, pengembara.")
             return
 		end
 
 		local choice = player:menuString(
-			"Hello! How may I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			{"Waypoint"}
         )
 

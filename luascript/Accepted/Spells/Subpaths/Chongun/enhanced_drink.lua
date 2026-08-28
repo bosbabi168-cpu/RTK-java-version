@@ -24,10 +24,10 @@ enhanced_drink = {
 			if found then
 				player:sendMinitext("Red fog spreads around Water jug.")
 			else
-				player:sendMinitext("Oh! if only you had that.")
+				player:sendMinitext("Oh! andai saja kau punya itu.")
 			end
 		else
-			player:sendMinitext("You can't imbibe that.")
+			player:sendMinitext("Kau tidak bisa meminum itu.")
 		end
 	end,
 

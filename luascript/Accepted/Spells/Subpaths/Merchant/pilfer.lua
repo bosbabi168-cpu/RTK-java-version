@@ -7,7 +7,7 @@ pilfer = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -15,7 +15,7 @@ pilfer = {
 		player:playSound(4)
 		player:sendStatus()
 		player:sendAction(6, 35)
-		player:talk(2, "I'll take that")
+		player:talk(2, "Aku ambil yang itu")
 
 		for i = 1, spaces do
 			local pc = {}
@@ -107,7 +107,7 @@ pilfer = {
 						end
 						item[j]:delete()
 					else
-						player:sendMinitext("But that would be stealing.")
+						player:sendMinitext("Tapi itu namanya mencuri.")
 					end
 				end
 			end

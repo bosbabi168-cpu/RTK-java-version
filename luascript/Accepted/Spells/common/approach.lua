@@ -5,7 +5,7 @@ approach_spell = {
 			return
 		end
 		if (player.magic < magic) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -63,7 +63,7 @@ approach_spell = {
 			return
 		end
 		if player.warpOut == 0 then
-			player:sendMinitext("That does not work here.")
+			player:sendMinitext("Itu tidak berlaku di sini.")
 			return
 		end
 		if player.gmLevel == 0 and target.gmLevel ~= 0 then

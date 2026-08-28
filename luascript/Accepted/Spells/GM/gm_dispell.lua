@@ -1,7 +1,7 @@
 gm_dispell = {
 	cast = function(player, target)
 		if (player.gmLevel < 1) then
-			player:sendMinitext("You do not understand how to use this spell.")
+			player:sendMinitext("Kau tidak paham cara memakai mantra ini.")
 			return
 		end
 
@@ -13,9 +13,9 @@ gm_dispell = {
 
 		--13
 		if (player.ID ~= target.ID) then
-			target:sendMinitext("GM " .. player.name .. " casts Dispell on you.")
+			target:sendMinitext("GM " .. player.name .. " merapal Dispell padamu.")
 		end
-		player:sendMinitext("You dispelled " .. target.name .. ".")
+		player:sendMinitext("Kau melenyapkan " .. target.name .. ".")
 		player:sendAction(6, 35)
 	end
 }

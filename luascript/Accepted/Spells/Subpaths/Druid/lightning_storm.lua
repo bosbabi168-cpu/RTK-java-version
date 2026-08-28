@@ -10,7 +10,7 @@ lightning_storm = {
 			return
 		end
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -18,7 +18,7 @@ lightning_storm = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:setAether("lightning_storm", aethers)
-		player:sendMinitext("You cast Lightning storm.")
+		player:sendMinitext("Kau merapal Lightning storm.")
 
 		local targets = player:getObjectsInArea(BL_ALL)
 
@@ -29,7 +29,7 @@ lightning_storm = {
 
 					if (targets[i].blType == BL_PC and player:canPK(targets[i])) or targets[i].blType == BL_MOB then
 						if targets[i].blType == BL_PC then
-							targets[i]:sendMinitext(player.name .. " cast Lightning storm on you.")
+							targets[i]:sendMinitext(player.name .. " merapal Lightning storm padamu.")
 						end
 						targets[i]:sendAnimation(30, 5)
 						targets[i].attacker = player.ID

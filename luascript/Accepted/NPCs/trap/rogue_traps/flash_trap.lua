@@ -13,7 +13,7 @@ FlashTrapNpc = {
 				return
 			end
 
-			block:sendMinitext("You stepped on a trap!")
+			block:sendMinitext("Kau menginjak jebakan!")
 		end
 
 		block.attacker = npc.owner

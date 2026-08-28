@@ -7,10 +7,10 @@ healers_revenge_poet = {
 		local damage = 800 + (player.level * 12) + math.ceil(((player.will + 1) / 2) * 12)
 		local worked = global_zap.cast(player, target, damage, 300, 0)
 		if worked ~= 0 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 		if worked == 2 then
-			target:sendMinitext(player.name .. " cast " .. spellName .. " on you.")
+			target:sendMinitext(player.name .. " merapal " .. spellName .. " padamu.")
 		end
 	end,
 

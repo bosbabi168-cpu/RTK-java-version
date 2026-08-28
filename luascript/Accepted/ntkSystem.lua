@@ -1,6 +1,6 @@
 powerBoard = function(player, target)
 	if ((player.m ~= 7001 and player.gmLevel < 50) or (player.m == 7001 and player.registry["arenaHost"] == 0 and player.gmLevel < 50)) then
-		player:sendMinitext("You may not call for powerboards on this map.")
+		player:sendMinitext("Kau tidak boleh memanggil powerboard di peta ini.")
 		return
 	end
 	if (target ~= nil) then

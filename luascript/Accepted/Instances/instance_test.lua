@@ -66,7 +66,7 @@ InstanceTestNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"You do not meet the requirements to enter this dungeon."
+						"Kau tidak memenuhi syarat untuk memasuki ruang bawah tanah ini."
 					},
 					1
 				)
@@ -540,7 +540,7 @@ InstanceTestNpc = {
 					)
 					pc:updateState()
 				else
-					pc:sendMinitext("A party member opened a dungeon you can not enter.")
+					pc:sendMinitext("Anggota kelompok membuka ruang bawah tanah yang tidak bisa kau masuki.")
 				end
 			end
 
@@ -554,7 +554,7 @@ InstanceTestNpc = {
 					)
 					pc:updateState()
 				else
-					pc:sendMinitext("Your group size does not meet the requirements: " .. maxsize)
+					pc:sendMinitext("Ukuran grupmu tidak memenuhi syarat: " .. maxsize)
 				end
 			else
 				pc:sendMinitext("Error opening dungeon")

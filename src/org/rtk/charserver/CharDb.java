@@ -36,7 +36,7 @@ public final class CharDb {
     }
 
     /** ispass(): does the given password match the stored MD5? */
-    static boolean isPass(String name, String pass, String md5) {
+    public static boolean isPass(String name, String pass, String md5) {
         // Legacy format: md5("lowercase_name password"), new format: md5(password).
         String legacy = Md5.hex(name.toLowerCase() + " " + pass);
         String modern = Md5.hex(pass);

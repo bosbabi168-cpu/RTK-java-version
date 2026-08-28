@@ -23,10 +23,10 @@ item_protection = {
 		local subRight = player:getEquippedItem(EQ_SUBRIGHT)
 
 		if (weap ~= nil) then
-			table.insert(opts, "Weapon")
+			table.insert(opts, "Senjata")
 		end
 		if (armor ~= nil) then
-			table.insert(opts, "Armor")
+			table.insert(opts, "Zirah")
 		end
 		if (shield ~= nil) then
 			table.insert(opts, "Shield")
@@ -68,26 +68,26 @@ item_protection = {
 		local uses = "You have " .. item.dura .. " out of " .. item.maxDura .. " uses remaining\n\n"
 
 		local choice = player:menuString(
-			"Hello " .. player.name .. ", please select an applicable equipment slot.\nNote: " .. uses,
+			"Halo " .. player.name .. ", pilih slot perlengkapan yang sesuai.\nCatatan: " .. uses,
 			opts
 		)
 
 		local confirmation = player:menuString(
-			uses .. "Are you sure you want to apply the item protection?",
-			{"Yes", "No"}
+			uses .. "Kau yakin ingin memasang perlindungan barang itu?",
+			{"Ya", "Tidak"}
 		)
 
 		local maxProtError = "Your " .. choice .. " already has maximum protections of 10."
 
-		if (confirmation == "No") then
+		if (confirmation == "Tidak") then
 			return
 		end
 
 		-- Protections can not exceed 10 per Item--
-		if (choice == "Weapon" and weap.protected + 1 > 10) then
+		if (choice == "Senjata" and weap.protected + 1 > 10) then
 			player:popUp(maxProtError)
 			return
-		elseif (choice == "Armor" and armor.protected + 1 > 10) then
+		elseif (choice == "Zirah" and armor.protected + 1 > 10) then
 			player:popUp(maxProtError)
 			return
 		elseif (choice == "Shield" and shield.protected + 1 > 10) then
@@ -122,9 +122,9 @@ item_protection = {
 			return
 		end
 
-		if (choice == "Weapon") then
+		if (choice == "Senjata") then
 			weap.protected = weap.protected + 1
-		elseif (choice == "Armor") then
+		elseif (choice == "Zirah") then
 			armor.protected = armor.protected + 1
 		elseif (choice == "Shield") then
 			shield.protected = shield.protected + 1
@@ -153,7 +153,7 @@ item_protection = {
 		if (item.dura <= 0) then
 			player:removeItemSlot(player.invSlot, 1, 6)
 		else
-			player:sendMinitext("Your have applied item protection to your " .. choice .. ".\nYou have " .. item.dura .. " out of " .. item.maxDura .. " uses remaining")
+			player:sendMinitext("Kau memasang perlindungan barang pada " .. choice .. ".\nKau punya " .. item.dura .. " dari " .. item.maxDura .. " uses remaining")
 		end
 	end)
 }

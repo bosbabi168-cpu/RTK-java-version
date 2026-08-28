@@ -12,7 +12,7 @@ kan_certificate = {
 			player:dialogSeq(
 				{
 					t,
-					"Your character is currently not registered to an account. It must be to use this item."
+					"Karaktermu saat ini belum terdaftar pada sebuah akun. Ia harus terdaftar untuk memakai barang ini."
 				},
 				0
 			)
@@ -31,7 +31,7 @@ kan_certificate = {
 		player:dialogSeq(
 			{
 				t,
-				"You've just added " .. Tools.formatNumber(amount) .. " Kan to your account."
+				"Kau baru saja menambahkan " .. Tools.formatNumber(amount) .. " Kan ke akunmu."
 			},
 			0
 		)

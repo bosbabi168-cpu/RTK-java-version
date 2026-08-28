@@ -12,20 +12,20 @@ ShamanNpc = {
 
 		if player.state == 1 then
 			choice = player:menuString(
-				"Ah, another of the fallen come for my aid. Are you ready to return to the world of the living?",
-				{"Yes", "No"},
+				"Ah, satu lagi yang gugur datang meminta bantuanku. Siapkah kau kembali ke dunia orang hidup?",
+				{"Ya", "Tidak"},
 				{}
 			)
 		end
 
-		if choice == "Yes" then
+		if choice == "Ya" then
 			player.state = 0
 			player.health = player.maxHealth
 			player.magic = player.maxMagic
 			player:sendStatus()
 			player:updateState()
 			player:menuString(
-				"So shall it be! Keep yourself safe, and free from harm.",
+				"Jadilah demikian! Jagalah dirimu tetap aman dan jauh dari bahaya.",
 				{},
 				{}
 			)
@@ -55,15 +55,15 @@ ShamanNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"Majhum? You know him? I do miss my cousin.",
-					"Oh no! He died? He was such a devoted man, never once did he question his orders, and stayed out there for so long.",
-					"I wish I could go visit him, I would like to talk with him once again.",
-					"Oh? You can't hear him? Well, only one used to talking to the dead would ever hear waht he had to say.",
-					"Every soul has it's own... it's own... I don't know how to describe it, but if you knew it you would be eable to talk to him.",
-					"Actually, I suppose I could show you how to talk to him as I know his soul very well.",
-					"Let me see now...",
-					"((The old lady places her hands over your ears, nothing seems to happen until you hear a loud POP))",
-					"There you go, you should be able to talk to him now. Please give him my regards, I do miss him."
+					"Majhum? Kau mengenalnya? Aku rindu sepupuku itu.",
+					"Oh tidak! Dia meninggal? Ia orang yang begitu setia, tak sekali pun mempertanyakan perintahnya, dan bertahan di sana begitu lama.",
+					"Andai aku bisa menengoknya; aku ingin berbicara dengannya sekali lagi.",
+					"Oh? Kau tidak bisa mendengarnya? Hanya orang yang terbiasa berbicara dengan yang mati bisa mendengar ucapannya.",
+					"Setiap jiwa punya... punya... entah bagaimana menjelaskannya, tetapi kalau kau mengetahuinya, kau akan bisa berbicara dengannya.",
+					"Sebenarnya, kurasa aku bisa menunjukkan caranya berbicara dengannya, sebab aku sangat mengenal jiwanya.",
+					"Coba kulihat...",
+					"((Perempuan tua itu menangkupkan tangannya di telingamu; tidak ada yang terjadi sampai kau mendengar bunyi POP yang keras))",
+					"Nah, sekarang kau semestinya bisa berbicara dengannya. Sampaikan salamku, aku sungguh merindukannya."
 				},
 				0
 			)
@@ -76,9 +76,9 @@ ShamanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Bah, I hate the wilderness.\n\nI would rather stay here and help others.",
-						"There was never anyone I could help out there.",
-						"The only reason I was living in the wilderness is because I was studying under a Geomancer."
+						"Bah, aku benci belantara.\n\nAku lebih suka tinggal di sini dan menolong orang.",
+						"Di luar sana tidak pernah ada orang yang bisa kutolong.",
+						"Satu-satunya alasan aku dulu tinggal di belantara adalah karena aku berguru pada seorang Geomancer."
 					},
 					1
 				)
@@ -89,8 +89,8 @@ ShamanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Yes, I studied under a Geomancer... my mind fails me, I think his name might have been Rotah.",
-						"What is the reason you ask me about my past life though?"
+						"Ya, aku berguru pada seorang Geomancer... ingatanku mengkhianatiku, kurasa namanya Rotah.",
+						"Tapi kenapa kau menanyakan masa laluku?"
 					},
 					1
 				)
@@ -100,11 +100,11 @@ ShamanNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"What did you say!?",
-						"Were you able to forge the element of metal into an orb?",
-						"If you could find a way to forge the element of metal into an orb, I bet that old man Rotah would tell you the way to forge the others.",
-						"He would never tell me, thats why I came back here!",
-						"Oahh, and you might want to ask a smith for help."
+						"Apa katamu!?",
+						"Apakah kau berhasil menempa unsur logam menjadi sebuah bola?",
+						"Kalau kau bisa menemukan cara menempa unsur logam menjadi bola, aku yakin si tua Rotah itu akan memberitahumu cara menempa yang lain.",
+						"Ia tidak pernah mau memberitahuku; itu sebabnya aku kembali ke sini!",
+						"Oahh, dan sebaiknya kau minta bantuan pandai besi."
 					},
 					1
 				)

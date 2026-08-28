@@ -12,17 +12,17 @@ TownCrierNpc = {
 		local opts = {}
 
 		if npc.mapTitle == "Kugnae" then
-			table.insert(opts, "Move to Koguryo")
+			table.insert(opts, "Pindah ke Koguryo")
 			table.insert(opts, "Koguryo Honor")
 		end
 
 		if npc.mapTitle == "Buya" then
-			table.insert(opts, "Move to Buya")
+			table.insert(opts, "Pindah ke Buya")
 			table.insert(opts, "Buya Defender")
 		end
 
 		if npc.mapTitle == "Nagnang" then
-			table.insert(opts, "Move to Nagnang")
+			table.insert(opts, "Pindah ke Nagnang")
 			table.insert(opts, "Nagnang Defender")
 		end
 
@@ -30,12 +30,12 @@ TownCrierNpc = {
 		table.insert(opts, "Wisdom clothes")
 
 		local choice = player:menuString(
-			"Hello! How can I help you today?",
+			"Halo! Ada yang bisa kubantu hari ini?",
 			opts,
 			{}
 		)
 
-		if choice == "Move to Koguryo" or choice == "Move to Buya" or choice == "Move to Nagnang" then
+		if choice == "Pindah ke Koguryo" or choice == "Pindah ke Buya" or choice == "Pindah ke Nagnang" then
 			local country = 0
 
 			if npc.mapTitle == "Kugnae" then
@@ -71,7 +71,7 @@ TownCrierNpc = {
 		player.lastClick = npc.ID
 
 		player:dialogSeq(
-			{t, "Prince Mhul must first bestow this honor on you."},
+			{t, "Pangeran Mhul harus lebih dulu menganugerahkan kehormatan ini kepadamu."},
 			0
 		)
 	end,
@@ -89,7 +89,7 @@ TownCrierNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Princess Lasahn must first accept your loyalty, then you will be a Buya defender."
+				"Putri Lasahn harus lebih dulu menerima kesetiaanmu, baru kau menjadi pembela Buya."
 			},
 			0
 		)
@@ -108,7 +108,7 @@ TownCrierNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Nagnang Defenders have the honor of wearing our kingdom's dye. Nagnang Royals must first accept your loyalty, then you'll be able to pledge to defend our kingdom."
+				"Pembela Nagnang berhak mengenakan warna kerajaan kami. Bangsawan Nagnang harus lebih dulu menerima kesetiaanmu, baru kau bisa bersumpah membela kerajaan ini."
 			},
 			0
 		)

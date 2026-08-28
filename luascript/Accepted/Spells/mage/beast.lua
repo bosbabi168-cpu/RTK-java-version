@@ -14,7 +14,7 @@ beast_mage = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -64,7 +64,7 @@ kwisin_chameleon_mage = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -106,7 +106,7 @@ mingken_chameleon_mage = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 
@@ -148,7 +148,7 @@ ohaeng_chameleon_mage = {
 		end
 
 		if (player.magic < 30) then
-			player:sendMinitext("You do not have enough mana.")
+			player:sendMinitext("Manamu tidak cukup.")
 			return
 		end
 

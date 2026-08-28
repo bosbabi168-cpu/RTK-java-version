@@ -16,7 +16,7 @@ slumberquick = {
 				player:dialogSeq(
 					{
 						potion,
-						"** You wait only a moment for him to fall asleep. You need to haul his body towards the interrogation location. Be careful you do not take too long, or else he will wake up!"
+						"** Kau menunggu sejenak sampai ia tertidur. Kau harus menyeret tubuhnya ke tempat interogasi. Hati-hati jangan terlalu lama, atau ia akan bangun!"
 					},
 					0
 				)

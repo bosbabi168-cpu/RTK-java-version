@@ -19,7 +19,7 @@ onScriptedTilesQuest = async(function(player)
 				player.lastClick = npc.ID
 
 				player:warp(player.m, player.x, player.y + 2)
-				player:dialogSeq({t, "A locked spirit cannot enter."}, 0)
+				player:dialogSeq({t, "Jiwa yang terkunci tidak bisa masuk."}, 0)
 			end
 		end
 	end
@@ -43,7 +43,7 @@ onScriptedTilesQuest = async(function(player)
 					player:dialogSeq(
 						{
 							t,
-							"Out of the corner of your eye, you spot a rabbit watching you. It seems to smile slightly at you, then bounds away."
+							"Dari sudut matamu, kau melihat seekor kelinci memperhatikanmu. Ia seperti tersenyum tipis kepadamu, lalu melompat pergi."
 						},
 						0
 					)
@@ -51,7 +51,7 @@ onScriptedTilesQuest = async(function(player)
 					player:dialogSeq(
 						{
 							t,
-							"Out of the corner of your eye, you spot a rabbit watching you. As you turn your head, it bounds away."
+							"Dari sudut matamu, kau melihat seekor kelinci memperhatikanmu. Saat kau menoleh, ia melompat pergi."
 						},
 						0
 					)
@@ -70,7 +70,7 @@ onScriptedTilesQuest = async(function(player)
 				player:dialogSeq(
 					{
 						t,
-						"You slip your hand into Maro's pocket and manage to snag the acorn inside."
+						"Kau menyelipkan tangan ke saku Maro dan berhasil menyambar acorn di dalamnya."
 					},
 					0
 				)
@@ -82,7 +82,7 @@ onScriptedTilesQuest = async(function(player)
 		if ((player.x == 99 or player.x == 100) and player.y == 114) then
 			if not player:hasLegend("nangen_acolyte") then
 				player:warp(player.m, player.x, player.y + 2)
-				player:sendMinitext("Only Nangen Acolyte may enter.")
+				player:sendMinitext("Hanya Nangen Acolyte yang boleh masuk.")
 				return
 			end
 
@@ -106,7 +106,7 @@ onScriptedTilesQuest = async(function(player)
 					player:dialogSeq(
 						{
 							forever_branch,
-							"You find one of the Tree's branches upon the ground."
+							"Kau menemukan salah satu ranting Pohon itu tergeletak di tanah."
 						},
 						0
 					)
@@ -125,7 +125,7 @@ onScriptedTilesQuest = async(function(player)
 			player:dialogSeq(
 				{
 					t,
-					"You spot a crevasse leading into a sandy area. Deathly screeches echo from within. A sense of doom overcomes you; you realize that only  the truly mighty could survive in there."
+					"Kau melihat celah menuju daerah berpasir. Pekik maut bergema dari dalamnya. Firasat buruk menyergapmu; kau sadar hanya yang benar-benar perkasa bisa bertahan di sana."
 				},
 				1
 			)
@@ -141,7 +141,7 @@ onScriptedTilesQuest = async(function(player)
 			--player:talk(0,""..random)
 
 			if random == 1 then
-				player:sendMinitext("You fall into a sub void.")
+				player:sendMinitext("Kau terjatuh ke dalam kehampaan bawah.")
 				player:warp(2530, 5, 10)
 			end
 		end
@@ -160,14 +160,14 @@ onScriptedTilesQuest = async(function(player)
 
 		if chance == 1 then
 			player.quest["mage_ward_met_ghost"] = 1
-			player:sendMinitext("A spirit appears!")
+			player:sendMinitext("Sesosok arwah muncul!")
 			player:dialogSeq(
 				{
 					t,
-					"Who walks these halls? One of the living? Why?",
-					"Ah. I see that you are pondering the Void of the Void. Well, the void is not a place but a state of being. Even in complete nothingness, there is always something.",
-					"However, within one's own mind, one may be totally alone. Imagine and feel the emptiness. Only in your mind can the Void be experienced.",
-					"Heed these words. There may be a time when you need to remember them. Dwell upon them and take solace in the fact you are not ever truly alone."
+					"Siapa yang berjalan di lorong ini? Salah satu dari yang hidup? Untuk apa?",
+					"Ah. Kulihat kau sedang merenungkan Kehampaan dalam Kehampaan. Kehampaan bukanlah tempat, melainkan keadaan. Bahkan dalam ketiadaan sempurna, selalu ada sesuatu.",
+					"Namun di dalam pikirannya sendiri, seseorang bisa benar-benar sendirian. Bayangkan dan rasakan kekosongan itu. Hanya dalam pikiranmu Kehampaan bisa dialami.",
+					"Camkan kata-kata ini. Mungkin akan tiba saatnya kau perlu mengingatnya. Renungkanlah, dan berhiburlah pada kenyataan bahwa kau tidak pernah benar-benar sendirian."
 				},
 				1
 			)
@@ -190,9 +190,9 @@ onScriptedTilesQuest = async(function(player)
 						player:dialogSeq(
 							{
 								t,
-								"The morning sun shines brightly, and you hold the scroll up to it.",
-								"Through the paper you see a faded watermark, and the words start to form.",
-								"\"The secret is in the power of the Kawlana\""
+								"Matahari pagi bersinar terang, dan kau mengangkat gulungan itu ke arahnya.",
+								"Menembus kertasnya kau melihat tanda air yang pudar, dan kata-katanya mulai membentuk diri.",
+								"\"Rahasianya ada pada kekuatan Kawlana\""
 							},
 							1
 						)
@@ -203,7 +203,7 @@ onScriptedTilesQuest = async(function(player)
 						player:dialogSeq(
 							{
 								t,
-								"As you ponder these words, the paper catches fire and burns away."
+								"Selagi kau merenungkan kata-kata itu, kertasnya terbakar dan habis."
 							},
 							0
 						)
@@ -217,16 +217,16 @@ onScriptedTilesQuest = async(function(player)
 		if ((player.x == 13 or player.x == 14) and player.y == 0) then
 			if player.quest["wind_lake_cavern"] == 0 then
 				player:warp(player.m, player.x, player.y + 2)
-				player:sendMinitext("You are not permitted entry. Speak to Lake.")
+				player:sendMinitext("Kau tidak diizinkan masuk. Bicaralah dengan Lake.")
 				return
 			end
 
 			player:dialogSeq(
 				{
 					t,
-					"You step into the doorway which leads into the depths of the caverns below",
-					"It is dark and musty, a foul stench hanges in the air.",
-					"You summon your courage, and venture in!"
+					"Kau melangkah ke ambang pintu yang menuju kedalaman gua di bawah",
+					"Gelap dan pengap, bau busuk menggantung di udara.",
+					"Kau mengumpulkan keberanian, lalu melangkah masuk!"
 				},
 				1
 			)
@@ -241,7 +241,7 @@ onScriptedTilesQuest = async(function(player)
 		if player.x >= 8 and player.x <= 10 and player.y <= 10 then
 			if player.quest["presented_sonhi_pass"] == 0 then
 				player:warp(player.m, player.x, player.y + 2)
-				player:sendMinitext("You cannot proceed further without showing the guard your sonhi pass.")
+				player:sendMinitext("Kau tidak bisa melangkah lebih jauh tanpa menunjukkan sonhi pass-mu kepada penjaga.")
 			end
 		end
 	end
@@ -295,11 +295,11 @@ onScriptedTilesQuest = async(function(player)
 				player.armorColor = 0
 				player.registry["sute_quest_dye"] = 0
 				player:updateState()
-				player:sendMinitext("The powder disappears as you pass the portal.")
+				player:sendMinitext("Bubuknya lenyap saat kau melewati portal.")
 				player:warp(446, math.random(10, 11), 22)
 			else
 				player:warp(player.m, player.x, player.y + 1)
-				player:sendMinitext("You are missing something.")
+				player:sendMinitext("Ada yang belum kau bawa.")
 			end
 		end
 	end
@@ -322,7 +322,7 @@ onScriptedTilesQuest = async(function(player)
 				player:dialogSeq(
 					{
 						tginseng,
-						"You see a strange root in the rocks here. But with the tiger nearby, it is too dangerous to try to climb up to it."
+						"Kau melihat akar aneh di antara bebatuan di sini. Tetapi dengan harimau di dekatnya, terlalu berbahaya memanjat ke sana."
 					},
 					1
 				)
@@ -334,7 +334,7 @@ onScriptedTilesQuest = async(function(player)
 				player:dialogSeq(
 					{
 						tginseng,
-						"Snuggled between the rocks is a young root of ginseng. Was this what Chu Rua meant?"
+						"Terselip di antara bebatuan ada akar ginseng muda. Inikah yang dimaksud Chu Rua?"
 					},
 					0
 				)
@@ -346,7 +346,7 @@ onScriptedTilesQuest = async(function(player)
 		if ((player.x == 29 or player.x == 30) and (player.y == 15 or player.y == 16)) then
 			-- lava crossing
 			if (player:hasItem("traveling_shoes", 1)) ~= true then
-				player:sendMinitext("You'll burn your feet if you walk there!")
+				player:sendMinitext("Kakimu akan terbakar kalau kau berjalan ke sana!")
 				if player.side == 0 then
 					-- up
 					player:warp(player.m, player.x, player.y + 2)
@@ -356,7 +356,7 @@ onScriptedTilesQuest = async(function(player)
 				end
 				return
 			else
-				player:sendMinitext("Your shoes protect your feet as you cross.")
+				player:sendMinitext("Sepatumu melindungi kakimu saat kau menyeberang.")
 			end
 		end
 
@@ -378,15 +378,15 @@ onScriptedTilesQuest = async(function(player)
 
 		if (player.x == 30 and (player.y == 29 or player.y == 30 or player.y == 35 or player.y == 36)) then
 			local choice = player:menuSeq(
-				"Greetings, land lover. I see that you seek passage to Hausson. I will take you there for " .. cost .." gold. Will you pay?",
-				{"Yes, I will pay for my passage.", "No, I will not pay."},
+				"Salam, penghuni daratan. Kulihat kau mencari tumpangan ke Hausson. Akan kuantar dengan bayaran " .. cost .." emas. Kau mau membayar?",
+				{"Ya, aku akan membayar ongkos jalanku.", "Tidak, aku tidak akan membayar."},
 				{}
 			)
 
 			if choice == 1 then
 				if player.money < cost then
 					player:dialogSeq(
-						{t, "Come back when you have more gold."},
+						{t, "Kembalilah kalau emasmu lebih banyak."},
 						0
 					)
 					return
@@ -422,7 +422,7 @@ onScriptedTilesQuest = async(function(player)
 		if ((player.x == 22 or player.x == 23) and player.y == 8) then
 			if not player:hasLegend("leviathan_freed") then
 				player:warp(player.m, player.x, player.y + 4)
-				player:sendMinitext("Go AWAY!")
+				player:sendMinitext("PERGI SANA!")
 			else
 				player:warp(2540, 6, 10)
 			end
@@ -432,7 +432,7 @@ onScriptedTilesQuest = async(function(player)
 	if player.mapTitle == "Blight pen" then
 		if ((player.x == 4 or player.x == 9 or player.x == 14 or player.x == 19) and player.y == 3) then
 			if player:hasItem("leviathan_talisman", 1) ~= true then
-				player:sendMinitext("You do not have the talisman.")
+				player:sendMinitext("Kau tidak punya jimatnya.")
 				return
 			end
 
@@ -448,10 +448,10 @@ onScriptedTilesQuest = async(function(player)
 					for i = 1, #mobs do
 						if mobs[i].yname == "captured_leviathan" then
 							player:removeItem("leviathan_talisman", 1)
-							player:sendMinitext("You cast Release leviathan.")
+							player:sendMinitext("Kau merapal Release leviathan.")
 							mobs[i]:talk(
 								0,
-								"Captured leviathan: Thank you puny one."
+								"Leviathan tertangkap: Terima kasih, makhluk kerdil."
 							)
 							mobs[i].attacker = player.ID
 							mobs[i]:removeHealthExtend(9999999, 0, 0, 0, 0, 0)

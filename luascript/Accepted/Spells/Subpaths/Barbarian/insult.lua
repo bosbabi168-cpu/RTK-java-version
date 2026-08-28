@@ -13,7 +13,7 @@ insult = {
 		end
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -21,7 +21,7 @@ insult = {
 		player:sendStatus()
 
 		player:sendAction(19, 25)
-		player:sendMinitext("You cast Insult.")
+		player:sendMinitext("Kau merapal Insult.")
 
 		local targets = getTargetsAround(player, BL_ALL)
 
@@ -52,7 +52,7 @@ insult = {
 						end
 						targets[i]:sendAnimation(1)
 						targets[i]:setDuration("insult", duration)
-						targets[i]:sendMinitext(player.name .. " attacks you with Insult spell.")
+						targets[i]:sendMinitext(player.name .. " menyerangmu dengan mantra Insult.")
 						targets[i]:calcStat()
 					end
 				end

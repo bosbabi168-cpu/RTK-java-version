@@ -14,7 +14,7 @@ natures_smite = {
 		-- maximum 10 tiles away in either direction (verified on NTK)
 
 		if player.magic < magicCost then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -25,17 +25,17 @@ natures_smite = {
 		target:sendAnimation(4)
 		player:playSound(701)
 		player:playSound(1)
-		player:sendMinitext("You cast Natures smite.")
+		player:sendMinitext("Kau merapal Natures smite.")
 
 		if target.blType == BL_MOB then
 			local threat = threat.getHighestThreat(target)
 			player:setThreat(target.ID, threat + damage)
 		elseif target.blType == BL_PC then
 			if not player:canPK(target) then
-				player:sendMinitext("You cannot attack that target.")
+				player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 				return
 			end
-			target:sendMinitext(player.name .. " cast Natures smite on you.")
+			target:sendMinitext(player.name .. " merapal Natures smite padamu.")
 		end
 
 		target.attacker = player.ID

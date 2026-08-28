@@ -17,12 +17,12 @@ harden_armor = {
 			return
 		end
 
-		player:sendMinitext("Your armor is strengthened.")
+		player:sendMinitext("Zirahmu diperkuat.")
 		if (player.blType == BL_MOB) then
 			return
 		elseif (player.blType == BL_PC) then
 			player:playSound(5)
-			player:sendMinitext("You cast Harden Armor.")
+			player:sendMinitext("Kau merapal Harden Armor.")
 			player:setDuration("harden_armor", duration)
 			player:sendAnimation(2)
 			player:calcStat()

@@ -14,12 +14,12 @@ tree_bark = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
 		if player:checkIfCast(hardBodies) then
-			player:sendMinitext("You already cast that spell.")
+			player:sendMinitext("Kau sudah merapal mantra itu.")
 			return
 		end
 
@@ -48,7 +48,7 @@ tree_bark = {
 
 		player:playSound(5)
 		player:sendMinitext("Harden body spell")
-		player:sendMinitext("You cast Tree bark.")
+		player:sendMinitext("Kau merapal Tree bark.")
 		player:setDuration("tree_bark", duration)
 		player:setAether("tree_bark", aether)
 
@@ -56,7 +56,7 @@ tree_bark = {
 	end,
 
 	uncast = function(player)
-		player:sendMinitext("Your skin turns back to flesh.")
+		player:sendMinitext("Kulitmu kembali menjadi daging.")
 	end,
 
 	requirements = function(player)

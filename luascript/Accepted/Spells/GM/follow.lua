@@ -1,8 +1,8 @@
 follow = {
 	cast = function(player, target)
 		target:setDuration("follow", 60000, player.ID)
-		player:sendMinitext("You force " .. target.name .. " to follow you.")
-		target:sendMinitext("" .. player.name .. " has forced you to follow them.")
+		player:sendMinitext("Kau memaksa " .. target.name .. " mengikutimu.")
+		target:sendMinitext("" .. player.name .. " memaksamu mengikutinya.")
 	end,
 
 	while_cast = function(player, caster)

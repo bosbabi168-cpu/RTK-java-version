@@ -6,7 +6,7 @@ salvation_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 500, 400, 0)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -27,7 +27,7 @@ redemption_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 500, 400, 1)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -48,7 +48,7 @@ ointment_of_light_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 500, 400, 2)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 
@@ -69,7 +69,7 @@ return_of_life_warrior = {
 		end
 		local worked = global_heal.cast(player, player, 500, 400, 3)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 

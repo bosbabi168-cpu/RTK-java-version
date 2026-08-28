@@ -6,7 +6,7 @@ relief_mage = {
 		end
 		local worked = global_heal.cast(player, player, 200, 120, 0)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 	requirements = function(player)
@@ -31,7 +31,7 @@ renew_essence_mage = {
 		end
 		local worked = global_heal.cast(player, player, 200, 120, 1)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 	requirements = function(player)
@@ -56,7 +56,7 @@ lifesong_mage = {
 		end
 		local worked = global_heal.cast(player, player, 200, 120, 2)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 	requirements = function(player)
@@ -81,7 +81,7 @@ sweet_waters_mage = {
 		end
 		local worked = global_heal.cast(player, player, 200, 120, 3)
 		if worked == 1 then
-			player:sendMinitext("You cast " .. spellName .. ".")
+			player:sendMinitext("Kau merapal " .. spellName .. ".")
 		end
 	end,
 	requirements = function(player)

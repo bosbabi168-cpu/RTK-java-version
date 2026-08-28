@@ -9,7 +9,7 @@ set_pit_trap = {
 		end
 
 		if (player.magic < magic) then
-			player:sendMinitext("Your will is too weak.")
+			player:sendMinitext("Kehendakmu terlalu lemah.")
 			return
 		end
 
@@ -31,7 +31,7 @@ set_pit_trap = {
 		player:sendStatus()
 		player:sendAction(6, 35)
 
-		player:sendMinitext("You cast Pit trap.")
+		player:sendMinitext("Kau merapal Pit trap.")
 
 		-- it only says this msg there is no "you set a trap!" like normal trap spells
 	end,

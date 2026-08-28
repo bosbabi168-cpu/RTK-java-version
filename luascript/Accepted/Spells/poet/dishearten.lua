@@ -8,31 +8,31 @@ dishearten_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if (target.blType == BL_PC and not player:canPK(target)) or target.blType == BL_NPC then
-			player:sendMinitext("You cannot attack that target.")
+			player:sendMinitext("Kau tidak bisa menyerang sasaran itu.")
 			return
 		end
 
 		if target:checkIfCast(bolsters) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 		if target:checkIfCast(disheartens) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is protected.")
+			player:sendMinitext("Sasaran itu terlindungi.")
 			return
 		end
 
@@ -40,11 +40,11 @@ dishearten_poet = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(5)
-		player:sendMinitext("You cast Dishearten.")
+		player:sendMinitext("Kau merapal Dishearten.")
 		target:setDuration("dishearten_poet", duration)
 		target:sendAnimation(1, 0)
 		if target.blType == BL_PC then
-			target:sendMinitext(player.name .. " casts Dishearten on you.")
+			target:sendMinitext(player.name .. " merapal Dishearten padamu.")
 			target:calcStat()
 		elseif target.blType == BL_MOB then
 			target.armor = target.armor + 6
@@ -79,26 +79,26 @@ dark_fear_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(bolsters) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 		if target:checkIfCast(disheartens) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is protected.")
+			player:sendMinitext("Sasaran itu terlindungi.")
 			return
 		end
 
@@ -106,11 +106,11 @@ dark_fear_poet = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(43)
-		player:sendMinitext("You cast Dark Fear.")
+		player:sendMinitext("Kau merapal Dark Fear.")
 		target:setDuration("dark_fear_poet", duration)
 		target:sendAnimation(53, 0)
 		if target.blType == BL_PC then
-			target:sendMinitext(player.name .. " casts Dark Fear on you.")
+			target:sendMinitext(player.name .. " merapal Dark Fear padamu.")
 			target:calcStat()
 		elseif target.blType == BL_MOB then
 			target.armor = target.armor + 6
@@ -145,26 +145,26 @@ break_will_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(bolsters) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 		if target:checkIfCast(disheartens) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is protected.")
+			player:sendMinitext("Sasaran itu terlindungi.")
 			return
 		end
 
@@ -172,11 +172,11 @@ break_will_poet = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(26)
-		player:sendMinitext("You cast Break Will.")
+		player:sendMinitext("Kau merapal Break Will.")
 		target:setDuration("break_will_poet", duration)
 		target:sendAnimation(101, 0)
 		if target.blType == BL_PC then
-			target:sendMinitext(player.name .. " casts Break Will on you.")
+			target:sendMinitext(player.name .. " merapal Break Will padamu.")
 			target:calcStat()
 		elseif target.blType == BL_MOB then
 			target.armor = target.armor + 6
@@ -211,26 +211,26 @@ harshen_attack_poet = {
 		end
 
 		if (player.magic < magicCost) then
-			player:sendMinitext("Not enough mana.")
+			player:sendMinitext("Mana tidak cukup.")
 			return
 		end
 
 		if (target.state == 1) then
-			player:sendMinitext("It doesn't work.")
+			player:sendMinitext("Tidak berhasil.")
 			return
 		end
 
 		if target:checkIfCast(bolsters) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 		if target:checkIfCast(disheartens) then
-			player:sendMinitext("Another spell of that type is already in effect.")
+			player:sendMinitext("Mantra lain sejenis itu sedang bekerja.")
 			return
 		end
 
 		if target:checkIfCast(protections) then
-			player:sendMinitext("The target is protected.")
+			player:sendMinitext("Sasaran itu terlindungi.")
 			return
 		end
 
@@ -238,11 +238,11 @@ harshen_attack_poet = {
 		player.magic = player.magic - magicCost
 		player:sendStatus()
 		player:playSound(26)
-		player:sendMinitext("You cast Harshen Attack.")
+		player:sendMinitext("Kau merapal Harshen Attack.")
 		target:setDuration("harshen_attack_poet", duration)
 		target:sendAnimation(79, 0)
 		if target.blType == BL_PC then
-			target:sendMinitext(player.name .. " casts Harshen Attack on you.")
+			target:sendMinitext(player.name .. " merapal Harshen Attack padamu.")
 			target:calcStat()
 		elseif target.blType == BL_MOB then
 			target.armor = target.armor + 6

@@ -10,13 +10,13 @@ ShyunNpc = {
 		player.lastClick = npc.ID
 
 		if player.baseClass ~= 3 then
-			player:dialogSeq({t, "Sorry I cannot help your kind."}, 0)
+			player:dialogSeq({t, "Maaf, aku tidak bisa menolong kaummu."}, 0)
 			return
 		end
 
 		if not player:hasLegend("family_nangen_mages") then
 			player:dialogSeq(
-				{t, "You must finish your path's Nagnang quest."},
+				{t, "Kau harus menyelesaikan tugas Nagnang jalurmu dulu."},
 				0
 			)
 			return
@@ -25,9 +25,9 @@ ShyunNpc = {
 		player:dialogSeq(
 			{
 				t,
-				"Thank the totems you're here! I hope you will drive out the evil army from here. Nagnag's evil henchmen captured me from my home, and forced me to work for them here.",
-				"I have been enslaved by an evil spell which keeps me bound here. I can never escape. They have been forcing me to create special armor and weapons for them to use in a mission they are on,",
-				"I want you to get revenge for me from Nagnag for what he has done to me, the only thing I can do to help is create the items for you that I made for his magi."
+				"Syukurlah kau datang! Kuharap kau mengusir pasukan jahat itu dari sini. Antek-antek Nagnag menculikku dari rumahku dan memaksaku bekerja untuk mereka di tempat ini.",
+				"Aku diperbudak oleh mantra jahat yang mengikatku di sini. Aku tidak akan pernah bisa kabur. Mereka memaksaku membuat zirah dan senjata khusus untuk misi yang sedang mereka jalankan,",
+				"Aku ingin kau membalaskan dendamku pada Nagnag atas apa yang ia lakukan padaku. Satu-satunya yang bisa kubantu adalah membuatkanmu barang-barang yang dulu kubuat untuk para magi-nya."
 			},
 			1
 		)
@@ -60,7 +60,7 @@ ShyunNpc = {
 		end
 
 		local choice = player:menuString(
-			"What would you like me to help you make?",
+			"Apa yang ingin kubantu buatkan?",
 			items
 		)
 
@@ -68,9 +68,9 @@ ShyunNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Magic amulet is an amazing amulet, it's powerful.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need Earth clothes, 10 bear's livers, a herb pipe, and 1,000 gold."
+					"Magic amulet adalah amulet yang luar biasa, sangat berkuasa.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh Earth cloth, 10 bear's liver, satu herb pipe, dan 1,000 emas."
 				},
 				1
 			)
@@ -80,15 +80,15 @@ ShyunNpc = {
 				10
 			) ~= true or player:hasItem("herb_pipe", 1) ~= true or player.money < 1000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -102,7 +102,7 @@ ShyunNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return to me when you have the required items."
+							"Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -119,14 +119,14 @@ ShyunNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Magic amulet. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Magic amulet milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -134,24 +134,24 @@ ShyunNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Magic rune is an amazing rune, it's powerful.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Bekyun's spear, a Fine metal, and 4,000 gold."
+					"Magic rune adalah rune yang luar biasa, sangat berkuasa.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Bekyun's spear, satu Fine metal, dan 4,000 emas."
 				},
 				1
 			)
 
 			if player:hasItem("bekyuns_spear", 1) ~= true or player:hasItem("fine_metal", 1) ~= true or player.money < 4000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -162,7 +162,7 @@ ShyunNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return to me when you have the required items."
+							"Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -178,14 +178,14 @@ ShyunNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Magic rune. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Magic rune milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -193,9 +193,9 @@ ShyunNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Magic ward is an amazing ward, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of invocation, a Holy ring, and 12,000 gold."
+					"Magic ward adalah ward yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of invocation, satu Holy ring, dan 12,000 emas."
 				},
 				1
 			)
@@ -205,15 +205,15 @@ ShyunNpc = {
 				1
 			) ~= true or player.money < 12000 then
 				player:dialogSeq(
-					{t, "Please return to me when you have the required items."},
+					{t, "Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -227,7 +227,7 @@ ShyunNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return to me when you have the required items."
+							"Kembalilah kepadaku kalau barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -243,14 +243,14 @@ ShyunNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Magic ward. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Magic ward milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -258,9 +258,9 @@ ShyunNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Mages ward is an amazing ward, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of invocation for a mold, a Surge to hold the power forged into it, and 24,000 gold."
+					"Mages ward adalah ward yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of invocation sebagai cetakan, satu Surge untuk menampung kekuatan yang ditempa ke dalamnya, dan 24,000 emas."
 				},
 				1
 			)
@@ -270,15 +270,15 @@ ShyunNpc = {
 				1
 			) ~= true or player.money < 24000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -292,7 +292,7 @@ ShyunNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -308,14 +308,14 @@ ShyunNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Mages ward. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Mages ward milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -323,9 +323,9 @@ ShyunNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Enchanted ward is an amazing ward, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of invocation for a mold, a Il san Surge to hold the power forged into it, and 48,000 gold."
+					"Enchanted ward adalah ward yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of invocation sebagai cetakan, satu Il san Surge untuk menampung kekuatan yang ditempa ke dalamnya, dan 48,000 emas."
 				},
 				1
 			)
@@ -335,15 +335,15 @@ ShyunNpc = {
 				1
 			) ~= true or player.money < 48000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -357,7 +357,7 @@ ShyunNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -373,14 +373,14 @@ ShyunNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Enchanted ward. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Enchanted ward milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -388,9 +388,9 @@ ShyunNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Conjurer's ward is an amazing ward, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of invocation for a mold, a Ee san Surge to hold the power forged into it, and 96,000 gold."
+					"Conjurer's ward adalah ward yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of invocation sebagai cetakan, satu Ee san Surge untuk menampung kekuatan yang ditempa ke dalamnya, dan 96,000 emas."
 				},
 				1
 			)
@@ -400,15 +400,15 @@ ShyunNpc = {
 				1
 			) ~= true or player.money < 96000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -422,7 +422,7 @@ ShyunNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -438,14 +438,14 @@ ShyunNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Conjurer's ward. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Conjurer's ward milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -453,9 +453,9 @@ ShyunNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Mysticism ward is an amazing ward, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of invocation for a mold, a Sam san Surge to hold the power forged into it, and 192,000 gold."
+					"Mysticism ward adalah ward yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of invocation sebagai cetakan, satu Sam san Surge untuk menampung kekuatan yang ditempa ke dalamnya, dan 192,000 emas."
 				},
 				1
 			)
@@ -465,15 +465,15 @@ ShyunNpc = {
 				1
 			) ~= true or player.money < 192000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -486,7 +486,7 @@ ShyunNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -502,14 +502,14 @@ ShyunNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Mysticism ward. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Mysticism ward milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end
@@ -517,9 +517,9 @@ ShyunNpc = {
 			player:dialogSeq(
 				{
 					t,
-					"The Masters ward is an amazing ward, it's heavy but can take a lot of the beating away from you.",
-					"Unfortunately when Nagnag and his army left here they took everything with them, all my supplies are gone. If you want one you will need to bring me the items to make one.",
-					"To make one I will need a Scroll of invocation for a mold, a Sa san Surge to hold the power forged into it, 500 Ri shards, 250 Xi shards, 100 Zen shards, and 384,000 gold."
+					"Masters ward adalah ward yang luar biasa; berat, tetapi mampu menyerap banyak pukulan untukmu.",
+					"Sayangnya ketika Nagnag dan pasukannya pergi dari sini, mereka membawa semuanya; seluruh persediaanku habis. Kalau kau menginginkannya, kau harus membawakan bahan-bahannya kepadaku.",
+					"Untuk membuatnya aku butuh satu Scroll of invocation sebagai cetakan, satu Sa san Surge untuk menampung kekuatan yang ditempa ke dalamnya, 500 Ri shard, 250 Xi shard, 100 Zen shard, dan 384,000 emas."
 				},
 				1
 			)
@@ -532,15 +532,15 @@ ShyunNpc = {
 				250
 			) ~= true or player:hasItem("zen_shard", 100) ~= true or player.money < 384000 then
 				player:dialogSeq(
-					{t, "Please return when you have all the required items."},
+					{t, "Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."},
 					0
 				)
 				return
 			end
 
 			local choice2 = player:menuSeq(
-				"I see you have everything already, do you wish to make one now?",
-				{"Yes", "No"},
+				"Kulihat semuanya sudah kau bawa. Mau kubuatkan sekarang?",
+				{"Ya", "Tidak"},
 				{}
 			)
 
@@ -557,7 +557,7 @@ ShyunNpc = {
 					player:dialogSeq(
 						{
 							t,
-							"Please return when you have all the required items."
+							"Silakan kembali kalau seluruh barang yang diperlukan sudah kau bawa."
 						},
 						0
 					)
@@ -576,14 +576,14 @@ ShyunNpc = {
 				player:dialogSeq(
 					{
 						t,
-						"Ah, there you go, your own Masters ward. I hope it brings you luck in battle against Nagnag, and all evil!"
+						"Nah, ini dia, Masters ward milikmu sendiri. Semoga ia membawa keberuntungan dalam pertempuran melawan Nagnag dan segala kejahatan!"
 					},
 					0
 				)
 			elseif choice2 == 2 then
 				-- no
 				player:dialogSeq(
-					{t, "Please return to me if you change your mind."},
+					{t, "Kembalilah kepadaku kalau kau berubah pikiran."},
 					0
 				)
 			end

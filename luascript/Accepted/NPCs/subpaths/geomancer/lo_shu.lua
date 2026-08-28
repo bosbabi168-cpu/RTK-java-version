@@ -9,14 +9,14 @@ NpcSubpathGeomancerLoShuNpc = {
 		player.dialogType = 0
 		player.lastClick = npc.ID
 
-		local opts = {"Buy", "Sell", "Deposit Item", "Withdraw Item"}
+		local opts = {"Beli", "Jual", "Titipkan Barang", "Ambil Barang"}
 
 		if player.money > 0 then
-			table.insert(opts, "Deposit Money")
+			table.insert(opts, "Titipkan Uang")
 		end
 
 		if player.bankMoney > 0 then
-			table.insert(opts, "Withdraw Money")
+			table.insert(opts, "Ambil Uang")
 		end
 
 		table.insert(opts, "War Paint")
@@ -25,25 +25,25 @@ NpcSubpathGeomancerLoShuNpc = {
 
 		local buysellopts = {"limestone", "obsidian", "book"}
 
-		local menu = player:menuString("Hello! How can I help you today?", opts)
+		local menu = player:menuString("Halo! Ada yang bisa kubantu hari ini?", opts)
 
-		if menu == "Buy" then
+		if menu == "Beli" then
 			player:buyExtend(
 				"I think I can accomodate some of the things you need. What would you like?",
 				buysellopts
 			)
-		elseif menu == "Sell" then
+		elseif menu == "Jual" then
 			player:sellExtend(
 				"What are you willing to sell today?",
 				buysellopts
 			)
-		elseif menu == "Deposit Money" then
+		elseif menu == "Titipkan Uang" then
 			player:bankAddMoney(npc)
-		elseif menu == "Withdraw Money" then
+		elseif menu == "Ambil Uang" then
 			player:bankWithdrawMoney(npc)
-		elseif menu == "Deposit Item" then
+		elseif menu == "Titipkan Barang" then
 			player:showBankDeposit(npc)
-		elseif menu == "Withdraw Item" then
+		elseif menu == "Ambil Barang" then
 			player:showBankWithdraw(npc)
 		elseif menu == "War Paint" then
 			ArenaMasterNpc.warPaint(player, npc)
