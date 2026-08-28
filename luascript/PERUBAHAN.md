@@ -249,3 +249,24 @@ yang pasti:
    tidak ada satu pun waypoint yang memuat kata kunci "transport".
    Kalimat aslinya dalam bahasa Inggris pun sudah menyesatkan; terjemahan
    mempertahankannya apa adanya supaya perilaku tidak ikut berubah.
+
+## 29 Agustus 2026 — `ctf` dan `bomb_game` dibuang
+
+Keduanya adalah **global yang tidak pernah ada** di pohon skrip ini:
+berkas yang mendefinisikannya memang tidak ikut dalam dump konten, jadi
+setiap pemanggilannya melempar `attempt to index nil` saat dijalankan
+(dilaporkan `luaaudit` di daftar "AKAN MELEDAK SAAT DIJALANKAN").
+
+| Berkas | Yang dibuang |
+|---|---|
+| `Accepted/NPCs/arena/arena_exit_teleporter.lua` | seluruh blok pendaftaran **Flag Freeze Tag** (peta 15000) di `addPlayer` — ia memanggil `ctf.costume` dan `ctf.entryLegend` |
+| `Accepted/Scripts/eventScripts/bomber_war/bomber_war_bomb2.lua` | satu panggilan `bomb_game.powerups()` |
+| `Accepted/Scripts/eventScripts/bomber_war/bomber_war_bomb3.lua` | satu panggilan `bomb_game.powerups()` |
+
+⚠️ **Acara Bomber War sendiri TIDAK dihapus.** Isinya utuh (`BomberWarNpc`,
+4 berkas, 7.236 baris) dan dipanggil `minigames.timer()`, `onSwing.lua`,
+serta `on_event.lua`; yang hilang hanya kotak hadiah `bomb_game`. Membuang
+seluruh acaranya berarti membuang konten yang mungkin berjalan — yang
+dibuang hanya baris yang PASTI melempar.
+
+Sesudahnya daftar "AKAN MELEDAK" turun dari 37 menjadi 35 nama.

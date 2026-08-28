@@ -312,12 +312,37 @@ final class Bindings {
         });
 
         // ---- world ----
+        /**
+         * pcl_warp(m, x, y) -> {@code pc_warp()}: pindahkan pemain betulan.
+         *
+         * <p>⚠️ Versi pertama hanya menulis {@code ScriptPlayer.m/x/y} —
+         * bayangan yang dipakai skrip untuk MEMBACA posisi, dan yang ditimpa
+         * lagi oleh {@code User.syncScriptPlayer()} pada panggilan
+         * berikutnya. Artinya <b>setiap {@code player:warp} di konten tidak
+         * melakukan apa-apa</b>: 856 pemakaian — teleport quest, kembali ke
+         * penginapan, masuk arena acara, alat GM — semuanya diam tanpa satu
+         * pun pesan galat. Di C binding ini memanggil {@code pc_warp}, yang
+         * mencabut pemain dari indeks peta lama, memindahkan posisinya, lalu
+         * mendaftarkannya ke peta baru. Lihat docs/PERINGATAN.md #140.</p>
+         */
         player.addMethod("warp", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
-            p.m = args.optint(2, p.m);
-            p.x = args.optint(3, p.x);
-            p.y = args.optint(4, p.y);
-            log.debug("[warp] {} -> map {} ({},{})", p.name, p.m, p.x, p.y);
+            int m = args.optint(2, p.m);
+            int x = args.optint(3, p.x);
+            int y = args.optint(4, p.y);
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Pc.warp(org.rtk.map.MapServer.world, u, m, x, y);
+                // Bayangannya ikut disegarkan supaya skrip yang membaca
+                // posisi tepat sesudah warp melihat tempat yang baru.
+                u.syncScriptPlayer();
+            } else {
+                // Pemain lepas (uji binding tanpa dunia): bayangannya saja.
+                p.m = m;
+                p.x = x;
+                p.y = y;
+            }
+            log.debug("[warp] {} -> map {} ({},{})", p.name, m, x, y);
             return LuaValue.NONE;
         });
         /**
