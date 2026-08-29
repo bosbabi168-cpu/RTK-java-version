@@ -270,11 +270,11 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 | | |
 |---|---|
 | Gerbang luring | **11/11 hijau** (`cliftest` 903, `dbtest` 234, `elixirtest` 34, `carnagetest` 28, `sumotest` 21, `beachtest` 22) |
-| Gerbang klien sungguhan | `livetest` **199** pemeriksaan hijau — **seluruh 46 opcode kini pernah dikirim klien sungguhan** |
-| Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v10) |
+| Gerbang klien sungguhan | `livetest` **201** pemeriksaan hijau — **seluruh 46 opcode kini pernah dikirim klien sungguhan** |
+| Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v11) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#142 → `docs/PERINGATAN.md` |
+| Peringatan tercatat | #1–#145 → `docs/PERINGATAN.md` |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug

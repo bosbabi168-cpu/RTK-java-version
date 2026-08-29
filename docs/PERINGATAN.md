@@ -1947,3 +1947,31 @@ ekor daftar dengan nomor lanjutan.
    ⚠️ Dan emas yang dijatuhkan hanya bisa dipungut oleh ragam
    `pickUpType == 0` (`onPickup.lua:4`) — ragam "seluruh tumpukan" tidak
    menyentuh tumpukan koin sama sekali.
+
+143. **Nomor aset yang BERLUBANG adalah keadaan yang benar, bukan
+   kesalahan.** `snd.dat` memuat 246 efek bernama angka `001.wav` sampai
+   `740.wav` — nomor 11, 15, 16, 126–134 dan puluhan lain tidak ada,
+   sementara konten tetap memanggilnya (`playSound`, 632 pemakaian).
+   Nomor tanpa berkas harus berarti **DIAM**; melempar di situ berarti satu
+   skrip quest mematikan kliennya. Hal yang sama untuk musik: `MapBGM` 902
+   dipakai **9.799 dari 9.850 peta** dan tidak punya berkas — itu nilai
+   bawaan basis data, bukan nomor lagu.
+
+144. **Peristiwa berulang harus DIHITUNG, bukan dibandingkan nilainya.**
+   Pemutar bunyi versi pertama memainkan `EV_SOUND` hanya bila nomornya
+   BERBEDA dari yang terakhir — dan dua serangan berturut-turut memakai
+   nomor yang sama, jadi bunyi kedua ditelan. Penghitung
+   (`World.bunyiKe`) yang membedakannya. Keluarga yang sama dengan #133:
+   peristiwa yang sampai tetapi tidak terdengar sama saja dengan peristiwa
+   yang hilang.
+
+145. **Uji yang menjatuhkan sesuatu jangan MELANGKAH sebelum memungutnya.**
+   Tumpukan emas mendarat di petak tempat pemain berdiri. Langkah uji
+   versi pertama berjalan berkeliling setiap kali pungutan pertama belum
+   terjawab, lalu memungut di petak yang salah — dan emas pemain uji
+   berkurang sepuluh setiap kali gerbangnya jalan.
+   ⚠️ Sekaligus pelajaran kedua: pemeriksaannya kini menuntut emas **tidak
+   berkurang**, bukan "persis sama". Petaknya bisa menyimpan tumpukan dari
+   jalan sebelumnya, dan memungut ikut menyapunya sehingga hasilnya lebih
+   banyak — menuntut kesamaan persis membuat gerbang merah karena
+   kebersihan dunia, bukan karena fiturnya.

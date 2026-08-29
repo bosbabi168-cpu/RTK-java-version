@@ -79,7 +79,7 @@ public final class Wire {
     public static final int MAGIC = 0x52544B32;
 
     /** Versi protokol. Naikkan bila tata letak bingkai mana pun berubah. */
-    public static final int VERSION = 10;  // 10: pra-login RTK2 (K3-lanjutan); 9: papan baca-tulis (K2-lanjutan); 8: EV_TRANSFER (R3/C3); 7: EV_WORLD_TIME; 6: R1 batch 2; 5: ekspresi & susun ulang; 4: sandi; 3: EV_SPELL_SLOT; 2: blok wujud
+    public static final int VERSION = 11;  // 11: musik peta di EV_SELF_MAP (K5); 10: pra-login RTK2 (K3-lanjutan); 9: papan baca-tulis (K2-lanjutan); 8: EV_TRANSFER (R3/C3); 7: EV_WORLD_TIME; 6: R1 batch 2; 5: ekspresi & susun ulang; 4: sandi; 3: EV_SPELL_SLOT; 2: blok wujud
 
     /** {@code u16 panjang} + {@code u16 opcode}. */
     public static final int HEADER = 4;

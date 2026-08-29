@@ -490,9 +490,16 @@ public final class Rtk2ClientView implements ClientView {
                 | (map.canSmoke != 0 ? 16 : 0)
                 | (map.canEquip != 0 ? 32 : 0)
                 | (map.canTalk != 1 ? 64 : 0);
+        // K5: musik latar petanya ikut — klien tidak punya sumber lain untuk
+        // mengetahuinya, dan menaruhnya di peristiwa peta berarti musiknya
+        // berganti tepat saat petanya berganti, tanpa paket tersendiri.
+        // ⚠️ `MapBGM` 902 dipakai 9.799 dari 9.850 peta dan TIDAK ada di
+        // antara 66 lagu yang tersedia — itu nilai bawaan "tanpa musik",
+        // bukan nomor lagu. Klien yang memutuskan diam bila lagunya tak ada.
         kirim(sd, new Wire.Writer(Wire.EV_SELF_MAP)
                 .u16(sd.m).str(map.title == null ? "" : map.title)
-                .u16(map.xs).u16(map.ys).u8(map.light).u16(bendera));
+                .u16(map.xs).u16(map.ys).u8(map.light).u16(bendera)
+                .u16(map.bgm).u8(map.bgmType));
     }
 
     @Override

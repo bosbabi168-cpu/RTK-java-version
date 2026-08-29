@@ -16,7 +16,7 @@ Since 26 August 2026 this project **no longer pursues byte-per-byte
 compatibility** with the RetroTK client. What applies now:
 
 - **Our own protocol (RTK2)** — bidirectional, designed from the real
-  needs of the scripts: 46 inbound opcodes, 57 outbound events. Spec:
+  needs of the scripts: 46 inbound opcodes, 57 outbound events (Wire v11). Spec:
   [`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md).
 - **Our own client (libGDX)** — developed in the separate repo
   `../RTK-client`, not committed until every asset is replaced with our
@@ -178,7 +178,7 @@ scripts are identifiers. The dialogue text itself is **fully translated**
 | `carnagetest` | **a full Carnage match** (teams by class path, four colours) | 28 checks; other map servers must be stopped |
 | `sumotest` | **a full Sumo War match** (points by pushing into water) | 21 checks; other map servers must be stopped |
 | `beachtest` | **a full Beach War round** (points by shooting) | 22 checks; other map servers must be stopped |
-| `livetest` | a **real RTK2 client** enters the world + 199 checks | run from `../RTK-client` |
+| `livetest` | a **real RTK2 client** enters the world + 201 checks | run from `../RTK-client` |
 | `tools/uji-dua-server.sh` | player transfer between map servers (R3/C3) | 194 checks; sets up and restores its own fixture |
 
 The first twelve gates are offline — they test the code against itself and
@@ -200,7 +200,7 @@ terminology in [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 29 August 2026:** 12/12 offline gates green, `livetest` 199 checks
+**Status 29 August 2026:** 12/12 offline gates green, `livetest` 201 checks
 green (194 on two map servers), RTK2 protocol symmetric in both directions,
 binding gaps 0, `map.log` 0 ERROR/WARN. New players can now **sign
 themselves up** through the client (account login, character creation,
@@ -223,7 +223,7 @@ The roadmap toward "a server that runs normally and smoothly with no
 bugs" — including the table of player actions that still lack an RTK2
 inbound path — is in
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Traps & lessons #1–#142 are in
+Traps & lessons #1–#145 are in
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)** (Indonesian).
 
 ## Folder structure

@@ -16,7 +16,7 @@ Sejak 26 Agustus 2026 project ini **tidak lagi mengejar kompatibilitas
 byte-per-byte** dengan klien RetroTK. Yang berlaku:
 
 - **Protokol sendiri (RTK2)** — dua arah, dirancang dari kebutuhan nyata
-  skrip: 46 opcode masuk, 57 peristiwa keluar. Spesifikasi:
+  skrip: 46 opcode masuk, 57 peristiwa keluar (Wire v11). Spesifikasi:
   [`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md).
 - **Klien sendiri (libGDX)** — dikembangkan di repo terpisah
   `../RTK-client`, belum di-commit sampai seluruh aset diganti buatan
@@ -174,7 +174,7 @@ aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 | `carnagetest` | **satu pertandingan Carnage penuh** (regu per jalur kelas, empat kubu) | 28 pemeriksaan; map server lain harus mati |
 | `sumotest` | **satu pertandingan Sumo War penuh** (poin dari dorongan ke air) | 21 pemeriksaan; map server lain harus mati |
 | `beachtest` | **satu ronde Beach War penuh** (poin dari tembakan) | 22 pemeriksaan; map server lain harus mati |
-| `livetest` | **klien RTK2 sungguhan** masuk dunia + 199 pemeriksaan | dijalankan dari `../RTK-client` |
+| `livetest` | **klien RTK2 sungguhan** masuk dunia + 201 pemeriksaan | dijalankan dari `../RTK-client` |
 | `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | 194 pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
 
 Dua belas gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
@@ -196,7 +196,7 @@ terjemahan di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 29 Agustus 2026:** 12/12 gerbang luring hijau, `livetest` 199
+**Status 29 Agustus 2026:** 12/12 gerbang luring hijau, `livetest` 201
 pemeriksaan hijau (194 pada dua map server), protokol RTK2 dua arah
 simetris, celah binding 0, `map.log` 0 ERROR/WARN. Pemain baru kini bisa
 **mendaftar sendiri** lewat klien (masuk akun, buat karakter, pilih
@@ -218,7 +218,7 @@ nyata bersembunyi di sana, bukan di `map.log` (Peringatan #123, #125).
 Roadmap menuju "server dipakai normal & lancar tanpa bug" — lengkap dengan
 tabel aksi pemain yang belum punya jalur masuk RTK2 — ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#142 di
+Jebakan & pelajaran #1–#145 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder
