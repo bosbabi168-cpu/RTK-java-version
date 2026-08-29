@@ -1909,3 +1909,41 @@ ekor daftar dengan nomor lanjutan.
    ⚠️ Begitu juga keadaan yang **numpang lewat**: Carnage 100 mengumumkan
    juara lalu langsung pindah ke 101 pada tik yang sama, jadi menunggu
    "tepat 100" berarti menunggu tik yang tidak pernah menetap.
+
+140. **`player:warp` di skrip TIDAK PERNAH memindahkan pemain.** Bindingnya
+   hanya menulis bayangan {@code ScriptPlayer.m/x/y} — ladang yang dipakai
+   skrip untuk MEMBACA posisi, dan yang ditimpa lagi oleh
+   `User.syncScriptPlayer()` pada panggilan berikutnya. Di C binding ini
+   memanggil `pc_warp` (`sl.c:7799`), yang mencabut pemain dari indeks peta
+   lama, memindahkan posisinya, lalu mendaftarkannya ke peta baru.
+   Akibatnya **856 pemakaian `warp(` di konten diam total**: teleport quest,
+   `returnToInn`, masuk arena acara, alat GM. Tidak ada satu pun error.
+   Ditemukan karena gerbang Sumo menuntut pemain benar-benar pindah ke
+   arena — sesuatu yang tidak pernah dituntut uji mana pun sebelumnya.
+   ⚠️ **Efek sampingnya nyata:** sesudah diperbaiki, langkah `livetest`
+   yang mengklik NPC dan menginjak petak berskrip mulai MEMINDAHKAN
+   karakter uji ke peta lain di tengah rangkaian, dan langkah dua-pemain
+   gagal karena JARAK. Karena itu `livetest` kini memulihkan fixture-nya
+   (peta, petak, kantong, setelan) lewat SQL sebelum rangkaian dan sebelum
+   langkah dua-pemain — selagi karakternya OFFLINE (#102).
+
+141. **Uji yang menuntut "ada jawaban" bisa menangkap jawaban LAMA.**
+   Langkah profil sempat merah untuk server yang benar: ia menunggu
+   `profil != null` sesudah menyunting, dan yang tertangkap adalah jawaban
+   profil dari langkah SEBELUMNYA yang masih di penyangga. Yang benar:
+   menunggu ISInya (`teksBaru.equals(profil.teks())`), bukan kehadirannya.
+   Keluarga yang sama dengan #104 dan #110.
+
+142. **Tiga syarat tersembunyi yang membuat opcode terlihat "tidak
+   bekerja".** Ketiganya membuat perintah yang BENAR tampak gagal:
+   - `OP_EAT` hanya memakan barang ber-`ItmType == ITM_EAT`; selain itu
+     server menjawab "That item is not edible" — jalur penolakan ini justru
+     dipakai gerbang supaya ujinya tidak memakan barang pemain (#102);
+   - `OP_THROW` pada barang ber-`ItmThrownConfirm = 1` **bertanya dulu** dan
+     tidak melempar apa pun sampai benderanya dikirim ulang;
+   - `OP_HAND_ITEM`/`OP_HAND_GOLD` menuntut sasaran MENGIZINKAN pertukaran
+     (bit 128 `SettingFlags.EXCHANGE`); tanpa itu jawabannya "They have
+     refused to exchange with you".
+   ⚠️ Dan emas yang dijatuhkan hanya bisa dipungut oleh ragam
+   `pickUpType == 0` (`onPickup.lua:4`) — ragam "seluruh tumpukan" tidak
+   menyentuh tumpukan koin sama sekali.

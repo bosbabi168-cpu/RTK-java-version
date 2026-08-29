@@ -44,10 +44,10 @@ writing a new adapter, not touching the logic.
   mutable at runtime.
 - **Scripting**: 906/906 scripts load with 0 errors; binding gaps **0**
   (the only remainder is `testPacket`, deliberately not ported).
-- **Testing**: 10 offline regression gates (903 `cliftest` assertions,
+- **Testing**: 12 offline regression gates (903 `cliftest` assertions,
   234 `dbtest`) + the real-client gate `livetest` (182 checks; **194** on a
   two-map-server setup, `./tools/uji-dua-server.sh`).
-  36 of 46 RTK2 opcodes have now actually been sent by a real client.
+  **All 46 RTK2 opcodes have now actually been sent by a real client.**
 - **Indonesian translation**: COMPLETE — 0 of 9,812 dialogue points are
   still English; `livetest` asserts that the dialogue reaching the player
   is Indonesian.
@@ -176,10 +176,12 @@ scripts are identifiers. The dialogue text itself is **fully translated**
 | `wiresync` | `Wire.java` identical to the client repo copy | skips itself if the client repo is absent |
 | `elixirtest` | **a full Elixir match** on the real server boot | 34 checks; other map servers must be stopped |
 | `carnagetest` | **a full Carnage match** (teams by class path, four colours) | 28 checks; other map servers must be stopped |
-| `livetest` | a **real RTK2 client** enters the world + 182 checks | run from `../RTK-client` |
+| `sumotest` | **a full Sumo War match** (points by pushing into water) | 21 checks; other map servers must be stopped |
+| `beachtest` | **a full Beach War round** (points by shooting) | 22 checks; other map servers must be stopped |
+| `livetest` | a **real RTK2 client** enters the world + 199 checks | run from `../RTK-client` |
 | `tools/uji-dua-server.sh` | player transfer between map servers (R3/C3) | 194 checks; sets up and restores its own fixture |
 
-The first ten gates are offline — they test the code against itself and
+The first twelve gates are offline — they test the code against itself and
 cannot see "something that did not happen". That is why every new
 subsystem must get checks in both `cliftest` **and** `livetest`, and then
 the code must be deliberately broken once to prove the gate can turn red.
@@ -198,7 +200,7 @@ terminology in [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 29 August 2026:** 10/10 offline gates green, `livetest` 182 checks
+**Status 29 August 2026:** 12/12 offline gates green, `livetest` 199 checks
 green (194 on two map servers), RTK2 protocol symmetric in both directions,
 binding gaps 0, `map.log` 0 ERROR/WARN. New players can now **sign
 themselves up** through the client (account login, character creation,
@@ -221,7 +223,7 @@ The roadmap toward "a server that runs normally and smoothly with no
 bugs" — including the table of player actions that still lack an RTK2
 inbound path — is in
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Traps & lessons #1–#139 are in
+Traps & lessons #1–#142 are in
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)** (Indonesian).
 
 ## Folder structure

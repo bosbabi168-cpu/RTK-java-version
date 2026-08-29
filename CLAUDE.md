@@ -70,7 +70,7 @@ Project mandiri — data game ada di dalamnya: `maps/` (3.544 `.map`),
 `meta/`, `db/`. Rantai konfigurasi: `resources/rtk-server.properties` →
 `conf/*.conf` (menimpa) → argumen CLI. Jangan menanam path di kode.
 
-## Build & uji — SEBELAS gerbang
+## Build & uji — TIGA BELAS gerbang
 
 Build: NetBeans (*Clean and Build*) → `dist/RTK-java-version.jar`, atau
 `./build.sh` → `dist/RTK-java.jar`. Menjalankan:
@@ -91,9 +91,11 @@ selesai:
 ./run.sh wiresync     # Wire.java sinkron dengan repo klien
 ./run.sh elixirtest   # SATU PERTANDINGAN ELIXIR penuh — 34 pemeriksaan
 ./run.sh carnagetest  # SATU PERTANDINGAN CARNAGE penuh — 28 pemeriksaan
+./run.sh sumotest     # SATU PERTANDINGAN SUMO WAR penuh — 21 pemeriksaan
+./run.sh beachtest    # SATU RONDE BEACH WAR penuh — 22 pemeriksaan
 ```
 
-⚠️ `elixirtest` dan `carnagetest` memakai **penyalaan server yang sama**
+⚠️ Keempat gerbang acara memakai **penyalaan server yang sama**
 dengan `./run.sh map` (`MapServer.boot`), jadi map server lain harus MATI —
 portnya bentrok. Perkakas bersamanya di `AcaraUji`.
 
@@ -267,12 +269,12 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 
 | | |
 |---|---|
-| Gerbang luring | **10/10 hijau** (`cliftest` 903, `dbtest` 234, `elixirtest` 34, `carnagetest` 28) |
-| Gerbang klien sungguhan | `livetest` **182** pemeriksaan hijau |
+| Gerbang luring | **11/11 hijau** (`cliftest` 903, `dbtest` 234, `elixirtest` 34, `carnagetest` 28, `sumotest` 21, `beachtest` 22) |
+| Gerbang klien sungguhan | `livetest` **199** pemeriksaan hijau — **seluruh 46 opcode kini pernah dikirim klien sungguhan** |
 | Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v10) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#139 → `docs/PERINGATAN.md` |
+| Peringatan tercatat | #1–#142 → `docs/PERINGATAN.md` |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug
@@ -532,10 +534,29 @@ dipanggil skrip hanya bila pesertanya kurang, atau oleh acara berikutnya
 lewat `init`. Itu rancangan skripnya, bukan cacat; gerbangnya memanggil
 penutupnya apa adanya lalu memeriksa akibatnya.
 
-**Sisa putaran berikutnya:** 7 opcode belum pernah dikirim klien
-(`profileEdit`, `dropGold`, `handItem`, `handGold`, `eat`, `throw`, dan
-`hello` yang dikirim `Connection.sambung` tetapi tidak lewat `Commands`);
-skenario multi-pemain masih terbatas pada grup, abaikan, dan pertukaran.
+**Putaran kelima (29 Agu 2026) — SUMO, BEACH, dan TUJUH OPCODE TERAKHIR.**
+
+- `./run.sh sumotest` (21): pendaftaran → ditutup sendiri → 8 pemain
+  dipindahkan ke arena → 30 poin dikumpulkan lewat **dorongan sungguhan**
+  (`SumoWarNpc.push`; petak airnya dicari dari data peta, bukan ditulis di
+  uji) → `winnerCheck` menyatakan pemenang → acara membereskan diri.
+- `./run.sh beachtest` (22): arena **dipilih acak skrip** → tepat **50
+  tembakan sungguhan** (`BeachWarNpc.hit`) memenangi satu ronde → skor
+  disetel ulang untuk ronde berikutnya.
+- **Cakupan opcode kini 46/46.** Tujuh yang terakhir dikerjakan di
+  `livetest`: `profileEdit` (sunting lalu kembalikan), `dropGold` (jatuh +
+  pungut, memulihkan sendiri), `handItem`/`handGold` (dua pemain
+  bersebelahan, lalu dibatalkan), `eat` dan `throw` lewat **jalur
+  penolakan/konfirmasi** supaya tidak memakan barang pemain uji, dan
+  `hello` yang memang selalu lewat `Commands`.
+
+⚠️ Yang dibongkar putaran ini: **`player:warp` di skrip tidak pernah
+memindahkan pemain** (#140) — 856 pemakaian diam total. Sesudah
+diperbaiki, konten mulai benar-benar memindahkan karakter uji, dan
+`livetest` harus memulihkan fixture-nya sendiri.
+
+**Sisa:** skenario multi-pemain masih terbatas pada grup, abaikan,
+pertukaran, dan serah-terima; acara Bomber War belum dibuktikan berjalan.
 
 **Sengaja TIDAK dikerjakan:** `testPacket` (debug GM tulis byte mentah) ·
 melengkapi `sendMyStatus` RetroTK · 8 nama binding yang tidak ada di

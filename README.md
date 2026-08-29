@@ -44,10 +44,10 @@ menulis adapter baru, bukan menyentuh logika.
   papan pesan, peta yang bisa diubah saat berjalan.
 - **Scripting**: 906/906 skrip termuat 0 error; celah binding **0**
   (satu-satunya sisa `testPacket`, sengaja tidak diport).
-- **Pengujian**: 10 gerbang regresi luring (903 assertion `cliftest`,
+- **Pengujian**: 12 gerbang regresi luring (903 assertion `cliftest`,
   234 `dbtest`) + gerbang klien sungguhan `livetest` (182 pemeriksaan;
   **194** pada setup dua map server, `./tools/uji-dua-server.sh`).
-  36 dari 46 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.
+  **Seluruh 46 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.**
 - **Terjemahan Indonesia**: SELESAI — 0 dari 9.812 titik dialog masih
   berbahasa Inggris; `livetest` menuntut dialog yang sampai ke pemain
   berbahasa Indonesia.
@@ -172,10 +172,12 @@ aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 | `wiresync` | `Wire.java` identik dengan salinan di repo klien | skip bila repo klien tidak ada |
 | `elixirtest` | **satu pertandingan Elixir penuh** di atas penyalaan server sungguhan | 34 pemeriksaan; map server lain harus mati |
 | `carnagetest` | **satu pertandingan Carnage penuh** (regu per jalur kelas, empat kubu) | 28 pemeriksaan; map server lain harus mati |
-| `livetest` | **klien RTK2 sungguhan** masuk dunia + 182 pemeriksaan | dijalankan dari `../RTK-client` |
+| `sumotest` | **satu pertandingan Sumo War penuh** (poin dari dorongan ke air) | 21 pemeriksaan; map server lain harus mati |
+| `beachtest` | **satu ronde Beach War penuh** (poin dari tembakan) | 22 pemeriksaan; map server lain harus mati |
+| `livetest` | **klien RTK2 sungguhan** masuk dunia + 199 pemeriksaan | dijalankan dari `../RTK-client` |
 | `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | 194 pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
 
-Sepuluh gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
+Dua belas gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
 tidak bisa melihat "sesuatu yang tidak terjadi". Karena itu setiap
 subsistem baru wajib dapat pemeriksaan `cliftest` **dan** `livetest`, lalu
 kodenya dirusak sengaja untuk membuktikan gerbangnya bisa merah.
@@ -194,7 +196,7 @@ terjemahan di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 29 Agustus 2026:** 10/10 gerbang luring hijau, `livetest` 182
+**Status 29 Agustus 2026:** 12/12 gerbang luring hijau, `livetest` 199
 pemeriksaan hijau (194 pada dua map server), protokol RTK2 dua arah
 simetris, celah binding 0, `map.log` 0 ERROR/WARN. Pemain baru kini bisa
 **mendaftar sendiri** lewat klien (masuk akun, buat karakter, pilih
@@ -216,7 +218,7 @@ nyata bersembunyi di sana, bukan di `map.log` (Peringatan #123, #125).
 Roadmap menuju "server dipakai normal & lancar tanpa bug" — lengkap dengan
 tabel aksi pemain yang belum punya jalur masuk RTK2 — ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#139 di
+Jebakan & pelajaran #1–#142 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder
