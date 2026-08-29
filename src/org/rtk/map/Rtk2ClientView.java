@@ -493,13 +493,34 @@ public final class Rtk2ClientView implements ClientView {
         // K5: musik latar petanya ikut — klien tidak punya sumber lain untuk
         // mengetahuinya, dan menaruhnya di peristiwa peta berarti musiknya
         // berganti tepat saat petanya berganti, tanpa paket tersendiri.
-        // ⚠️ `MapBGM` 902 dipakai 9.799 dari 9.850 peta dan TIDAK ada di
-        // antara 66 lagu yang tersedia — itu nilai bawaan "tanpa musik",
-        // bukan nomor lagu. Klien yang memutuskan diam bila lagunya tak ada.
+        // ⚠️ `MapBGM` 902 dipakai 9.799 dari 9.850 peta dan tidak punya
+        // berkas `.mp3` — tetapi ia BUKAN "tanpa musik": ia
+        // `00000902.lsr`, sebuah DAFTAR PUTAR berisi sepuluh lagu. Nomor
+        // 800-an/900-an memang daftar putar (Peringatan #146). Server
+        // meneruskan nomornya apa adanya; klien yang mengurai daftarnya.
         kirim(sd, new Wire.Writer(Wire.EV_SELF_MAP)
                 .u16(sd.m).str(map.title == null ? "" : map.title)
                 .u16(map.xs).u16(map.ys).u8(map.light).u16(bendera)
                 .u16(map.bgm).u8(map.bgmType));
+    }
+
+    /**
+     * Pemain pindah peta di server yang sama: kirim peta barunya, posisinya,
+     * lalu isi pandangannya.
+     *
+     * <p>Urutannya sama seperti saat masuk dunia dan alasannya sama: apa pun
+     * yang merujuk petak harus datang SESUDAH klien tahu petak mana yang
+     * berlaku.</p>
+     */
+    @Override
+    public void playerMapChanged(User sd) {
+        if (sesi(sd) == null) {
+            return;
+        }
+        petaSendiri(sd);
+        kirim(sd, new Wire.Writer(Wire.EV_SELF_POSITION)
+                .u16(sd.x).u16(sd.y).u8(sd.status.side));
+        playerViewRefreshed(sd);
     }
 
     @Override

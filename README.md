@@ -44,9 +44,10 @@ menulis adapter baru, bukan menyentuh logika.
   papan pesan, peta yang bisa diubah saat berjalan.
 - **Scripting**: 906/906 skrip termuat 0 error; celah binding **0**
   (satu-satunya sisa `testPacket`, sengaja tidak diport).
-- **Pengujian**: 12 gerbang regresi luring (903 assertion `cliftest`,
-  234 `dbtest`) + gerbang klien sungguhan `livetest` (182 pemeriksaan;
-  **194** pada setup dua map server, `./tools/uji-dua-server.sh`).
+- **Pengujian**: 12 gerbang regresi luring (**917** assertion `cliftest`,
+  **235** `dbtest`) + gerbang klien sungguhan `livetest` (**236**
+  pemeriksaan; **237** pada setup dua map server,
+  `./tools/uji-dua-server.sh`).
   **Seluruh 46 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.**
 - **Terjemahan Indonesia**: SELESAI — 0 dari 9.812 titik dialog masih
   berbahasa Inggris; `livetest` menuntut dialog yang sampai ke pemain
@@ -158,7 +159,7 @@ adalah identifier. Teks dialognya sendiri sudah **selesai** diterjemahkan
 (0 dari 9.812 titik tersisa); alat dan katalognya di `tools/terjemahan/`,
 aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
-## Pengujian — sembilan gerbang
+## Pengujian — dua belas gerbang luring + dua gerbang hidup
 
 | Gerbang | Menguji | Catatan |
 |---|---|---|
@@ -166,16 +167,16 @@ aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 | `maptest` | 3.544 berkas peta | |
 | `chartest` | serialisasi karakter | |
 | `worldtest` | dunia peta + penempatan pemain | |
-| `cliftest` | paket, protokol RTK2, seluruh subsistem | 903 assertion |
-| `dbtest` | lapisan database ke MySQL hidup | 234 assertion; butuh MySQL |
+| `cliftest` | paket, protokol RTK2, seluruh subsistem | **917** assertion |
+| `dbtest` | lapisan database ke MySQL hidup | **235** assertion; butuh MySQL |
 | `luaaudit` | pemeriksa statis 907 skrip + celah binding | `-Drtk.audit.penuh=true` untuk daftar utuh |
 | `wiresync` | `Wire.java` identik dengan salinan di repo klien | skip bila repo klien tidak ada |
 | `elixirtest` | **satu pertandingan Elixir penuh** di atas penyalaan server sungguhan | 34 pemeriksaan; map server lain harus mati |
 | `carnagetest` | **satu pertandingan Carnage penuh** (regu per jalur kelas, empat kubu) | 28 pemeriksaan; map server lain harus mati |
 | `sumotest` | **satu pertandingan Sumo War penuh** (poin dari dorongan ke air) | 21 pemeriksaan; map server lain harus mati |
 | `beachtest` | **satu ronde Beach War penuh** (poin dari tembakan) | 22 pemeriksaan; map server lain harus mati |
-| `livetest` | **klien RTK2 sungguhan** masuk dunia + 201 pemeriksaan | dijalankan dari `../RTK-client` |
-| `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | 194 pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
+| `livetest` | **klien RTK2 sungguhan** masuk dunia + **236** pemeriksaan | dijalankan dari `../RTK-client`; beri map server waktu menetap dulu (#163) |
+| `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | **237** pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
 
 Dua belas gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
 tidak bisa melihat "sesuatu yang tidak terjadi". Karena itu setiap
@@ -196,29 +197,50 @@ terjemahan di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 29 Agustus 2026:** 12/12 gerbang luring hijau, `livetest` 201
-pemeriksaan hijau (194 pada dua map server), protokol RTK2 dua arah
-simetris, celah binding 0, `map.log` 0 ERROR/WARN. Pemain baru kini bisa
-**mendaftar sendiri** lewat klien (masuk akun, buat karakter, pilih
-karakter) — lihat K3-lanjutan. Sejak 29 Agu 2026 **mesin acara berkala
-hidup**: `map_cronjob()` (timer 1 detik: `cronJobSec`…`cronJobDay`) dan
-registry sedunia `GameRegistry<serverid>` keduanya belum pernah diport,
-sehingga tidak ada acara, kelahiran bos, penerangan peta, atau pemunculan
-barang yang pernah berjalan. Sejak 29 Agu 2026 **dua acara terbukti
-berjalan penuh** — Elixir (`./run.sh elixirtest`) dan Carnage
-(`./run.sh carnagetest`) — dan menjalankannya membongkar empat cacat mesin
-skrip yang diam total: `os.time()` berpecahan sehingga setiap
-`os.time() == x` gagal; `hasItem` dikembalikan sebagai jumlah alih-alih
-`true`/kekurangan (dipakai 419× dengan `== true`, jadi **setiap syarat
-barang di quest gagal**); wujud karakter yang tidak pernah terbaca skrip
-sehingga seluruh sistem klon mati; dan `baseClass` yang hilang sehingga
-Carnage tidak bisa membentuk kubu. ⚠️ Sapu `logs/common.log` juga: dua bug
-nyata bersembunyi di sana, bukan di `map.log` (Peringatan #123, #125).
+**Status 30 Agustus 2026:** 12/12 gerbang luring hijau, `livetest` **236**
+pemeriksaan hijau lewat klien sungguhan, **237** di gerbang dua map server,
+protokol RTK2 dua arah simetris, cakupan opcode **46/46**, celah binding 0.
 
-Roadmap menuju "server dipakai normal & lancar tanpa bug" — lengkap dengan
-tabel aksi pemain yang belum punya jalur masuk RTK2 — ada di
+| Tahap | Isi | Status |
+|---|---|---|
+| **R1** | Aksi pemain tanpa jalur masuk RTK2 (16 butir audit `clif_parse`) | ✅ **SELESAI** 28 Agu 2026 |
+| **R2** | TODO di kode — nol tersisa di `src/` | ✅ **SELESAI** 28 Agu 2026 |
+| **R3** | **C3** pindah antar map server terbukti pulang-pergi; **C2** meta RetroTK diputuskan tidak diport | ✅ **SELESAI** 28 Agu 2026 |
+| **R4** | Terjemahan dialog — 0 dari **9.812** titik masih Inggris | ✅ **SELESAI** 28 Agu 2026 |
+| **R5** | Stabilisasi berkelanjutan — enam putaran | ⏳ **BERJALAN** |
+
+Enam putaran R5, dan yang dibongkar masing-masing:
+
+| Putaran | Fokus | Temuan terbesar |
+|---|---|---|
+| **1** | Cakupan opcode 25 → 36 | **`.ID` tidak pernah diimplementasikan** — memungut barang dari tanah tidak pernah berhasil, sejak awal |
+| **2** | Pembuatan karakter & sesi | **fd dipakai ulang** — sambungan baru mewarisi akun sesi sebelumnya dan bisa masuk tanpa sandi |
+| **3** | Mesin acara berkala | `map_cronjob()` dan registry sedunia **tidak pernah diport**: tidak ada acara, kelahiran bos, penerangan peta, atau pemunculan barang yang pernah jalan |
+| **4** | Elixir & Carnage berjalan penuh | **`hasItem` dikembalikan sebagai jumlah**, bukan `true` — dipakai 419× dengan `== true`, jadi setiap syarat barang di quest gagal |
+| **5** | Sumo & Beach berjalan; opcode **46/46** | **`player:warp` di skrip tidak pernah memindahkan pemain** — 856 pemakaian diam total |
+| **6** | Pertarungan & animasi | **mob tidak bisa dibunuh: rantainya putus di enam tempat**, yang terakhir `MobRegistry.kill()` yang tidak mengabari klien sama sekali |
+
+Gerbang hari ini:
+
+| Gerbang | Pemeriksaan | Apa yang dijaga |
+|---|---|---|
+| `cliftest` | **917** | seluruh jalur protokol, termasuk kematian mob yang disiarkan ke klien |
+| `dbtest` | **235** | kontrak basis data & `hasItem` sesuai C |
+| `worldtest` | 53 | kalender dunia, registry sedunia |
+| `scripttest` | 42 | kait Lua global & cron benar-benar bisa dipanggil |
+| `chartest` | 39 | codec `CharStatus` |
+| `elixirtest` · `carnagetest` · `beachtest` · `sumotest` | 34 · 28 · 22 · 21 | satu pertandingan penuh tiap acara |
+| `maptest` · `luaaudit` · `wiresync` | — | seluruh `.map` terbaca · sintaks Lua · dua salinan `Wire.java` identik |
+| **`tools/uji-dua-server.sh`** | **237** | perpindahan antar map server, pulang-pergi |
+| **`livetest`** (repo klien) | **236** | server sungguhan lewat klien sungguhan |
+
+⚠️ Sapu `logs/common.log` juga: dua bug nyata bersembunyi di sana, bukan di
+`map.log` (Peringatan #123, #125). ⚠️ `livetest` pada map server yang baru
+hidup 30 detik memberi merah palsu — beri waktu menetap dulu (#163).
+
+Roadmap lengkap dengan tabel per tahap ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#145 di
+Jebakan & pelajaran #1–#163 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder

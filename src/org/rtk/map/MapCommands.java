@@ -228,6 +228,18 @@ public final class MapCommands implements ClientCommands {
         if (bl.id == sd.id) {
             return false;
         }
+        // ⚠️ BARANG DI LANTAI TIDAK MENGHALANGI. C hanya menyapu tiga jenis
+        // blok saat memeriksa langkah (`clif.c:5036-5038`):
+        //     map_foreachincell(clif_canmove_sub, m, dx, dy, BL_PC,  sd);
+        //     map_foreachincell(clif_canmove_sub, m, dx, dy, BL_MOB, sd);
+        //     map_foreachincell(clif_canmove_sub, m, dx, dy, BL_NPC, sd);
+        // BL_ITEM tidak pernah ikut. Port ini menyapu SELURUH isi petak,
+        // sehingga satu barang yang tergeletak berubah jadi tembok — dan
+        // memungut barang jadi mustahil, karena `onPickup.lua` mengambil
+        // barang di petak tempat pemain BERDIRI (Peringatan #154).
+        if (bl.type == org.rtk.map.data.BlockList.Type.ITEM) {
+            return false;
+        }
         if (bl.type == org.rtk.map.data.BlockList.Type.NPC && bl.subtype == 2) {
             return false;
         }

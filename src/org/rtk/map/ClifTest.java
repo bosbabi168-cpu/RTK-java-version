@@ -4778,6 +4778,38 @@ public final class ClifTest {
         cmd.playerWalks(sd, 3, sd.x, sd.y, null);
         MapServer.world.get(sd.m).delBlock(mbR2);
 
+        // ---- #154: BARANG DI LANTAI TIDAK MENGHALANGI LANGKAH ----
+        // C hanya menyapu BL_PC, BL_MOB, dan BL_NPC saat memeriksa langkah
+        // (clif.c:5036-5038) — BL_ITEM tidak pernah ikut. Port ini menyapu
+        // seluruh isi petak, jadi satu barang yang tergeletak jadi tembok.
+        // ⚠️ Akibatnya bukan cuma "tersangkut": `onPickup.lua` memungut
+        // barang di petak tempat pemain BERDIRI, jadi barang yang tidak
+        // bisa diinjak juga tidak bisa dipungut.
+        int xSblmBarang = sd.x;
+        MapServer.floorItems.drop(sd, 7703, 1, 0, 0, sd.id, sd.m, sd.x + 1, sd.y);
+        check("#154: barangnya benar-benar ada di petak sebelah",
+                !MapServer.world.get(sd.m).objectsAt(sd.x + 1, sd.y).isEmpty());
+        cmd.playerWalks(sd, arahTimur, sd.x, sd.y, null);
+        check("#154: pemain bisa MELANGKAH ke petak berisi barang",
+                sd.x == xSblmBarang + 1);
+        // Kontrol negatif di petak yang sama: NPC biasa TETAP menghalangi,
+        // supaya lulusnya bukan karena pemeriksaan blok mati semuanya.
+        Npc npcHalang = new Npc();
+        npcHalang.id = 777001;
+        npcHalang.name = "uji_npc_halang";
+        npcHalang.m = sd.m;
+        npcHalang.x = sd.x + 1;
+        npcHalang.y = sd.y;
+        npcHalang.subtype = 0;
+        MapServer.world.get(sd.m).addBlock(npcHalang);
+        int xSblmNpc = sd.x;
+        cmd.playerWalks(sd, arahTimur, sd.x, sd.y, null);
+        check("#154 kontrol negatif: NPC biasa TETAP menghalangi",
+                sd.x == xSblmNpc);
+        MapServer.world.get(sd.m).delBlock(npcHalang);
+        // kembalikan posisi
+        cmd.playerWalks(sd, 3, sd.x, sd.y, null);
+
         // ---- R1/K4: berputar, emosi, susun ulang ----
         int xAwal = sd.x, yAwal = sd.y;
         sd.status.side = 0;
@@ -6005,6 +6037,44 @@ public final class ClifTest {
         MapServer.world.put(kembarA);
         MapServer.world.put(kembarB);
 
+        // ---- #153: pemain terdampar dijatuhkan ke inn KEBANGSAANNYA ----
+        // Daftarnya cermin `Player.returnToInn` di player.lua. Yang diuji di
+        // sini murni pemilihannya: hanya peta yang benar-benar DIMUAT boleh
+        // dipilih, karena menjatuhkan pemain ke peta milik server lain
+        // berarti mengulang masalahnya satu tingkat lebih dalam.
+        int negaraAsli = sd.status.country;
+        MapData innBuya = new MapData(332, berkas);      // Spring Tavern
+        MapData innNagnang = new MapData(2503, berkas);  // Tavern of Wind
+        MapServer.world.put(innBuya);
+        MapServer.world.put(innNagnang);
+
+        sd.status.country = 2;
+        org.rtk.common.mmo.Point b2 = Pc.innKebangsaan(MapServer.world, sd);
+        check("#153: kebangsaan Buya jatuh ke salah satu inn Buya yang dimuat",
+                b2 != null && (b2.m == 332 || b2.m == 362 || b2.m == 361));
+        check("#153: dan ke petak (4,5) seperti di player.lua",
+                b2 != null && b2.x == 4 && b2.y == 5);
+
+        // ⚠️ Kebangsaan > 3 dijepit ke 3 — persis `if country > 3 then
+        // country = 3 end` di skripnya, sehingga cabang "4 Han" tidak
+        // pernah tercapai. Ditiru apa adanya.
+        sd.status.country = 7;
+        org.rtk.common.mmo.Point b7 = Pc.innKebangsaan(MapServer.world, sd);
+        check("#153: kebangsaan di luar 0..3 dijepit ke Nagnang (cermin skrip)",
+                b7 != null && b7.m == 2503 && b7.x == 4 && b7.y == 6);
+
+        // KONTROL NEGATIF: kebangsaan yang SATU PUN inn-nya tidak dimuat
+        // harus menjawab null, bukan menebak peta lain.
+        sd.status.country = 1;   // Kugnae: 38 / 37 / 2
+        boolean adaInnKugnae = MapServer.world.get(38) != null
+                || MapServer.world.get(37) != null || MapServer.world.get(2) != null;
+        org.rtk.common.mmo.Point b1 = Pc.innKebangsaan(MapServer.world, sd);
+        check("#153 kontrol negatif: tanpa inn yang dimuat, jawabannya null",
+                adaInnKugnae ? b1 != null : b1 == null);
+        sd.status.country = negaraAsli;
+        MapServer.world.remove(332);
+        MapServer.world.remove(2503);
+
         int asli = kembarA.tile(3, 3);
         check("dunia: dua peta berangkat dari petak yang sama",
                 kembarB.tile(3, 3) == asli);
@@ -6169,6 +6239,36 @@ public final class ClifTest {
         panggilGlobal(engine, "guitext", 0, 58888, "peta lain");
         check("dunia: guitext ke peta lain tidak menyentuh pemain di sini",
                 tertangkap.isEmpty());
+        // ---- #157: mob MATI harus dikabarkan ke klien ----
+        // Sebelum ini `kill()` mencabut mob dari indeks blok tanpa memberi
+        // tahu siapa pun: mob yang mati hilang di server tetapi TETAP
+        // tergambar di layar pemain sampai ia pindah peta. Pertarungan yang
+        // berhasil terlihat persis seperti pertarungan yang tidak terjadi.
+        tertangkap.clear();
+        var jenisMati = new MobData();
+        jenisMati.id = 9101;
+        jenisMati.yname = "uji_mob_mati";
+        jenisMati.name = "Mob Mati";
+        jenisMati.vita = 10;
+        Mob mbMati = new Mob();
+        mbMati.data = jenisMati;
+        mbMati.id = Mob.MOB_START_NUM + 4243;
+        mbMati.m = sd.m;
+        mbMati.x = sd.x + 2;
+        mbMati.y = sd.y;
+        MobRegistry.resetStats(mbMati);
+        MapServer.world.get(sd.m).addBlock(mbMati);
+        mbMati.onMap = true;
+        MapServer.mobs.kill(mbMati, MapServer.world);
+        check("#157: kematian mob menyiarkan objectRemoved ke klien",
+                tertangkap.contains("objectRemoved:" + mbMati.id));
+        check("#157: didahului aksi kematian (aksi 0 = memudar di monster.dna)",
+                tertangkap.contains("objectActed:" + mbMati.id + "/"
+                        + MobRegistry.AKSI_MATI));
+        check("#157: dan mobnya benar-benar tercabut dari petak",
+                MapServer.world.get(sd.m).objectsAt(sd.x + 2, sd.y).stream()
+                        .noneMatch(bl -> bl.id == mbMati.id));
+
         MapServer.clientView = cvLama;
 
         // ---- getXPforLevel: tabelnya memang sudah ada ----
@@ -6230,6 +6330,7 @@ public final class ClifTest {
         // Sisanya diteruskan ke penyalur kosong.
         @Override public void playerEnteredWorld(User a) { sunyi.playerEnteredWorld(a); }
         @Override public void playerViewRefreshed(User a) { sunyi.playerViewRefreshed(a); }
+        @Override public void playerMapChanged(User a) { sunyi.playerMapChanged(a); }
         @Override public void playerStatusChanged(User a, int b) { sunyi.playerStatusChanged(a, b); }
         @Override public void playerIdentityChanged(User a) { sunyi.playerIdentityChanged(a); }
         @Override public void playerDurationChanged(User a, int b, int c, String d) { sunyi.playerDurationChanged(a, b, c, d); }
@@ -6268,9 +6369,15 @@ public final class ClifTest {
         @Override public void objectAnimationAt(org.rtk.map.data.BlockList a, int b, int c, int d, int e) { sunyi.objectAnimationAt(a, b, c, d, e); }
         @Override public void soundPlayed(org.rtk.map.data.BlockList a, int b) { sunyi.soundPlayed(a, b); }
         @Override public void objectSpoke(org.rtk.map.data.BlockList a, int b, String c) { sunyi.objectSpoke(a, b, c); }
-        @Override public void objectActed(org.rtk.map.data.BlockList a, int b, int c, int d) { sunyi.objectActed(a, b, c, d); }
+        @Override public void objectActed(org.rtk.map.data.BlockList a, int b, int c, int d) {
+            keluar.add("objectActed:" + a.id + "/" + b);
+            sunyi.objectActed(a, b, c, d);
+        }
         @Override public void objectAppearanceChanged(org.rtk.map.data.BlockList a) { sunyi.objectAppearanceChanged(a); }
-        @Override public void objectRemoved(org.rtk.map.data.BlockList a) { sunyi.objectRemoved(a); }
+        @Override public void objectRemoved(org.rtk.map.data.BlockList a) {
+            keluar.add("objectRemoved:" + a.id);
+            sunyi.objectRemoved(a);
+        }
         @Override public void messageToPlayer(User a, int b, String c) { sunyi.messageToPlayer(a, b, c); }
         @Override public void npcMoved(Npc a, MapData b, int c, int d, int e, int f, int g, int h) { sunyi.npcMoved(a, b, c, d, e, f, g, h); }
         @Override public void npcAppearedTo(User a, Npc b) { sunyi.npcAppearedTo(a, b); }

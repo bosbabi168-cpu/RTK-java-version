@@ -26,6 +26,16 @@ public final class RetroTkClientView implements ClientView {
         Clif.refresh(sd);
     }
 
+    /**
+     * Klien RetroTK memuat petanya sendiri dari paket masuk-dunia, jadi
+     * perpindahan peta di dalam satu server dikirim sebagai masuk-dunia
+     * ulang — persis yang dilakukan C di ekor {@code pc_warp}.
+     */
+    @Override
+    public void playerMapChanged(User sd) {
+        Clif.sendWorldEntry(sd);
+    }
+
     @Override
     public void playerStatusChanged(User sd, int flags) {
         Clif.sendStatus(sd, flags);

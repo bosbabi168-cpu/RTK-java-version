@@ -58,6 +58,11 @@ public final class ProtocolRouter implements ClientView {
     }
 
     @Override
+    public void playerMapChanged(User sd) {
+        tujuan.forEach(v -> v.playerMapChanged(sd));
+    }
+
+    @Override
     public void playerStatusChanged(User sd, int flags) {
         tujuan.forEach(v -> v.playerStatusChanged(sd, flags));
     }

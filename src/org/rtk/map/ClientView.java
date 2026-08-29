@@ -50,6 +50,20 @@ public interface ClientView {
     void playerViewRefreshed(User sd);
 
     /**
+     * Pemain berpindah ke peta LAIN di server yang sama (portal, mantra
+     * gateway, {@code player:warp} di skrip).
+     *
+     * <p>⚠️ Ini bukan sekadar menggambar ulang. Klien memegang berkas
+     * {@code .map} sendiri, jadi selama ia tidak diberi tahu nomor peta yang
+     * baru ia akan terus menggambar peta LAMA — dengan tembok, nama, dan
+     * (sejak K5) musik yang salah — sambil raganya berjalan di peta baru.
+     * Dulu hanya {@link #playerEnteredWorld} yang mengirim petanya, sehingga
+     * satu-satunya perpindahan yang benar adalah yang lewat sambung ulang
+     * antar map server (Peringatan #149).</p>
+     */
+    void playerMapChanged(User sd);
+
+    /**
      * Nilai status pemain berubah.
      *
      * @param flags kombinasi {@code SFLAG_*}; bagian mana yang berubah

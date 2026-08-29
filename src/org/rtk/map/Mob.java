@@ -122,6 +122,53 @@ public final class Mob extends BlockList
     public double damage;
     public int critChance;
 
+    /** Peluang meleset per sepuluh ribu ({@code mob->miss}, sl.c:5301). */
+    public int miss;
+
+    // ---- pengali pertarungan (map.h: float sleep, deduction, dmgshield) ----
+    /** Pengali tidur; 1 = normal. */
+    public double sleepMul = 1.0;
+    /** Pengali potongan; 1 = normal. */
+    public double deduction = 1.0;
+    /** Perisai kerusakan yang menyerap dulu. */
+    public double dmgShield;
+    public boolean paralyzed;
+    public boolean blind;
+    public boolean confused;
+    public long confuseTarget;
+
+    /**
+     * Mantra yang sedang menempel pada mob: nama -&gt; saat berakhir (ms).
+     *
+     * <p>C menyimpannya di {@code mob->dura[]}. Di sini cukup peta kecil:
+     * yang dibutuhkan skrip hanyalah "masih menempel atau tidak" dan
+     * "berapa sisanya" ({@code Mob.checkIfCast}, mob.lua:419).</p>
+     */
+    private final java.util.Map<String, Long> durasi = new java.util.HashMap<>();
+
+    /** Sisa durasi mantra dalam milidetik; 0 bila tidak menempel. */
+    public long durasiSisa(String nama) {
+        Long akhir = durasi.get(nama);
+        if (akhir == null) {
+            return 0;
+        }
+        long sisa = akhir - System.currentTimeMillis();
+        if (sisa <= 0) {
+            durasi.remove(nama);
+            return 0;
+        }
+        return sisa;
+    }
+
+    /** Tempelkan mantra selama sekian milidetik; 0 melepasnya. */
+    public void setDurasi(String nama, long ms) {
+        if (ms <= 0) {
+            durasi.remove(nama);
+        } else {
+            durasi.put(nama, System.currentTimeMillis() + ms);
+        }
+    }
+
     /**
      * Tabel ancaman: id pemain &rarr; total kerusakan yang ia timbulkan.
      *
@@ -265,13 +312,37 @@ public final class Mob extends BlockList
             case "grace" -> data == null ? null : org.luaj.vm2.LuaValue.valueOf(data.grace);
             case "will" -> data == null ? null : org.luaj.vm2.LuaValue.valueOf(data.will);
             case "hit" -> data == null ? null : org.luaj.vm2.LuaValue.valueOf(data.hit);
+            // ⚠️ `miss` dipakai `hitCritChance.lua` untuk KEDUA belah pihak:
+            // pemain memukul mob DAN mob memukul pemain. Tanpa ladang ini
+            // skripnya gagal sebelum sempat menghitung apa pun (#157).
+            case "miss" -> org.luaj.vm2.LuaValue.valueOf(miss);
+            case "blType" -> org.luaj.vm2.LuaValue.valueOf(
+                    org.rtk.map.data.BlockList.BL_MOB);
+            // ⚠️ Skrip memakai huruf besar: `target.IsBoss` di swingDamage.
+            // Nama atribut peka huruf, jadi "isBoss" saja tidak cukup.
+            case "IsBoss" -> org.luaj.vm2.LuaValue.valueOf(
+                    data != null && data.isBoss ? 1 : 0);
+            case "sleep" -> org.luaj.vm2.LuaValue.valueOf(sleepMul);
+            case "deduction" -> org.luaj.vm2.LuaValue.valueOf(deduction);
+            case "dmgShield" -> org.luaj.vm2.LuaValue.valueOf(dmgShield);
+            case "paralyzed" -> org.luaj.vm2.LuaValue.valueOf(paralyzed);
+            case "blind" -> org.luaj.vm2.LuaValue.valueOf(blind);
+            case "confused" -> org.luaj.vm2.LuaValue.valueOf(confused);
+            case "confuseTarget" -> org.luaj.vm2.LuaValue.valueOf((double) confuseTarget);
+            case "mobID" -> org.luaj.vm2.LuaValue.valueOf(
+                    data == null ? 0 : (double) data.id);
+            case "damage" -> org.luaj.vm2.LuaValue.valueOf(damage);
+            case "critChance" -> org.luaj.vm2.LuaValue.valueOf(critChance);
             case "armor" -> data == null ? null : org.luaj.vm2.LuaValue.valueOf(data.baseArmor);
             case "protection" -> data == null ? null
                     : org.luaj.vm2.LuaValue.valueOf(data.protection);
             case "experience" -> data == null ? null
                     : org.luaj.vm2.LuaValue.valueOf((double) data.exp);
             case "isBoss" -> org.luaj.vm2.LuaValue.valueOf(data != null && data.isBoss ? 1 : 0);
-            default -> null;
+            default -> {
+                org.rtk.map.script.Bindings.lapor("mob", attr);
+                yield null;
+            }
         };
     }
 
@@ -287,6 +358,16 @@ public final class Mob extends BlockList
     public boolean scriptSetAttr(String attr, org.luaj.vm2.LuaValue v) {
         switch (attr) {
             case "health" -> currentVita = Math.max(0, (long) v.todouble());
+            case "miss" -> miss = (int) v.todouble();
+            case "damage" -> damage = v.todouble();
+            case "critChance" -> critChance = (int) v.todouble();
+            case "sleep" -> sleepMul = v.todouble();
+            case "deduction" -> deduction = v.todouble();
+            case "dmgShield" -> dmgShield = v.todouble();
+            case "paralyzed" -> paralyzed = v.toboolean();
+            case "blind" -> blind = v.toboolean();
+            case "confused" -> confused = v.toboolean();
+            case "confuseTarget" -> confuseTarget = (long) v.todouble();
             case "maxHealth" -> maxVita = (long) v.todouble();
             case "magic" -> currentMana = Math.max(0, (long) v.todouble());
             case "maxMagic" -> maxMana = (long) v.todouble();

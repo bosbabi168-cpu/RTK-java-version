@@ -592,9 +592,29 @@ public final class MobRegistry {
         mob.lastDeath = System.currentTimeMillis() / 1000;
         MapData map = world.get(mob.m);
         if (map != null && mob.onMap) {
+            // ⚠️ Kabari klien SELAGI mob masih terdaftar di petaknya —
+            // sesudah `delBlock` tidak ada lagi cara mencari penontonnya.
+            // Tanpa ini mob yang mati hilang dari server tetapi TETAP
+            // TERGAMBAR di layar setiap pemain sampai mereka pindah peta:
+            // pertarungan yang berhasil terlihat seperti pertarungan yang
+            // tidak terjadi (Peringatan #157). Pola yang sama dipakai
+            // barang lantai (`FloorItemRegistry`: "clif_lookgone, selagi
+            // masih di petak").
+            MapServer.clientView.objectActed(mob, AKSI_MATI, 10, 0);
+            MapServer.clientView.objectRemoved(mob);
             map.delBlock(mob);
         }
     }
+
+    /**
+     * Nomor aksi "mob mati" yang dikirim tepat sebelum ia dihapus.
+     *
+     * <p>Di {@code monster.dna} aksi 0 adalah animasi MEMUDAR — itulah
+     * yang dimainkan klien sebagai kematian. Angkanya dikirim lewat
+     * {@code EV_OBJECT_ACTED} yang sudah ada, jadi tidak ada peristiwa
+     * baru di kabel.</p>
+     */
+    public static final int AKSI_MATI = 0;
 
     /**
      * moveghost_mob() (map/mob.c:1518) — mob melangkah satu petak ke arah

@@ -1953,9 +1953,10 @@ ekor daftar dengan nomor lanjutan.
    `740.wav` — nomor 11, 15, 16, 126–134 dan puluhan lain tidak ada,
    sementara konten tetap memanggilnya (`playSound`, 632 pemakaian).
    Nomor tanpa berkas harus berarti **DIAM**; melempar di situ berarti satu
-   skrip quest mematikan kliennya. Hal yang sama untuk musik: `MapBGM` 902
-   dipakai **9.799 dari 9.850 peta** dan tidak punya berkas — itu nilai
-   bawaan basis data, bukan nomor lagu.
+   skrip quest mematikan kliennya.
+   ⚠️ Peringatan ini sempat menyeret musik ikut serta ("`MapBGM` 902 nilai
+   bawaan tanpa berkas") — itu **SALAH**; 902 sebuah daftar putar. Lihat
+   #146.
 
 144. **Peristiwa berulang harus DIHITUNG, bukan dibandingkan nilainya.**
    Pemutar bunyi versi pertama memainkan `EV_SOUND` hanya bila nomornya
@@ -1975,3 +1976,542 @@ ekor daftar dengan nomor lanjutan.
    jalan sebelumnya, dan memungut ikut menyapunya sehingga hasilnya lebih
    banyak — menuntut kesamaan persis membuat gerbang merah karena
    kebersihan dunia, bukan karena fiturnya.
+
+146. **"Tidak ada berkasnya" belum tentu "tidak ada" — cari dulu berkas
+   berjenis lain dengan nomor yang sama.** `MapBGM` 902 dipakai **9.799
+   dari 9.850 peta**, dan tidak ada `00000902.mp3` di tujuh arsip musik.
+   Kesimpulan pertama — "itu nilai bawaan basis data, artinya peta ini
+   diam" — ditulis ke gerbang, Javadoc, CLAUDE.md, dua README, dan memori.
+   Semuanya salah: yang ada adalah **`00000902.lsr`**, sebuah DAFTAR PUTAR.
+   Pemindainya hanya melihat `.mp3` dan melewatkan 52 berkas daftar putar
+   (`.lst` 801–814/870–893, `.lsr` 901–914/970–993) yang duduk di arsip
+   yang sama.
+   Isinya teks biasa berakhiran CRLF — baris pertama jumlahnya, lalu nomor
+   lagunya: `00000902.lsr` = `10` lalu `116 117 2 103 117 103 135 121 103
+   136`, dan **kesepuluhnya ada** di antara 66 MP3.
+   ⚠️ Ongkos kesalahan ini bukan satu peta yang diam, tapi **hampir
+   seluruh dunia** yang diam — cacat paling besar yang bisa lolos sambil
+   tetap membuat semua gerbang hijau, karena gerbangnya sendiri yang
+   menuliskan kesalahannya sebagai "perilaku yang benar" (`check("MapBGM
+   bawaan 902 memang TIDAK punya lagu", !lagu.punya(902))` — hijau, dan
+   menjaga kesunyian).
+   Yang membongkarnya bukan gerbang mana pun, melainkan satu kalimat
+   pemakai: *"MapBGM maksudnya lagu background saat kita berada di dalam
+   map tertentu"*. Angka 9.799 seharusnya sudah cukup mencurigakan sejak
+   awal: **nilai yang dipakai hampir seluruh basis data adalah nilai yang
+   paling berarti, bukan yang paling boleh diabaikan.**
+   ⚠️ Akibatnya untuk pemutar: lagu daftar putar **tidak boleh di-loop**.
+   Yang di-loop hanya nomor yang memang satu lagu; daftar putar berpindah
+   ke lagu berikutnya lewat `Music.setOnCompletionListener`.
+   ⚠️ Yang masih TAFSIR, bukan bukti: `.lst` diputar berurutan dan `.lsr`
+   acak. Itu dibaca dari namanya (*list* vs *list random*); isinya sendiri
+   identik — daftar nomor lagu.
+
+147. **Kontrol negatif yang perintahnya sendiri gagal akan "lulus" tanpa
+   menguji apa pun.** Untuk membuktikan nomor `MapBGM` yang bukan lagu
+   memang berarti diam, `MapBGM` peta 362 disetel ke 777 lewat
+   `SQL="mysql -h … -N"` lalu `$SQL -e "UPDATE …" 2>/dev/null`. Di **zsh**
+   isi variabel TIDAK dipecah jadi kata — `$SQL` menjadi satu nama perintah
+   yang tidak ada, dan `2>/dev/null` menelan keluhannya. Basis datanya tak
+   pernah berubah, kliennya tetap memutar daftar 902, dan kontrol
+   negatifnya nyaris dicatat sebagai "server ternyata tidak membaca
+   `Maps`".
+   ⚠️ Aturannya: **kontrol negatif harus membuktikan dulu bahwa keadaannya
+   benar-benar berubah** — di sini satu `SELECT MapBGM` yang menjawab 777
+   sebelum kliennya dijalankan. Dan jangan pernah `2>/dev/null` pada
+   perintah yang menyiapkan keadaan uji; yang boleh didiamkan hanya
+   peringatan sandi di baris perintah (`grep -v Warning`).
+   Keluarga yang sama dengan #127 (fixture yang salah menyamar jadi cacat
+   kode).
+
+148. **Memulihkan fixture uji dengan menulis saja TIDAK cukup — bacalah
+   kembali.** `livetest` merah satu kali dari enam dengan dua pemeriksaan
+   pertukaran, lalu hijau lima kali berturut-turut. Sebabnya berlapis:
+   - Langkah `mantra` merapal slot 9, yang ternyata **`gateway`** —
+     mantra yang MEMINDAHKAN pemain ke gerbang kota. Sejak #140
+     (`player:warp` benar-benar bekerja) rapalan itu benar-benar
+     memindahkan Adrielle ke Buya (peta 330), dan seluruh langkah
+     sesudahnya diam-diam berjalan di peta yang salah. Uji itu hanya
+     menuntut "sambungan tidak putus", jadi tidak ada yang merah.
+   - `pulihkanFixture()` menuliskan peta 362 lewat SQL tepat setelah
+     `churn()` — delapan sambung-putus dalam satu detik. Simpanan karakter
+     berjalan lewat char server dan mendarat di MySQL **beberapa ratus
+     milidetik setelah** map server mencatat "simpan + logout", jadi
+     kadang-kadang simpanan lama menimpa pemulihan yang baru. Pemain uji
+     lalu berada di dua peta berbeda dan `Exchange.start` menolak diam-diam
+     (`tsd.m != sd.m`), sehingga yang merah adalah pertukaran — fitur yang
+     sama sekali tidak bersalah.
+   ⚠️ Aturannya: **penyiapan uji yang menulis ke basis data harus dibaca
+   ulang sampai nilainya menempel** (di sini: dua bacaan berturut-turut,
+   berjarak 400 ms, delapan percobaan) — dan jeda antar percobaan harus
+   NYATA; delapan percobaan yang selesai dalam sekejap sama saja dengan
+   tidak menunggu. Keluarga yang sama dengan #147: penyiap yang gagal
+   diam-diam membuat langkah SESUDAHNYA merah dengan alasan yang salah.
+   Perpindahan gateway itu sendiri kini jadi pemeriksaan tersendiri —
+   yang tadinya efek samping tak terlihat sekarang harus benar-benar
+   terjadi.
+
+149. **Pindah peta di server yang SAMA tidak pernah memberi tahu klien
+   petanya berganti.** Hanya `playerEnteredWorld` yang mengirim
+   `EV_SELF_MAP`; `Pc.warp` cuma memanggil `playerViewRefreshed`
+   (`EV_SELF_REFRESH` + sapuan sekeliling). Akibatnya klien terus
+   memegang berkas `.map` yang LAMA: nama peta, tembok, dan — sejak K5 —
+   musiknya salah, sementara raganya berjalan di peta baru. Ini mengenai
+   **portal biasa** (`checkWarpTile` → `Pc.warp`) dan setiap
+   `player:warp` di skrip, jadi hampir seluruh perpindahan dalam
+   permainan; satu-satunya yang benar selama ini adalah perpindahan antar
+   map server, karena di sana klien menyambung ULANG dan otomatis masuk
+   dunia lagi.
+   ⚠️ Kenapa tidak ketahuan: `livetest` tidak pernah melewati portal
+   sesama server, dan satu-satunya perpindahan yang dilaluinya —
+   `gateway` di langkah mantra — tidak diperiksa sama sekali. Ditemukan
+   dari arah yang tidak disangka: menyelidiki fixture yang tertimpa
+   (#148), lewat `[PC] Adrielle pindah ke 330:5,4 (ganti peta)` di log
+   DEBUG yang tidak punya pasangan apa pun di sisi klien.
+   Perbaikannya `ClientView.playerMapChanged(sd)`: peta, posisi, lalu
+   sapuan — urutan yang sama dengan masuk dunia, dan alasannya sama
+   (apa pun yang merujuk petak harus datang sesudah klien tahu petak
+   mana yang berlaku). Kontrol negatif: dengan perbaikan dibalik,
+   `livetest` merah tepat di dua pemeriksaan baru itu dan mencatat
+   "peta 362 -> 362" untuk pemain yang sebenarnya sudah di Buya.
+
+150. **Klien hanya bisa menggambar peta yang LEBIH KECIL daripada layar —
+   dan tidak ada yang tahu selama berminggu-minggu.** Petak digambar
+   terbalik (`(ys-1-y)*T`, karena sumbu Y libGDX naik sedangkan sumbu peta
+   turun), tetapi kameranya memakai baris peta apa adanya
+   (`world.y*T + T/2 - tinggi/2`). Dua ruang koordinat yang berbeda.
+   ⚠️ Kenapa lolos: seluruh pengujian selama ini memakai **kedai 30×14**
+   (672 px, lebih pendek daripada layar 768 px) dan peta luring bawaan.
+   Peta yang muat seluruhnya tetap tampak ke mana pun kameranya menghadap,
+   jadi kesalahannya **tidak punya akibat yang bisa dilihat**. Baru di
+   Buya 146×156 layarnya **hitam total**: kamera menatap ±6.500 px di atas
+   petak yang sebenarnya digambar. Tekstur tetap dimuat (334 buah), jadi
+   bahkan penghitung aset pun tampak sehat.
+   ⚠️ Klik tetikus punya cacat yang sama dan saling menutupi: ia
+   membalikkan rumus kamera yang salah itu, jadi ia "konsisten" dengan
+   kamera tetapi tidak dengan yang tergambar.
+   Perbaikannya `org.rtk.world.Kamera` — satu kelas tanpa GL yang memegang
+   kamera, jendela petak, dan penerjemahan klik sekaligus, dijaga
+   `gfxtest` (15 → 28 pemeriksaan) dengan peta BESAR lebih dulu dan satu
+   pemeriksaan yang mengabadikan rumus lama: ia membuang petak pemain ke
+   luar layar di peta kota, dan tidak ketahuan salah di peta kecil.
+   ⚠️ Pelajaran ukuran fixture: **fixture yang kecil menyembunyikan
+   seluruh keluarga cacat skala.** Kedai dipilih karena dekat dan sepi —
+   dan justru itu yang membuatnya buta.
+
+151. **Gambar tangkapan adalah satu-satunya saksi untuk lapisan gambar.**
+   `livetest` membuktikan portal biasa bekerja di lapisan protokol
+   (peta 330 sampai, ukuran benar, petak tujuan benar, musik ikut) — dan
+   pada saat yang sama layarnya HITAM (#150). Uji protokol tidak pernah
+   bisa melihat itu.
+   Karena itu klien punya `--jalan x,y`: berjalan sendiri ke satu petak
+   sesudah masuk dunia (BFS di `MapFile` yang sama dengan yang dipegang
+   server, dengan daftar petak yang ternyata dihuni NPC — pelajaran #111
+   terulang di sisi klien), berhenti begitu petanya berganti, lalu
+   `--tangkap` memotretnya. Menekan tombol tidak bisa diskripkan; tanpa
+   jalan ini portal hanya bisa dibuktikan setengah. Keluarga yang sama
+   dengan #126 (`--layar`) dan #133 (`--bagian`).
+   ⚠️ Sekaligus: hitungan bingkai sebelum memotret harus MULAI sesudah
+   perjalanannya selesai — kalau tidak, gambarnya diambil di peta
+   keberangkatan dan membuktikan hal yang salah.
+
+152. **Peta yang tampak KOSONG belum tentu salah gambar — periksa datanya
+   dulu.** Sapuan potret 14 peta (Peringatan #151) menghasilkan satu layar
+   hitam di `Ancient Grounds` (30995, 250×250) pada petak tengah
+   (125,125), dengan `tekstur 0`. Itu bukan cacat: peta itu hanya punya
+   **1.290 petak berisi dari 62.500**, dan semuanya berkumpul di sudut
+   (x 174–249, y 0–17). Dipotret di (211,8) ia menggambar gua lengkap
+   dengan tiang, kristal, dan guci.
+   ⚠️ Cara membedakannya dalam dua menit: baca berkas `.map` langsung —
+   `TK030995.map` 1.290 petak berisi, `TK000330.map` 22.774 dari 22.776.
+   Menyimpulkan "penggambarnya rusak" dari satu layar hitam adalah
+   kesalahan yang sama seperti #146 (menyimpulkan "tanpa musik" dari
+   nomor yang tidak punya berkas `.mp3`): **yang tidak ada di data tidak
+   bisa muncul di layar, dan itu bukan kesalahan siapa-siapa.**
+   ⚠️ `256blank.map` (65.536 petak, semuanya nol) sudah pernah menipu
+   `gfxtest` dengan cara yang persis sama.
+
+153. **Karakter yang tersimpan di peta yang TIDAK ADA di tabel `Maps`
+   terkunci selamanya.** Ditemukan tidak sengaja saat sapuan potret
+   (#151): satu karakter uji sempat disimpan di peta 32000 — berkas
+   `.map`-nya ada di folder `maps/`, tetapi barisnya tidak ada di tabel
+   `Maps`. Akibatnya berantai: `enterWorld` melihat petanya tidak dimuat →
+   `transferKeServerLain` tidak menemukan pemiliknya → `false` →
+   `[MAP] <nama> gagal ditempatkan di dunia — koneksi ditutup`. Karena
+   pemain tidak pernah masuk dunia, **posisinya tidak pernah tersimpan
+   ulang**, jadi percobaan berikutnya gagal dengan cara yang sama. Persis
+   jalan buntu yang #109 bilang ingin dihindari — tapi hanya ditutup untuk
+   peta milik server LAIN, tidak untuk peta yang tidak dikenal siapa pun.
+   ⚠️ Cara masuknya bukan hal aneh: **berkas peta ada ≠ peta terdaftar.**
+   Folder `maps/` memuat 3.286 berkas sedangkan tabel `Maps` mengenal jauh
+   lebih sedikit; menyalin nomor peta dari nama berkas (persis yang
+   dilakukan penyiapan uji ini) sudah cukup untuk mengunci sebuah
+   karakter.
+   ✅ **Diperbaiki 29 Agu 2026:** pemain terdampar dijatuhkan ke **inn
+   kebangsaannya**, daftar yang sama dengan `Player.returnToInn` di
+   `luascript/Accepted/player.lua` — rimba 1002, Kugnae 38/37/2, Buya
+   362/332/361, Nagnang 2501–2505, dipilih acak di antara yang benar-benar
+   DIMUAT server ini. Diulang di Java (bukan dipanggil dari Lua) hanya
+   karena penyelamatan ini terjadi **sebelum** pemain ada di dunia,
+   sehingga `player:warp` belum bisa dipanggil sama sekali.
+   ⚠️ Kebangsaan > 3 dijepit ke 3 persis seperti skripnya
+   (`if country > 3 then country = 3 end`), sehingga cabang "4 Han" di
+   bawahnya tidak pernah tercapai — ditiru apa adanya.
+   ⚠️ Yang dijaga gerbang bukan cuma "kali ini bisa masuk", melainkan
+   bahwa penyelamatannya **MENEMPEL**: `livetest` keluar lalu masuk lagi
+   dan membaca `ChaMapId` dari basis data. Server yang menyelamatkan
+   pemain tanpa menyimpannya tetap mengunci karakter — cuma terkuncinya
+   tertunda satu sesi.
+
+154. **Barang yang tergeletak di lantai berubah jadi TEMBOK.** Pemeriksaan
+   langkah pemain menyapu SELURUH isi petak
+   (`map.objectsAt(nx, ny)` → `blocksMovement`), sedangkan C hanya menyapu
+   tiga jenis blok (`clif.c:5036-5038`):
+   ```c
+   map_foreachincell(clif_canmove_sub, sd->bl.m, dx, dy, BL_PC,  sd);
+   map_foreachincell(clif_canmove_sub, sd->bl.m, dx, dy, BL_MOB, sd);
+   map_foreachincell(clif_canmove_sub, sd->bl.m, dx, dy, BL_NPC, sd);
+   ```
+   `BL_ITEM` **tidak pernah ikut**. Akibatnya bukan sekadar tersangkut:
+   `onPickup.lua` mengambil barang di petak tempat pemain **berdiri**
+   (`getObjectsInCell(player.m, player.x, player.y, BL_ITEM)`), jadi
+   barang yang tidak bisa diinjak juga **tidak bisa dipungut selamanya**.
+   Satu-satunya barang yang masih bisa dipungut adalah yang dijatuhkan
+   sendiri, karena pemainnya sudah berdiri di situ.
+   ⚠️ Kenapa lolos berbulan-bulan: `livetest` menjatuhkan lalu memungut
+   **tanpa berpindah petak** — justru karena #145 mengajarkan "jangan
+   melangkah sebelum memungut". Pelajaran yang benar untuk satu cacat
+   menutupi cacat yang lain.
+   Ditemukan dari arah yang jauh: gerbang dua-server merah di
+   `c3: pemain bisa berjalan pulang ke petak semula`, berhenti di (6,4)
+   padahal dituju (5,4) — petak (5,4) menyimpan barang yang dijatuhkan
+   langkah uji SEBELUMNYA dalam jalan yang sama.
+   Dijaga `cliftest` (langkah ke petak berisi barang + kontrol negatif
+   "NPC biasa TETAP menghalangi") dan `livetest` (keluar dari petak
+   berbarang lalu MASUK LAGI, baru dipungut).
+
+155. **Warna varian mob: mekanismenya kini dipahami, aturannya BELUM.**
+   Empat hal yang sebelumnya kabur sekarang pasti:
+   - Ladang `u16` di `monster.dna` **memang indeks palet** — dibuktikan
+     lewat berkas kecil pasangannya: `RIDINGS.DNA` punya 53 rekaman
+     bernilai 2..39 dan `RIDINGS.PAL` berisi **tepat 40 palet**. Keraguan
+     lama ("mungkin bukan indeks blok") dicabut.
+   - Palet DNA itu **benar untuk mob berwujud manusia** (ninja merah dan
+     biru sama-sama tepat di palet 0 — yang membedakan warnanya adalah pita
+     indeks di SPRITE-nya, bukan paletnya). Yang hijau hanyalah BINATANG,
+     karena sprite binatang memakai pita indeks yang sempit (±48..55) dan
+     pita itu memang hijau di palet umum. Jadi "harimau hijau" bukan bukti
+     dekoder rusak.
+   - `MobLookColor` bermakna **global**: dari nama mob, 10 = hitam (5
+     look), 11/29 = putih, 17/24 = biru, 22 = hijau, 30 = emas, 31 = merah.
+   - Empat palet **terverifikasi mata di 4–5 sprite berbeda**: putih(29) →
+     **337**, emas(30) → **339**, hitam(10) → **299**, merah(31) → **341**.
+   ⚠️ Keempatnya cocok dengan `palet = 279 + 2 × warna`, dan jangkauan
+   `MobLookColor` (0..53) memetakan tepat ke palet 279..385 — tetapi rumus
+   itu **GAGAL** untuk `blue_doe` (17→313 tergambar merah), `green_doe`
+   (22→323 biru), dan `orange_doe` (20→319 merah jambu). Empat benar dan
+   tiga salah **bukan** aturan yang ditemukan; menuliskannya ke penggambar
+   berarti mengunci tebakan — kesalahan #146 yang sudah dibayar mahal.
+   ⚠️ Yang juga sudah dicari dan TIDAK ADA: tabel statis di EXE klien.
+   Ketiga binari tidak dikemas (entropi `.text` 6,0) dan tak satu pun
+   memuat 337 diikuti 339 sebagai u16 maupun u32. Seluruh entri `.tbl` di
+   249 arsip juga sudah didaftar: satu-satunya tabel warna adalah
+   `haircol.tbl` milik karakter (TEKS, 131 baris = gaya rambut → warna
+   bawaan), bukan milik mob.
+   ⚠️ Kecurigaan yang harus diuji lebih dulu: `Origin Nexia/Data` memuat
+   **tiga** `mon*.dat` dengan `monster.dna` berbeda (2.013 vs 2.016 look)
+   dan `monster.pal` ber-md5 berbeda walau ukurannya sama — server privat
+   mengubah aset mob. Kalau nomor warna di basis data dirancang untuk
+   palet yang lain, ketidakcocokan biru/hijau/jingga itu justru buktinya.
+   Alat penyelidikan lengkap + tabel disproof: `RTK-client/tools/uji/`
+   (`MobPal`, `PalGrid`, `DnaGrid`, `PalSolve`, `PalScan`, `PalUji`,
+   `PalCari`, `PalIris`, `PalPapan`, `WarnaMob` + `README-palet-mob.md`).
+
+   **Putaran kedua (sore hari yang sama) — tiga hasil NEGATIF yang tetap
+   kemajuan:**
+   - **Aset bukan penyebabnya.** `monster.pal` di ketiga kumpulan aset
+     hanya berbeda **4 blok** (6, 7, 12, 15), semuanya di wilayah palet
+     bawaan; bank warna 279–385 identik byte per byte. Dugaan "DB dirancang
+     untuk aset lain" gugur.
+   - **Tidak ada rumus linear.** Penyisiran SELURUH `palet = A + B × warna`
+     (A 0..651, B 0..8) terhadap **54 mob bernama-warna di 23 sprite**
+     memberi hasil terbaik **30/54**, sementara palet TETAP (B = 0) sudah
+     20/54 — dan calon `279 + 2×warna` hanya 16/54. Keempat jangkar yang
+     cocok itu kebetulan.
+   - **Penampilan tidak menentukan palet secara unik.** Pita indeks
+     binatang (49..55) IDENTIK di banyak palet berturut-turut (293–299,
+     326–329, 331–336, 346–349). Jadi "kelinci ini putih" menyisakan
+     belasan palet yang mungkin — berburu jangkar satu-satu memang tidak
+     bisa menutup masalahnya.
+   ✅ **DIPASANG (keputusan pemakai):** kedua warna yang terbukti kini
+   dipakai klien — `10 -> 318`, `29 -> 337`, sisanya tetap memakai palet
+   bawaan look-nya (`org.rtk.asset.MobPalet`). Dijaga `assettest` (termasuk
+   bukti bahwa 318 menggambar hitam di kelima sprite dan 337 putih di
+   kelimanya, plus kontrol negatif) dan `nettest` (warna sampai lewat blok
+   benda), lalu dibuktikan di klien sungguhan: White Rabbit di Kugnae kini
+   putih dan Rat di Vale kini hitam, sementara mob berwarna lain tidak
+   berubah sama sekali.
+   ⚠️ Warna ikut jadi kunci cache tekstur — tanpa itu harimau hitam dan
+   harimau biasa akan berbagi satu gambar, yang mana pun digambar duluan.
+
+   **Putaran ketiga — penggolong diperbaiki, dua jangkar mengeras:**
+   Penggolong kini memakai **median berbobot menurut terang** atas indeks
+   palet yang benar-benar dipakai sprite (garis tepi selalu lebih sedikit
+   daripada badan, jadi median mendarat di badan — untuk mob putih maupun
+   hitam). Hasilnya cocok dengan mata, dan dua jangkar jadi keras:
+   **warna 10 → palet 318** dan **warna 29 → palet 337**, masing-masing
+   terbukti di LIMA sprite berbeda. Selisihnya 19 untuk selisih warna 19,
+   menggoda ke `palet = warna + 308` — tetapi rumus itu langsung gugur di
+   emas (30 → 338 ternyata perak).
+   Penyisiran linear DIULANG dengan penggolong yang benar: terbaik tetap
+   **30/54** sementara palet TETAP sudah **22/54**. Sekarang penyangkalan
+   itu sah.
+   ⚠️ **Yang membuat masalah ini keras, dan itu temuan tersendiri:**
+   papan periksa (BARIS = sprite, KOLOM = palet, alat `PalPapan`)
+   memperlihatkan **beberapa palet sama-sama benar di mata** untuk satu
+   warna — emas bisa 228, 301, 339, atau 371; biru bisa 302, 355, 495,
+   atau 533. Data saja memang tidak menentukan pemetaannya; bukan alatnya
+   yang kurang. Gambarnya di `~/Pictures/rtk-potret/palet-mob/`.
+   ⚠️ Pelajaran alat: penggolong warna otomatis yang memakai "warna
+   dominan" MENIPU — sprite putih pun didominasi piksel garis tepi yang
+   hitam, dan palet 339 yang jelas emas di mata digolongkan "hijau" untuk
+   satu sprite. Kendala yang benar untuk putaran berikutnya ada di
+   `PalIris`: satu warna harus memakai SATU palet untuk SEMUA sprite yang
+   memakainya — tetapi penggolongnya harus diperbaiki dulu (bandingkan
+   RAMPA di pita 49..55, bukan satu warna dominan).
+
+156. **Lebih dari separuh objek peta digambar di tempat yang salah.**
+   `SObj.tbl` menyusun pohon, bangunan, dan perabot dari beberapa frame
+   setinggi satu petak — tetapi **tiap frame menyimpan kotak batasnya
+   sendiri** di dalam petak itu (`48×32@(0,16)`, `22×12@(26,36)`, …),
+   berjangkar dari KIRI-ATAS sementara `batch.draw` berjangkar dari
+   KIRI-BAWAH. Penggambar lama menempelkan semua frame di sudut petak.
+   Akibatnya: meja melayang tanpa kaki, tungku terpotong, kanopi pohon
+   meleset dari batangnya.
+   ⚠️ Skalanya: dari 40.869 frame objek yang dipakai seluruh peta,
+   **23.398 (57%) tidak memenuhi petaknya** — jadi ini bukan kasus pinggir,
+   melainkan mayoritas.
+   Rumusnya kini di `org.rtk.world.Kamera.posisiObjek` (satu tempat, tanpa
+   GL) dan dijaga `gfxtest`: ada frame berjangkar (kalau tidak, jangkarnya
+   tak perlu ada), tidak ada jangkar yang keluar petak, frame penuh tidak
+   bergeser, frame 39 px naik 9 px, pernik kecil bergeser mendatar, dan
+   frame ke-2 objek tinggi naik dua petak.
+   ⚠️ Ditemukan pemakai dari gambar in-game, bukan oleh gerbang mana pun —
+   `gfxtest` memeriksa bahwa frame objek ADA dan bisa dibongkar, tidak
+   pernah DI MANA ia digambar. Keluarga yang sama dengan #150.
+
+157. **Mob tidak bisa dibunuh: rantai pertarungan putus di EMPAT tempat.**
+   Menyerang mob berulang kali tidak pernah mengurangi nyawanya. Sebabnya
+   berlapis, dan tiap lapis menyembunyikan lapis berikutnya:
+   - `hitCritChance.lua:19` membaca `block.miss` — ladang itu **tidak
+     terikat** di `User`, jadi skripnya gagal ("attempt to compare nil with
+     number"), `critChance` tidak pernah disetel, dan `Combat.mobDamage`
+     berhenti di `if (sd.critChance <= 0) return`;
+   - `hitCritChance.lua:33` hanya menghitung peluang kena bila
+     `block.blType == BL_PC` — `blType` juga tidak terikat, jadi seluruh
+     cabang pemain dilewati;
+   - serah-terima angkanya (`block.damage`, `block.critChance`,
+     `minSDam`/`maxSDam` — huruf besar D persis seperti di skrip) tidak
+     terikat sama sekali, sehingga tulisan Lua hilang dan bacaan Java nol;
+   - kelas **Mob** tidak punya `sendHealth`, `hasDuration`, `setDuration`,
+     `getDuration`, `miss`, `damage`, `critChance` — padahal
+     `mob_ai_basic.on_attacked` memanggil `mob:sendHealth(...)` dan
+     `Mob.checkIfCast` (mob.lua:419) memanggil `mob:hasDuration(...)`.
+   - `swingDamage.lua:27` membaca `player.rage`, `hitCritChance` membaca
+     `target.IsBoss` (huruf besar, persis seperti di skrip) dan
+     `target.sleep` — ketiganya tidak terikat, jadi kerusakannya tetap 0
+     meski pukulannya sudah mengenai;
+   - dan yang terakhir: `MobRegistry.kill()` **menyetel keadaan mati lalu
+     mengeluarkan mob dari petaknya tanpa mengabari siapa pun**. Mobnya
+     mati di server dan tetap tergambar di klien selamanya.
+   **SELESAI.** Kerusakan kini 228/219/225 per pukulan, XP masuk, dan
+   `kill()` menyiarkan `objectActed` (aksi 0) lalu `objectRemoved`
+   **selagi mob masih terdaftar di petaknya** — urutan itu penting: yang
+   sudah dilepas dari petak tidak punya penonton lagi.
+   Dijaga `cliftest` (kematian mob menyiarkan `objectRemoved` ke klien) dan
+   dibuktikan klien sungguhan: `--demo` mencetak "DEMO: mob MATI".
+   ⚠️ Alat yang membongkar tiga lapis terakhir adalah **diagnostik
+   `[ATTR-KOSONG]`** di `Bindings.lapor` — satu baris DEBUG per atribut yang
+   dibaca skrip tetapi tidak terikat, sekali seumur proses. Atribut yang
+   hilang tidak melempar; ia menjawab nil dan diam.
+   ⚠️ Pelajaran alat: `luaaudit` buta terhadap ini karena ia memeriksa nama
+   METHOD **secara global**, bukan per KELAS — `sendHealth` "ada" (di kelas
+   pemain), jadi panggilan dari mob tidak pernah dilaporkan. Keluarga yang
+   sama dengan #120 (atribut) dan #136.
+
+158. **Seluruh animasi efek diterima klien lalu DIBUANG.** Server sudah
+   lama mengirim `EV_OBJECT_ANIMATION` (efek menempel di satu benda) dan
+   `EV_OBJECT_ANIMATION_AT` (efek di satu petak) — skrip memanggilnya lewat
+   `sendAnimation` / `sendAnimationXY` ratusan kali — tetapi **kedua kait di
+   `ServerEvents` klien kosong**. Akibatnya tidak ada satu pun animasi
+   mantra, percikan pukulan, atau kilatan yang pernah terlihat. Keluarga
+   yang sama dengan emosi (#133) dan `.ID` (#120): peristiwa yang sampai
+   tetapi tidak dipakai sama saja dengan peristiwa yang hilang.
+   **Formatnya, dan mengapa `effect.tbl` tidak dibutuhkan:**
+   `EFFECT.FRM` = `u32 jumlahFrame` lalu satu `u32` per frame berisi
+   **nomor efek pemiliknya** — 7.755 frame terbagi ke **405 animasi**.
+   `EFFECT.PAL` berisi **405 blok palet, satu untuk tiap animasi**, jadi
+   pewarnaannya langsung: efek N memakai palet N. `EFFECT0.epf`…
+   `EFFECT38.epf` memuat gambarnya, 200 frame per arsip.
+   `effect.tbl` yang TERACAK (keluarga `item.tbl`) tidak perlu dipecahkan
+   sama sekali.
+   ⚠️ **Tiga animasi framenya TERPECAH** (bukan satu rentang berurutan);
+   menyimpan hanya (mulai, panjang) akan menelan frame milik animasi lain
+   di tengah jalan, jadi daftar framenya disimpan utuh.
+   ⚠️ **Jangkar frame efek BUKAN jangkar sosok**: nilainya besar dan
+   negatif (mis. 69×146 dengan kiri −34, atas −126) — geseran dari titik
+   ledak, bukan dari kaki sosok. Memakai rumus `gambarSosok` menaruhnya
+   272 px di bawah petak, di luar layar. Sekarang efek digambar BERPUSAT
+   di petak sasaran lalu digeser jangkarnya; itu tafsir yang cukup untuk
+   terlihat benar, belum tentu persis seperti klien lama.
+   Dijaga `assettest` (7.755 frame, 405 animasi, satu palet per animasi,
+   animasi 90 & 228 punya frame, kontrol negatif nomor 9999) dan
+   `livetest` (merapal benar-benar MENGIRIM animasi ke klien — nomor 90).
+   Alat mata: `./run.sh client --efek N`.
+
+159. **Animasi PUKULAN dan KEMATIAN masih hilang — sebabnya bukan efek,
+   melainkan dua hal lain.** Sesudah #158 animasi mantra terlihat, tetapi
+   pukulan pemain tidak, dan mob tidak pernah mati. **SELESAI** — keduanya
+   kini berjalan: kematian mob lewat #157 (rantai serangan sampai
+   `MobRegistry.kill` menyiarkan `objectRemoved`), pukulan pemain lewat
+   #160 dan #161.
+   ⚠️ **Catatan pertama di sini SALAH dan sudah dicabut.** Ia menyimpulkan
+   bahwa 12 angka di tiap blok `Motion.tbl` adalah **nomor frame**
+   (`NormalWalkNorth` = frame 55, 58, 50, …). Angkanya memang terlihat
+   seperti nomor frame — badan punya 80 frame, jadi 50-an muat. Yang
+   membongkarnya: **tiap blok memuat angka yang SAMA PERSIS, hanya
+   urutannya berbeda** — dan himpunannya {50…62} adalah id ketigabelas
+   lapisan di `Layer.tbl`. Lihat #160.
+
+160. **`Motion.tbl` bukan tabel frame — ia URUTAN LAPISAN. Tabel frame
+   yang sesungguhnya ada di `*.dsc`, dan berbeda TIAP WUJUD.**
+   `Motion.tbl` (24.109 byte) memuat 68 gerakan bernama: `NormalWalk`,
+   `WeaponWalk`, `Riding`, `Swing`, `Pierce`, `Shoot`, `Get`, `Spell`
+   (masing-masing empat arah, urut utara-timur-selatan-barat), lalu
+   `HandToMouth`, `Bow`, `Victory`, sebelas emosi, `Dance`, `Cold`,
+   `Kiss`, `NormalStandBy`, `WeaponStandBy`, `Swing6`, `Test`. Tiap
+   gerakan punya beberapa **langkah**, dan tiap langkah menyimpan urutan
+   gambar ketigabelas lapisan (id 50…62 dari `Layer.tbl`) — itulah yang
+   menentukan pedang tergambar di depan badan ke satu arah dan di
+   belakangnya ke arah lain.
+   ```
+   char[22] "MotionStandard", u8 versi, u32 68
+   68 × { u32 indeks, char[21] nama, i32 −1, u32 jumlahLangkah,
+          jumlahLangkah × { u16 0xFFFF, 30 × i32 idLapisan (−1 = kosong) } }
+   ```
+   Frame-nya ada di `*.dsc`, di belakang kepala tiap wujud yang selama ini
+   dilewati begitu saja:
+   ```
+   wujud : u32 indeks, u32 ???, u32 frameMulai, u32 jumlahFrame, 18 byte,
+           lalu gerakan-gerakan:
+   gerak : u32 nomorGerak (naik, < 68), u32 ??? , u32 jumlahLangkah,
+           jumlahLangkah × { u32 frame, u8 punyaDurasi, u32 durasi }
+   ```
+   ⚠️ **Rumus `arah × 3 + langkah` yang dipakai penggambar selama ini
+   benar untuk BERJALAN dan salah untuk segalanya yang lain**, dan
+   tidak ada satu pun pesan yang memberitahu. Wujud badan 0 berjalan
+   dengan frame `[0,1,0,2]` (tiga frame, empat langkah — diam/kiri/diam/
+   kanan) tetapi **menebas dengan frame 24..25**, menunggang dengan
+   56..67, memungut dengan 52, merapal dengan 48. Lebih dari itu:
+   **351 dari 449 wujud badan menebas dengan frame 24, tetapi 40 wujud
+   memakai frame 48 dan puluhan lainnya tersebar** — rumus apa pun akan
+   benar untuk sebagian wujud dan salah untuk sisanya.
+   ⚠️ Ladang kedua tiap gerakan **bukan selalu −1**; pada sebagian wujud
+   ia berisi nomor. Menuntutnya −1 membuat pembacaan berhenti diam-diam
+   di tengah `Body.dsc` (wujud 354). Yang mengunci pembacaan adalah
+   **nomor gerak yang selalu naik dan selalu di bawah 68**.
+   ⚠️ Panjang entri wujud **berbeda-beda bukan hanya karena jumlah
+   gerakannya**: sebagian wujud badan menyimpan 67 gerakan, sebagian 43;
+   `Mantle` ada yang 28. Jarak tetap tidak berlaku.
+   Buktinya bukan "angkanya masuk akal": `Motion.tbl` **habis tepat** di
+   24.109 byte, dan **ketujuhbelas berkas `.dsc` habis tepat** di byte
+   terakhirnya. Dijaga `chartest` (termasuk kontrol negatif: tak ada satu
+   pun angka `Motion.tbl` di bawah 50, jadi ia mustahil nomor frame).
+
+161. **Klien MEMBUANG setiap nomor aksi di bawah 11 — jadi tidak pernah
+   ada animasi menyerang, merapal, memungut, atau makan.**
+   `EV_OBJECT_ACTED` membawa nomor aksi; `World.bendaBergerak` langsung
+   `return` untuk nomor < 11 karena hanya emosi (`emosi + 11`) yang
+   dipakai. Servernya mengirim aksi 1 tiap pukulan sejak awal — yang
+   tidak ada adalah penerimanya. Nomornya dari C (`clif_sendaction`
+   menuliskannya sendiri): 0 diam, 1 menyerang, 2 melempar, 3 menembak,
+   4/5 duduk (tapi pemanggilnya memakai 4 untuk MEMUNGUT dan 5 untuk
+   MENJATUHKAN), 6 mantra, 7/8 makan.
+   ⚠️ `waktu` pada paket itu adalah **jeda sampai boleh menyerang lagi**
+   (`attack_speed`, satuan 1/10 detik — 20 berarti 2 detik), **bukan
+   panjang animasinya**. Memakainya sebagai panjang animasi membuat satu
+   ayunan menggantung dua detik. Panjang animasi datang dari `.dsc`.
+   ⚠️ Gerakan menyerang harus **berhenti di langkah terakhir**, bukan
+   berputar seperti langkah kaki; ayunan dua frame yang berputar terlihat
+   seperti kejang.
+   ⚠️ Senjata yang **tidak punya** gerakan itu harus mundur ke gerakan
+   lain, bukan tidak digambar: busur tidak punya `Swing` sama sekali
+   (ia punya `Shoot`), dan senjata yang lenyap dari tangan tepat pada saat
+   pemiliknya menyerang adalah cacat yang sulit dilacak. Urutan mundurnya
+   menebas → menusuk → menembak → berdiri.
+   Dijaga `chartest` (pemilihan frame per arah, tahan-vs-berputar, busur
+   memakai gerakan menembaknya, kontrol negatif wujud tanpa data gerak)
+   dan `livetest` (server sungguhan mengabarkan aksi 1 atas nama pemain,
+   `World` menyimpannya, aksi 0 mengembalikan ke berdiri, emosi tetap
+   lewat jalurnya sendiri).
+
+162. **Mob yang mati LENYAP seketika: animasi kematiannya tidak pernah
+   punya kesempatan digambar.** Sesudah #157 mob benar-benar mati, tetapi
+   di layar ia langsung hilang. Sebabnya bukan di server: `MobRegistry.kill`
+   sudah menyiarkan `objectActed` aksi 0 **lalu** `objectRemoved`, dan
+   keduanya sampai. Yang salah adalah klien — `World.bendaHilang` menghapus
+   bendanya seketika, jadi tidak ada lagi yang bisa digambar.
+   **SELESAI.** Mob yang menerima aksi 0 lalu dihapus ditahan sebagai sosok
+   MEMUDAR (`World.sekarat`), digambar dari `monster.dna` **aksi 0**.
+   ⚠️ Aksi 0 bukan "satu frame yang diulang": look 1 menahan frame 24
+   (frame MATI, bukan frame berdiri) selama 1.000 ms lalu dua puluh langkah
+   50 ms; look 2000 memainkan frame 68, 69, 70 lebih dulu. Langkahnya
+   dipilih dari WAKTU yang sudah lewat, bukan ketukan tetap.
+   ⚠️ **`alpha` di `monster.dna` MENANJAK 0 → 255** sepanjang aksi memudar,
+   jadi ia kadar HILANG, bukan kadar tampak; sosoknya digambar dengan
+   opasitas `1 − alpha/255`. Membacanya terbalik membuat mob mati muncul
+   dari ketiadaan lalu berhenti utuh di tanah.
+   ⚠️ **1.179 dari 2.013 look punya aksi 0; 834 tidak.** Look tanpa aksi 0
+   harus langsung hilang, bukan digambar dengan frame berdirinya.
+   ⚠️ Nomor aksi **0 berarti dua hal berbeda**: untuk PEMAIN ia "berdiri
+   lagi" (C: `0 = Stand/None`), untuk MOB ia KEMATIAN. Yang membedakan
+   hanya jenis bendanya — dan menahan PEMAIN yang keluar dari pandangan
+   berarti hantu yang tidak pernah pergi.
+   ⚠️ Urutan siaran server ikut menentukan: `objectActed` harus dikirim
+   **selagi mob masih terdaftar di petaknya** (#157), karena klien
+   memutuskan "ini mob, bukan pemain" dengan menengok bendanya sendiri —
+   yang sudah dihapus tidak bisa ditengok lagi.
+   Dijaga `nettest` (keadaan `sekarat` + kontrol negatif: mob yang sekadar
+   keluar pandangan dan PEMAIN beraksi 0 tidak ikut memudar; dan aksi 0 di
+   `monster.dna`: durasi 2 detik, alpha 0 di awal dan >200 di ujung, frame
+   mati ≠ frame berdiri, look tanpa aksi 0 menjawab null). Dibuktikan klien
+   sungguhan: `~/Pictures/rtk-potret/klien-mob-mati.png` — bingkai 0155
+   mob roboh, 0156 pemain MENGAYUN, 0157 mob memudar, 0158 hilang.
+
+163. **Gerbang dua server merah bergantian di langkah "portal biasa" —
+   premis langkahnya sendiri yang salah.** `tools/uji-dua-server.sh`
+   MEMINJAMKAN peta **330 (Buya)** ke map server 1, dan 330 justru tujuan
+   portal `362(21,13)` yang dipakai langkah **portal sesama server**. Di
+   setup itu langkahnya menguji sesuatu yang memang tidak ada.
+   Merahnya berpindah-pindah dan itu yang membuatnya membingungkan: sekali
+   di `portal biasa memindahkan pemain`, sekali di `pengaju berhasil
+   berdiri tepat di depan sasaran`, sekali pemain tidak bergerak sama
+   sekali dari petak masuknya.
+   ⚠️ **Dua kegagalan yang berbeda sempat dilaporkan sebagai satu.**
+   "Tidak sampai ke petak portal" (perjalanannya yang gagal) dan "petanya
+   tidak berganti" (portalnya yang gagal) kini dua pemeriksaan terpisah —
+   menyatukannya membuat perjalanan yang gagal dilaporkan sebagai portal
+   yang rusak, dan menuntun ke tempat yang salah selama tiga putaran.
+   ⚠️ Akibat menginjak portal datang sebagai **peristiwa**, bukan seketika:
+   bisa peta baru, bisa `EV_TRANSFER`. Memutuskan sebelum peristiwanya
+   sampai membuat gerbang merah bergantian. Sekarang ditunggu dulu
+   (`tungguSenyap`, tanpa mencatat pemeriksaan).
+   Perbaikannya: langkah itu membaca `Maps.MapServer` untuk peta tujuan dan
+   **melewati dirinya** bila peta itu dilayani server lain — perpindahan
+   antar server sudah dijaga langkah C3 di gerbang yang sama. Sesudah itu
+   gerbang dua server hijau (237 pemeriksaan).
+   ⚠️ **Pelajaran kedua: `livetest` pada map server yang BARU HIDUP 30 detik
+   memberi merah palsu** (5 pemeriksaan, tersebar: aksi, berputar, portal).
+   Servernya masih memuat peta dan skrip. Beri waktu menetap dulu — merah
+   yang muncul sekali lalu hilang pada penjalanan berikutnya hampir selalu
+   ini, bukan cacat kode.

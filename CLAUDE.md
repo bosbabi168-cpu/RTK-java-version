@@ -1,7 +1,7 @@
 # CLAUDE.md — RTK-java-version
 
 Panduan sesi pengembangan. Baca file ini SEBELUM mengubah kode; README.md
-untuk gambaran lengkap; **`docs/PERINGATAN.md` untuk 122 jebakan yang sudah
+untuk gambaran lengkap; **`docs/PERINGATAN.md` untuk 159 jebakan yang sudah
 pernah memakan waktu** — wajib dibuka setiap kali menyentuh area yang
 disebut di sana.
 
@@ -85,7 +85,7 @@ selesai:
 ./run.sh maptest      # 3.544 berkas peta
 ./run.sh chartest     # serialisasi karakter
 ./run.sh worldtest    # dunia peta + penempatan pemain
-./run.sh cliftest     # paket, protokol RTK2, subsistem — 903 assertion
+./run.sh cliftest     # paket, protokol RTK2, subsistem — 914 assertion
 ./run.sh dbtest       # lapisan database — 234 assertion; butuh MySQL
 ./run.sh luaaudit     # pemeriksa statis 907 skrip Lua
 ./run.sh wiresync     # Wire.java sinkron dengan repo klien
@@ -106,7 +106,7 @@ luring):
 
 ```
 ./run.sh all
-(cd ../RTK-client && ./run.sh livetest 127.0.0.1 2001 Adrielle)   # 182 pemeriksaan
+(cd ../RTK-client && ./run.sh livetest 127.0.0.1 2001 Adrielle)   # 225 pemeriksaan
 ```
 
 **Gerbang KESEPULUH — dua map server.** Perpindahan pemain antar map
@@ -143,9 +143,15 @@ menahan port 2001, dan ujinya diam-diam berbicara dengan server yang salah
 ⚠️ `livetest` memakan barang karakter uji (Peringatan #102) — periksa
 kantong `Adrielle` bila langkah masuk dunia mendadak merah.
 ⚠️ `livetest` juga MEMINDAHKAN pemain uji (langkah C3 berjalan ke portal
-dan pulang lagi). Ia memulangkannya sendiri ke petak semula — kalau tidak,
-langkah "abaikan" dan "grup" gagal karena JARAK, bukan karena fiturnya
+dan pulang lagi; langkah mantra merapal `gateway` yang memindahkannya ke
+Buya). Ia memulangkannya sendiri ke petak semula — kalau tidak, langkah
+"abaikan" dan "grup" gagal karena JARAK, bukan karena fiturnya
 (Peringatan #110).
+⚠️ Pemulihan fixture itu **dibaca ulang sampai menempel** (Peringatan
+#148): simpanan karakter mendarat di MySQL beberapa ratus milidetik
+sesudah map server mencatat "simpan + logout", jadi menulis lalu langsung
+lanjut kadang ditimpa — dan yang merah adalah langkah pertukaran, fitur
+yang tidak bersalah.
 
 Tanpa MySQL: login/char server exit saat start (sama dengan C); map server
 dan gerbang selain `dbtest` tetap jalan. Setup MySQL lokal (jebakan
@@ -269,12 +275,12 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 
 | | |
 |---|---|
-| Gerbang luring | **11/11 hijau** (`cliftest` 903, `dbtest` 234, `elixirtest` 34, `carnagetest` 28, `sumotest` 21, `beachtest` 22) |
-| Gerbang klien sungguhan | `livetest` **201** pemeriksaan hijau — **seluruh 46 opcode kini pernah dikirim klien sungguhan** |
+| Gerbang luring | **12/12 hijau** (`cliftest` 914, `dbtest` 234, `elixirtest` 34, `carnagetest` 28, `sumotest` 21, `beachtest` 22) |
+| Gerbang klien sungguhan | `livetest` **225** pemeriksaan hijau — **seluruh 46 opcode kini pernah dikirim klien sungguhan** |
 | Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v11) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#145 → `docs/PERINGATAN.md` |
+| Peringatan tercatat | #1–#159 → `docs/PERINGATAN.md` (#146 MapBGM 902 = daftar putar; #149 pindah peta sesama server tidak pernah dikirim ke klien; #150 kamera klien salah ruang sehingga peta besar hitam; #152 peta kosong = datanya; ⚠️ #153 pemain terdampar kini dijatuhkan ke inn kebangsaannya; **#154 barang di lantai sempat jadi TEMBOK sehingga memungut mustahil**; #155 warna varian mob: mekanisme dipahami, aturan belum; #156 57% frame objek peta digambar salah tempat; ⚠️ **#157 MOB BELUM BISA DIBUNUH**; #158 animasi efek dulu dibuang klien — kini tergambar; #159 animasi pukulan menunggu Motion.tbl) |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug
@@ -282,6 +288,51 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 Goal: pemain masuk lewat klien RTK2, semua aksi pemain punya jalur, tidak
 ada jalur yang gagal senyap. Urutan = prioritas. Angka opcode C hanya
 rujukan perilaku — format kabelnya RTK2, bukan port byte.
+
+### Ringkasan (30 Agustus 2026)
+
+| Tahap | Isi | Status |
+|---|---|---|
+| **R1** | Aksi pemain tanpa jalur masuk RTK2 (16 butir audit `clif_parse`) | ✅ **SELESAI** 28 Agu 2026 |
+| **R2** | TODO di kode — nol tersisa di `src/` | ✅ **SELESAI** 28 Agu 2026 |
+| **R3** | Sisa Trek C: **C3** pindah antar map server terbukti pulang-pergi; **C2** meta RetroTK diputuskan TIDAK diport | ✅ **SELESAI** 28 Agu 2026 |
+| **R4** | Terjemahan dialog — 0 dari **9.812** titik masih Inggris | ✅ **SELESAI** 28 Agu 2026 |
+| **R5** | Stabilisasi berkelanjutan — **enam putaran**, cakupan opcode **46/46** | ⏳ **BERJALAN** |
+
+Putaran R5 sejauh ini:
+
+| Putaran | Fokus | Yang dibongkar |
+|---|---|---|
+| **1** (28 Agu) | Cakupan opcode 25 → 36 | slot kantong posisi-vs-indeks (#118) · perubahan inventaris tak dikabarkan (#119) · **`.ID` tidak pernah diimplementasikan sehingga MEMUNGUT tidak pernah berhasil** (#120) |
+| **2** (28 Agu malam) | Pembuatan karakter & sesi | kolam koneksi salah proses (#123) · **fd dipakai ulang → masuk tanpa sandi** (#124) · CME timer NPC (#125) · sandi tak sampai ke layar masuk (#126) |
+| **3** (29 Agu dini) | **Mesin acara berkala** | `map_cronjob()` dan registry sedunia `GameRegistry<id>` **tidak pernah diport** — tidak ada acara, kelahiran bos, `mapLight()`, `itemspawner()` yang pernah jalan |
+| **4** (29 Agu) | **Elixir & Carnage berjalan penuh** | `os.time()` LuaJ berpecahan (#134) · **`hasItem` dikembalikan sebagai JUMLAH — 419 syarat barang quest selalu gagal** (#135) · wujud karakter tak terbaca skrip (#136) · `baseClass` hilang (#138) |
+| **5** (29 Agu) | **Sumo & Beach berjalan; opcode 46/46** | **`player:warp` di skrip tidak pernah memindahkan pemain — 856 pemakaian diam total** (#140) |
+| **6** (29–30 Agu) | **Pertarungan & animasi** | **mob tidak bisa dibunuh: rantai putus di ENAM tempat** (#157) · mob mati lenyap seketika (#162) · gerbang dua server merah karena premis langkahnya sendiri (#163) |
+
+Sisi klien untuk putaran 6 ada di repo `RTK-client`: `Motion.tbl` ternyata
+urutan LAPISAN bukan tabel frame (#160), dan klien **membuang** setiap
+nomor aksi di bawah 11 sehingga tidak pernah ada animasi menyerang (#161).
+
+### Gerbang hari ini
+
+| Gerbang | Pemeriksaan | Apa yang dijaga |
+|---|---|---|
+| `cliftest` | **917** | seluruh jalur `Clif`/protokol, termasuk kematian mob menyiarkan `objectRemoved` |
+| `dbtest` | **235** | kontrak basis data & `hasItem` sesuai C |
+| `worldtest` | 53 | kalender dunia, registry sedunia |
+| `scripttest` | 42 | kait Lua global & cron benar-benar bisa dipanggil |
+| `chartest` | 39 | codec `CharStatus` |
+| `elixirtest` | 34 | satu pertandingan Elixir penuh |
+| `carnagetest` | 28 | satu pertandingan Carnage penuh |
+| `beachtest` | 22 | satu ronde Beach penuh |
+| `sumotest` | 21 | satu pertandingan Sumo penuh |
+| `maptest` · `luaaudit` · `wiresync` | — | seluruh `.map` terbaca · sintaks Lua · dua salinan `Wire.java` identik |
+| **`tools/uji-dua-server.sh`** | **237** | perpindahan antar map server, pulang-pergi |
+| **`livetest`** (repo klien) | **236** | server sungguhan lewat klien sungguhan |
+
+⚠️ `livetest` pada map server yang **baru hidup 30 detik** memberi merah
+palsu — beri waktu menetap dulu (Peringatan #163).
 
 **R1. Aksi pemain tanpa jalur masuk RTK2 — ✅ SELESAI 28 Agustus 2026.**
 Seluruh 16 butir hasil audit `clif_parse()` kini punya jalurnya, dikerjakan
@@ -554,6 +605,34 @@ penutupnya apa adanya lalu memeriksa akibatnya.
 memindahkan pemain** (#140) — 856 pemakaian diam total. Sesudah
 diperbaiki, konten mulai benar-benar memindahkan karakter uji, dan
 `livetest` harus memulihkan fixture-nya sendiri.
+
+**Putaran keenam (29–30 Agu 2026) — PERTARUNGAN & ANIMASI.** Mob akhirnya
+bisa dibunuh, dan kematiannya terlihat di layar.
+
+| Cacat | Akibat sebelum diperbaiki |
+|---|---|
+| **Rantai pertarungan putus di ENAM tempat** (#157) | menyerang mob tidak pernah mengurangi nyawanya, untuk siapa pun |
+| Mob mati **lenyap seketika** (#162) | animasi kematian di `monster.dna` aksi 0 tidak pernah punya kesempatan digambar |
+| Gerbang dua server merah bergantian (#163) | premis langkah "portal sesama server" salah di setup itu — peta tujuannya justru yang DIPINJAMKAN ke server kedua |
+
+Enam lapis #157, tiap lapis menyembunyikan lapis berikutnya: `block.miss`
+tak terikat → `hitCritChance` gagal → `critChance` 0; `block.blType` tak
+terikat → seluruh cabang pemain dilewati; serah-terima
+`damage`/`critChance`/`minSDam`/`maxSDam` tak terikat; kelas `Mob` tidak
+punya `sendHealth`/`hasDuration`/`setDuration`; `player.rage`,
+`target.IsBoss`, `target.sleep` tak terikat sehingga kerusakan tetap 0;
+dan terakhir **`MobRegistry.kill()` menyetel keadaan mati lalu
+mengeluarkan mob dari petaknya tanpa mengabari siapa pun.**
+
+⚠️ Alat yang membongkar tiga lapis terakhir adalah **diagnostik
+`[ATTR-KOSONG]`** di `Bindings.lapor` — satu baris DEBUG per atribut yang
+dibaca skrip tetapi tidak terikat, sekali seumur proses. Atribut yang
+hilang **tidak melempar**; ia menjawab nil dan diam. Keluarga yang sama
+dengan #120, #136, #138.
+
+⚠️ Urutan siaran menentukan: `objectActed` (aksi 0) harus dikirim
+**selagi mob masih terdaftar di petaknya**, karena klien memutuskan "ini
+mob, bukan pemain" dengan menengok bendanya sendiri.
 
 **Sisa:** skenario multi-pemain masih terbatas pada grup, abaikan,
 pertukaran, dan serah-terima; acara Bomber War belum dibuktikan berjalan.

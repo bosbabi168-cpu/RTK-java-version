@@ -20,7 +20,7 @@ import org.luaj.vm2.Varargs;
  * "attempt to call nil" through the dispatcher, exactly like a missing
  * binding would in the C server.
  */
-final class Bindings {
+public final class Bindings {
 
     private static final Logger log = LogManager.getLogger(Bindings.class);
 
@@ -119,6 +119,29 @@ final class Bindings {
             out.add(t.get(i).toint());
         }
         return out;
+    }
+
+    /**
+     * Catat sekali tiap atribut yang dibaca skrip tetapi TIDAK terikat.
+     *
+     * <p>⚠️ Ini alat penemu cacat paling produktif untuk keluarga
+     * "atribut nil yang diam" (#120, #136, #157): atribut yang tidak
+     * terikat mengembalikan nil, dan Lua hanya gagal beberapa baris
+     * kemudian — atau tidak gagal sama sekali, cuma menghasilkan angka
+     * nol. `luaaudit` buta terhadapnya karena ia memeriksa nama METHOD,
+     * bukan ATRIBUT, dan tidak per-kelas.</p>
+     *
+     * <p>Dicatat di tingkat DEBUG supaya bisa dinyalakan saat menyelidiki
+     * tanpa membanjiri log biasa. ⚠️ Nama METHOD juga lewat sini (getter
+     * dikonsultasi lebih dulu), jadi `sendHealth`/`getObjectsInCell` yang
+     * muncul di daftar bukan berarti hilang — periksa dulu.</p>
+     */
+    private static final java.util.Set<String> DILAPOR = new java.util.HashSet<>();
+
+    public static void lapor(String kelas, String attr) {
+        if (log.isDebugEnabled() && DILAPOR.add(kelas + "." + attr)) {
+            log.debug("[ATTR-KOSONG] {}.{} dibaca skrip tetapi tidak terikat", kelas, attr);
+        }
     }
 
     static void definePlayer(ScriptEngine engine, ScriptClass player) {
@@ -221,6 +244,7 @@ final class Bindings {
                             return LuaValue.valueOf(v.doubleValue());
                         }
                     }
+                    lapor("player", attr);
                     return null;
             }
         };
@@ -2378,6 +2402,58 @@ final class Bindings {
      * pemain memang tidak punya.
      */
     static void defineMob(ScriptEngine engine, ScriptClass klass) {
+        /**
+         * mobl_sendhealth(kerusakan, kritis): mob MENERIMA kerusakan.
+         *
+         * <p>⚠️ Ini pintu terakhir seluruh pertarungan jarak dekat, dan ia
+         * <b>tidak pernah ada</b> sampai #157: `mob_ai_basic.on_attacked`
+         * memanggil `mob:sendHealth(attacker.damage, attacker.critChance)`,
+         * dan karena method itu hanya terdaftar pada kelas PEMAIN, panggilan
+         * dari mob gagal — nyawa mob tidak pernah berkurang sedikit pun.
+         * Mob mati diurus {@code reapDead}, yang cuma menunggu
+         * {@code currentVita <= 0}; jadi yang hilang benar-benar hanya
+         * pengurangannya.</p>
+         */
+        klass.addMethod("sendHealth", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.NONE;
+            }
+            double dmg = args.optdouble(2, 0);
+            long damage = dmg > 0 ? (long) (dmg + 0.5) : (dmg < 0 ? (long) (dmg - 0.5) : 0);
+            mb.currentVita = Math.max(0, mb.currentVita - damage);
+            return LuaValue.NONE;
+        });
+
+        /**
+         * mobl_hasduration/setduration/getduration: mantra yang sedang
+         * menempel pada MOB.
+         *
+         * <p>⚠️ Dipanggil dari `Mob.checkIfCast` (mob.lua:419) yang dipakai
+         * `hitCritChance.lua` untuk KEDUA belah pihak. Tanpa method ini
+         * pemeriksaan "apakah sasaran sedang ber-hardBodies" gagal dengan
+         * "attempt to call nil", dan pertarungan berhenti sebelum kerusakan
+         * dihitung (#157).</p>
+         */
+        klass.addMethod("hasDuration", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.FALSE;
+            }
+            return LuaValue.valueOf(mb.durasiSisa(args.optjstring(2, "")) > 0);
+        });
+        klass.addMethod("getDuration", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.valueOf(0);
+            }
+            return LuaValue.valueOf(mb.durasiSisa(args.optjstring(2, "")));
+        });
+        klass.addMethod("setDuration", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.NONE;
+            }
+            mb.setDurasi(args.optjstring(2, ""), args.optlong(3, 0));
+            return LuaValue.NONE;
+        });
+
         /**
          * mobl_moveghost() -&gt; {@code moveghost_mob()}: mob melangkah satu
          * petak ke arah yang dihadapinya. Dipakai 84x, hampir seluruhnya

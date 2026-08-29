@@ -85,6 +85,7 @@ public final class Combat {
         // Lua yang memutuskan kena atau tidak, lalu berapa kerusakannya.
         panggil(engine, "hitCritChance", penyerang, sasaran);
         if (sd.critChance <= 0) {
+            log.debug("[COMBAT] {} MELESET (critChance {})", sd.name(), sd.critChance);
             return;
         }
         panggil(engine, "swingDamage", penyerang, sasaran);
@@ -93,6 +94,8 @@ public final class Combat {
         ausSenjata(sd);
 
         int damage = bulatkanDamage(sd);
+        log.debug("[COMBAT] {} memukul {}: crit={} damage={} nyawa mob {}",
+                sd.name(), mob.displayName(), sd.critChance, damage, mob.currentVita);
         mob.addThreat(sd.id, damage);
 
         kaitPerlengkapan(engine, sd, penyerang, sasaran);
