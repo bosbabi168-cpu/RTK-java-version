@@ -45,7 +45,7 @@ menulis adapter baru, bukan menyentuh logika.
 - **Scripting**: 906/906 skrip termuat 0 error; celah binding **0**
   (satu-satunya sisa `testPacket`, sengaja tidak diport).
 - **Pengujian**: 12 gerbang regresi luring (**917** assertion `cliftest`,
-  **235** `dbtest`) + gerbang klien sungguhan `livetest` (**236**
+  **235** `dbtest`) + gerbang klien sungguhan `livetest` (**243**
   pemeriksaan; **237** pada setup dua map server,
   `./tools/uji-dua-server.sh`).
   **Seluruh 46 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.**
@@ -175,7 +175,7 @@ aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 | `carnagetest` | **satu pertandingan Carnage penuh** (regu per jalur kelas, empat kubu) | 28 pemeriksaan; map server lain harus mati |
 | `sumotest` | **satu pertandingan Sumo War penuh** (poin dari dorongan ke air) | 21 pemeriksaan; map server lain harus mati |
 | `beachtest` | **satu ronde Beach War penuh** (poin dari tembakan) | 22 pemeriksaan; map server lain harus mati |
-| `livetest` | **klien RTK2 sungguhan** masuk dunia + **236** pemeriksaan | dijalankan dari `../RTK-client`; beri map server waktu menetap dulu (#163) |
+| `livetest` | **klien RTK2 sungguhan** masuk dunia + **243** pemeriksaan | dijalankan dari `../RTK-client`; beri map server waktu menetap dulu (#163) |
 | `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | **237** pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
 
 Dua belas gerbang pertama luring — menguji kode terhadap dirinya sendiri dan

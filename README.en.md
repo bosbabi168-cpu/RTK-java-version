@@ -45,7 +45,7 @@ writing a new adapter, not touching the logic.
 - **Scripting**: 906/906 scripts load with 0 errors; binding gaps **0**
   (the only remainder is `testPacket`, deliberately not ported).
 - **Testing**: 12 offline regression gates (**917** `cliftest` assertions,
-  **235** `dbtest`) + the real-client gate `livetest` (**236** checks;
+  **235** `dbtest`) + the real-client gate `livetest` (**243** checks;
   **237** on a two-map-server setup, `./tools/uji-dua-server.sh`).
   **All 46 RTK2 opcodes have now actually been sent by a real client.**
 - **Indonesian translation**: COMPLETE — 0 of 9,812 dialogue points are
@@ -178,7 +178,7 @@ scripts are identifiers. The dialogue text itself is **fully translated**
 | `carnagetest` | **a full Carnage match** (teams by class path, four colours) | 28 checks; other map servers must be stopped |
 | `sumotest` | **a full Sumo War match** (points by pushing into water) | 21 checks; other map servers must be stopped |
 | `beachtest` | **a full Beach War round** (points by shooting) | 22 checks; other map servers must be stopped |
-| `livetest` | a **real RTK2 client** enters the world + **236** checks | run from `../RTK-client`; let the map server settle first (#163) |
+| `livetest` | a **real RTK2 client** enters the world + **243** checks | run from `../RTK-client`; let the map server settle first (#163) |
 | `tools/uji-dua-server.sh` | player transfer between map servers (R3/C3) | **237** checks; sets up and restores its own fixture |
 
 The first twelve gates are offline — they test the code against itself and
@@ -237,7 +237,7 @@ Gates today:
 | `elixirtest` · `carnagetest` · `beachtest` · `sumotest` | 34 · 28 · 22 · 21 | one full match of each event |
 | `maptest` · `luaaudit` · `wiresync` | — | every `.map` parses · Lua syntax · the two `Wire.java` copies are identical |
 | **`tools/uji-dua-server.sh`** | **237** | cross-map-server travel, round trip |
-| **`livetest`** (client repo) | **236** | a real server through a real client |
+| **`livetest`** (client repo) | **243** | a real server through a real client |
 
 ⚠️ Sweep `logs/common.log` too: two real bugs hid there, not in `map.log`
 (Warnings #123, #125). ⚠️ `livetest` against a map server that has only
