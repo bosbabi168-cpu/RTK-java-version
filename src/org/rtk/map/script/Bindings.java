@@ -2276,6 +2276,11 @@ public final class Bindings {
             if (self instanceof org.rtk.map.Npc nd) {
                 return LuaValue.valueOf(org.rtk.map.NpcRegistry.move(nd) ? 1 : 0);
             }
+            // mobl_move() -> move_mob(): kelas ini dipakai NPC DAN mob.
+            // ⚠️ Cabang mob ini tidak ada sampai 30 Agu 2026 (#164).
+            if (self instanceof org.rtk.map.Mob mb) {
+                return LuaValue.valueOf(org.rtk.map.MapServer.mobs.move(engine, mb));
+            }
             return LuaValue.valueOf(0);
         });
 
@@ -2434,6 +2439,30 @@ public final class Bindings {
          * "attempt to call nil", dan pertarungan berhenti sebelum kerusakan
          * dihitung (#157).</p>
          */
+        /**
+         * mobl_attack(id): mob memukul sasaran — lihat {@code Combat.mobAttack}.
+         *
+         * <p>⚠️ Sampai 30 Agu 2026 tidak terikat sama sekali: baris terakhir
+         * {@code mob_ai_basic.attack} gagal "attempt to call nil", jadi mob
+         * tidak pernah membalas (Peringatan #165).</p>
+         */
+        /**
+         * mobl_sendstatus() / mobl_sendminitext(): di C keduanya
+         * {@code return 0;} — ada supaya skrip yang ditulis untuk pemain
+         * (global_zap.lua:41 `target:sendStatus()`) tidak meledak saat
+         * sasarannya mob. Tanpa keduanya SETIAP zap mage ke mob gagal
+         * "attempt to call nil" sesudah mana terpotong (30 Agu 2026).
+         */
+        klass.addMethod("sendStatus", (self, args) -> LuaValue.NONE);
+        klass.addMethod("sendMinitext", (self, args) -> LuaValue.NONE);
+
+        klass.addMethod("attack", (self, args) -> {
+            if (self instanceof org.rtk.map.Mob mb) {
+                org.rtk.map.Combat.mobAttack(mb, (long) args.optdouble(2, 0));
+            }
+            return LuaValue.NONE;
+        });
+
         klass.addMethod("hasDuration", (self, args) -> {
             if (!(self instanceof org.rtk.map.Mob mb)) {
                 return LuaValue.FALSE;

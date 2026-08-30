@@ -33,7 +33,7 @@ public final class Mapif {
     public static final int ALLWOS = 1;
 
     /**
-     * Panjang paket 0x3000 .. 0x300F; -1 berarti panjangnya ada di paketnya
+     * Panjang paket 0x3000 .. 0x3010; -1 berarti panjangnya ada di paketnya
      * sendiri (L di offset 2).
      *
      * <p>⚠️ <b>0x3009 sengaja -1, bukan panjang tetap.</b> Di C ia
@@ -70,7 +70,8 @@ public final class Mapif {
 
     private static final int[] PACKET_LEN_TABLE = {
         72, -1, 20, 24, -1, 6, 255, -1, 28,
-        BOARD_SHOW_LEN, BOARD_POST_LEN, BOARD_POST_LEN, -1, 4124, 20, 4124};
+        BOARD_SHOW_LEN, BOARD_POST_LEN, BOARD_POST_LEN, -1, 4124, 20, 4124,
+        6};   // 0x3010: map server minta tendang karakter (login ganda RTK2)
 
     /** Panjang tetap balasan 0x3803 sebelum blob: opcode+len+fd. */
     private static final int CHARLOAD_HEADER = 8;
@@ -636,6 +637,30 @@ public final class Mapif {
         return 0;
     }
 
+    /**
+     * 0x3010 (tambahan RTK2): map server meminta karakter ber-id itu
+     * ditendang di mana pun ia berada. Cermin cabang login ganda
+     * {@code logif.c:85}: sebarkan 0x3804 ke semua map server, lalu
+     * padamkan benderanya — bila ternyata tidak ada yang menampungnya
+     * (bendera basi sesudah server jatuh), pemainnya tidak terkunci
+     * selamanya; bila ada, 0x3007 dari penendangnya memadamkannya lagi.
+     */
+    static int parseKick(int fd) {
+        Session s = net.session(fd);
+        int id = s.rfifoL(2);
+        byte[] buf = new byte[6];
+        buf[0] = (byte) 0x04;
+        buf[1] = (byte) 0x38;
+        buf[2] = (byte) (id & 0xFF);
+        buf[3] = (byte) ((id >>> 8) & 0xFF);
+        buf[4] = (byte) ((id >>> 16) & 0xFF);
+        buf[5] = (byte) ((id >>> 24) & 0xFF);
+        send(fd, buf, 6, ALL);
+        CharDb.logindataDel(id);
+        log.info("[CHAR] tendang karakter id {} disebarkan ke {} map server", id, mapFifoN);
+        return 0;
+    }
+
     /** mapif_parse_logout() (0x3005). */
     static int parseLogout(int fd) {
         Session s = net.session(fd);
@@ -691,6 +716,7 @@ public final class Mapif {
             case 0x3003: parseRequestChar(fd); break;
             case 0x3004: parseSaveChar(fd, false); break;
             case 0x3005: parseLogout(fd); break;
+            case 0x3010: parseKick(fd); break;
             case 0x3007: parseSaveChar(fd, true); break;
             case 0x3009: parseShowPosts(fd); break;
             case 0x300A: parseReadPost(fd); break;

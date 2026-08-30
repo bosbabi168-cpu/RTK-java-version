@@ -1,7 +1,7 @@
 # CLAUDE.md — RTK-java-version
 
 Panduan sesi pengembangan. Baca file ini SEBELUM mengubah kode; README.md
-untuk gambaran lengkap; **`docs/PERINGATAN.md` untuk 159 jebakan yang sudah
+untuk gambaran lengkap; **`docs/PERINGATAN.md` untuk 167 jebakan yang sudah
 pernah memakan waktu** — wajib dibuka setiap kali menyentuh area yang
 disebut di sana.
 
@@ -106,7 +106,7 @@ luring):
 
 ```
 ./run.sh all
-(cd ../RTK-client && ./run.sh livetest 127.0.0.1 2001 Adrielle)   # 225 pemeriksaan
+(cd ../RTK-client && ./run.sh livetest 127.0.0.1 2001 Adrielle)   # 243 pemeriksaan
 ```
 
 **Gerbang KESEPULUH — dua map server.** Perpindahan pemain antar map
@@ -280,7 +280,7 @@ menyebut kata kunci `speech` yang benar). Katalognya `kamus-*.json`
 | Protokol RTK2 | **46 opcode masuk, 57 peristiwa keluar** (Wire v11) |
 | Binding skrip | method sisa **1** (`testPacket`, sengaja); global **0** celah; 4 nama Kan + 8 nama salah-ketik = kode mati konten |
 | Skrip Lua | 906/906 termuat, 0 error; `map.log` server hidup 0 ERROR/WARN |
-| Peringatan tercatat | #1–#159 → `docs/PERINGATAN.md` (#146 MapBGM 902 = daftar putar; #149 pindah peta sesama server tidak pernah dikirim ke klien; #150 kamera klien salah ruang sehingga peta besar hitam; #152 peta kosong = datanya; ⚠️ #153 pemain terdampar kini dijatuhkan ke inn kebangsaannya; **#154 barang di lantai sempat jadi TEMBOK sehingga memungut mustahil**; #155 warna varian mob: mekanisme dipahami, aturan belum; #156 57% frame objek peta digambar salah tempat; ⚠️ **#157 MOB BELUM BISA DIBUNUH**; #158 animasi efek dulu dibuang klien — kini tergambar; #159 animasi pukulan menunggu Motion.tbl) |
+| Peringatan tercatat | #1–#167 → `docs/PERINGATAN.md` (**#164 mob tidak pernah melangkah · #165 mob tidak pernah membalas · #166 benda yang masuk pandangan saat berjalan tidak pernah dikirim · #167 satu karakter bisa masuk dari dua klien**; (#146 MapBGM 902 = daftar putar; #149 pindah peta sesama server tidak pernah dikirim ke klien; #150 kamera klien salah ruang sehingga peta besar hitam; #152 peta kosong = datanya; ⚠️ #153 pemain terdampar kini dijatuhkan ke inn kebangsaannya; **#154 barang di lantai sempat jadi TEMBOK sehingga memungut mustahil**; #155 warna varian mob: mekanisme dipahami, aturan belum; #156 57% frame objek peta digambar salah tempat; ⚠️ **#157 MOB BELUM BISA DIBUNUH**; #158 animasi efek dulu dibuang klien — kini tergambar; #159 animasi pukulan menunggu Motion.tbl) |
 | Penghambat utama | **antarmuka klien** (`../RTK-client`) — server mengirim lebih banyak daripada yang bisa digambar |
 
 ## ROADMAP — menuju server yang dipakai normal & lancar tanpa bug
@@ -297,7 +297,7 @@ rujukan perilaku — format kabelnya RTK2, bukan port byte.
 | **R2** | TODO di kode — nol tersisa di `src/` | ✅ **SELESAI** 28 Agu 2026 |
 | **R3** | Sisa Trek C: **C3** pindah antar map server terbukti pulang-pergi; **C2** meta RetroTK diputuskan TIDAK diport | ✅ **SELESAI** 28 Agu 2026 |
 | **R4** | Terjemahan dialog — 0 dari **9.812** titik masih Inggris | ✅ **SELESAI** 28 Agu 2026 |
-| **R5** | Stabilisasi berkelanjutan — **enam putaran**, cakupan opcode **46/46** | ⏳ **BERJALAN** |
+| **R5** | Stabilisasi berkelanjutan — **tujuh putaran**, cakupan opcode **46/46** | ⏳ **BERJALAN** |
 
 Putaran R5 sejauh ini:
 
@@ -309,6 +309,7 @@ Putaran R5 sejauh ini:
 | **4** (29 Agu) | **Elixir & Carnage berjalan penuh** | `os.time()` LuaJ berpecahan (#134) · **`hasItem` dikembalikan sebagai JUMLAH — 419 syarat barang quest selalu gagal** (#135) · wujud karakter tak terbaca skrip (#136) · `baseClass` hilang (#138) |
 | **5** (29 Agu) | **Sumo & Beach berjalan; opcode 46/46** | **`player:warp` di skrip tidak pernah memindahkan pemain — 856 pemakaian diam total** (#140) |
 | **6** (29–30 Agu) | **Pertarungan & animasi** | **mob tidak bisa dibunuh: rantai putus di ENAM tempat** (#157) · mob mati lenyap seketika (#162) · gerbang dua server merah karena premis langkahnya sendiri (#163) |
+| **7** (30 Agu) | **Siklus demo terekam** (klien: `--skenario`, 25 pemeriksaan) | **tidak ada mob yang pernah MELANGKAH** — `mob.startX` & `mob:move` tak terikat (#164) · **tidak ada mob yang pernah MEMBALAS** — `mob:attack` tak terikat, `speed` 0 menjepit peluang kena ke 5% (#165) · **benda yang masuk pandangan saat berjalan tidak pernah dikirim ke klien RTK2** (#166) · `player.alignment`, `mob:sendStatus`, `start_point` di proses map |
 
 Sisi klien untuk putaran 6 ada di repo `RTK-client`: `Motion.tbl` ternyata
 urutan LAPISAN bukan tabel frame (#160), dan klien **membuang** setiap
@@ -318,10 +319,10 @@ nomor aksi di bawah 11 sehingga tidak pernah ada animasi menyerang (#161).
 
 | Gerbang | Pemeriksaan | Apa yang dijaga |
 |---|---|---|
-| `cliftest` | **917** | seluruh jalur `Clif`/protokol, termasuk kematian mob menyiarkan `objectRemoved` |
+| `cliftest` | **933** | seluruh jalur `Clif`/protokol, termasuk kematian mob menyiarkan `objectRemoved`, **masuk/keluar pandangan saat berjalan (#166)**, dan tendangan login ganda (#167) |
 | `dbtest` | **235** | kontrak basis data & `hasItem` sesuai C |
 | `worldtest` | 53 | kalender dunia, registry sedunia |
-| `scripttest` | 42 | kait Lua global & cron benar-benar bisa dipanggil |
+| `scripttest` | 49 | kait Lua global & cron benar-benar bisa dipanggil; **keadaan AI mob & `mob:attack`/`move` terikat (#164/#165)** |
 | `chartest` | 39 | codec `CharStatus` |
 | `elixirtest` | 34 | satu pertandingan Elixir penuh |
 | `carnagetest` | 28 | satu pertandingan Carnage penuh |
@@ -329,7 +330,7 @@ nomor aksi di bawah 11 sehingga tidak pernah ada animasi menyerang (#161).
 | `sumotest` | 21 | satu pertandingan Sumo penuh |
 | `maptest` · `luaaudit` · `wiresync` | — | seluruh `.map` terbaca · sintaks Lua · dua salinan `Wire.java` identik |
 | **`tools/uji-dua-server.sh`** | **237** | perpindahan antar map server, pulang-pergi |
-| **`livetest`** (repo klien) | **236** | server sungguhan lewat klien sungguhan |
+| **`livetest`** (repo klien) | **243** | server sungguhan lewat klien sungguhan |
 
 ⚠️ `livetest` pada map server yang **baru hidup 30 detik** memberi merah
 palsu — beri waktu menetap dulu (Peringatan #163).
@@ -633,6 +634,41 @@ dengan #120, #136, #138.
 ⚠️ Urutan siaran menentukan: `objectActed` (aksi 0) harus dikirim
 **selagi mob masih terdaftar di petaknya**, karena klien memutuskan "ini
 mob, bukan pemain" dengan menengok bendanya sendiri.
+
+**Putaran ketujuh (30 Agu 2026) — SIKLUS DEMO TEREKAM.** Klien mendapat
+`--skenario` (repo `RTK-client`, kelas `Skenario`): satu siklus penuh —
+buat karakter, masuk/keluar, masuk karakter lama, portal, kursor, memukul
+mob sampai mati, mob berjalan, drop dipungut & dimakan, ganti senjata,
+skill — dengan daftar periksa yang dihitung dari peristiwa server, direkam
+jadi MP4 (`tools/uji/demo-siklus.sh`). Menjalankannya membongkar tiga
+cacat server yang **tidak satu pun gerbang pernah lihat**, karena
+ketiganya hanya DIAM:
+
+| Cacat | Akibat sebelum diperbaiki |
+|---|---|
+| `mob.startX/startY` dkk. tidak terikat, dan `mob:move()` hanya mengenal NPC (#164) | **tidak ada mob yang pernah melangkah** — `mob_ai_basic.move` melempar di baris pertamanya, 10.000× "pesan sama, hanya dicatat sekali" |
+| `mob:attack(id)` tidak terikat; `sd.speed` tidak pernah 90 (#165) | **tidak ada mob yang pernah membalas**; dan sesudah terikat pun peluang kena ×0,1 → dijepit 5% untuk siapa pun |
+| tidak ada jalur "benda masuk pandangan saat berjalan" di RTK2 (#166) | kelinci lima petak di kiri tidak pernah ada di layar; mob yang mendekat dikirim sebagai MOVED yang dibuang klien |
+
+Yang ikut ketahuan: `player.alignment` tak terikat (30+ mantra warrior/rogue
+gagal diam-diam), `mob:sendStatus` tak ada (setiap zap mage ke mob gagal
+sesudah mana terpotong), `start_point` tidak dibaca proses map (karakter
+baru lahir di (0,0)), dan durabilitas yang aus kini dikirim ulang ke klien
+(`playerEquipmentChanged`) — RTK2 tidak punya cara lain melihatnya.
+`ClientView` dapat `playerViewMoved(sd, fromX, fromY)`; adapter RetroTK
+sengaja kosong (kliennya meminta sendiri lewat blok 0x06).
+
+**Login ganda satu karakter (#167) — SELESAI 30 Agu 2026.** Dua sesi
+Adrielle sempat hidup bersamaan karena `ChaOnline` tidak pernah disetel,
+jalur RTK2 tidak memeriksanya, dan 0x3804 masih stub. Kini: sesi lama
+ditendang (di server lain lewat paket baru map→char 0x3010) dan
+**pendatang dimasukkan sesudahnya** — sengaja menyimpang dari C ("tolak
+lalu coba lagi"), karena kontrak C menolak sambung-ulang cepat yang sesi
+lamanya sudah mati (livetest merah di tiga langkah). Bendera dipadamkan
+sinkron di map server. Dijaga `cliftest` + `livetest` (7 pemeriksaan).
+
+⚠️ Yang belum dikerjakan: AI `crafting/wheat.lua` membaca `mob.registry`
+yang belum terikat.
 
 **Sisa:** skenario multi-pemain masih terbatas pada grup, abaikan,
 pertukaran, dan serah-terima; acara Bomber War belum dibuktikan berjalan.

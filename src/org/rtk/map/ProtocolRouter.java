@@ -340,6 +340,11 @@ public final class ProtocolRouter implements ClientView {
     }
 
     @Override
+    public void playerViewMoved(User sd, int fromX, int fromY) {
+        tujuan.forEach(v -> v.playerViewMoved(sd, fromX, fromY));
+    }
+
+    @Override
     public void areaRedrawRequested(User sd, MapData map, int x, int y,
                                     int width, int height, int checksum) {
         tujuan.forEach(v -> v.areaRedrawRequested(sd, map, x, y, width, height, checksum));

@@ -192,6 +192,20 @@ public final class MapServer {
                 case "char_port": charPort = Integer.parseInt(value); break;
                 case "char_id": charId = value; break;
                 case "char_pw": charPw = value; break;
+                // ⚠️ `start_point` milik char.conf, tetapi K3-lanjutan membuat
+                // karakter DARI PROSES MAP (CharDb.newChar dengan kolam map
+                // server). Tanpa membacanya di sini ketiga statik di
+                // CharServer tetap 0 dan tiap karakter baru lahir di petak
+                // (0,0) peta 0 — sudut Kugnae, bukan start_point (30 Agu 2026).
+                case "start_point": {
+                    String[] parts = value.split(",");
+                    if (parts.length == 3) {
+                        org.rtk.charserver.CharServer.startM = Integer.parseInt(parts[0].trim());
+                        org.rtk.charserver.CharServer.startX = Integer.parseInt(parts[1].trim());
+                        org.rtk.charserver.CharServer.startY = Integer.parseInt(parts[2].trim());
+                    }
+                    break;
+                }
                 case "serverid": serverId = Integer.parseInt(value); break;
                 case "map_path": mapPath = value; break;
                 case "db_path": dbPath = value; break;
@@ -485,8 +499,97 @@ public final class MapServer {
                     name, s.clientIpString());
             return false;
         }
+        // logindata_add() di logif.c:85: karakter yang MASIH online tidak
+        // boleh dipegang dua klien. Di C pendatangnya ditolak (kode 6), sesi
+        // lamanya ditendang lewat 0x3804, dan pemain masuk lagi dengan
+        // tangan. Di sini SENGAJA MENYIMPANG: sesi lama ditendang, lalu
+        // pendatangnya DIMASUKKAN begitu sesi lama tertutup. Alasannya
+        // bukan selera: klien yang menutup soketnya lalu menyambung lagi
+        // dalam sekejap (livetest, atau pemain yang kliennya baru saja
+        // jatuh) tiba SEBELUM utas logika sempat memproses eof sesi
+        // lamanya — dengan kontrak C ia ditolak karena "masih online"
+        // padahal tidak ada siapa pun di sana (Peringatan #167).
+        // ⚠️ Sampai 30 Agu 2026 bendera ChaOnline tidak pernah DISETEL oleh
+        // port ini (intif.c:255 terlewat), jadi pemeriksaan apa pun di sini
+        // tidak akan pernah berarti tanpa perbaikan di parseCharLoad.
+        Integer online = sql.queryInt(
+                "SELECT `ChaOnline` FROM `Character` WHERE `ChaName` = ?", name);
+        if (online != null && online > 0) {
+            Integer chaId = sql.queryInt(
+                    "SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", name);
+            User lama = onlineByName(name);
+            if (lama != null) {
+                tendang(lama, "Karakter ini masuk dari tempat lain; sambungan diputus.");
+            } else if (chaId != null) {
+                // Di map server lain (atau bendera basi sesudah server
+                // jatuh): char server yang menyebarkan tendangannya dan
+                // memadamkan benderanya.
+                MapIntif.mintaTendang(chaId);
+            }
+            log.warn("[MAP] RTK2 '{}' dari {}: masih online ({}); sesi lama ditendang, "
+                    + "pendatang dimasukkan sesudahnya",
+                    name, s.clientIpString(), lama != null ? "server ini" : "server lain");
+            hasilAkun(s, 9, "Karakter masih online; sesi lamanya diputus dulu…");
+            rtk2Fds.add(fd);
+            // Sesudah sesi lama tertutup (700 ms > 500 ms jeda tendang; 1,2 s
+            // bila di server lain), pendatang diperkenalkan seperti biasa —
+            // asal slot fd-nya masih miliknya (Peringatan #96/#124).
+            timers.insert(lama != null ? 700 : 1200, 0, (a, b) -> {
+                if (net.session(fd) == s && !s.eof) {
+                    if (!authByName(fd, s, name)) {
+                        tutupAktif(s);
+                    }
+                }
+                return 0;
+            }, 0, 0);
+            return true;
+        }
         rtk2Fds.add(fd);
         return authByName(fd, s, name);
+    }
+
+    /** Pemain yang sedang online di server ini dengan nama itu, atau null. */
+    static User onlineByName(String nama) {
+        for (User u : onlineChars.values()) {
+            if (u.name().equalsIgnoreCase(nama)) {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Tendang satu pemain: beri tahu, lalu tutup sambungannya sesudah
+     * pesannya sempat terkirim. Penutupan berjalan lewat jalur putus biasa
+     * ({@link #handleDisconnect}), jadi karakternya TERSIMPAN dan
+     * {@code ChaOnline} kembali 0 lewat 0x3007.
+     */
+    static void tendang(User sd, String pesan) {
+        if (sd == null || sd.ditendang) {
+            return;
+        }
+        sd.ditendang = true;
+        clientView.messageToPlayer(sd, 5, pesan);
+        final Session s = net.session(sd.fd);
+        timers.insert(500, 0, (a, b) -> {
+            if (onlineChars.get(sd.fd) == sd) {
+                tutupAktif(s);
+            }
+            return 0;
+        }, 0, 0);
+        log.info("[MAP] {} ditendang: {}", sd.name(), pesan);
+    }
+
+    /**
+     * Tutup satu sesi SEKARANG lewat jalur putus biasa — bila slot fd-nya
+     * masih milik sesi itu (fd dipakai ulang, Peringatan #96/#124).
+     */
+    private static int tutupAktif(Session s) {
+        if (s != null && net.session(s.fd) == s) {
+            handleDisconnect(s.fd);
+            net.sessionEof(s);
+        }
+        return 0;
     }
 
     /** Akun yang sudah masuk pada tiap sesi RTK2 (K3-lanjutan). */
@@ -859,6 +962,9 @@ public final class MapServer {
         // simpan + tandai offline lewat char server (0x3007); penyegaran
         // posisi & samaran dilakukan saveChar sendiri
         MapIntif.saveChar(sd, true);
+        // clif.c:10957 — bendera online dipadamkan map server SEKETIKA;
+        // 0x3007 di char server memadamkannya lagi, tidak apa-apa.
+        sql.update("UPDATE `Character` SET `ChaOnline` = 0 WHERE `ChaId` = ?", sd.id);
         log.info("[MAP] {} keluar dari dunia", sd.name());
     }
 
@@ -909,6 +1015,16 @@ public final class MapServer {
         // kosong — lihat MapMsg.
         org.rtk.map.data.MapMsg.load("conf/lang.conf");
 
+        // map.c:1822 — seluruh bendera online dinolkan saat map server
+        // menyala: sesi yang tersisa dari proses sebelumnya sudah pasti mati.
+        // ⚠️ Cermin C apa adanya: dengan dua map server, boot server kedua
+        // menolkan bendera pemain yang sedang online di server pertama.
+        if (sql.connect(sqlId, sqlPw, sqlIp, sqlPort, sqlDb)) {
+            int n = sql.update("UPDATE `Character` SET `ChaOnline` = 0 WHERE `ChaOnline` = 1");
+            if (n > 0) {
+                log.info("[MAP] {} bendera ChaOnline basi dinolkan", n);
+            }
+        }
         if (!sql.connect(sqlId, sqlPw, sqlIp, sqlPort, sqlDb)) {
             log.warn("[MAP] WARNING: no database connection; running with map 0 only.");
         }

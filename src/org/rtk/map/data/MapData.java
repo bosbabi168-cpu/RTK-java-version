@@ -469,6 +469,38 @@ public final class MapData {
      * @param type null berarti semua jenis
      */
     public void foreachInArea(int x, int y, BlockList.Type type, Consumer<BlockList> action) {
+        int[] k = areaBox(x, y);
+        int x0 = k[0];
+        int y0 = k[1];
+        int x1 = k[2];
+        int y1 = k[3];
+        for (int by = y0 / BLOCK_SIZE; by <= y1 / BLOCK_SIZE; by++) {
+            for (int bx = x0 / BLOCK_SIZE; bx <= x1 / BLOCK_SIZE; bx++) {
+                int i = bx + by * bxs;
+                if (i < 0 || i >= blocks.length) {
+                    continue;
+                }
+                scan(blocks[i], x0, y0, x1, y1, type, action);
+                scan(blocksMob[i], x0, y0, x1, y1, type, action);
+            }
+        }
+    }
+
+    /**
+     * Apakah petak ({@code tx},{@code ty}) berada di dalam area pandang
+     * penonton yang berdiri di ({@code vx},{@code vy}) — kotak yang SAMA
+     * dengan {@link #foreachInArea}, termasuk pergeserannya di tepi peta.
+     *
+     * <p>Dipakai adapter RTK2 untuk memutuskan apakah sebuah langkah
+     * berarti "masuk pandangan", "keluar pandangan", atau "berpindah".</p>
+     */
+    public boolean areaContains(int vx, int vy, int tx, int ty) {
+        int[] k = areaBox(vx, vy);
+        return tx >= k[0] && tx <= k[2] && ty >= k[1] && ty <= k[3];
+    }
+
+    /** Kotak area pandang {x0, y0, x1, y1} di sekitar (x, y), digeser di tepi. */
+    public int[] areaBox(int x, int y) {
         int x0 = x - 9;
         int y0 = y - 8;
         int x1 = x + 9;
@@ -502,17 +534,7 @@ public final class MapData {
                 y0 = 0;
             }
         }
-
-        for (int by = y0 / BLOCK_SIZE; by <= y1 / BLOCK_SIZE; by++) {
-            for (int bx = x0 / BLOCK_SIZE; bx <= x1 / BLOCK_SIZE; bx++) {
-                int i = bx + by * bxs;
-                if (i < 0 || i >= blocks.length) {
-                    continue;
-                }
-                scan(blocks[i], x0, y0, x1, y1, type, action);
-                scan(blocksMob[i], x0, y0, x1, y1, type, action);
-            }
-        }
+        return new int[] {x0, y0, x1, y1};
     }
 
     private static void scan(List<BlockList> list, int x0, int y0, int x1, int y1,

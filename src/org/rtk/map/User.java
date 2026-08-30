@@ -314,6 +314,9 @@ public final class User extends BlockList
      */
     public boolean rtk2;
 
+    /** Sedang ditendang (login ganda / 0x3804): sambungannya akan ditutup. */
+    public boolean ditendang;
+
     public boolean attacked;
 
     /**
@@ -910,6 +913,11 @@ public final class User extends BlockList
             case "totem" -> (long) status.totem;
             case "tier" -> (long) status.tier;
             case "country" -> (long) status.country;
+            // ⚠️ `player.alignment` dipakai 30+ skrip mantra warrior/rogue
+            // (`berserk.lua:33` dst.: `alignmentIndex = player.alignment + 1`).
+            // Tanpa ladang ini rapalannya gagal "arithmetic on nil" — dan
+            // Wind's Blast diam-diam tidak pernah bisa dirapal (30 Agu 2026).
+            case "alignment" -> (long) status.alignment;
             case "side" -> (long) status.side;
             case "state" -> (long) status.state;
             case "maxSlots" -> status.maxSlots;
@@ -1037,6 +1045,7 @@ public final class User extends BlockList
     public boolean scriptSetAttr(String name, long v) {
         switch (name) {
             case "money" -> status.money = v;
+            case "alignment" -> status.alignment = (int) v;
             // ⚠️ **XOR, bukan penetapan** (sl.c:6881). `player.settings = 2`
             // MEMBALIK bit grup; ia tidak menyetel setelan menjadi 2.
             // Terbaca persis seperti penetapan biasa di skrip, dan itulah
@@ -1410,6 +1419,20 @@ public final class User extends BlockList
         minLdam = 0;
         maxLdam = 0;
         attackSpeed = 20;
+        // pc_calcstat (pc.c:877): kecepatan 90 kecuali sedang menunggang
+        // (state 3: dijaga minimal 40 untuk bukan-GM). ⚠️ Sampai 30 Agu
+        // 2026 ladang ini tidak pernah disetel, jadi 0 — dan
+        // `hitCritChance.lua` mengalikan peluang kena mob dengan
+        // `(speed + 10) / 100` = 0,1: setiap mob hanya punya peluang 5%
+        // (batas bawah) mengenai siapa pun. Mob menyerang, tetapi hampir
+        // tidak pernah melukai (Peringatan #165).
+        if (status.state == 3) {
+            if (!isGm() && speed < 40) {
+                speed = 40;
+            }
+        } else {
+            speed = 90;
+        }
 
         // bonus dari perlengkapan yang dikenakan
         for (org.rtk.common.mmo.Item it : status.equip) {

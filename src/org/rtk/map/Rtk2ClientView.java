@@ -624,9 +624,91 @@ public final class Rtk2ClientView implements ClientView {
 
     @Override
     public void playerStepSeen(User sd, int direction, int fromX, int fromY) {
-        siarkan(sd, new Wire.Writer(Wire.EV_OBJECT_MOVED)
-                .u64(sd.id).u16(fromX).u16(fromY).u16(sd.x).u16(sd.y)
-                .u8(sd.status.side), false);
+        // Dipanggil SEBELUM moveBlock: posisi barunya dihitung dari arah.
+        int nx = sd.x + (direction == 1 ? 1 : direction == 3 ? -1 : 0);
+        int ny = sd.y + (direction == 2 ? 1 : direction == 0 ? -1 : 0);
+        siarkanPindah(sd, fromX, fromY, nx, ny, sd.status.side, false);
+    }
+
+    /**
+     * Pemain berpindah petak: kirim benda yang BARU masuk pandangan dan
+     * cabut yang keluar (Peringatan #166).
+     *
+     * <p>Dua sapuan area — dari petak lama dan petak baru — lalu selisihnya.
+     * Sederhana dan tidak bergantung pada arah; ongkosnya dua sapuan per
+     * langkah, jauh di bawah satu bingkai klien.</p>
+     */
+    @Override
+    public void playerViewMoved(User sd, int fromX, int fromY) {
+        if (sesi(sd) == null) {
+            return;
+        }
+        MapData map = MapServer.world.get(sd.m);
+        if (map == null) {
+            return;
+        }
+        java.util.Set<Long> lama = new java.util.HashSet<>();
+        map.foreachInArea(fromX, fromY, null, bl -> lama.add(bl.id));
+        java.util.Set<Long> baru = new java.util.HashSet<>();
+        map.foreachInArea(sd.x, sd.y, null, bl -> {
+            baru.add(bl.id);
+            if (!lama.contains(bl.id) && bl != sd) {
+                Wire.Writer w = new Wire.Writer(Wire.EV_OBJECT_APPEARED);
+                if (blokBenda(w, sd, bl)) {
+                    kirim(sd, w);
+                }
+            }
+        });
+        for (long id : lama) {
+            if (!baru.contains(id) && id != sd.id) {
+                kirim(sd, new Wire.Writer(Wire.EV_OBJECT_REMOVED).u64(id));
+            }
+        }
+    }
+
+    /**
+     * Siarkan perpindahan satu benda dengan sadar-pandangan: penonton yang
+     * baru bisa melihatnya menerima {@code EV_OBJECT_APPEARED} (klien tidak
+     * bisa menggambar benda yang belum pernah diperkenalkan), penonton yang
+     * kehilangannya menerima {@code EV_OBJECT_REMOVED}, sisanya
+     * {@code EV_OBJECT_MOVED}.
+     *
+     * <p>⚠️ Sebelum ini semua penonton di sekitar petak BARU menerima
+     * {@code EV_OBJECT_MOVED} — termasuk yang belum pernah melihat bendanya,
+     * dan klien membuang perpindahan benda yang tidak ia kenal. Mob yang
+     * berjalan mendekati pemain tidak pernah muncul (Peristiwa #166).</p>
+     */
+    private void siarkanPindah(BlockList bl, int fromX, int fromY, int newX, int newY,
+                               int side, boolean termasukDiri) {
+        MapData map = MapServer.world.get(bl.m);
+        if (map == null) {
+            return;
+        }
+        java.util.Set<Long> dikabari = new java.util.HashSet<>();
+        map.foreachInArea(newX, newY, BlockList.Type.PC, o -> {
+            if (!(o instanceof User to) || (!termasukDiri && o == bl) || sesi(to) == null) {
+                return;
+            }
+            dikabari.add(to.id);
+            if (map.areaContains(to.x, to.y, fromX, fromY)) {
+                kirim(to, new Wire.Writer(Wire.EV_OBJECT_MOVED)
+                        .u64(bl.id).u16(fromX).u16(fromY).u16(newX).u16(newY).u8(side));
+            } else {
+                Wire.Writer w = new Wire.Writer(Wire.EV_OBJECT_APPEARED);
+                if (blokBenda(w, to, bl)) {
+                    kirim(to, w);
+                }
+            }
+        });
+        map.foreachInArea(fromX, fromY, BlockList.Type.PC, o -> {
+            if (!(o instanceof User to) || o == bl || sesi(to) == null
+                    || dikabari.contains(to.id)) {
+                return;
+            }
+            if (!map.areaContains(to.x, to.y, newX, newY)) {
+                kirim(to, new Wire.Writer(Wire.EV_OBJECT_REMOVED).u64(bl.id));
+            }
+        });
     }
 
     @Override
@@ -982,18 +1064,14 @@ public final class Rtk2ClientView implements ClientView {
                          int newX, int newY, int seenX, int seenY) {
         // ⚠️ Empat parameter terakhir adalah petak-yang-baru-terlihat, konsep
         // viewport RetroTK — kebocoran yang sudah ditandai di antarmukanya.
-        // RTK2 tidak memakainya: posisi lama dan baru sudah cukup.
-        siarkan(nd, new Wire.Writer(Wire.EV_OBJECT_MOVED)
-                .u64(nd.id).u16(fromX).u16(fromY).u16(newX).u16(newY)
-                .u8(nd.side), true);
+        // RTK2 menghitung sendiri siapa yang baru melihatnya (siarkanPindah).
+        siarkanPindah(nd, fromX, fromY, nd.x, nd.y, nd.side, true);
     }
 
     @Override
     public void mobMoved(Mob mb, MapData map, int fromX, int fromY,
                          int newX, int newY, int seenX, int seenY) {
-        siarkan(mb, new Wire.Writer(Wire.EV_OBJECT_MOVED)
-                .u64(mb.id).u16(fromX).u16(fromY).u16(newX).u16(newY)
-                .u8(mb.side), true);
+        siarkanPindah(mb, fromX, fromY, mb.x, mb.y, mb.side, true);
     }
 
     @Override

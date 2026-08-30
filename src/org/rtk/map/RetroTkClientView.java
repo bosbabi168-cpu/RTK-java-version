@@ -344,6 +344,11 @@ public final class RetroTkClientView implements ClientView {
     }
 
     @Override
+    public void playerViewMoved(User sd, int fromX, int fromY) {
+        // Klien RetroTK meminta sendiri lewat blok 0x06 (areaRedrawRequested).
+    }
+
+    @Override
     public void playerEquipmentChanged(User sd, int slot) {
         Clif.equipIt(sd, slot);
     }

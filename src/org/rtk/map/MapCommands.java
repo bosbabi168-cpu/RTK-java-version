@@ -377,6 +377,7 @@ public final class MapCommands implements ClientCommands {
 
         MapServer.clientView.playerStepSeen(sd, direction, oldX, oldY);
         map.moveBlock(sd, nx, ny);
+        MapServer.clientView.playerViewMoved(sd, oldX, oldY);
 
         // ⚠️ Harus di sini: setelah perpindahan, tetapi SEBELUM kait skrip
         // dan pemeriksaan portal — portal bisa memindahkan pemain ke peta

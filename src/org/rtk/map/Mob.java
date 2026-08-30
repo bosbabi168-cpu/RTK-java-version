@@ -160,6 +160,17 @@ public final class Mob extends BlockList
         return sisa;
     }
 
+    /** Nama mantra yang masih menempel (untuk kait `on_hit_while_cast`). */
+    public java.util.List<String> durasiAktif() {
+        var hasil = new java.util.ArrayList<String>();
+        for (String nama : new java.util.ArrayList<>(durasi.keySet())) {
+            if (durasiSisa(nama) > 0) {
+                hasil.add(nama);
+            }
+        }
+        return hasil;
+    }
+
     /** Tempelkan mantra selama sekian milidetik; 0 melepasnya. */
     public void setDurasi(String nama, long ms) {
         if (ms <= 0) {
@@ -252,6 +263,44 @@ public final class Mob extends BlockList
     public int startX;
     public int startY;
 
+    // ---- keadaan AI yang dibaca-tulis skrip (mob.h) ----
+    // ⚠️ Sebelum 30 Agu 2026 TIDAK SATU PUN dari ini terikat, dan akibatnya
+    // sediam-diamnya: `mob_ai_basic.move` membaca `mob.startX` untuk
+    // `distanceXY(mob, mob.startX, mob.startY)`, mendapat nil, dan MELEMPAR
+    // di baris pertama — jadi tidak ada mob yang pernah melangkah, sejak
+    // awal, sementara `map.log` hanya mencatat "script error sudah terjadi
+    // 10000x" (Peringatan #164). Keluarga yang sama dengan #157.
+
+    /** {@code mob->newmove}/{@code newatk}: jeda gerak/serang yang diubah skrip (ms). */
+    public int newMove;
+    public int newAttack;
+    /** {@code mob->snare}: terjerat, tidak bisa melangkah. */
+    public boolean snare;
+    /** {@code mob->returning}: sedang pulang ke titik kelahirannya. */
+    public boolean returning;
+    /** {@code mob->summon}: mob panggilan. */
+    public boolean summon;
+    /** {@code mob->lastaction}: detik unix aksi terakhir. */
+    public long lastAction;
+    /** {@code mob->rangeTarget}: sasaran serangan jarak jauh. */
+    public long rangeTarget;
+    /** {@code mob->amnesia}: hitungan lupa sasaran. */
+    public double amnesia;
+    /** {@code mob->crit}/{@code critmult}: ragam kritis dan pengalinya. */
+    public int crit;
+    public double critMult = 1.0;
+    /** {@code mob->block}/{@code protection}: pengubah per-mob (bawaan dari jenisnya). */
+    public double block;
+    public Double protectionOverride;
+    /** {@code mob->dmgdealt}/{@code dmgtaken}: statistik kerusakan. */
+    public double dmgDealt;
+    public double dmgTaken;
+    /** {@code mob->lastvita}: nyawa sebelum pukulan terakhir. */
+    public long lastVita;
+    /** {@code mob->invis}/{@code cursed}. */
+    public int invis;
+    public int cursed;
+
     public Mob() {
         this.type = Type.MOB;
     }
@@ -339,6 +388,50 @@ public final class Mob extends BlockList
             case "experience" -> data == null ? null
                     : org.luaj.vm2.LuaValue.valueOf((double) data.exp);
             case "isBoss" -> org.luaj.vm2.LuaValue.valueOf(data != null && data.isBoss ? 1 : 0);
+            // ---- keadaan AI (sl.c mobl_getattr) — lihat catatan di ladangnya ----
+            case "startX" -> org.luaj.vm2.LuaValue.valueOf(startX);
+            case "startY" -> org.luaj.vm2.LuaValue.valueOf(startY);
+            case "startM" -> org.luaj.vm2.LuaValue.valueOf(startM);
+            case "behavior" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.type);
+            case "aiType" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.subtype);
+            case "mobType" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.mobType);
+            case "owner" -> org.luaj.vm2.LuaValue.valueOf((double) owner);
+            case "newMove" -> org.luaj.vm2.LuaValue.valueOf(newMove);
+            case "baseMove" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.moveTime);
+            case "newAttack" -> org.luaj.vm2.LuaValue.valueOf(newAttack);
+            case "baseAttack" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.attackTime);
+            case "spawnTime" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.spawnTime);
+            case "snare" -> org.luaj.vm2.LuaValue.valueOf(snare);
+            case "returning" -> org.luaj.vm2.LuaValue.valueOf(returning);
+            case "summon" -> org.luaj.vm2.LuaValue.valueOf(summon);
+            case "lastAction" -> org.luaj.vm2.LuaValue.valueOf((double) lastAction);
+            case "rangeTarget" -> org.luaj.vm2.LuaValue.valueOf((double) rangeTarget);
+            case "amnesia" -> org.luaj.vm2.LuaValue.valueOf(amnesia);
+            case "retDist" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.returnDistance);
+            case "crit" -> org.luaj.vm2.LuaValue.valueOf(crit);
+            case "critMult" -> org.luaj.vm2.LuaValue.valueOf(critMult);
+            case "block", "baseBlock" -> org.luaj.vm2.LuaValue.valueOf(block);
+            case "baseProtection" -> data == null ? null
+                    : org.luaj.vm2.LuaValue.valueOf(data.protection);
+            case "dmgDealt" -> org.luaj.vm2.LuaValue.valueOf(dmgDealt);
+            case "dmgTaken" -> org.luaj.vm2.LuaValue.valueOf(dmgTaken);
+            case "lastHealth" -> org.luaj.vm2.LuaValue.valueOf((double) lastVita);
+            case "baseHealth" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : (double) data.vita);
+            case "baseMagic" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : (double) data.mana);
+            case "baseHit" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.hit);
+            case "baseMiss" -> org.luaj.vm2.LuaValue.valueOf(0);
+            case "baseMinDam" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.minDam);
+            case "baseMaxDam" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.maxDam);
+            case "baseMight" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.might);
+            case "baseGrace" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.grace);
+            case "baseWill" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.will);
+            case "baseArmor" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.baseArmor);
+            case "sound" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.sound);
+            case "mark" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.mark);
+            case "tier", "race", "seeInvis" -> org.luaj.vm2.LuaValue.valueOf(0);
+            case "invis" -> org.luaj.vm2.LuaValue.valueOf(invis);
+            case "cursed" -> org.luaj.vm2.LuaValue.valueOf(cursed);
+            case "lastDeath" -> org.luaj.vm2.LuaValue.valueOf((double) lastDeath);
             default -> {
                 org.rtk.map.script.Bindings.lapor("mob", attr);
                 yield null;
@@ -378,6 +471,24 @@ public final class Mob extends BlockList
             case "side" -> side = v.toint();
             case "look" -> look = v.toint();
             case "lookColor" -> lookColor = v.toint();
+            // ---- keadaan AI (sl.c mobl_setattr) ----
+            case "owner" -> owner = (long) v.todouble();
+            case "newMove" -> newMove = (int) v.todouble();
+            case "newAttack" -> newAttack = (int) v.todouble();
+            case "snare" -> snare = v.toboolean();
+            case "returning" -> returning = v.toboolean();
+            case "summon" -> summon = v.toboolean();
+            case "lastAction" -> lastAction = (long) v.todouble();
+            case "rangeTarget" -> rangeTarget = (long) v.todouble();
+            case "amnesia" -> amnesia = v.todouble();
+            case "crit" -> crit = (int) v.todouble();
+            case "critMult" -> critMult = v.todouble();
+            case "block" -> block = v.todouble();
+            case "dmgDealt" -> dmgDealt = v.todouble();
+            case "dmgTaken" -> dmgTaken = v.todouble();
+            case "lastHealth" -> lastVita = (long) v.todouble();
+            case "invis" -> invis = (int) v.todouble();
+            case "cursed" -> cursed = (int) v.todouble();
             default -> {
                 return false;
             }

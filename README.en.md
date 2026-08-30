@@ -200,7 +200,7 @@ terminology in [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 30 August 2026:** 12/12 offline gates green, `livetest` **236**
+**Status 30 August 2026 (evening):** 12/12 offline gates green, `livetest` **243**
 checks green through the real client, **237** on the two-map-server gate,
 RTK2 protocol symmetric in both directions, opcode coverage **46/46**, zero
 binding gaps.
@@ -211,9 +211,9 @@ binding gaps.
 | **R2** | TODOs in the code — zero left in `src/` | ✅ **DONE** 28 Aug 2026 |
 | **R3** | **C3** cross-map-server travel proven round-trip; **C2** RetroTK meta files deliberately not ported | ✅ **DONE** 28 Aug 2026 |
 | **R4** | Dialogue translation — 0 of **9,812** points still English | ✅ **DONE** 28 Aug 2026 |
-| **R5** | Continuous stabilisation — six rounds | ⏳ **IN PROGRESS** |
+| **R5** | Continuous stabilisation — seven rounds | ⏳ **IN PROGRESS** |
 
-The six R5 rounds, and what each one uncovered:
+The seven R5 rounds, and what each one uncovered:
 
 | Round | Focus | Biggest find |
 |---|---|---|
@@ -223,15 +223,16 @@ The six R5 rounds, and what each one uncovered:
 | **4** | Elixir & Carnage running end to end | **`hasItem` returned a COUNT** instead of `true` — used 419× with `== true`, so every quest item requirement failed |
 | **5** | Sumo & Beach running; opcode **46/46** | **`player:warp` in scripts never moved the player** — 856 call sites, silent |
 | **6** | Combat & animation | **mobs could not be killed: the chain was broken in six places**, the last being `MobRegistry.kill()` telling the client nothing at all |
+| **7** | Recorded demo cycle through the client (25 checks, MP4 video) | **no mob had ever taken a step or hit back** (`mob.startX`, `mob:move`, `mob:attack` unbound; `speed` 0), **objects entering view while walking were never sent to the RTK2 client**, and **one character could log in from two clients at once** (`ChaOnline` never set, 0x3804 a stub) |
 
 Gates today:
 
 | Gate | Checks | What it defends |
 |---|---|---|
-| `cliftest` | **917** | every protocol path, including mob death being broadcast to the client |
+| `cliftest` | **933** | every protocol path, including mob death being broadcast to the client, objects entering/leaving view while walking, and the double-login kick |
 | `dbtest` | **235** | database contract & `hasItem` matching C |
 | `worldtest` | 53 | world calendar, world registry |
-| `scripttest` | 42 | global Lua hooks & cron hooks are actually callable |
+| `scripttest` | 49 | global Lua hooks & cron hooks are actually callable; mob AI state is bound |
 | `chartest` | 39 | `CharStatus` codec |
 | `elixirtest` · `carnagetest` · `beachtest` · `sumotest` | 34 · 28 · 22 · 21 | one full match of each event |
 | `maptest` · `luaaudit` · `wiresync` | — | every `.map` parses · Lua syntax · the two `Wire.java` copies are identical |
@@ -244,7 +245,7 @@ been up 30 seconds gives false reds — let it settle first (#163).
 
 The full roadmap with per-stage tables lives in
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Pitfalls & lessons #1–#163 in
+Pitfalls & lessons #1–#167 in
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Folder structure

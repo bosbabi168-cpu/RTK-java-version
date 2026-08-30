@@ -242,6 +242,43 @@ public final class ScriptTest {
                         && engine.gameRegistry.size() == 1);
         check("registry yang belum ada bernilai 0, bukan null",
                 engine.gameRegGet("belum-pernah-ada") == 0);
+
+        // ---- #164/#165: keadaan AI mob dan mob:attack/move terikat ----
+        // Atribut yang hilang tidak melempar: ia menjawab nil dan
+        // `mob_ai_basic.move` gagal di baris pertamanya, selamanya, untuk
+        // setiap mob. Yang dijaga di sini adalah pengikatnya ADA dan
+        // menjawab dari ladang yang benar.
+        var jenisAi = new org.rtk.map.MobData();
+        jenisAi.id = 9164;
+        jenisAi.yname = "uji_ai_mob";
+        jenisAi.name = "Uji AI";
+        jenisAi.returnDistance = 7;
+        jenisAi.moveTime = 2000;
+        jenisAi.attackTime = 1500;
+        var mbAi = new org.rtk.map.Mob();
+        mbAi.data = jenisAi;
+        mbAi.startX = 5;
+        mbAi.startY = 6;
+        mbAi.startM = 330;
+        check("#164: mob.startX/startY/startM terikat",
+                mbAi.scriptAttr("startX") != null && mbAi.scriptAttr("startX").toint() == 5
+                        && mbAi.scriptAttr("startY").toint() == 6
+                        && mbAi.scriptAttr("startM").toint() == 330);
+        check("#164: mob.retDist/baseMove/baseAttack dari jenisnya",
+                mbAi.scriptAttr("retDist").toint() == 7
+                        && mbAi.scriptAttr("baseMove").toint() == 2000
+                        && mbAi.scriptAttr("baseAttack").toint() == 1500);
+        check("#164: mob.owner/snare/returning/newMove menjawab, bukan nil",
+                mbAi.scriptAttr("owner") != null && mbAi.scriptAttr("snare") != null
+                        && mbAi.scriptAttr("returning") != null
+                        && mbAi.scriptAttr("newMove") != null);
+        check("#164: mob.returning bisa ditulis skrip",
+                mbAi.scriptSetAttr("returning", org.luaj.vm2.LuaValue.TRUE) && mbAi.returning);
+        var refAi = engine.objectRef(mbAi);
+        check("#165: mob:attack terikat", !refAi.get("attack").isnil());
+        check("#164: mob:move terikat untuk MOB (dulu hanya NPC)", !refAi.get("move").isnil());
+        check("mob:sendStatus/sendMinitext ada (no-op seperti mobl_sendstatus)",
+                !refAi.get("sendStatus").isnil() && !refAi.get("sendMinitext").isnil());
     }
 
     private static void check(String what, boolean ok) {

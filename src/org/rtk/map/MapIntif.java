@@ -216,7 +216,16 @@ public final class MapIntif {
                 log.error("[MAP] {} gagal ditempatkan di dunia — koneksi ditutup", c.name);
                 tutupSesi(clientFd);
             }
+            return 0;
         }
+        // intif.c:255 mmo_setonline(id, 1): map server-lah yang menyalakan
+        // bendera online, dan ia pula yang memadamkannya saat pemain keluar
+        // (clif.c:10957) — SINKRON, bukan menunggu 0x3007 di char server:
+        // sambung-putus yang cepat sudah masuk lagi sebelum char server
+        // sempat memadamkannya. ⚠️ Baru SESUDAH enterWorld berhasil —
+        // pemain yang dialihkan ke server lain atau gagal ditempatkan tidak
+        // boleh meninggalkan bendera menyala (Peringatan #167).
+        MapServer.sql.update("UPDATE `Character` SET `ChaOnline` = 1 WHERE `ChaId` = ?", c.id);
         return 0;
     }
 
@@ -588,12 +597,47 @@ public final class MapIntif {
         return 0;
     }
 
-    /** intif_parse_checkonline() (0x3804): kick a double-logged character. */
+    /**
+     * intif_parse_checkonline() (0x3804): tendang karakter yang masuk dua
+     * kali — char server menyebarkannya ke semua map server; yang menampung
+     * karakternya yang bertindak.
+     *
+     * <p>⚠️ Stub "no players hosted yet in the skeleton" bertahan sampai
+     * 30 Agu 2026: login ganda dari server lain tidak pernah menendang
+     * siapa pun (Peringatan #167).</p>
+     */
     static int parseCheckOnline(int fd) {
         Session s = net.session(fd);
-        log.info("[MAP] Force-disconnect request for char id {} (no players hosted yet in the skeleton).",
-                s.rfifoL(2));
-        return 0;
+        long id = s.rfifoL(2) & 0xFFFFFFFFL;
+        return tendangKarakter(id) ? 1 : 0;
+    }
+
+    /** Tendang pemain ber-id itu bila ia online di server ini. */
+    static boolean tendangKarakter(long charId) {
+        for (User u : MapServer.onlineChars.values()) {
+            if (u.id == charId) {
+                MapServer.tendang(u, "Karakter ini masuk dari tempat lain; sambungan diputus.");
+                return true;
+            }
+        }
+        log.info("[MAP] permintaan tendang untuk id {} — tidak online di server ini", charId);
+        return false;
+    }
+
+    /**
+     * Minta char server menendang karakter ber-id itu di map server mana pun
+     * (0x3010, tambahan RTK2 — di C login server-lah yang mengirim 0x3804,
+     * dan klien RTK2 tidak pernah lewat sana).
+     */
+    public static void mintaTendang(long charId) {
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa minta tendang: belum terhubung ke char server");
+            return;
+        }
+        s.wfifoW(0, 0x3010);
+        s.wfifoL(2, (int) charId);
+        s.wfifoSet(6);
     }
 
     /** intif_parse(): dispatcher for packets from the char server. */

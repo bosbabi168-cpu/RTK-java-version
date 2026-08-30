@@ -449,6 +449,24 @@ public interface ClientView {
     void areaRedrawRequested(User sd, MapData map, int x, int y,
                              int width, int height, int checksum);
 
+    /**
+     * Pemain sudah berpindah petak; area pandangnya ikut bergeser.
+     *
+     * <p>Dipanggil SESUDAH {@code map.moveBlock} — {@code sd.x/y} sudah
+     * posisi baru, ({@code fromX},{@code fromY}) posisi lama. Adapter yang
+     * kliennya tidak meminta sendiri (RTK2) memakai ini untuk mengirim
+     * benda yang baru masuk pandangan dan mencabut yang keluar. Adapter
+     * RetroTK tidak butuh: kliennya meminta lewat blok 0x06
+     * ({@link #areaRedrawRequested}).</p>
+     *
+     * <p>⚠️ Sebelum 30 Agu 2026 tidak ada jalur ini sama sekali, dan
+     * komentar di atas ("server tahu sendiri apa yang baru terlihat")
+     * menutupi kenyataan bahwa server TIDAK PERNAH memberitahunya: benda
+     * yang masuk pandangan saat berjalan tidak pernah sampai ke klien RTK2
+     * (Peringatan #166).</p>
+     */
+    void playerViewMoved(User sd, int fromX, int fromY);
+
     // ------------------------------------------------------------------
     // Perlengkapan
     // ------------------------------------------------------------------

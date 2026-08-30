@@ -197,7 +197,7 @@ terjemahan di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 30 Agustus 2026:** 12/12 gerbang luring hijau, `livetest` **236**
+**Status 30 Agustus 2026 (petang):** 12/12 gerbang luring hijau, `livetest` **243**
 pemeriksaan hijau lewat klien sungguhan, **237** di gerbang dua map server,
 protokol RTK2 dua arah simetris, cakupan opcode **46/46**, celah binding 0.
 
@@ -207,9 +207,9 @@ protokol RTK2 dua arah simetris, cakupan opcode **46/46**, celah binding 0.
 | **R2** | TODO di kode — nol tersisa di `src/` | ✅ **SELESAI** 28 Agu 2026 |
 | **R3** | **C3** pindah antar map server terbukti pulang-pergi; **C2** meta RetroTK diputuskan tidak diport | ✅ **SELESAI** 28 Agu 2026 |
 | **R4** | Terjemahan dialog — 0 dari **9.812** titik masih Inggris | ✅ **SELESAI** 28 Agu 2026 |
-| **R5** | Stabilisasi berkelanjutan — enam putaran | ⏳ **BERJALAN** |
+| **R5** | Stabilisasi berkelanjutan — tujuh putaran | ⏳ **BERJALAN** |
 
-Enam putaran R5, dan yang dibongkar masing-masing:
+Tujuh putaran R5, dan yang dibongkar masing-masing:
 
 | Putaran | Fokus | Temuan terbesar |
 |---|---|---|
@@ -219,20 +219,21 @@ Enam putaran R5, dan yang dibongkar masing-masing:
 | **4** | Elixir & Carnage berjalan penuh | **`hasItem` dikembalikan sebagai jumlah**, bukan `true` — dipakai 419× dengan `== true`, jadi setiap syarat barang di quest gagal |
 | **5** | Sumo & Beach berjalan; opcode **46/46** | **`player:warp` di skrip tidak pernah memindahkan pemain** — 856 pemakaian diam total |
 | **6** | Pertarungan & animasi | **mob tidak bisa dibunuh: rantainya putus di enam tempat**, yang terakhir `MobRegistry.kill()` yang tidak mengabari klien sama sekali |
+| **7** | Siklus demo terekam lewat klien (25 pemeriksaan, video MP4) | **tidak ada mob yang pernah melangkah maupun membalas** (`mob.startX`, `mob:move`, `mob:attack` tak terikat; `speed` 0), **benda yang masuk pandangan saat berjalan tidak pernah dikirim ke klien RTK2**, dan **satu karakter bisa masuk dari dua klien sekaligus** (`ChaOnline` tak pernah disetel, 0x3804 stub) |
 
 Gerbang hari ini:
 
 | Gerbang | Pemeriksaan | Apa yang dijaga |
 |---|---|---|
-| `cliftest` | **917** | seluruh jalur protokol, termasuk kematian mob yang disiarkan ke klien |
+| `cliftest` | **933** | seluruh jalur protokol, termasuk kematian mob yang disiarkan ke klien, masuk/keluar pandangan saat berjalan, dan tendangan login ganda |
 | `dbtest` | **235** | kontrak basis data & `hasItem` sesuai C |
 | `worldtest` | 53 | kalender dunia, registry sedunia |
-| `scripttest` | 42 | kait Lua global & cron benar-benar bisa dipanggil |
+| `scripttest` | 49 | kait Lua global & cron benar-benar bisa dipanggil; keadaan AI mob terikat |
 | `chartest` | 39 | codec `CharStatus` |
 | `elixirtest` · `carnagetest` · `beachtest` · `sumotest` | 34 · 28 · 22 · 21 | satu pertandingan penuh tiap acara |
 | `maptest` · `luaaudit` · `wiresync` | — | seluruh `.map` terbaca · sintaks Lua · dua salinan `Wire.java` identik |
 | **`tools/uji-dua-server.sh`** | **237** | perpindahan antar map server, pulang-pergi |
-| **`livetest`** (repo klien) | **236** | server sungguhan lewat klien sungguhan |
+| **`livetest`** (repo klien) | **243** | server sungguhan lewat klien sungguhan |
 
 ⚠️ Sapu `logs/common.log` juga: dua bug nyata bersembunyi di sana, bukan di
 `map.log` (Peringatan #123, #125). ⚠️ `livetest` pada map server yang baru
@@ -240,7 +241,7 @@ hidup 30 detik memberi merah palsu — beri waktu menetap dulu (#163).
 
 Roadmap lengkap dengan tabel per tahap ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#163 di
+Jebakan & pelajaran #1–#167 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder

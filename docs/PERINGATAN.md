@@ -2515,3 +2515,107 @@ ekor daftar dengan nomor lanjutan.
    Servernya masih memuat peta dan skrip. Beri waktu menetap dulu — merah
    yang muncul sekali lalu hilang pada penjalanan berikutnya hampir selalu
    ini, bukan cacat kode.
+
+164. **Tidak ada mob yang pernah MELANGKAH — `mob.startX/startY` dan
+   `mob:move()` tidak pernah terikat untuk MOB (30 Agu 2026).**
+   `mob_ai_basic.move` membuka dengan
+   `distanceXY(mob, mob.startX, mob.startY)`; keduanya nil, jadi
+   `scripts.lua:372` melempar "arithmetic on number and nil" pada tik AI
+   PERTAMA setiap mob, selamanya. `map.log` mencatatnya **sekali**, lalu
+   "sudah terjadi 10000x (pesan sama, hanya dicatat sekali)" — baris yang
+   mudah dianggap gangguan. Dan sesudah atribut itu diikat, ternyata
+   `klass.addMethod("move")` hanya mengenal `Npc`: untuk mob ia menjawab
+   0 tanpa berbuat apa-apa (kelas prototipe itu dipakai NPC DAN mob).
+   Kini `Mob.scriptAttr` menjawab seluruh keadaan AI dari `mobl_getattr`
+   (`startX/Y/M`, `owner`, `newMove/baseMove`, `snare`, `returning`,
+   `retDist`, `amnesia`, …) dan `move` memanggil `MobRegistry.move` — port
+   `move_mob()` yang cek tabrakannya TANPA syarat `target == 0` (itu beda
+   satu-satunya dari `moveghost_mob`).
+   ⚠️ Yang membongkarnya bukan gerbang mana pun, melainkan skenario demo
+   (`--skenario`) yang **menghitung** `EV_OBJECT_MOVED` milik mob dan
+   menuntut angkanya > 0 selama 30 detik. Keluarga #120/#136/#157: yang
+   tidak diport hanya DIAM.
+
+165. **Tidak ada mob yang pernah MEMBALAS — `mob:attack(id)` tidak
+   terikat (30 Agu 2026).** Baris terakhir `mob_ai_basic.attack` adalah
+   `mob:attack(target.ID)` → "attempt to call nil", satu baris ERROR
+   lalu dibungkam sebagai pengulangan. Mob mengejar, berbalik, mengirim
+   aksi… lalu tidak terjadi apa-apa. Kini `Combat.mobAttack` = port
+   `mob_attack()` (mob.c:1944): stealth melepaskan sasaran,
+   `hitCritChance` → `swingDamage` → `on_hit_while_cast` untuk mantra yang
+   menempel di mob → `damage += 0.5` → `takeDamage(sd, dmg, 33|255)`.
+   Animasi pukulan mob datang dari Lua (`block:sendAction(1, 14)` di
+   hitCritChance), bukan dari Java — di C barisnya memang dikomentari.
+   ⚠️ Peluang kena mob = `95 − grace/5 − (levelPemain − levelMob)`,
+   dijepit 5..100: kucing level 15 mengenai pemain level 99 hanya 5% —
+   "HP tidak berkurang" pada karakter level 99 BUKAN bukti mob tidak
+   menyerang. Demo memakai Adrielle (level 83) karena itu.
+   ⚠️ `player.alignment` juga tidak terikat: setiap mantra warrior/rogue
+   yang membaca `player.alignment + 1` (berserk.lua:33, 30+ berkas) gagal
+   diam-diam — ditemukan langkah 2i skenario demo.
+
+166. **Benda yang MASUK PANDANGAN saat berjalan tidak pernah dikirim ke
+   klien RTK2 (30 Agu 2026).** Di C klien-lah yang meminta: paket langkah
+   0x06 membawa blok petak baru dan server menjawab dengan LOOK_GET
+   (`clif_parsewalk`, clif.c:5120). Komentar di `ClientView.areaRedrawRequested`
+   berbunyi "server tahu sendiri apa yang baru terlihat" — tetapi tidak
+   ada satu pun kode yang memberitahunya. Klien RTK2 hanya menerima benda
+   dari sapuan masuk-dunia/refresh/ganti-peta; kelinci lima petak di
+   sebelah kiri tidak pernah ada di layar sampai pemain menekan R.
+   Gejalanya di skenario demo: `probe` yang berdiri diam melihat 4 kelinci
+   + 1 kucing, klien yang BERJALAN ke petak yang sama hanya melihat ayam
+   yang kebetulan sudah tersapu saat tiba. Kini `ClientView.playerViewMoved`
+   (dipanggil sesudah `moveBlock`) mengirim selisih dua sapuan area:
+   `EV_OBJECT_APPEARED` untuk yang baru masuk, `EV_OBJECT_REMOVED` untuk
+   yang keluar. Adapter RetroTK sengaja kosong (kliennya meminta sendiri).
+   ⚠️ Sisi sebaliknya sama rusaknya: `mobMoved`/`npcMoved`/`playerStepSeen`
+   menyiarkan `EV_OBJECT_MOVED` ke semua penonton di sekitar petak BARU —
+   termasuk yang belum pernah diperkenalkan pada bendanya, dan klien
+   membuang perpindahan benda yang tidak ia kenal. Mob yang berjalan
+   MENDEKATI pemain tidak pernah muncul. Kini `siarkanPindah` memilih per
+   penonton: masuk pandangan → APPEARED, keluar → REMOVED, sisanya MOVED,
+   dengan `MapData.areaContains` yang memakai kotak area yang sama
+   (termasuk pergeserannya di tepi peta) dengan `foreachInArea`.
+
+167. **Satu karakter bisa masuk dari DUA klien sekaligus (30 Agu 2026).**
+   Ketahuan saat dua rekaman demo tak sengaja berjalan berbarengan: dua
+   sesi Adrielle hidup 17 detik berselang (fd 3 dan fd 4), saling merusak
+   keadaan (EXP +0, pungut gagal), dan server tidak menendang siapa pun.
+   Tiga lubang yang saling menutupi:
+   - bendera `ChaOnline` **tidak pernah disetel 1** — `intif.c:255`
+     (`mmo_setonline(id, 1)` sesudah karakter dimuat) terlewat, jadi
+     pemeriksaan `logindata_add` di char server (jalur RetroTK) selalu
+     menjawab "tidak online";
+   - jalur RTK2 (`rtk2Introduce` → 0x3003) **tidak memeriksa apa pun**:
+     ia tidak pernah lewat login server tempat C memeriksanya;
+   - penangan `0x3804` di map server masih **stub** ("no players hosted
+     yet in the skeleton") — tendangan dari server lain tidak pernah
+     dieksekusi.
+   Kini: `parseCharLoad` menyalakan bendera **sesudah** `enterWorld`
+   berhasil (pemain yang dialihkan ke server lain atau gagal ditempatkan
+   tidak boleh meninggalkannya menyala), `handleDisconnect` memadamkannya
+   **sinkron** di map server (`clif.c:10957` — menunggu 0x3007 di char
+   server terlalu lambat untuk sambung-putus cepat), `MapServer.boot`
+   menolkan semua bendera basi (`map.c:1822`, cermin C termasuk efek
+   sampingnya pada dua map server), dan `rtk2Introduce` menendang sesi
+   lama lewat `MapServer.tendang` (pesan sistem, lalu 500 ms kemudian
+   `tutupAktif` = `handleDisconnect` + `sessionEof` — `eof = true` saja
+   tidak menutup apa pun sampai sesi itu kebetulan dijadwalkan lagi).
+   Bila sesi lamanya di map server lain, map server mengirim **0x3010**
+   (tambahan RTK2) ke char server, yang menyebarkan 0x3804 ke semua map
+   server dan memadamkan benderanya — bendera basi sesudah server jatuh
+   tidak mengunci pemain selamanya.
+   ⚠️ **Kontraknya SENGAJA menyimpang dari C.** C (`logif.c:85`) menolak
+   pendatang (kode 6) dan menyuruhnya masuk lagi dengan tangan. Versi itu
+   sempat dipasang dan `livetest` langsung merah di TIGA langkah lain:
+   klien yang menutup soketnya lalu menyambung lagi dalam sekejap tiba
+   sebelum utas logika memproses eof sesi lamanya, dan ditolak karena
+   "masih online" padahal tidak ada siapa pun di sana — persis yang akan
+   dialami pemain yang kliennya baru jatuh. Jadi: pendatang diberi tahu
+   (`EV_ACCOUNT_RESULT` kode 9, "sesi lamanya diputus dulu"), sesi lama
+   ditendang, dan pendatang diperkenalkan 700 ms kemudian (1,2 s bila
+   sesi lamanya di server lain) — asal slot fd-nya masih miliknya.
+   Dijaga `cliftest` (0x3804 menendang, EV_MESSAGE sebelum ditutup) dan
+   `livetest` (baseline masuk → pendatang kode 9 → sesi lama ditutup &
+   diberi tahu → pendatang masuk dunia → hanya satu sesi hidup → sesudah
+   keluar masuk lagi berhasil).
