@@ -192,6 +192,20 @@ public final class MapServer {
                 case "char_port": charPort = Integer.parseInt(value); break;
                 case "char_id": charId = value; break;
                 case "char_pw": charPw = value; break;
+                // ⚠️ `start_point` milik char.conf, tetapi K3-lanjutan membuat
+                // karakter DARI PROSES MAP (CharDb.newChar dengan kolam map
+                // server). Tanpa membacanya di sini ketiga statik di
+                // CharServer tetap 0 dan tiap karakter baru lahir di petak
+                // (0,0) peta 0 — sudut Kugnae, bukan start_point (30 Agu 2026).
+                case "start_point": {
+                    String[] parts = value.split(",");
+                    if (parts.length == 3) {
+                        org.rtk.charserver.CharServer.startM = Integer.parseInt(parts[0].trim());
+                        org.rtk.charserver.CharServer.startX = Integer.parseInt(parts[1].trim());
+                        org.rtk.charserver.CharServer.startY = Integer.parseInt(parts[2].trim());
+                    }
+                    break;
+                }
                 case "serverid": serverId = Integer.parseInt(value); break;
                 case "map_path": mapPath = value; break;
                 case "db_path": dbPath = value; break;
@@ -443,7 +457,7 @@ public final class MapServer {
                 return 0;   // bingkainya belum lengkap
             }
             org.rtk.map.proto.Inbound.dispatch(fd, s, onlineChars.get(fd), len,
-                    commands, MapServer::rtk2Introduce);
+                    commands, RTK2_HANDSHAKE);
         } catch (org.rtk.map.proto.Wire.Malformed e) {
             // Setelah satu bingkai rusak, batas bingkai berikutnya sudah
             // tidak diketahui — melanjutkan berarti menafsirkan sampah.
@@ -473,13 +487,282 @@ public final class MapServer {
                     name, s.clientIpString());
             return false;
         }
-        if (!org.rtk.charserver.CharDb.isPass(name, password, md5)) {
+        // K3-lanjutan: sesi yang sudah masuk AKUN boleh memilih karakter
+        // miliknya tanpa sandi karakter — itulah arti "pilih karakter".
+        // ⚠️ Kepemilikannya diperiksa ULANG di sini terhadap tabel Accounts;
+        // klien tidak pernah boleh menyebut karakter mana yang miliknya.
+        Integer akun = akunSesi.get(fd);
+        boolean lewatAkun = akun != null && akunMemiliki(akun, name);
+        if (!lewatAkun
+                && !org.rtk.charserver.CharDb.isPass(name, password, md5)) {
             log.warn("[MAP] RTK2 '{}' dari {} ditolak: sandi salah",
                     name, s.clientIpString());
             return false;
         }
+        // logindata_add() di logif.c:85: karakter yang MASIH online tidak
+        // boleh dipegang dua klien. Di C pendatangnya ditolak (kode 6), sesi
+        // lamanya ditendang lewat 0x3804, dan pemain masuk lagi dengan
+        // tangan. Di sini SENGAJA MENYIMPANG: sesi lama ditendang, lalu
+        // pendatangnya DIMASUKKAN begitu sesi lama tertutup. Alasannya
+        // bukan selera: klien yang menutup soketnya lalu menyambung lagi
+        // dalam sekejap (livetest, atau pemain yang kliennya baru saja
+        // jatuh) tiba SEBELUM utas logika sempat memproses eof sesi
+        // lamanya — dengan kontrak C ia ditolak karena "masih online"
+        // padahal tidak ada siapa pun di sana (Peringatan #167).
+        // ⚠️ Sampai 30 Agu 2026 bendera ChaOnline tidak pernah DISETEL oleh
+        // port ini (intif.c:255 terlewat), jadi pemeriksaan apa pun di sini
+        // tidak akan pernah berarti tanpa perbaikan di parseCharLoad.
+        Integer online = sql.queryInt(
+                "SELECT `ChaOnline` FROM `Character` WHERE `ChaName` = ?", name);
+        if (online != null && online > 0) {
+            Integer chaId = sql.queryInt(
+                    "SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", name);
+            User lama = onlineByName(name);
+            if (lama != null) {
+                tendang(lama, "Karakter ini masuk dari tempat lain; sambungan diputus.");
+            } else if (chaId != null) {
+                // Di map server lain (atau bendera basi sesudah server
+                // jatuh): char server yang menyebarkan tendangannya dan
+                // memadamkan benderanya.
+                MapIntif.mintaTendang(chaId);
+            }
+            log.warn("[MAP] RTK2 '{}' dari {}: masih online ({}); sesi lama ditendang, "
+                    + "pendatang dimasukkan sesudahnya",
+                    name, s.clientIpString(), lama != null ? "server ini" : "server lain");
+            hasilAkun(s, 9, "Karakter masih online; sesi lamanya diputus dulu…");
+            rtk2Fds.add(fd);
+            // Sesudah sesi lama tertutup (700 ms > 500 ms jeda tendang; 1,2 s
+            // bila di server lain), pendatang diperkenalkan seperti biasa —
+            // asal slot fd-nya masih miliknya (Peringatan #96/#124).
+            timers.insert(lama != null ? 700 : 1200, 0, (a, b) -> {
+                if (net.session(fd) == s && !s.eof) {
+                    if (!authByName(fd, s, name)) {
+                        tutupAktif(s);
+                    }
+                }
+                return 0;
+            }, 0, 0);
+            return true;
+        }
         rtk2Fds.add(fd);
         return authByName(fd, s, name);
+    }
+
+    /** Pemain yang sedang online di server ini dengan nama itu, atau null. */
+    static User onlineByName(String nama) {
+        for (User u : onlineChars.values()) {
+            if (u.name().equalsIgnoreCase(nama)) {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Tendang satu pemain: beri tahu, lalu tutup sambungannya sesudah
+     * pesannya sempat terkirim. Penutupan berjalan lewat jalur putus biasa
+     * ({@link #handleDisconnect}), jadi karakternya TERSIMPAN dan
+     * {@code ChaOnline} kembali 0 lewat 0x3007.
+     */
+    static void tendang(User sd, String pesan) {
+        if (sd == null || sd.ditendang) {
+            return;
+        }
+        sd.ditendang = true;
+        clientView.messageToPlayer(sd, 5, pesan);
+        final Session s = net.session(sd.fd);
+        timers.insert(500, 0, (a, b) -> {
+            if (onlineChars.get(sd.fd) == sd) {
+                tutupAktif(s);
+            }
+            return 0;
+        }, 0, 0);
+        log.info("[MAP] {} ditendang: {}", sd.name(), pesan);
+    }
+
+    /**
+     * Tutup satu sesi SEKARANG lewat jalur putus biasa — bila slot fd-nya
+     * masih milik sesi itu (fd dipakai ulang, Peringatan #96/#124).
+     */
+    private static int tutupAktif(Session s) {
+        if (s != null && net.session(s.fd) == s) {
+            handleDisconnect(s.fd);
+            net.sessionEof(s);
+        }
+        return 0;
+    }
+
+    /** Akun yang sudah masuk pada tiap sesi RTK2 (K3-lanjutan). */
+    private static final java.util.Map<Integer, Integer> akunSesi =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Apakah karakter ini benar-benar milik akun tersebut. */
+    private static boolean akunMemiliki(int akunId, String nama) {
+        Integer chaId = sql.queryInt(
+                "SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", nama);
+        if (chaId == null) {
+            return false;
+        }
+        Integer ada = sql.queryInt(
+                "SELECT `AccountId` FROM `Accounts` WHERE `AccountId` = ?"
+                + " AND (`AccountCharId1` = ? OR `AccountCharId2` = ?"
+                + " OR `AccountCharId3` = ? OR `AccountCharId4` = ?"
+                + " OR `AccountCharId5` = ? OR `AccountCharId6` = ?)",
+                akunId, chaId, chaId, chaId, chaId, chaId, chaId);
+        return ada != null;
+    }
+
+    /** Penangan pra-login & perkenalan RTK2 (K3-lanjutan). */
+    private static final org.rtk.map.proto.Inbound.Handshake RTK2_HANDSHAKE =
+            new org.rtk.map.proto.Inbound.Handshake() {
+        @Override
+        public boolean playerIntroduces(int fd, Session s, String nama, String sandi) {
+            return rtk2Introduce(fd, s, nama, sandi);
+        }
+
+        @Override
+        public void accountLogs(int fd, Session s, String email, String sandi) {
+            Integer id = sql.queryInt(
+                    "SELECT `AccountId` FROM `Accounts`"
+                    + " WHERE `AccountEmail` = ? AND `AccountPassword` = MD5(?)",
+                    email, sandi);
+            if (id == null) {
+                akunSesi.remove(fd);
+                hasilAkun(s, 1, "Email atau sandi akun salah.");
+                return;
+            }
+            Integer banned = sql.queryInt(
+                    "SELECT `AccountBanned` FROM `Accounts` WHERE `AccountId` = ?", id);
+            if (banned != null && banned == 1) {
+                akunSesi.remove(fd);
+                hasilAkun(s, 2, "Akun ini diblokir.");
+                return;
+            }
+            akunSesi.put(fd, id);
+            kirimDaftarKarakter(s, id);
+        }
+
+        @Override
+        public void createsCharacter(int fd, Session s, String nama, String sandi,
+                                     int sex, int wajah, int rambut,
+                                     int warnaRambut, int warnaWajah, int negara) {
+            if (nama.length() < 3 || nama.length() > 12
+                    || !nama.matches("[A-Za-z]+")) {
+                hasilAkun(s, 3, "Nama harus 3-12 huruf, tanpa angka atau spasi.");
+                return;
+            }
+            if (sandi.length() < 3) {
+                hasilAkun(s, 4, "Sandi minimal 3 huruf.");
+                return;
+            }
+            // ⚠️ Slot akun diperiksa SEBELUM karakternya dibuat. Kalau
+            // urutannya terbalik, akun yang sudah penuh tetap mendapat baris
+            // `Character` baru yang tidak dikaitkan ke mana pun: nama itu
+            // terpakai selamanya tanpa ada yang bisa memainkannya.
+            Integer akunSesiIni = akunSesi.get(fd);
+            if (akunSesiIni != null && slotAkunKosong(akunSesiIni) == 0) {
+                hasilAkun(s, 7, "Akun ini sudah punya 6 karakter.");
+                return;
+            }
+            // ⚠️ `sql` DI SINI adalah kolam koneksi map server. Versi tanpa
+            // argumen memakai kolam char server, yang di proses ini tidak
+            // pernah tersambung — Peringatan #123.
+            int r = org.rtk.charserver.CharDb.newChar(sql, nama, sandi, 0, sex,
+                    negara, wajah, rambut, warnaRambut, warnaWajah);
+            switch (r) {
+                case 0 -> {
+                    // Kaitkan ke akun bila sesi ini sedang masuk akun, supaya
+                    // karakter barunya langsung muncul di daftarnya.
+                    Integer akun = akunSesiIni;
+                    if (akun != null) {
+                        kaitkanKeAkun(akun, nama);
+                        hasilAkun(s, 0, "Karakter '" + nama + "' dibuat.");
+                        kirimDaftarKarakter(s, akun);
+                    } else {
+                        hasilAkun(s, 0, "Karakter '" + nama + "' dibuat. "
+                                + "Masuk dengan nama dan sandi itu.");
+                    }
+                }
+                case 1 -> hasilAkun(s, 5, "Nama '" + nama + "' sudah dipakai.");
+                default -> hasilAkun(s, 6, "Gagal membuat karakter.");
+            }
+        }
+    };
+
+    /**
+     * Kirim satu bingkai RTK2 ke sesi yang BELUM punya User.
+     *
+     * <p>{@code Rtk2ClientView.kirim} bekerja dari objek pemain, dan pada
+     * tahap pra-login pemain itu belum ada — daftar karakter justru yang
+     * menentukan siapa pemainnya nanti.</p>
+     */
+    private static void kirimRtk2(Session s, org.rtk.map.proto.Wire.Writer w) {
+        if (s == null) {
+            return;
+        }
+        byte[] f = w.frame();
+        s.wfifoBytes(0, f, f.length);
+        s.wfifoSet(f.length);
+    }
+
+    /** Nomor slot akun pertama yang kosong (1..6), atau 0 bila penuh. */
+    private static int slotAkunKosong(int akunId) {
+        for (int i = 1; i <= 6; i++) {
+            Integer isi = sql.queryInt("SELECT `AccountCharId" + i + "`"
+                    + " FROM `Accounts` WHERE `AccountId` = ?", akunId);
+            if (isi == null || isi == 0) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    /** Pasang karakter ke slot akun pertama yang kosong. */
+    private static void kaitkanKeAkun(int akunId, String nama) {
+        Integer chaId = sql.queryInt(
+                "SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", nama);
+        if (chaId == null) {
+            return;
+        }
+        int slot = slotAkunKosong(akunId);
+        if (slot == 0) {
+            log.warn("[MAP] akun {} sudah punya 6 karakter; '{}' tidak dikaitkan",
+                    akunId, nama);
+            return;
+        }
+        sql.update("UPDATE `Accounts` SET `AccountCharId" + slot + "` = ?"
+                + " WHERE `AccountId` = ?", chaId, akunId);
+    }
+
+    private static void hasilAkun(Session s, int kode, String pesan) {
+        kirimRtk2(s, new org.rtk.map.proto.Wire.Writer(
+                org.rtk.map.proto.Wire.EV_ACCOUNT_RESULT).u8(kode).str(pesan));
+    }
+
+    /** Kirim daftar karakter milik satu akun. */
+    private static void kirimDaftarKarakter(Session s, int akunId) {
+        java.util.List<Object[]> daftar = new java.util.ArrayList<>();
+        sql.forEachRow(
+                "SELECT c.`ChaName`, c.`ChaLevel`, c.`ChaSex`, c.`ChaFace`,"
+                + " c.`ChaHair`, c.`ChaHairColor`, c.`ChaPthId` FROM `Character` c"
+                + " JOIN `Accounts` a ON c.`ChaId` IN (a.`AccountCharId1`,"
+                + " a.`AccountCharId2`, a.`AccountCharId3`, a.`AccountCharId4`,"
+                + " a.`AccountCharId5`, a.`AccountCharId6`)"
+                + " WHERE a.`AccountId` = ? ORDER BY c.`ChaLevel` DESC",
+                rs -> daftar.add(new Object[] {
+                    rs.getString("ChaName"), rs.getInt("ChaLevel"),
+                    rs.getInt("ChaSex"), rs.getInt("ChaFace"),
+                    rs.getInt("ChaHair"), rs.getInt("ChaHairColor"),
+                    rs.getInt("ChaPthId")}),
+                akunId);
+        org.rtk.map.proto.Wire.Writer w = new org.rtk.map.proto.Wire.Writer(
+                org.rtk.map.proto.Wire.EV_CHAR_LIST).u16(daftar.size());
+        for (Object[] c : daftar) {
+            w.str((String) c[0]).u16((Integer) c[1]).u8((Integer) c[6])
+             .u16((Integer) c[3]).u16((Integer) c[4])
+             .u8((Integer) c[5]).u8((Integer) c[2]);
+        }
+        kirimRtk2(s, w);
     }
 
     /** Satu paket RetroTK. */
@@ -564,9 +847,105 @@ public final class MapServer {
         return true;
     }
 
+    /** Detik dinding terakhir yang sudah dijalankan kait cronjob-nya. */
+    private static long detikCronTerakhir = -1;
+
+    /**
+     * {@code map_cronjob()}: kait skrip berkala.
+     *
+     * <p>Mengikuti C persis: kaitnya dipilih dari SISA BAGI detik jam
+     * dinding, bukan dari penghitung sendiri — {@code cronJobMin} jalan saat
+     * detik habis dibagi 60, dan seterusnya sampai harian.</p>
+     *
+     * <p>⚠️ Detik yang sama tidak boleh dijalankan dua kali. Timernya
+     * berjeda 1.000 ms, tetapi tik yang terlambat sedikit lalu terkejar bisa
+     * jatuh pada detik dinding yang sama — dan `cronJobMin` yang jalan dua
+     * kali berarti mis. donasi diproses ganda.</p>
+     */
+    private static void cronjobTick() {
+        if (scriptEngine == null) {
+            return;
+        }
+        long detik = System.currentTimeMillis() / 1000L;
+        if (detik == detikCronTerakhir) {
+            return;
+        }
+        detikCronTerakhir = detik;
+
+        if (detik % 60 == 0) {
+            scriptEngine.doScript("cronJobMin", "cronJobMin");
+        }
+        if (detik % 300 == 0) {
+            scriptEngine.doScript("cronJob5Min", "cronJob5Min");
+        }
+        if (detik % 1800 == 0) {
+            scriptEngine.doScript("cronJob30Min", "cronJob30Min");
+        }
+        if (detik % 3600 == 0) {
+            scriptEngine.doScript("cronJobHour", "cronJobHour");
+        }
+        if (detik % 86400 == 0) {
+            scriptEngine.doScript("cronJobDay", "cronJobDay");
+        }
+        scriptEngine.doScript("cronJobSec", "cronJobSec");
+    }
+
+    /**
+     * {@code map_loadgameregistry()}: registry sedunia dari basis data.
+     *
+     * <p>Tanpa ini nilai seperti {@code red_potions_available} atau
+     * {@code elixirRound} selalu mulai dari 0 tiap server dinyalakan, dan
+     * apa pun yang ditulis skrip hilang saat mati — acara yang berjalan
+     * lintas restart tidak pernah bisa selesai.</p>
+     */
+    private static void muatGameRegistry(org.rtk.map.script.ScriptEngine engine) {
+        int[] n = {0};
+        int rows = sql.forEachRow(
+                "SELECT `GrgIdentifier`,`GrgValue` FROM `GameRegistry" + serverId + "`",
+                rs -> {
+                    engine.gameRegMuat(rs.getString("GrgIdentifier"),
+                            rs.getInt("GrgValue"));
+                    n[0]++;
+                });
+        if (rows < 0) {
+            log.warn("[MAP] tabel `GameRegistry{}` tidak terbaca; registry "
+                    + "sedunia mulai kosong dan TIDAK akan tersimpan", serverId);
+            return;
+        }
+        log.info("[MAP] {} registry sedunia dimuat dari `GameRegistry{}`",
+                n[0], serverId);
+    }
+
+    /**
+     * {@code map_savegameregistry()}: tulis-terus tiap kali nilainya berubah.
+     *
+     * <p>⚠️ Nilai 0 MENGHAPUS barisnya, persis seperti C — di sana nol
+     * adalah "tidak ada", dan baris bernilai nol yang tertinggal akan
+     * dibaca kembali sebagai entri yang menghabiskan slot.</p>
+     */
+    private static void simpanGameRegistry(String nama, int nilai) {
+        String tabel = "`GameRegistry" + serverId + "`";
+        if (nilai == 0) {
+            sql.update("DELETE FROM " + tabel + " WHERE `GrgIdentifier` = ?", nama);
+            return;
+        }
+        int diubah = sql.update("UPDATE " + tabel + " SET `GrgValue` = ?"
+                + " WHERE `GrgIdentifier` = ?", nilai, nama);
+        if (diubah <= 0) {
+            sql.update("INSERT INTO " + tabel
+                    + " (`GrgIdentifier`,`GrgValue`) VALUES (?, ?)", nama, nilai);
+        }
+    }
+
     /** Pemain terputus: simpan lalu lepaskan dari dunia. */
     static void handleDisconnect(int fd) {
         rtk2Fds.remove(fd);
+        // ⚠️ WAJIB. Nomor fd DIPAKAI ULANG oleh sambungan berikutnya: tanpa
+        // baris ini, sambungan baru yang kebetulan mendapat fd bekas sesi
+        // yang sudah masuk akun ikut mewarisi akunnya, dan boleh masuk ke
+        // karakter akun itu TANPA sandi. Ketahuan oleh kontrol negatif
+        // livetest, bukan oleh nalar. Lihat docs/PERINGATAN.md #124.
+        akunSesi.remove(fd);
         // Permintaan data karakter yang belum dijawab char server tidak lagi
         // ada tujuannya — lihat catatan `menunggu` di MapIntif.
         MapIntif.lupakanPermintaan(fd);
@@ -583,6 +962,9 @@ public final class MapServer {
         // simpan + tandai offline lewat char server (0x3007); penyegaran
         // posisi & samaran dilakukan saveChar sendiri
         MapIntif.saveChar(sd, true);
+        // clif.c:10957 — bendera online dipadamkan map server SEKETIKA;
+        // 0x3007 di char server memadamkannya lagi, tidak apa-apa.
+        sql.update("UPDATE `Character` SET `ChaOnline` = 0 WHERE `ChaId` = ?", sd.id);
         log.info("[MAP] {} keluar dari dunia", sd.name());
     }
 
@@ -595,6 +977,20 @@ public final class MapServer {
     }
 
     public static void main(String[] args) {
+        boot(args);
+        core = new Core(net, timers);
+        core.mainLoop();
+    }
+
+    /**
+     * Seluruh penyalaan map server KECUALI loop utamanya.
+     *
+     * <p>Dipisahkan supaya gerbang bisa memakai penyalaan yang SAMA persis
+     * dengan server sungguhan — peta, NPC, barang, mantra, skrip, registry
+     * sedunia, dan timer. Gerbang yang menyusun dunianya sendiri hanya
+     * menguji dunia buatannya sendiri.</p>
+     */
+    static void boot(String[] args) {
         String confFile = "conf/map.conf";
         String interFile = "conf/inter.conf";
 
@@ -619,6 +1015,16 @@ public final class MapServer {
         // kosong — lihat MapMsg.
         org.rtk.map.data.MapMsg.load("conf/lang.conf");
 
+        // map.c:1822 — seluruh bendera online dinolkan saat map server
+        // menyala: sesi yang tersisa dari proses sebelumnya sudah pasti mati.
+        // ⚠️ Cermin C apa adanya: dengan dua map server, boot server kedua
+        // menolkan bendera pemain yang sedang online di server pertama.
+        if (sql.connect(sqlId, sqlPw, sqlIp, sqlPort, sqlDb)) {
+            int n = sql.update("UPDATE `Character` SET `ChaOnline` = 0 WHERE `ChaOnline` = 1");
+            if (n > 0) {
+                log.info("[MAP] {} bendera ChaOnline basi dinolkan", n);
+            }
+        }
         if (!sql.connect(sqlId, sqlPw, sqlIp, sqlPort, sqlDb)) {
             log.warn("[MAP] WARNING: no database connection; running with map 0 only.");
         }
@@ -675,6 +1081,25 @@ public final class MapServer {
                         return npcs == null ? null : npcs.byName(name);
                     }
                 });
+                // ⚠️ `core = NPC(4294967295)` di sys.lua bergantung pada NPC
+                // F1 (`NpcIsF1Npc=1`), dan `core.gameRegistry` dipakai 1.036
+                // kali di 27 berkas — termasuk jalur biasa seperti membeli
+                // ramuan merah. Kalau barisnya tidak ada, SELURUH pemakaian
+                // itu melempar "attempt to index ? (a nil value)" di tempat
+                // yang tampak tidak berhubungan. Lebih baik diketahui saat
+                // start daripada ditemukan dari satu petak acara.
+                if (npcs.byId(org.rtk.map.Npc.F1_NPC) == null) {
+                    log.warn("[MAP] NPC F1 (NpcIsF1Npc=1) tidak ada di `NPCs{}` — "
+                            + "`core` di skrip akan nil dan setiap "
+                            + "`core.gameRegistry` melempar", serverId);
+                } else {
+                    log.info("[MAP] NPC F1 siap: `core` di skrip terisi");
+                }
+                // map_loadgameregistry(): registry sedunia dari
+                // `GameRegistry<serverid>`. Dimuat SEBELUM skrip berjalan,
+                // karena skrip membacanya sejak tik pertama.
+                muatGameRegistry(scriptEngine);
+                scriptEngine.setGameRegistryWriter(MapServer::simpanGameRegistry);
                 int errors = scriptEngine.init(luaPath);
                 if (errors < 0) {
                     log.warn("[MAP] Lua scripting disabled: rtklua not found at {} (set lua_path in map.conf)", luaPath);
@@ -713,11 +1138,16 @@ public final class MapServer {
         // di sini satu timer menyapu semua pemain online, karena logika
         // permainan berjalan di satu thread (lihat Peringatan #8).
         timers.insert(1000, 1000, (a, b) -> duraTick(), 0, 0);
+        // map_cronjob(): tik 1 detik yang memanggil kait berkala milik
+        // skrip. Tanpa ini `minigames.timer()` tidak pernah jalan, jadi
+        // TIDAK ADA acara berkala yang pernah dimulai — begitu juga
+        // kelahiran bos, penerangan peta, dan pemunculan barang.
+        timers.insert(1000, 1000, (a, b) -> {
+            cronjobTick();
+            return 0;
+        }, 0, 0);
 
         log.info("RetroTK Map Server (Java skeleton) is ready! Listening at {}.", mapPort);
         ServerLog.addLog("Server Ready! Listening at %d.%n", mapPort);
-
-        core = new Core(net, timers);
-        core.mainLoop();
     }
 }

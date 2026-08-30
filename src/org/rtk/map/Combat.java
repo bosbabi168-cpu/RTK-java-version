@@ -85,6 +85,7 @@ public final class Combat {
         // Lua yang memutuskan kena atau tidak, lalu berapa kerusakannya.
         panggil(engine, "hitCritChance", penyerang, sasaran);
         if (sd.critChance <= 0) {
+            log.debug("[COMBAT] {} MELESET (critChance {})", sd.name(), sd.critChance);
             return;
         }
         panggil(engine, "swingDamage", penyerang, sasaran);
@@ -93,12 +94,77 @@ public final class Combat {
         ausSenjata(sd);
 
         int damage = bulatkanDamage(sd);
+        log.debug("[COMBAT] {} memukul {}: crit={} damage={} nyawa mob {}",
+                sd.name(), mob.displayName(), sd.critChance, damage, mob.currentVita);
         mob.addThreat(sd.id, damage);
 
         kaitPerlengkapan(engine, sd, penyerang, sasaran);
         kaitMantra(engine, sd, penyerang, sasaran);
 
         MobRegistry.fireAttacked(engine, mob, sd);
+    }
+
+    /**
+     * mob_attack(): MOB memukul pemain (atau mob lain) — {@code mob:attack(id)}.
+     *
+     * <p>⚠️ Method ini <b>tidak pernah ada</b> sampai 30 Agu 2026:
+     * {@code mob_ai_basic.attack} berakhir dengan {@code mob:attack(target.ID)}
+     * dan panggilan itu gagal "attempt to call nil" — dicatat sekali di
+     * {@code map.log} lalu dibungkam sebagai pengulangan. Jadi tidak ada mob
+     * yang pernah membalas pukulan, untuk siapa pun (Peringatan #165).</p>
+     *
+     * <p>Alurnya cermin {@code mob.c:1944}: penyerang stealth/immortal
+     * melepaskan sasaran; {@code hitCritChance} memutuskan kena, {@code
+     * swingDamage} menghitung kerusakan, kait {@code on_hit_while_cast}
+     * untuk mantra yang menempel di mob, lalu kerusakan dibulatkan dengan
+     * {@code +=0.5} yang sama seperti pemain. Animasi pukulan mob datang
+     * dari Lua ({@code block:sendAction(1, 14)} di hitCritChance), bukan
+     * dari sini — di C barisnya sudah dikomentari.</p>
+     */
+    public static void mobAttack(Mob mob, long id) {
+        var engine = MapServer.scriptEngine;
+        if (engine == null || id <= 0 || mob.state == MobData.MOB_DEAD) {
+            return;
+        }
+        User sd = MapServer.userById(id);
+        Mob tmob = null;
+        if (sd == null) {
+            BlockList bl = MapServer.blockById(id);
+            if (bl instanceof Mob m2) {
+                tmob = m2;
+            }
+        }
+        if (sd == null && tmob == null) {
+            return;
+        }
+        if (sd != null && (sd.optFlags & User.OPT_STEALTH) != 0) {
+            mob.target = 0;
+            mob.attacker = 0;
+            return;
+        }
+        var penyerang = engine.objectRef(mob);
+        var sasaran = sd != null ? engine.playerRef(sd.scriptPlayer()) : engine.objectRef(tmob);
+
+        panggil(engine, "hitCritChance", penyerang, sasaran);
+        if (mob.critChance == 0) {
+            return;
+        }
+        panggil(engine, "swingDamage", penyerang, sasaran);
+        for (String nama : mob.durasiAktif()) {
+            panggil(engine, nama, "on_hit_while_cast", penyerang, sasaran);
+        }
+        mob.damage += 0.5;
+        int dmg = (int) mob.damage;
+        if (sd != null) {
+            sd.attacker = mob.id;
+            takeDamage(sd, dmg, mob.critChance == 1 ? 33 : 255);
+            MapServer.clientView.playerStatusChanged(sd, Clif.SFLAG_HPMP);
+        } else {
+            tmob.attacker = mob.id;
+            tmob.currentVita = Math.max(0, tmob.currentVita - dmg);
+        }
+        log.debug("[COMBAT] {} memukul {}: crit={} damage={}", mob.displayName(),
+                sd != null ? sd.name() : tmob.displayName(), mob.critChance, dmg);
     }
 
     /** clif_pc_damage(): pemain memukul pemain lain. */
@@ -322,6 +388,11 @@ public final class Combat {
         }
         it.dura -= val;
         checkDura(sd, slot);
+        // RTK2: klien memegang salinan slot perlengkapan dan tidak punya
+        // cara lain mengetahui durabilitasnya berubah. C tidak mengirim
+        // apa-apa di sini (klien RetroTK menghitung sendiri), jadi ini
+        // tambahan yang sengaja — satu blok barang kecil per pengausan.
+        MapServer.clientView.playerEquipmentChanged(sd, slot);
     }
 
     /**

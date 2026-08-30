@@ -50,6 +50,20 @@ public interface ClientView {
     void playerViewRefreshed(User sd);
 
     /**
+     * Pemain berpindah ke peta LAIN di server yang sama (portal, mantra
+     * gateway, {@code player:warp} di skrip).
+     *
+     * <p>⚠️ Ini bukan sekadar menggambar ulang. Klien memegang berkas
+     * {@code .map} sendiri, jadi selama ia tidak diberi tahu nomor peta yang
+     * baru ia akan terus menggambar peta LAMA — dengan tembok, nama, dan
+     * (sejak K5) musik yang salah — sambil raganya berjalan di peta baru.
+     * Dulu hanya {@link #playerEnteredWorld} yang mengirim petanya, sehingga
+     * satu-satunya perpindahan yang benar adalah yang lewat sambung ulang
+     * antar map server (Peringatan #149).</p>
+     */
+    void playerMapChanged(User sd);
+
+    /**
      * Nilai status pemain berubah.
      *
      * @param flags kombinasi {@code SFLAG_*}; bagian mana yang berubah
@@ -156,6 +170,16 @@ public interface ClientView {
      */
     void boardListToPlayer(User sd, int board, int flags1, int flags2,
                            java.util.List<Clif.BoardEntry> isi);
+
+    /**
+     * Isi SATU kiriman papan (K2-lanjutan).
+     *
+     * @param bendera hak yang dihitung CHAR SERVER, bukan yang diklaim
+     *                klien: bit 1 boleh menulis, bit 2 boleh menghapus
+     */
+    void boardPostToPlayer(User sd, int board, int pos, int bendera,
+                           String penulis, String topik, int bulan, int hari,
+                           String isi);
 
     // ------------------------------------------------------------------
     // Pertukaran barang antar pemain
@@ -424,6 +448,24 @@ public interface ClientView {
      */
     void areaRedrawRequested(User sd, MapData map, int x, int y,
                              int width, int height, int checksum);
+
+    /**
+     * Pemain sudah berpindah petak; area pandangnya ikut bergeser.
+     *
+     * <p>Dipanggil SESUDAH {@code map.moveBlock} — {@code sd.x/y} sudah
+     * posisi baru, ({@code fromX},{@code fromY}) posisi lama. Adapter yang
+     * kliennya tidak meminta sendiri (RTK2) memakai ini untuk mengirim
+     * benda yang baru masuk pandangan dan mencabut yang keluar. Adapter
+     * RetroTK tidak butuh: kliennya meminta lewat blok 0x06
+     * ({@link #areaRedrawRequested}).</p>
+     *
+     * <p>⚠️ Sebelum 30 Agu 2026 tidak ada jalur ini sama sekali, dan
+     * komentar di atas ("server tahu sendiri apa yang baru terlihat")
+     * menutupi kenyataan bahwa server TIDAK PERNAH memberitahunya: benda
+     * yang masuk pandangan saat berjalan tidak pernah sampai ke klien RTK2
+     * (Peringatan #166).</p>
+     */
+    void playerViewMoved(User sd, int fromX, int fromY);
 
     // ------------------------------------------------------------------
     // Perlengkapan

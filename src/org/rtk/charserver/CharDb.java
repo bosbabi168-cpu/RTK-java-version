@@ -51,6 +51,19 @@ public final class CharDb {
 
     /** find_new_id(): lowest free ChaId, wiping any stale satellite rows. */
     static int findNewId() {
+        return findNewId(sql);
+    }
+
+    /**
+     * find_new_id() pada koneksi yang diberikan.
+     *
+     * <p>⚠️ Kolam koneksi {@code CharServer.sql} hanya tersambung di PROSES
+     * char server. Map server punya kolamnya sendiri, dan memanggil versi
+     * tanpa argumen dari sana membuat setiap kueri melempar "Connection pool
+     * is not initialized" — yang ditelan dan berubah menjadi "null", bukan
+     * kegagalan yang kelihatan. Lihat docs/PERINGATAN.md #123.</p>
+     */
+    static int findNewId(org.rtk.common.Sql sql) {
         Integer newId = sql.queryInt(
                 "SELECT l.ChaId + 1 AS START FROM `Character` AS l "
                 + "LEFT OUTER JOIN `Character` AS r ON l.ChaId + 1 = r.ChaId "
@@ -80,11 +93,19 @@ public final class CharDb {
      */
     public static int newChar(String name, String pass, int totem, int sex, int country,
             int face, int hair, int faceColor, int hairColor) {
-        int result = isNameUsed(name);
+        return newChar(sql, name, pass, totem, sex, country, face, hair,
+                faceColor, hairColor);
+    }
+
+    /** char_db_newchar() pada koneksi yang diberikan; lihat {@link #findNewId}. */
+    public static int newChar(org.rtk.common.Sql sql, String name, String pass,
+            int totem, int sex, int country,
+            int face, int hair, int faceColor, int hairColor) {
+        int result = isNameUsed(sql, name);
         if (result != 0) {
             return result;
         }
-        int newId = findNewId();
+        int newId = findNewId(sql);
         if (newId == 0) {
             return 2;
         }
@@ -105,6 +126,11 @@ public final class CharDb {
      * @return 0 = free, 1 = taken, 2 = db error
      */
     public static int isNameUsed(String name) {
+        return isNameUsed(sql, name);
+    }
+
+    /** char_db_isnameused() pada koneksi yang diberikan. */
+    public static int isNameUsed(org.rtk.common.Sql sql, String name) {
         int rows = sql.rowCount("SELECT `ChaId` FROM `Character` WHERE `ChaName` = ?", name);
         if (rows < 0) {
             return 2;

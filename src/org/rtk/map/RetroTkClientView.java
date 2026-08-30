@@ -26,6 +26,16 @@ public final class RetroTkClientView implements ClientView {
         Clif.refresh(sd);
     }
 
+    /**
+     * Klien RetroTK memuat petanya sendiri dari paket masuk-dunia, jadi
+     * perpindahan peta di dalam satu server dikirim sebagai masuk-dunia
+     * ulang — persis yang dilakukan C di ekor {@code pc_warp}.
+     */
+    @Override
+    public void playerMapChanged(User sd) {
+        Clif.sendWorldEntry(sd);
+    }
+
     @Override
     public void playerStatusChanged(User sd, int flags) {
         Clif.sendStatus(sd, flags);
@@ -127,6 +137,15 @@ public final class RetroTkClientView implements ClientView {
     public void boardListToPlayer(User sd, int board, int flags1, int flags2,
                                   java.util.List<Clif.BoardEntry> isi) {
         Clif.sendBoardList(sd, board, flags1, flags2, isi);
+    }
+
+    @Override
+    public void boardPostToPlayer(User sd, int board, int pos, int bendera,
+                                  String penulis, String topik, int bulan,
+                                  int hari, String isi) {
+        // ⚠️ Sengaja kosong: paket "isi satu kiriman" RetroTK belum diport,
+        // dan ARAH FINAL project ini adalah RTK2. Dibiarkan diam supaya
+        // klien RetroTK tidak menerima paket setengah jadi.
     }
 
     @Override
@@ -322,6 +341,11 @@ public final class RetroTkClientView implements ClientView {
     public void areaRedrawRequested(User sd, MapData map, int x, int y,
                                     int width, int height, int checksum) {
         Clif.redrawArea(sd, map, x, y, width, height, checksum);
+    }
+
+    @Override
+    public void playerViewMoved(User sd, int fromX, int fromY) {
+        // Klien RetroTK meminta sendiri lewat blok 0x06 (areaRedrawRequested).
     }
 
     @Override

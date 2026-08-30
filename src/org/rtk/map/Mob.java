@@ -122,6 +122,64 @@ public final class Mob extends BlockList
     public double damage;
     public int critChance;
 
+    /** Peluang meleset per sepuluh ribu ({@code mob->miss}, sl.c:5301). */
+    public int miss;
+
+    // ---- pengali pertarungan (map.h: float sleep, deduction, dmgshield) ----
+    /** Pengali tidur; 1 = normal. */
+    public double sleepMul = 1.0;
+    /** Pengali potongan; 1 = normal. */
+    public double deduction = 1.0;
+    /** Perisai kerusakan yang menyerap dulu. */
+    public double dmgShield;
+    public boolean paralyzed;
+    public boolean blind;
+    public boolean confused;
+    public long confuseTarget;
+
+    /**
+     * Mantra yang sedang menempel pada mob: nama -&gt; saat berakhir (ms).
+     *
+     * <p>C menyimpannya di {@code mob->dura[]}. Di sini cukup peta kecil:
+     * yang dibutuhkan skrip hanyalah "masih menempel atau tidak" dan
+     * "berapa sisanya" ({@code Mob.checkIfCast}, mob.lua:419).</p>
+     */
+    private final java.util.Map<String, Long> durasi = new java.util.HashMap<>();
+
+    /** Sisa durasi mantra dalam milidetik; 0 bila tidak menempel. */
+    public long durasiSisa(String nama) {
+        Long akhir = durasi.get(nama);
+        if (akhir == null) {
+            return 0;
+        }
+        long sisa = akhir - System.currentTimeMillis();
+        if (sisa <= 0) {
+            durasi.remove(nama);
+            return 0;
+        }
+        return sisa;
+    }
+
+    /** Nama mantra yang masih menempel (untuk kait `on_hit_while_cast`). */
+    public java.util.List<String> durasiAktif() {
+        var hasil = new java.util.ArrayList<String>();
+        for (String nama : new java.util.ArrayList<>(durasi.keySet())) {
+            if (durasiSisa(nama) > 0) {
+                hasil.add(nama);
+            }
+        }
+        return hasil;
+    }
+
+    /** Tempelkan mantra selama sekian milidetik; 0 melepasnya. */
+    public void setDurasi(String nama, long ms) {
+        if (ms <= 0) {
+            durasi.remove(nama);
+        } else {
+            durasi.put(nama, System.currentTimeMillis() + ms);
+        }
+    }
+
     /**
      * Tabel ancaman: id pemain &rarr; total kerusakan yang ia timbulkan.
      *
@@ -205,6 +263,44 @@ public final class Mob extends BlockList
     public int startX;
     public int startY;
 
+    // ---- keadaan AI yang dibaca-tulis skrip (mob.h) ----
+    // ⚠️ Sebelum 30 Agu 2026 TIDAK SATU PUN dari ini terikat, dan akibatnya
+    // sediam-diamnya: `mob_ai_basic.move` membaca `mob.startX` untuk
+    // `distanceXY(mob, mob.startX, mob.startY)`, mendapat nil, dan MELEMPAR
+    // di baris pertama — jadi tidak ada mob yang pernah melangkah, sejak
+    // awal, sementara `map.log` hanya mencatat "script error sudah terjadi
+    // 10000x" (Peringatan #164). Keluarga yang sama dengan #157.
+
+    /** {@code mob->newmove}/{@code newatk}: jeda gerak/serang yang diubah skrip (ms). */
+    public int newMove;
+    public int newAttack;
+    /** {@code mob->snare}: terjerat, tidak bisa melangkah. */
+    public boolean snare;
+    /** {@code mob->returning}: sedang pulang ke titik kelahirannya. */
+    public boolean returning;
+    /** {@code mob->summon}: mob panggilan. */
+    public boolean summon;
+    /** {@code mob->lastaction}: detik unix aksi terakhir. */
+    public long lastAction;
+    /** {@code mob->rangeTarget}: sasaran serangan jarak jauh. */
+    public long rangeTarget;
+    /** {@code mob->amnesia}: hitungan lupa sasaran. */
+    public double amnesia;
+    /** {@code mob->crit}/{@code critmult}: ragam kritis dan pengalinya. */
+    public int crit;
+    public double critMult = 1.0;
+    /** {@code mob->block}/{@code protection}: pengubah per-mob (bawaan dari jenisnya). */
+    public double block;
+    public Double protectionOverride;
+    /** {@code mob->dmgdealt}/{@code dmgtaken}: statistik kerusakan. */
+    public double dmgDealt;
+    public double dmgTaken;
+    /** {@code mob->lastvita}: nyawa sebelum pukulan terakhir. */
+    public long lastVita;
+    /** {@code mob->invis}/{@code cursed}. */
+    public int invis;
+    public int cursed;
+
     public Mob() {
         this.type = Type.MOB;
     }
@@ -265,13 +361,81 @@ public final class Mob extends BlockList
             case "grace" -> data == null ? null : org.luaj.vm2.LuaValue.valueOf(data.grace);
             case "will" -> data == null ? null : org.luaj.vm2.LuaValue.valueOf(data.will);
             case "hit" -> data == null ? null : org.luaj.vm2.LuaValue.valueOf(data.hit);
+            // ⚠️ `miss` dipakai `hitCritChance.lua` untuk KEDUA belah pihak:
+            // pemain memukul mob DAN mob memukul pemain. Tanpa ladang ini
+            // skripnya gagal sebelum sempat menghitung apa pun (#157).
+            case "miss" -> org.luaj.vm2.LuaValue.valueOf(miss);
+            case "blType" -> org.luaj.vm2.LuaValue.valueOf(
+                    org.rtk.map.data.BlockList.BL_MOB);
+            // ⚠️ Skrip memakai huruf besar: `target.IsBoss` di swingDamage.
+            // Nama atribut peka huruf, jadi "isBoss" saja tidak cukup.
+            case "IsBoss" -> org.luaj.vm2.LuaValue.valueOf(
+                    data != null && data.isBoss ? 1 : 0);
+            case "sleep" -> org.luaj.vm2.LuaValue.valueOf(sleepMul);
+            case "deduction" -> org.luaj.vm2.LuaValue.valueOf(deduction);
+            case "dmgShield" -> org.luaj.vm2.LuaValue.valueOf(dmgShield);
+            case "paralyzed" -> org.luaj.vm2.LuaValue.valueOf(paralyzed);
+            case "blind" -> org.luaj.vm2.LuaValue.valueOf(blind);
+            case "confused" -> org.luaj.vm2.LuaValue.valueOf(confused);
+            case "confuseTarget" -> org.luaj.vm2.LuaValue.valueOf((double) confuseTarget);
+            case "mobID" -> org.luaj.vm2.LuaValue.valueOf(
+                    data == null ? 0 : (double) data.id);
+            case "damage" -> org.luaj.vm2.LuaValue.valueOf(damage);
+            case "critChance" -> org.luaj.vm2.LuaValue.valueOf(critChance);
             case "armor" -> data == null ? null : org.luaj.vm2.LuaValue.valueOf(data.baseArmor);
             case "protection" -> data == null ? null
                     : org.luaj.vm2.LuaValue.valueOf(data.protection);
             case "experience" -> data == null ? null
                     : org.luaj.vm2.LuaValue.valueOf((double) data.exp);
             case "isBoss" -> org.luaj.vm2.LuaValue.valueOf(data != null && data.isBoss ? 1 : 0);
-            default -> null;
+            // ---- keadaan AI (sl.c mobl_getattr) — lihat catatan di ladangnya ----
+            case "startX" -> org.luaj.vm2.LuaValue.valueOf(startX);
+            case "startY" -> org.luaj.vm2.LuaValue.valueOf(startY);
+            case "startM" -> org.luaj.vm2.LuaValue.valueOf(startM);
+            case "behavior" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.type);
+            case "aiType" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.subtype);
+            case "mobType" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.mobType);
+            case "owner" -> org.luaj.vm2.LuaValue.valueOf((double) owner);
+            case "newMove" -> org.luaj.vm2.LuaValue.valueOf(newMove);
+            case "baseMove" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.moveTime);
+            case "newAttack" -> org.luaj.vm2.LuaValue.valueOf(newAttack);
+            case "baseAttack" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.attackTime);
+            case "spawnTime" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.spawnTime);
+            case "snare" -> org.luaj.vm2.LuaValue.valueOf(snare);
+            case "returning" -> org.luaj.vm2.LuaValue.valueOf(returning);
+            case "summon" -> org.luaj.vm2.LuaValue.valueOf(summon);
+            case "lastAction" -> org.luaj.vm2.LuaValue.valueOf((double) lastAction);
+            case "rangeTarget" -> org.luaj.vm2.LuaValue.valueOf((double) rangeTarget);
+            case "amnesia" -> org.luaj.vm2.LuaValue.valueOf(amnesia);
+            case "retDist" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.returnDistance);
+            case "crit" -> org.luaj.vm2.LuaValue.valueOf(crit);
+            case "critMult" -> org.luaj.vm2.LuaValue.valueOf(critMult);
+            case "block", "baseBlock" -> org.luaj.vm2.LuaValue.valueOf(block);
+            case "baseProtection" -> data == null ? null
+                    : org.luaj.vm2.LuaValue.valueOf(data.protection);
+            case "dmgDealt" -> org.luaj.vm2.LuaValue.valueOf(dmgDealt);
+            case "dmgTaken" -> org.luaj.vm2.LuaValue.valueOf(dmgTaken);
+            case "lastHealth" -> org.luaj.vm2.LuaValue.valueOf((double) lastVita);
+            case "baseHealth" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : (double) data.vita);
+            case "baseMagic" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : (double) data.mana);
+            case "baseHit" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.hit);
+            case "baseMiss" -> org.luaj.vm2.LuaValue.valueOf(0);
+            case "baseMinDam" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.minDam);
+            case "baseMaxDam" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.maxDam);
+            case "baseMight" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.might);
+            case "baseGrace" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.grace);
+            case "baseWill" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.will);
+            case "baseArmor" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.baseArmor);
+            case "sound" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.sound);
+            case "mark" -> org.luaj.vm2.LuaValue.valueOf(data == null ? 0 : data.mark);
+            case "tier", "race", "seeInvis" -> org.luaj.vm2.LuaValue.valueOf(0);
+            case "invis" -> org.luaj.vm2.LuaValue.valueOf(invis);
+            case "cursed" -> org.luaj.vm2.LuaValue.valueOf(cursed);
+            case "lastDeath" -> org.luaj.vm2.LuaValue.valueOf((double) lastDeath);
+            default -> {
+                org.rtk.map.script.Bindings.lapor("mob", attr);
+                yield null;
+            }
         };
     }
 
@@ -287,6 +451,16 @@ public final class Mob extends BlockList
     public boolean scriptSetAttr(String attr, org.luaj.vm2.LuaValue v) {
         switch (attr) {
             case "health" -> currentVita = Math.max(0, (long) v.todouble());
+            case "miss" -> miss = (int) v.todouble();
+            case "damage" -> damage = v.todouble();
+            case "critChance" -> critChance = (int) v.todouble();
+            case "sleep" -> sleepMul = v.todouble();
+            case "deduction" -> deduction = v.todouble();
+            case "dmgShield" -> dmgShield = v.todouble();
+            case "paralyzed" -> paralyzed = v.toboolean();
+            case "blind" -> blind = v.toboolean();
+            case "confused" -> confused = v.toboolean();
+            case "confuseTarget" -> confuseTarget = (long) v.todouble();
             case "maxHealth" -> maxVita = (long) v.todouble();
             case "magic" -> currentMana = Math.max(0, (long) v.todouble());
             case "maxMagic" -> maxMana = (long) v.todouble();
@@ -297,6 +471,24 @@ public final class Mob extends BlockList
             case "side" -> side = v.toint();
             case "look" -> look = v.toint();
             case "lookColor" -> lookColor = v.toint();
+            // ---- keadaan AI (sl.c mobl_setattr) ----
+            case "owner" -> owner = (long) v.todouble();
+            case "newMove" -> newMove = (int) v.todouble();
+            case "newAttack" -> newAttack = (int) v.todouble();
+            case "snare" -> snare = v.toboolean();
+            case "returning" -> returning = v.toboolean();
+            case "summon" -> summon = v.toboolean();
+            case "lastAction" -> lastAction = (long) v.todouble();
+            case "rangeTarget" -> rangeTarget = (long) v.todouble();
+            case "amnesia" -> amnesia = v.todouble();
+            case "crit" -> crit = (int) v.todouble();
+            case "critMult" -> critMult = v.todouble();
+            case "block" -> block = v.todouble();
+            case "dmgDealt" -> dmgDealt = v.todouble();
+            case "dmgTaken" -> dmgTaken = v.todouble();
+            case "lastHealth" -> lastVita = (long) v.todouble();
+            case "invis" -> invis = (int) v.todouble();
+            case "cursed" -> cursed = (int) v.todouble();
             default -> {
                 return false;
             }

@@ -592,9 +592,29 @@ public final class MobRegistry {
         mob.lastDeath = System.currentTimeMillis() / 1000;
         MapData map = world.get(mob.m);
         if (map != null && mob.onMap) {
+            // ⚠️ Kabari klien SELAGI mob masih terdaftar di petaknya —
+            // sesudah `delBlock` tidak ada lagi cara mencari penontonnya.
+            // Tanpa ini mob yang mati hilang dari server tetapi TETAP
+            // TERGAMBAR di layar setiap pemain sampai mereka pindah peta:
+            // pertarungan yang berhasil terlihat seperti pertarungan yang
+            // tidak terjadi (Peringatan #157). Pola yang sama dipakai
+            // barang lantai (`FloorItemRegistry`: "clif_lookgone, selagi
+            // masih di petak").
+            MapServer.clientView.objectActed(mob, AKSI_MATI, 10, 0);
+            MapServer.clientView.objectRemoved(mob);
             map.delBlock(mob);
         }
     }
+
+    /**
+     * Nomor aksi "mob mati" yang dikirim tepat sebelum ia dihapus.
+     *
+     * <p>Di {@code monster.dna} aksi 0 adalah animasi MEMUDAR — itulah
+     * yang dimainkan klien sebagai kematian. Angkanya dikirim lewat
+     * {@code EV_OBJECT_ACTED} yang sudah ada, jadi tidak ada peristiwa
+     * baru di kabel.</p>
+     */
+    public static final int AKSI_MATI = 0;
 
     /**
      * moveghost_mob() (map/mob.c:1518) — mob melangkah satu petak ke arah
@@ -622,7 +642,23 @@ public final class MobRegistry {
      * @return true bila mob benar-benar berpindah
      */
     public boolean moveGhost(org.rtk.map.script.ScriptEngine engine, Mob mob) {
-        return langkah(engine, mob, false);
+        return langkah(engine, mob, false, true);
+    }
+
+    /**
+     * move_mob() (map/mob.c:1144) — langkah biasa, dipakai {@code mob:move()}.
+     *
+     * <p>Bedanya dari {@link #moveGhost}: ketiga cek tabrakan berlaku
+     * <b>tanpa syarat</b>, juga saat mob sedang mengejar sasaran (di
+     * moveghost_mob ketiganya berbunyi {@code && mob->target == 0}).</p>
+     *
+     * <p>⚠️ Sampai 30 Agu 2026 {@code mob:move()} pada MOB mengembalikan 0
+     * tanpa berbuat apa-apa: pengikatnya hanya mengenal NPC. Digabung
+     * dengan {@code mob.startX} yang tidak terikat (#164), tidak ada mob
+     * yang pernah melangkah — dan tidak ada yang melempar.</p>
+     */
+    public boolean move(org.rtk.map.script.ScriptEngine engine, Mob mob) {
+        return langkah(engine, mob, false, false);
     }
 
     /**
@@ -649,7 +685,7 @@ public final class MobRegistry {
      * kode mati. Tidak ditiru.</p>
      */
     public boolean moveIgnoreObject(org.rtk.map.script.ScriptEngine engine, Mob mob) {
-        return langkah(engine, mob, true);
+        return langkah(engine, mob, true, true);
     }
 
     /**
@@ -659,7 +695,7 @@ public final class MobRegistry {
      *                        menghentikan langkah pada kedua versi
      */
     private boolean langkah(org.rtk.map.script.ScriptEngine engine, Mob mob,
-                            boolean abaikanTabrakan) {
+                            boolean abaikanTabrakan, boolean tembusSaatMengejar) {
         if (mob == null || mob.state == MobData.MOB_DEAD) {
             return false;
         }
@@ -804,7 +840,7 @@ public final class MobRegistry {
         // Mob yang sedang mengejar sasaran menembus penghalang — di C ketiga
         // cek tabrakan bersyarat `&& mob->target == 0`. Versi
         // move_mob_ignore_object melewati seluruh blok ini.
-        if (!abaikanTabrakan && mob.target == 0
+        if (!abaikanTabrakan && (mob.target == 0 || !tembusSaatMengejar)
                 && (NpcRegistry.blockedBy(map, dx, dy, mob) || !map.walkable(dx, dy))) {
             return false;
         }

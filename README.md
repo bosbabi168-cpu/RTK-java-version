@@ -16,7 +16,7 @@ Sejak 26 Agustus 2026 project ini **tidak lagi mengejar kompatibilitas
 byte-per-byte** dengan klien RetroTK. Yang berlaku:
 
 - **Protokol sendiri (RTK2)** — dua arah, dirancang dari kebutuhan nyata
-  skrip: 43 opcode masuk, 54 peristiwa keluar. Spesifikasi:
+  skrip: 46 opcode masuk, 57 peristiwa keluar (Wire v11). Spesifikasi:
   [`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md).
 - **Klien sendiri (libGDX)** — dikembangkan di repo terpisah
   `../RTK-client`, belum di-commit sampai seluruh aset diganti buatan
@@ -44,10 +44,11 @@ menulis adapter baru, bukan menyentuh logika.
   papan pesan, peta yang bisa diubah saat berjalan.
 - **Scripting**: 906/906 skrip termuat 0 error; celah binding **0**
   (satu-satunya sisa `testPacket`, sengaja tidak diport).
-- **Pengujian**: 8 gerbang regresi luring (903 assertion `cliftest`,
-  234 `dbtest`) + gerbang klien sungguhan `livetest` (155 pemeriksaan;
-  **167** pada setup dua map server, `./tools/uji-dua-server.sh`).
-  36 dari 43 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.
+- **Pengujian**: 12 gerbang regresi luring (**917** assertion `cliftest`,
+  **235** `dbtest`) + gerbang klien sungguhan `livetest` (**243**
+  pemeriksaan; **237** pada setup dua map server,
+  `./tools/uji-dua-server.sh`).
+  **Seluruh 46 opcode RTK2 kini pernah benar-benar dikirim klien sungguhan.**
 - **Terjemahan Indonesia**: SELESAI — 0 dari 9.812 titik dialog masih
   berbahasa Inggris; `livetest` menuntut dialog yang sampai ke pemain
   berbahasa Indonesia.
@@ -158,7 +159,7 @@ adalah identifier. Teks dialognya sendiri sudah **selesai** diterjemahkan
 (0 dari 9.812 titik tersisa); alat dan katalognya di `tools/terjemahan/`,
 aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
-## Pengujian — sembilan gerbang
+## Pengujian — dua belas gerbang luring + dua gerbang hidup
 
 | Gerbang | Menguji | Catatan |
 |---|---|---|
@@ -166,14 +167,18 @@ aturannya di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 | `maptest` | 3.544 berkas peta | |
 | `chartest` | serialisasi karakter | |
 | `worldtest` | dunia peta + penempatan pemain | |
-| `cliftest` | paket, protokol RTK2, seluruh subsistem | 903 assertion |
-| `dbtest` | lapisan database ke MySQL hidup | 234 assertion; butuh MySQL |
+| `cliftest` | paket, protokol RTK2, seluruh subsistem | **917** assertion |
+| `dbtest` | lapisan database ke MySQL hidup | **235** assertion; butuh MySQL |
 | `luaaudit` | pemeriksa statis 907 skrip + celah binding | `-Drtk.audit.penuh=true` untuk daftar utuh |
 | `wiresync` | `Wire.java` identik dengan salinan di repo klien | skip bila repo klien tidak ada |
-| `livetest` | **klien RTK2 sungguhan** masuk dunia + 155 pemeriksaan | dijalankan dari `../RTK-client` |
-| `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | 167 pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
+| `elixirtest` | **satu pertandingan Elixir penuh** di atas penyalaan server sungguhan | 34 pemeriksaan; map server lain harus mati |
+| `carnagetest` | **satu pertandingan Carnage penuh** (regu per jalur kelas, empat kubu) | 28 pemeriksaan; map server lain harus mati |
+| `sumotest` | **satu pertandingan Sumo War penuh** (poin dari dorongan ke air) | 21 pemeriksaan; map server lain harus mati |
+| `beachtest` | **satu ronde Beach War penuh** (poin dari tembakan) | 22 pemeriksaan; map server lain harus mati |
+| `livetest` | **klien RTK2 sungguhan** masuk dunia + **243** pemeriksaan | dijalankan dari `../RTK-client`; beri map server waktu menetap dulu (#163) |
+| `tools/uji-dua-server.sh` | perpindahan pemain antar map server (R3/C3) | **237** pemeriksaan; menyiapkan & memulihkan fixture-nya sendiri |
 
-Delapan gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
+Dua belas gerbang pertama luring — menguji kode terhadap dirinya sendiri dan
 tidak bisa melihat "sesuatu yang tidak terjadi". Karena itu setiap
 subsistem baru wajib dapat pemeriksaan `cliftest` **dan** `livetest`, lalu
 kodenya dirusak sengaja untuk membuktikan gerbangnya bisa merah.
@@ -192,16 +197,51 @@ terjemahan di [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 28 Agustus 2026:** 8/8 gerbang luring hijau, `livetest` 89
-pemeriksaan hijau, protokol RTK2 dua arah simetris, celah binding 0,
-`map.log` 0 ERROR/WARN. Penghambat utama sekarang ada di sisi klien
-(`../RTK-client`) — server sudah mengirim lebih banyak daripada yang bisa
-digambar klien.
+**Status 30 Agustus 2026 (petang):** 12/12 gerbang luring hijau, `livetest` **243**
+pemeriksaan hijau lewat klien sungguhan, **237** di gerbang dua map server,
+protokol RTK2 dua arah simetris, cakupan opcode **46/46**, celah binding 0.
 
-Roadmap menuju "server dipakai normal & lancar tanpa bug" — lengkap dengan
-tabel aksi pemain yang belum punya jalur masuk RTK2 — ada di
+| Tahap | Isi | Status |
+|---|---|---|
+| **R1** | Aksi pemain tanpa jalur masuk RTK2 (16 butir audit `clif_parse`) | ✅ **SELESAI** 28 Agu 2026 |
+| **R2** | TODO di kode — nol tersisa di `src/` | ✅ **SELESAI** 28 Agu 2026 |
+| **R3** | **C3** pindah antar map server terbukti pulang-pergi; **C2** meta RetroTK diputuskan tidak diport | ✅ **SELESAI** 28 Agu 2026 |
+| **R4** | Terjemahan dialog — 0 dari **9.812** titik masih Inggris | ✅ **SELESAI** 28 Agu 2026 |
+| **R5** | Stabilisasi berkelanjutan — tujuh putaran | ⏳ **BERJALAN** |
+
+Tujuh putaran R5, dan yang dibongkar masing-masing:
+
+| Putaran | Fokus | Temuan terbesar |
+|---|---|---|
+| **1** | Cakupan opcode 25 → 36 | **`.ID` tidak pernah diimplementasikan** — memungut barang dari tanah tidak pernah berhasil, sejak awal |
+| **2** | Pembuatan karakter & sesi | **fd dipakai ulang** — sambungan baru mewarisi akun sesi sebelumnya dan bisa masuk tanpa sandi |
+| **3** | Mesin acara berkala | `map_cronjob()` dan registry sedunia **tidak pernah diport**: tidak ada acara, kelahiran bos, penerangan peta, atau pemunculan barang yang pernah jalan |
+| **4** | Elixir & Carnage berjalan penuh | **`hasItem` dikembalikan sebagai jumlah**, bukan `true` — dipakai 419× dengan `== true`, jadi setiap syarat barang di quest gagal |
+| **5** | Sumo & Beach berjalan; opcode **46/46** | **`player:warp` di skrip tidak pernah memindahkan pemain** — 856 pemakaian diam total |
+| **6** | Pertarungan & animasi | **mob tidak bisa dibunuh: rantainya putus di enam tempat**, yang terakhir `MobRegistry.kill()` yang tidak mengabari klien sama sekali |
+| **7** | Siklus demo terekam lewat klien (25 pemeriksaan, video MP4) | **tidak ada mob yang pernah melangkah maupun membalas** (`mob.startX`, `mob:move`, `mob:attack` tak terikat; `speed` 0), **benda yang masuk pandangan saat berjalan tidak pernah dikirim ke klien RTK2**, dan **satu karakter bisa masuk dari dua klien sekaligus** (`ChaOnline` tak pernah disetel, 0x3804 stub) |
+
+Gerbang hari ini:
+
+| Gerbang | Pemeriksaan | Apa yang dijaga |
+|---|---|---|
+| `cliftest` | **933** | seluruh jalur protokol, termasuk kematian mob yang disiarkan ke klien, masuk/keluar pandangan saat berjalan, dan tendangan login ganda |
+| `dbtest` | **235** | kontrak basis data & `hasItem` sesuai C |
+| `worldtest` | 53 | kalender dunia, registry sedunia |
+| `scripttest` | 49 | kait Lua global & cron benar-benar bisa dipanggil; keadaan AI mob terikat |
+| `chartest` | 39 | codec `CharStatus` |
+| `elixirtest` · `carnagetest` · `beachtest` · `sumotest` | 34 · 28 · 22 · 21 | satu pertandingan penuh tiap acara |
+| `maptest` · `luaaudit` · `wiresync` | — | seluruh `.map` terbaca · sintaks Lua · dua salinan `Wire.java` identik |
+| **`tools/uji-dua-server.sh`** | **237** | perpindahan antar map server, pulang-pergi |
+| **`livetest`** (repo klien) | **243** | server sungguhan lewat klien sungguhan |
+
+⚠️ Sapu `logs/common.log` juga: dua bug nyata bersembunyi di sana, bukan di
+`map.log` (Peringatan #123, #125). ⚠️ `livetest` pada map server yang baru
+hidup 30 detik memberi merah palsu — beri waktu menetap dulu (#163).
+
+Roadmap lengkap dengan tabel per tahap ada di
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Jebakan & pelajaran #1–#122 di
+Jebakan & pelajaran #1–#167 di
 **[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Struktur folder

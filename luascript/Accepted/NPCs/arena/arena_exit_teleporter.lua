@@ -168,60 +168,13 @@ minigame_powers = {
 	end,
 
 	addPlayer = function(player, target)
-		local ctfPlayers = core:getObjectsInMap(15000, BL_PC)
-		local reds = {}
-		local blues = {}
-
-		if #ctfPlayers > 0 then
-			for i = 1, #ctfPlayers do
-				if ctfPlayers[i].registry["ctf_team"] == 1 then
-					table.insert(reds, ctfPlayers[i].ID)
-				elseif ctfPlayers[i].registry["ctf_team"] == 2 then
-					table.insert(blues, ctfPlayers[i].ID)
-				end
-			end
-		end
-
-		if player.m == 15000 then
-			if target.registry["ctf_team"] == 0 then
-				target.registry["ctf_registered"] = 1
-				if #reds > #blues then
-					target.registry["ctf_team"] = 2
-				elseif #blues > #reds then
-					target.registry["ctf_team"] = 1
-				elseif #blues == #reds then
-					target.registry["ctf_team"] = math.random(1, 2)
-				end
-
-				core.gameRegistry["ctf_players"] = core.gameRegistry[
-					"ctf_players"
-				] + 1
-				if target.registry["ctf_team"] == 1 then
-					target:warp(15000, 16, 2)
-				elseif target.registry["ctf_team"] == 2 then
-					target:warp(15000, 16, 38)
-				end
-
-				if target.state == 3 then
-					target.state = 0
-					target.speed = 80
-					target.registry["mounted"] = 0
-					target:updateState()
-				end
-
-				ctf.costume(target)
-				target:sendAnimation(16)
-				target:playSound(29)
-				target:dialogSeq(
-					{
-						t,
-						n .. "Baik, karaktermu terdaftar untuk Flag Freeze Tag."
-					},
-					1
-				)
-				ctf.entryLegend(target)
-			end
-		elseif player.m == 15020 then
+		-- ⚠️ Pendaftaran Flag Freeze Tag (peta 15000) DIHAPUS 29 Agu 2026:
+		-- tabel `ctf` yang dipanggilnya (`ctf.costume`, `ctf.entryLegend`)
+		-- tidak pernah ada di pohon skrip ini — berkasnya memang tidak ikut
+		-- dalam dump konten. Kode yang tersisa hanya akan melempar
+		-- "attempt to index nil" saat pemain mengklik NPC-nya. Lihat
+		-- luascript/PERUBAHAN.md.
+		if player.m == 15020 then
 		elseif player.m == 15030 then
 		elseif player.m == 15040 then
 		elseif player.m == 15050 then

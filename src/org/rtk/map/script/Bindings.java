@@ -20,7 +20,7 @@ import org.luaj.vm2.Varargs;
  * "attempt to call nil" through the dispatcher, exactly like a missing
  * binding would in the C server.
  */
-final class Bindings {
+public final class Bindings {
 
     private static final Logger log = LogManager.getLogger(Bindings.class);
 
@@ -119,6 +119,29 @@ final class Bindings {
             out.add(t.get(i).toint());
         }
         return out;
+    }
+
+    /**
+     * Catat sekali tiap atribut yang dibaca skrip tetapi TIDAK terikat.
+     *
+     * <p>⚠️ Ini alat penemu cacat paling produktif untuk keluarga
+     * "atribut nil yang diam" (#120, #136, #157): atribut yang tidak
+     * terikat mengembalikan nil, dan Lua hanya gagal beberapa baris
+     * kemudian — atau tidak gagal sama sekali, cuma menghasilkan angka
+     * nol. `luaaudit` buta terhadapnya karena ia memeriksa nama METHOD,
+     * bukan ATRIBUT, dan tidak per-kelas.</p>
+     *
+     * <p>Dicatat di tingkat DEBUG supaya bisa dinyalakan saat menyelidiki
+     * tanpa membanjiri log biasa. ⚠️ Nama METHOD juga lewat sini (getter
+     * dikonsultasi lebih dulu), jadi `sendHealth`/`getObjectsInCell` yang
+     * muncul di daftar bukan berarti hilang — periksa dulu.</p>
+     */
+    private static final java.util.Set<String> DILAPOR = new java.util.HashSet<>();
+
+    public static void lapor(String kelas, String attr) {
+        if (log.isDebugEnabled() && DILAPOR.add(kelas + "." + attr)) {
+            log.debug("[ATTR-KOSONG] {}.{} dibaca skrip tetapi tidak terikat", kelas, attr);
+        }
     }
 
     static void definePlayer(ScriptEngine engine, ScriptClass player) {
@@ -221,6 +244,7 @@ final class Bindings {
                             return LuaValue.valueOf(v.doubleValue());
                         }
                     }
+                    lapor("player", attr);
                     return null;
             }
         };
@@ -312,12 +336,37 @@ final class Bindings {
         });
 
         // ---- world ----
+        /**
+         * pcl_warp(m, x, y) -> {@code pc_warp()}: pindahkan pemain betulan.
+         *
+         * <p>⚠️ Versi pertama hanya menulis {@code ScriptPlayer.m/x/y} —
+         * bayangan yang dipakai skrip untuk MEMBACA posisi, dan yang ditimpa
+         * lagi oleh {@code User.syncScriptPlayer()} pada panggilan
+         * berikutnya. Artinya <b>setiap {@code player:warp} di konten tidak
+         * melakukan apa-apa</b>: 856 pemakaian — teleport quest, kembali ke
+         * penginapan, masuk arena acara, alat GM — semuanya diam tanpa satu
+         * pun pesan galat. Di C binding ini memanggil {@code pc_warp}, yang
+         * mencabut pemain dari indeks peta lama, memindahkan posisinya, lalu
+         * mendaftarkannya ke peta baru. Lihat docs/PERINGATAN.md #140.</p>
+         */
         player.addMethod("warp", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
-            p.m = args.optint(2, p.m);
-            p.x = args.optint(3, p.x);
-            p.y = args.optint(4, p.y);
-            log.debug("[warp] {} -> map {} ({},{})", p.name, p.m, p.x, p.y);
+            int m = args.optint(2, p.m);
+            int x = args.optint(3, p.x);
+            int y = args.optint(4, p.y);
+            org.rtk.map.User u = pemainDari(self);
+            if (u != null) {
+                org.rtk.map.Pc.warp(org.rtk.map.MapServer.world, u, m, x, y);
+                // Bayangannya ikut disegarkan supaya skrip yang membaca
+                // posisi tepat sesudah warp melihat tempat yang baru.
+                u.syncScriptPlayer();
+            } else {
+                // Pemain lepas (uji binding tanpa dunia): bayangannya saja.
+                p.m = m;
+                p.x = x;
+                p.y = y;
+            }
+            log.debug("[warp] {} -> map {} ({},{})", p.name, m, x, y);
             return LuaValue.NONE;
         });
         /**
@@ -670,13 +719,39 @@ final class Bindings {
             p.items.merge(name, qty, Integer::sum);
             return LuaValue.TRUE;
         });
+        /**
+         * pcl_hasitem(nama, jumlah) — <b>bukan</b> penghitung.
+         *
+         * <p>⚠️ C mengembalikan DUA JENIS nilai: {@code true} (boolean) bila
+         * barangnya cukup, dan <b>angka KEKURANGANNYA</b> bila tidak
+         * (sl.c:9197). Port ini dulu selalu mengembalikan JUMLAH yang
+         * dimiliki, dan akibatnya dua-duanya salah:</p>
+         *
+         * <ul>
+         *   <li>{@code hasItem(x, 1) == true} — dipakai <b>419 kali</b> di
+         *       pohon skrip — SELALU false, karena angka tidak pernah sama
+         *       dengan boolean. Setiap syarat barang di quest gagal;</li>
+         *   <li>{@code if player:hasItem(x, 1) then} selalu benar, karena di
+         *       Lua angka 0 pun truthy.</li>
+         * </ul>
+         *
+         * <p>Tidak ada satu pun error yang muncul dari keduanya. Ditemukan
+         * saat menjalankan satu pertandingan Elixir: penyerahan piala
+         * selalu ditolak dengan "Kau butuh elixir biru!". Lihat
+         * docs/PERINGATAN.md #135.</p>
+         *
+         * <p>⚠️ Bentuk balikan angka itu MEMANG jebakan di C juga — karena
+         * itulah kontennya menulis {@code == true}. Diport apa adanya.</p>
+         */
         player.addMethod("hasItem", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
-            String name = args.optjstring(2, "");
-            if (p.owner instanceof ScriptPlayer.Owner o) {
-                return LuaValue.valueOf(o.scriptCountItem(name));
-            }
-            return LuaValue.valueOf(p.items.getOrDefault(name, 0));
+            // C: `amount = abs(lua_tonumber(...))`; argumen yang hilang = 0.
+            int perlu = Math.abs(args.optint(3, 0));
+            int punya = p.owner instanceof ScriptPlayer.Owner o
+                    ? o.scriptCountItem(args.optjstring(2, ""))
+                    : p.items.getOrDefault(args.optjstring(2, ""), 0);
+            return punya >= perlu ? LuaValue.TRUE
+                    : LuaValue.valueOf(perlu - punya);
         });
         player.addMethod("removeItem", (self, args) -> {
             ScriptPlayer p = (ScriptPlayer) self;
@@ -2201,6 +2276,11 @@ final class Bindings {
             if (self instanceof org.rtk.map.Npc nd) {
                 return LuaValue.valueOf(org.rtk.map.NpcRegistry.move(nd) ? 1 : 0);
             }
+            // mobl_move() -> move_mob(): kelas ini dipakai NPC DAN mob.
+            // ⚠️ Cabang mob ini tidak ada sampai 30 Agu 2026 (#164).
+            if (self instanceof org.rtk.map.Mob mb) {
+                return LuaValue.valueOf(org.rtk.map.MapServer.mobs.move(engine, mb));
+            }
             return LuaValue.valueOf(0);
         });
 
@@ -2327,6 +2407,82 @@ final class Bindings {
      * pemain memang tidak punya.
      */
     static void defineMob(ScriptEngine engine, ScriptClass klass) {
+        /**
+         * mobl_sendhealth(kerusakan, kritis): mob MENERIMA kerusakan.
+         *
+         * <p>⚠️ Ini pintu terakhir seluruh pertarungan jarak dekat, dan ia
+         * <b>tidak pernah ada</b> sampai #157: `mob_ai_basic.on_attacked`
+         * memanggil `mob:sendHealth(attacker.damage, attacker.critChance)`,
+         * dan karena method itu hanya terdaftar pada kelas PEMAIN, panggilan
+         * dari mob gagal — nyawa mob tidak pernah berkurang sedikit pun.
+         * Mob mati diurus {@code reapDead}, yang cuma menunggu
+         * {@code currentVita <= 0}; jadi yang hilang benar-benar hanya
+         * pengurangannya.</p>
+         */
+        klass.addMethod("sendHealth", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.NONE;
+            }
+            double dmg = args.optdouble(2, 0);
+            long damage = dmg > 0 ? (long) (dmg + 0.5) : (dmg < 0 ? (long) (dmg - 0.5) : 0);
+            mb.currentVita = Math.max(0, mb.currentVita - damage);
+            return LuaValue.NONE;
+        });
+
+        /**
+         * mobl_hasduration/setduration/getduration: mantra yang sedang
+         * menempel pada MOB.
+         *
+         * <p>⚠️ Dipanggil dari `Mob.checkIfCast` (mob.lua:419) yang dipakai
+         * `hitCritChance.lua` untuk KEDUA belah pihak. Tanpa method ini
+         * pemeriksaan "apakah sasaran sedang ber-hardBodies" gagal dengan
+         * "attempt to call nil", dan pertarungan berhenti sebelum kerusakan
+         * dihitung (#157).</p>
+         */
+        /**
+         * mobl_attack(id): mob memukul sasaran — lihat {@code Combat.mobAttack}.
+         *
+         * <p>⚠️ Sampai 30 Agu 2026 tidak terikat sama sekali: baris terakhir
+         * {@code mob_ai_basic.attack} gagal "attempt to call nil", jadi mob
+         * tidak pernah membalas (Peringatan #165).</p>
+         */
+        /**
+         * mobl_sendstatus() / mobl_sendminitext(): di C keduanya
+         * {@code return 0;} — ada supaya skrip yang ditulis untuk pemain
+         * (global_zap.lua:41 `target:sendStatus()`) tidak meledak saat
+         * sasarannya mob. Tanpa keduanya SETIAP zap mage ke mob gagal
+         * "attempt to call nil" sesudah mana terpotong (30 Agu 2026).
+         */
+        klass.addMethod("sendStatus", (self, args) -> LuaValue.NONE);
+        klass.addMethod("sendMinitext", (self, args) -> LuaValue.NONE);
+
+        klass.addMethod("attack", (self, args) -> {
+            if (self instanceof org.rtk.map.Mob mb) {
+                org.rtk.map.Combat.mobAttack(mb, (long) args.optdouble(2, 0));
+            }
+            return LuaValue.NONE;
+        });
+
+        klass.addMethod("hasDuration", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.FALSE;
+            }
+            return LuaValue.valueOf(mb.durasiSisa(args.optjstring(2, "")) > 0);
+        });
+        klass.addMethod("getDuration", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.valueOf(0);
+            }
+            return LuaValue.valueOf(mb.durasiSisa(args.optjstring(2, "")));
+        });
+        klass.addMethod("setDuration", (self, args) -> {
+            if (!(self instanceof org.rtk.map.Mob mb)) {
+                return LuaValue.NONE;
+            }
+            mb.setDurasi(args.optjstring(2, ""), args.optlong(3, 0));
+            return LuaValue.NONE;
+        });
+
         /**
          * mobl_moveghost() -&gt; {@code moveghost_mob()}: mob melangkah satu
          * petak ke arah yang dihadapinya. Dipakai 84x, hampir seluruhnya

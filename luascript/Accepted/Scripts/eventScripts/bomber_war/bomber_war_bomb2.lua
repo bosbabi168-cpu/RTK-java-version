@@ -1955,7 +1955,10 @@ bomber_war_bomb2 = {
 		elseif player.registry["bomb_distance"] == 0 then
 			if boxNorth == 15802 then
 				setObject(m, x, y - 1, 0)
-				bomb_game.powerups()
+				-- ⚠️ `bomb_game.powerups()` DIHAPUS 29 Agu 2026: tabel
+				-- `bomb_game` tidak pernah ada di pohon skrip ini, jadi
+				-- barisnya hanya melempar "attempt to index nil" tepat saat
+				-- peti hancur — mematikan sisa ledakan. Lihat PERUBAHAN.md.
 				if r1 == 1 then
 					setTile(m, x, y - 1, 31154)
 				elseif r1 == 2 then

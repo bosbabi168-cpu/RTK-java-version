@@ -70,8 +70,53 @@ public final class ScriptEngine {
     public ScriptClass npcIntClass;
     public ScriptClass questClass;
 
-    /** Server-wide registries (game / map scope). */
+    /**
+     * Registry sedunia ({@code map_readglobalgamereg} / {@code ...set}).
+     *
+     * <p>⚠️ Kuncinya dibandingkan {@code strcmpi} di C, jadi pencariannya
+     * di sini juga TIDAK peka huruf besar-kecil — tetapi ejaan yang PERTAMA
+     * dipakai dipertahankan, karena ejaan itulah yang tersimpan di kolom
+     * `GrgIdentifier`. Menormalkan ke huruf kecil akan membuat
+     * `carnageMaxHealth` yang sudah ada di basis data berpasangan dengan
+     * baris kedua yang isinya sama.</p>
+     */
     public final java.util.Map<String, Integer> gameRegistry = new java.util.HashMap<>();
+
+    /** Kunci huruf kecil -&gt; ejaan yang tersimpan di {@link #gameRegistry}. */
+    private final java.util.Map<String, String> gameRegistryEjaan =
+            new java.util.HashMap<>();
+
+    /** Dipanggil tiap kali satu nilai registry berubah (untuk disimpan). */
+    public interface GameRegistryWriter {
+        void tulis(String nama, int nilai);
+    }
+
+    private GameRegistryWriter gameRegistryWriter;
+
+    public void setGameRegistryWriter(GameRegistryWriter w) {
+        this.gameRegistryWriter = w;
+    }
+
+    /** Muat satu baris dari basis data — TANPA menulisnya balik. */
+    public void gameRegMuat(String nama, int nilai) {
+        gameRegistry.put(nama, nilai);
+        gameRegistryEjaan.put(nama.toLowerCase(java.util.Locale.ROOT), nama);
+    }
+
+    public int gameRegGet(String nama) {
+        String ejaan = gameRegistryEjaan.get(nama.toLowerCase(java.util.Locale.ROOT));
+        return gameRegistry.getOrDefault(ejaan != null ? ejaan : nama, 0);
+    }
+
+    public void gameRegSet(String nama, int nilai) {
+        String kunci = nama.toLowerCase(java.util.Locale.ROOT);
+        String ejaan = gameRegistryEjaan.getOrDefault(kunci, nama);
+        gameRegistryEjaan.put(kunci, ejaan);
+        gameRegistry.put(ejaan, nilai);
+        if (gameRegistryWriter != null) {
+            gameRegistryWriter.tulis(ejaan, nilai);
+        }
+    }
     /**
      * map[m].registry: registry <b>per peta</b>, bukan satu untuk seluruh
      * dunia. Kuncinya dicocokkan {@code strcmpi} di C, jadi di sini
@@ -349,8 +394,8 @@ public final class ScriptEngine {
         // Registry sisi server: gameregl global, mapregl PER PETA
         // (map_readglobalreg(m, ...) di C) — bukan satu tabel bersama.
         ScriptClass gameReg = Bindings.defineRegistry(this, "Gameregistry",
-                (s, k) -> LuaValue.valueOf(gameRegistry.getOrDefault(k, 0)),
-                (s, k, v) -> gameRegistry.put(k, v.toint()));
+                (s, k) -> LuaValue.valueOf(gameRegGet(k)),
+                (s, k, v) -> gameRegSet(k, v.toint()));
         registerClass(gameReg);
         gameRegistryUdata = newInstance(gameReg, gameRegistry);
         mapRegistryClass = Bindings.defineRegistry(this, "Mapregistry",
@@ -443,6 +488,29 @@ public final class ScriptEngine {
         }
         // Id NPC F1 — satu-satunya yang tidak mengikuti rumus id blok biasa.
         globals.set("F1_NPC", LuaValue.valueOf((double) org.rtk.map.Npc.F1_NPC));
+
+        // ⚠️ `os.time()` LuaJ 3.0.1 mengembalikan DETIK BERPECAHAN
+        // (1787945123.01), sementara Lua 5.1 sungguhan mengembalikan detik
+        // BULAT. Bedanya tidak terlihat pada `>` atau `-`, tetapi
+        // mematikan seluruh perbandingan `os.time() == x` — dan konten
+        // memakai bentuk itu 13 kali, termasuk untuk menutup pintu acara
+        // elixir dan carnage. Akibatnya acara tidak pernah bisa lewat dari
+        // tahap pertama, tanpa satu pun pesan galat.
+        // Lihat docs/PERINGATAN.md #134.
+        LuaValue os = globals.get("os");
+        if (!os.isnil()) {
+            final LuaValue aslinya = os.get("time");
+            os.set("time", new org.luaj.vm2.lib.VarArgFunction() {
+                @Override
+                public Varargs invoke(Varargs args) {
+                    if (args.narg() > 0) {
+                        return aslinya.invoke(args);   // bentuk os.time(tabel)
+                    }
+                    return LuaValue.valueOf(
+                            (double) (System.currentTimeMillis() / 1000L));
+                }
+            });
+        }
 
         // Bendera BL_* — dipakai skrip 1.500+ kali untuk menyaring
         // pencarian benda. Nilainya BIT, bukan nomor urut.

@@ -58,6 +58,11 @@ public final class ProtocolRouter implements ClientView {
     }
 
     @Override
+    public void playerMapChanged(User sd) {
+        tujuan.forEach(v -> v.playerMapChanged(sd));
+    }
+
+    @Override
     public void playerStatusChanged(User sd, int flags) {
         tujuan.forEach(v -> v.playerStatusChanged(sd, flags));
     }
@@ -142,6 +147,14 @@ public final class ProtocolRouter implements ClientView {
     public void boardListToPlayer(User sd, int board, int f1, int f2,
                                   List<Clif.BoardEntry> isi) {
         tujuan.forEach(v -> v.boardListToPlayer(sd, board, f1, f2, isi));
+    }
+
+    @Override
+    public void boardPostToPlayer(User sd, int board, int pos, int bendera,
+                                  String penulis, String topik, int bulan,
+                                  int hari, String isi) {
+        tujuan.forEach(v -> v.boardPostToPlayer(sd, board, pos, bendera,
+                penulis, topik, bulan, hari, isi));
     }
 
     @Override
@@ -324,6 +337,11 @@ public final class ProtocolRouter implements ClientView {
     @Override
     public void playerStepSeen(User sd, int direction, int fromX, int fromY) {
         tujuan.forEach(v -> v.playerStepSeen(sd, direction, fromX, fromY));
+    }
+
+    @Override
+    public void playerViewMoved(User sd, int fromX, int fromY) {
+        tujuan.forEach(v -> v.playerViewMoved(sd, fromX, fromY));
     }
 
     @Override

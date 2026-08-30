@@ -28,6 +28,8 @@ SQL="mysql -h 127.0.0.1 -u rtk -p50LM8U8Poq5uX2AZJVKs RTK -N"
 pulihkan() {
     echo "[uji2] memulangkan peta $PETA_PINJAM ke map server 0"
     $SQL -e "UPDATE \`Maps\` SET \`MapServer\` = 0 WHERE \`MapId\` = $PETA_PINJAM;" 2>/dev/null
+    echo "[uji2] membuang tabel milik server 1"
+    $SQL -e "DROP TABLE IF EXISTS \`NPCs1\`, \`NPCEquipment1\`, \`GameRegistry1\`;" 2>/dev/null
     ./run.sh stop >/dev/null 2>&1
     pkill -f "map2.conf" 2>/dev/null
 }
@@ -35,6 +37,19 @@ trap pulihkan EXIT INT TERM
 
 echo "[uji2] meminjamkan peta $PETA_PINJAM ke map server 1"
 $SQL -e "UPDATE \`Maps\` SET \`MapServer\` = 1 WHERE \`MapId\` = $PETA_PINJAM;" 2>/dev/null
+
+# ⚠️ Tiap map server membaca tabelnya SENDIRI: NPCs<id>, NPCEquipment<id>,
+# GameRegistry<id>. Dump ini hanya punya milik server 0, jadi server kedua
+# dulu berjalan tanpa satu pun NPC — termasuk tanpa NPC F1, sehingga `core`
+# di skrip nil dan setiap petak acara melempar "attempt to index ?". Itu
+# kegagalan FIXTURE yang menyamar sebagai cacat kode; dua `script error`
+# arena/elixir di gerbang ini berasal dari sana.
+echo "[uji2] menyiapkan tabel milik server 1 (NPC F1 + registry)"
+$SQL -e "CREATE TABLE IF NOT EXISTS \`NPCs1\` LIKE \`NPCs0\`;
+         CREATE TABLE IF NOT EXISTS \`NPCEquipment1\` LIKE \`NPCEquipment0\`;
+         CREATE TABLE IF NOT EXISTS \`GameRegistry1\` LIKE \`GameRegistry0\`;
+         DELETE FROM \`NPCs1\`;
+         INSERT INTO \`NPCs1\` SELECT * FROM \`NPCs0\` WHERE \`NpcIsF1Npc\` = 1;" 2>/dev/null
 
 ./run.sh stop >/dev/null 2>&1
 pkill -f "map2.conf" 2>/dev/null

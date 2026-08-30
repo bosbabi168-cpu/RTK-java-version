@@ -81,6 +81,18 @@ public final class User extends BlockList
     // ---- nilai turunan dari perlengkapan (pc_calcstat) ----
     public int hit;
     public int dam;
+    /**
+     * Peluang MELESET, per sepuluh ribu ({@code sd->miss} di map.h).
+     *
+     * <p>⚠️ Dibaca satu skrip saja — {@code hitCritChance.lua:19}
+     * (`math.random(10000) < block.miss`) — tetapi skrip itu adalah pintu
+     * masuk SELURUH pertarungan jarak dekat. Selama ladang ini tidak
+     * terbaca dari Lua, skripnya gagal dengan "attempt to compare nil with
+     * number", `critChance` tidak pernah disetel, dan
+     * {@code Combat.mobDamage} berhenti sebelum menghitung kerusakan:
+     * <b>mob tidak pernah bisa dibunuh</b> (Peringatan #157).</p>
+     */
+    public int miss;
     public int protection;
     public int healing;
     public int minSdam;
@@ -95,6 +107,27 @@ public final class User extends BlockList
     public boolean paralyzed;
     public boolean blind;
     public boolean drunk;
+
+    // ---- pengali pertarungan (map.h: float rage, sleep, deduction, ...) ----
+    /**
+     * Pengali kerusakan ayunan ({@code sd->rage}).
+     *
+     * <p>⚠️ Dipakai {@code swingDamage.lua:27} sebagai
+     * {@code math.max(player.rage, 1)}. Tanpa ladang ini nilainya nil dan
+     * seluruh hitungan kerusakan gugur di baris itu — pukulan mengenai
+     * tetapi kerusakannya nol (Peringatan #157).</p>
+     */
+    public double rage = 1.0;
+    /** Pengali dari tidur/lumpuh; 1 = normal. */
+    public double sleepMul = 1.0;
+    /** Pengali potongan; 1 = normal. */
+    public double deduction = 1.0;
+    /** Perisai kerusakan yang menyerap dulu. */
+    public double dmgShield;
+    /** Pukulan menjangkau dua petak ({@code sd->extendhit}). */
+    public boolean extendHit;
+    /** Wujud senjata yang sedang dipegang, dibaca skrip animasi. */
+    public int gfxWeap;
 
     /**
      * Tingkat bisu ({@code sd->silence}).
@@ -280,6 +313,9 @@ public final class User extends BlockList
      * ini.</p>
      */
     public boolean rtk2;
+
+    /** Sedang ditendang (login ganda / 0x3804): sambungannya akan ditutup. */
+    public boolean ditendang;
 
     public boolean attacked;
 
@@ -877,6 +913,11 @@ public final class User extends BlockList
             case "totem" -> (long) status.totem;
             case "tier" -> (long) status.tier;
             case "country" -> (long) status.country;
+            // ⚠️ `player.alignment` dipakai 30+ skrip mantra warrior/rogue
+            // (`berserk.lua:33` dst.: `alignmentIndex = player.alignment + 1`).
+            // Tanpa ladang ini rapalannya gagal "arithmetic on nil" — dan
+            // Wind's Blast diam-diam tidak pernah bisa dirapal (30 Agu 2026).
+            case "alignment" -> (long) status.alignment;
             case "side" -> (long) status.side;
             case "state" -> (long) status.state;
             case "maxSlots" -> status.maxSlots;
@@ -904,6 +945,33 @@ public final class User extends BlockList
             case "armor" -> (long) armor;
             case "hit" -> (long) hit;
             case "dam" -> (long) dam;
+            case "miss" -> (long) miss;
+            // ⚠️ Serah-terima angka pertarungan antara Java dan Lua.
+            // `hitCritChance` menulis `block.critChance` dan `block.damage`;
+            // `swingDamage` menulis `block.damage` di akhir; lalu
+            // `mob_ai_basic.on_attacked` MEMBACA `attacker.damage`. Selama
+            // ketiganya tidak terikat, setiap tulisan hilang dan setiap
+            // bacaan nil — pertarungan berjalan tanpa pernah melukai
+            // siapa pun (#157). Nama `minSDam`/`maxSDam` memakai huruf besar
+            // D persis seperti di skrip; salah huruf = ladang lain.
+            // ⚠️ `blType` adalah SAKELAR seluruh cabang pertarungan:
+            // `hitCritChance.lua:33` hanya menghitung peluang kena bila
+            // `block.blType == BL_PC`. Tanpa ladang ini nilainya nil, cabang
+            // itu dilewati, `critChance` tetap 0, dan setiap pukulan
+            // dianggap MELESET (#157).
+            case "blType" -> (long) org.rtk.map.data.BlockList.BL_PC;
+            case "damage" -> (long) damage;
+            case "rage" -> (long) rage;
+            case "sleep" -> (long) sleepMul;
+            case "deduction" -> (long) deduction;
+            case "dmgShield" -> (long) dmgShield;
+            case "extendHit" -> extendHit ? 1L : 0L;
+            case "gfxWeap" -> (long) gfxWeap;
+            case "enchant" -> (long) enchanted;
+            case "critChance" -> (long) critChance;
+            case "minSDam" -> (long) minSdam;
+            case "maxSDam" -> (long) maxSdam;
+            case "speed" -> (long) speed;
             case "protection" -> (long) protection;
             case "healing" -> (long) healing;
             case "attackSpeed" -> (long) attackSpeed;
@@ -914,6 +982,31 @@ public final class User extends BlockList
             case "fakeDrop" -> (long) fakeDrop;
             case "invSlot" -> (long) invSlot;
             case "equipSlot" -> (long) equipSlot;
+            // ⚠️ Wujud karakter. Seluruh keluarga ini SUDAH ada di
+            // `CharStatus` dan dipakai skrip ratusan kali (`armorColor` 73×,
+            // `hair` 39×, `face` 21×) — tetapi tidak satu pun pernah dibaca
+            // dari Lua, jadi semuanya nil. `clone.equip` gagal di
+            // `player.armorColor > 0` dengan "attempt to compare nil with
+            // number", dan itu mematikan seluruh sistem klon: penyamaran,
+            // pewarnaan regu acara, dan potret NPC.
+            // `luaaudit` buta terhadapnya — ia memeriksa nama METHOD, bukan
+            // ATRIBUT (keluarga yang sama dengan `.ID`, Peringatan #120).
+            // Padanan C: `pcl_getattr` sl.c:7617.
+            // pcl_getattr: `baseClass` adalah JALUR kelasnya
+            // (`classdb_path`, sl.c:7601), bukan nomor kelas mentah —
+            // `class`/`path` yang menjawab nomor mentah. Dipakai 183× di
+            // konten, terutama acara yang membagi regu per jalur.
+            case "baseClass" -> (long) (status.charClass > 5
+                    ? MapServer.classDb.pathOf(status.charClass)
+                    : status.charClass);
+            case "face" -> (long) status.face;
+            case "faceColor" -> (long) status.faceColor;
+            case "hair" -> (long) status.hair;
+            case "hairColor" -> (long) status.hairColor;
+            case "armorColor" -> (long) status.armorColor;
+            case "skinColor" -> (long) status.skinColor;
+            case "disguise" -> (long) status.disguise;
+            case "disguiseColor" -> (long) status.disguiseColor;
             default -> null;
         };
     }
@@ -952,6 +1045,7 @@ public final class User extends BlockList
     public boolean scriptSetAttr(String name, long v) {
         switch (name) {
             case "money" -> status.money = v;
+            case "alignment" -> status.alignment = (int) v;
             // ⚠️ **XOR, bukan penetapan** (sl.c:6881). `player.settings = 2`
             // MEMBALIK bit grup; ia tidak menyetel setelan menjadi 2.
             // Terbaca persis seperti penetapan biasa di skrip, dan itulah
@@ -966,6 +1060,19 @@ public final class User extends BlockList
             // Pasangan tulis dari `attacker` di scriptGetAttr: skrip
             // pertarungan menyetelnya sendiri sebelum memanggil penyembuh.
             case "attacker" -> attacker = v;
+            // Pasangan tulis untuk stat pertarungan yang disetel skrip
+            // perlengkapan/mantra (`sl.c:6860` untuk `miss`).
+            case "miss" -> miss = (int) v;
+            case "hit" -> hit = (int) v;
+            case "dam" -> dam = (int) v;
+            case "damage" -> damage = v;
+            case "critChance" -> critChance = (int) v;
+            case "rage" -> rage = v;
+            case "sleep" -> sleepMul = v;
+            case "deduction" -> deduction = v;
+            case "dmgShield" -> dmgShield = v;
+            case "extendHit" -> extendHit = v != 0;
+            case "gfxWeap" -> gfxWeap = (int) v;
             case "health" -> status.hp = v;
             case "magic" -> status.mp = v;
             case "baseHealth" -> status.baseHp = v;
@@ -983,6 +1090,18 @@ public final class User extends BlockList
             case "fakeDrop" -> fakeDrop = (int) v;
             case "invSlot" -> invSlot = (int) v;
             case "equipSlot" -> equipSlot = (int) v;
+            // Wujud karakter — pasangan tulis dari `scriptGetAttr`.
+            // Padanan C: `pcl_setattr` sl.c:6890. ⚠️ Menulisnya TIDAK
+            // otomatis mengabarkan klien; skrip memanggil `updateState()`
+            // sesudahnya, persis seperti di C.
+            case "face" -> status.face = (int) v;
+            case "faceColor" -> status.faceColor = (int) v;
+            case "hair" -> status.hair = (int) v;
+            case "hairColor" -> status.hairColor = (int) v;
+            case "armorColor" -> status.armorColor = (int) v;
+            case "skinColor" -> status.skinColor = (int) v;
+            case "disguise" -> status.disguise = (int) v;
+            case "disguiseColor" -> status.disguiseColor = (int) v;
             default -> {
                 return false;
             }
@@ -1292,6 +1411,7 @@ public final class User extends BlockList
         armor = status.baseArmor;
         hit = 0;
         dam = 0;
+        miss = 0;
         protection = 0;
         healing = 0;
         minSdam = 0;
@@ -1299,6 +1419,20 @@ public final class User extends BlockList
         minLdam = 0;
         maxLdam = 0;
         attackSpeed = 20;
+        // pc_calcstat (pc.c:877): kecepatan 90 kecuali sedang menunggang
+        // (state 3: dijaga minimal 40 untuk bukan-GM). ⚠️ Sampai 30 Agu
+        // 2026 ladang ini tidak pernah disetel, jadi 0 — dan
+        // `hitCritChance.lua` mengalikan peluang kena mob dengan
+        // `(speed + 10) / 100` = 0,1: setiap mob hanya punya peluang 5%
+        // (batas bawah) mengenai siapa pun. Mob menyerang, tetapi hampir
+        // tidak pernah melukai (Peringatan #165).
+        if (status.state == 3) {
+            if (!isGm() && speed < 40) {
+                speed = 40;
+            }
+        } else {
+            speed = 90;
+        }
 
         // bonus dari perlengkapan yang dikenakan
         for (org.rtk.common.mmo.Item it : status.equip) {

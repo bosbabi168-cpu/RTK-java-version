@@ -79,7 +79,7 @@ public final class Wire {
     public static final int MAGIC = 0x52544B32;
 
     /** Versi protokol. Naikkan bila tata letak bingkai mana pun berubah. */
-    public static final int VERSION = 8;   // 8: EV_TRANSFER (R3/C3); 7: EV_WORLD_TIME; 6: R1 batch 2; 5: ekspresi & susun ulang; 4: sandi; 3: EV_SPELL_SLOT; 2: blok wujud
+    public static final int VERSION = 11;  // 11: musik peta di EV_SELF_MAP (K5); 10: pra-login RTK2 (K3-lanjutan); 9: papan baca-tulis (K2-lanjutan); 8: EV_TRANSFER (R3/C3); 7: EV_WORLD_TIME; 6: R1 batch 2; 5: ekspresi & susun ulang; 4: sandi; 3: EV_SPELL_SLOT; 2: blok wujud
 
     /** {@code u16 panjang} + {@code u16 opcode}. */
     public static final int HEADER = 4;
@@ -277,6 +277,48 @@ public final class Wire {
 
     /** Ambil kiriman (R1). Cermin {@code clif_parseparcel} (0x41). */
     public static final int OP_PARCEL = 0x0306;
+
+    /**
+     * Tulis kiriman papan (K2-lanjutan): {@code u16 papan, str topik, str isi}.
+     *
+     * <p>⚠️ Opcode TERSENDIRI, bukan aksi lain di {@link #OP_BOARD}.
+     * {@code OP_BOARD} bermuatan tetap (aksi, papan, pos) dan dibaca sebagai
+     * tiga angka; menyelipkan dua string ber-panjang-variabel ke dalamnya
+     * berarti pembacanya harus tahu aksi mana yang bermuatan lain — tepat
+     * jenis percabangan yang membuat aliran bergeser diam-diam
+     * (Peringatan #103).</p>
+     */
+    public static final int OP_BOARD_WRITE = 0x0307;
+
+    // ------------------------------------------------------------------
+    // 0x00xx — PRA-LOGIN (K3-lanjutan)
+    //
+    // ⚠️ Penyimpangan yang DISENGAJA dari alur tiga server C. Di RetroTK
+    // pemain menyambung ke login server (akun), lalu char server (daftar &
+    // pembuatan karakter), baru map server. Klien RTK2 memakai SATU titik
+    // sambung untuk ketiganya: menambah dua protokol TCP lagi berarti tiga
+    // kali permukaan bingkai, tiga kali tabel panjang paket, dan tiga
+    // tempat yang bisa bergeser diam-diam (Peringatan #103) — untuk alur
+    // yang selesai dalam satu sambungan. Map server memang sudah
+    // memverifikasi sandi sejak K3.4.
+    // ------------------------------------------------------------------
+
+    /**
+     * Masuk dengan AKUN: {@code str email, str sandi}.
+     *
+     * <p>Jawabannya {@link #EV_CHAR_LIST}. Akun yang berhasil masuk
+     * <b>diingat pada sesi</b>, sehingga {@link #OP_HELLO} untuk karakter
+     * milik akun itu tidak perlu sandi karakter lagi — itulah arti "pilih
+     * karakter".</p>
+     */
+    public static final int OP_ACCOUNT_LOGIN = 0x0010;
+
+    /**
+     * Buat karakter baru: {@code str nama, str sandi, u8 sex, u16 wajah,
+     * u16 rambut, u8 warnaRambut, u8 warnaWajah, u8 negara}.
+     * Jawabannya {@link #EV_ACCOUNT_RESULT}.
+     */
+    public static final int OP_CREATE_CHAR = 0x0011;
 
     // ------------------------------------------------------------------
     // 0x07xx — setelan pemain
@@ -750,6 +792,33 @@ public final class Wire {
     public static final int EV_BOARD_LIST = EV | 0x0602;
     /** {@code u16 n, str[] pertanyaan, u16 m, str[] jawaban} */
     public static final int EV_BOARD_QUESTIONS = EV | 0x0603;
+    /**
+     * Isi SATU kiriman papan (K2-lanjutan):
+     * {@code u16 papan, u32 pos, u8 bendera, str penulis, str topik,
+     * u8 bulan, u8 hari, str isi}.
+     *
+     * <p>{@code bendera} memakai bit yang sama dengan daftar papan:
+     * 1 boleh menulis, 2 boleh menghapus — supaya klien tahu tombol mana
+     * yang pantas ditawarkan, tanpa menebak dari nama penulis.</p>
+     */
+    public static final int EV_BOARD_POST = EV | 0x0607;
+
+    /**
+     * Daftar karakter milik akun (K3-lanjutan):
+     * {@code u16 n, n × (str nama, u16 level, u8 jalur, u16 wajah,
+     * u16 rambut, u8 warnaRambut, u8 sex)}.
+     */
+    public static final int EV_CHAR_LIST = EV | 0x0608;
+
+    /**
+     * Hasil aksi pra-login (K3-lanjutan): {@code u8 kode, str pesan}.
+     *
+     * <p>Kode 0 berhasil; selain itu gagal. Pesannya sudah berbahasa
+     * Indonesia dan siap ditampilkan — klien tidak menyusun kalimat sendiri
+     * dari kode, supaya alasan penolakan tidak pernah berbeda antara
+     * server dan layar.</p>
+     */
+    public static final int EV_ACCOUNT_RESULT = EV | 0x0609;
     /** {@code u16 n, (str nama, u32 kekuatan)[]} */
     public static final int EV_POWER_BOARD = EV | 0x0604;
 

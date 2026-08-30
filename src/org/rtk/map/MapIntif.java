@@ -26,6 +26,9 @@ public final class MapIntif {
     private static final Logger log = LogManager.getLogger(MapIntif.class);
 
     // packet lengths for 0x3800 .. 0x380E (subset; unknown = 255 like the C table)
+    // ⚠️ Entri 0x380A (isi satu kiriman papan) BERPANJANG VARIABEL: badannya
+    // memuat penulis, topik, dan isi bebas. Panjangnya ditulis di [2..5],
+    // bukan di [2..3] yang pada paket lain berisi fd — pelajaran #103.
     private static final int[] PACKET_LEN_TABLE = {
         4, -1, 38, -1, 6, -1, 255, -1, 5, -1, -1, 6, 6, 8, 6
     };
@@ -213,7 +216,16 @@ public final class MapIntif {
                 log.error("[MAP] {} gagal ditempatkan di dunia — koneksi ditutup", c.name);
                 tutupSesi(clientFd);
             }
+            return 0;
         }
+        // intif.c:255 mmo_setonline(id, 1): map server-lah yang menyalakan
+        // bendera online, dan ia pula yang memadamkannya saat pemain keluar
+        // (clif.c:10957) — SINKRON, bukan menunggu 0x3007 di char server:
+        // sambung-putus yang cepat sudah masuk lagi sebelum char server
+        // sempat memadamkannya. ⚠️ Baru SESUDAH enterWorld berhasil —
+        // pemain yang dialihkan ke server lain atau gagal ditempatkan tidak
+        // boleh meninggalkan bendera menyala (Peringatan #167).
+        MapServer.sql.update("UPDATE `Character` SET `ChaOnline` = 1 WHERE `ChaId` = ?", c.id);
         return 0;
     }
 
@@ -398,6 +410,107 @@ public final class MapIntif {
         return true;
     }
 
+    /**
+     * boards_readpost() (0x300A) — minta ISI satu kiriman (K2-lanjutan).
+     *
+     * <p>Panjangnya TETAP, dengan alasan yang sama seperti 0x3009: tabel
+     * panjang di char server tidak bisa menebak ukuran variabel untuk
+     * opcode ini. Tata letak: [0..1] opcode, [2..3] fd klien, [4..7] papan,
+     * [8..11] pos, [12..15] bendera hak akses, [16] panjang nama,
+     * [17..32] nama pemain.</p>
+     */
+    public static boolean requestPost(User sd, int board, int pos, int flags) {
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa membaca pos: belum terhubung ke char server");
+            return false;
+        }
+        byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int n = Math.min(nama.length, 16);
+        s.wfifoW(0, 0x300A);
+        s.wfifoW(2, sd.fd);
+        s.wfifoL(4, board);
+        s.wfifoL(8, pos);
+        s.wfifoL(12, flags);
+        s.wfifoB(16, n);
+        for (int i = 0; i < 16; i++) {
+            s.wfifoB(17 + i, i < n ? nama[i] : 0);
+        }
+        s.wfifoSet(org.rtk.charserver.Mapif.BOARD_POST_LEN);
+        return true;
+    }
+
+    /**
+     * boards_delete() (0x300B) — hapus satu kiriman (K2-lanjutan).
+     *
+     * <p>⚠️ Hak hapus diperiksa di CHAR SERVER, bukan di sini: map server
+     * hanya tahu bendera yang ia kirim sendiri, dan bendera yang dikirim
+     * klien tidak pernah boleh jadi dasar keputusan. Char server memeriksa
+     * ulang bahwa penghapusnya memang penulisnya atau ber-hak-hapus.</p>
+     */
+    public static boolean deletePost(User sd, int board, int pos, int flags) {
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa menghapus pos: belum terhubung ke char server");
+            return false;
+        }
+        byte[] nama = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int n = Math.min(nama.length, 16);
+        s.wfifoW(0, 0x300B);
+        s.wfifoW(2, sd.fd);
+        s.wfifoL(4, board);
+        s.wfifoL(8, pos);
+        s.wfifoL(12, flags);
+        s.wfifoB(16, n);
+        for (int i = 0; i < 16; i++) {
+            s.wfifoB(17 + i, i < n ? nama[i] : 0);
+        }
+        s.wfifoSet(org.rtk.charserver.Mapif.BOARD_POST_LEN);
+        return true;
+    }
+
+    /**
+     * boards_post() (0x300C) — tulis kiriman baru (K2-lanjutan).
+     *
+     * <p>Satu-satunya paket papan yang panjangnya <b>variabel</b>, karena
+     * isinya memang teks bebas. Karena itu entri tabelnya −1, dan
+     * panjangnya ditulis di [2..5] — <b>bukan</b> di [2..3] yang pada
+     * paket papan lain berisi fd (Peringatan #103).</p>
+     */
+    public static boolean writePost(User sd, int board, String topik, String isi) {
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa menulis pos: belum terhubung ke char server");
+            return false;
+        }
+        byte[] nm = sd.status.name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] tp = topik.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] is = isi.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        int nl = Math.min(nm.length, 16);
+        int tl = Math.min(tp.length, 250);
+        int il = Math.min(is.length, 4000);
+        int total = 12 + 16 + 2 + tl + 2 + il;
+        s.wfifoW(0, 0x300C);
+        s.wfifoL(2, total);
+        s.wfifoW(6, sd.fd);
+        s.wfifoL(8, board);
+        for (int i = 0; i < 16; i++) {
+            s.wfifoB(12 + i, i < nl ? nm[i] : 0);
+        }
+        int off = 28;
+        s.wfifoW(off, tl);
+        for (int i = 0; i < tl; i++) {
+            s.wfifoB(off + 2 + i, tp[i]);
+        }
+        off += 2 + tl;
+        s.wfifoW(off, il);
+        for (int i = 0; i < il; i++) {
+            s.wfifoB(off + 2 + i, is[i]);
+        }
+        s.wfifoSet(total);
+        return true;
+    }
+
     /** Jeda sebelum menutup sambungan yang sedang dialihkan (R3/C3). */
     private static final long TUTUP_SETELAH_ALIH_MS = 500;
 
@@ -451,12 +564,80 @@ public final class MapIntif {
         return 0;
     }
 
-    /** intif_parse_checkonline() (0x3804): kick a double-logged character. */
+    /**
+     * intif_parse_boardpost() (0x380A): isi SATU kiriman papan (K2-lanjutan).
+     *
+     * <p>Diteruskan apa adanya ke {@code ClientView}; keputusan apa yang
+     * boleh dilakukan pemain (tulis / hapus) sudah dibawa char server dalam
+     * ladang bendera, karena hanya dialah yang melihat barisnya.</p>
+     */
+    static int parseBoardPost(int fd) {
+        Session s = net.session(fd);
+        int clientFd = s.rfifoW(6);
+        User sd = MapServer.onlineChars.get(clientFd);
+        if (sd == null) {
+            return 0;
+        }
+        int board = s.rfifoL(8);
+        int pos = s.rfifoL(12);
+        int bendera = s.rfifoL(16);
+        int bulan = s.rfifoB(20) & 0xFF;
+        int hari = s.rfifoB(21) & 0xFF;
+        int off = 22;
+        int nl = s.rfifoB(off) & 0xFF;
+        String penulis = s.rfifoString(off + 1, nl);
+        off += 1 + nl;
+        int tl = s.rfifoB(off) & 0xFF;
+        String topik = s.rfifoString(off + 1, tl);
+        off += 1 + tl;
+        int il = s.rfifoW(off);
+        String isi = s.rfifoString(off + 2, il);
+        MapServer.clientView.boardPostToPlayer(sd, board, pos, bendera,
+                penulis, topik, bulan, hari, isi);
+        return 0;
+    }
+
+    /**
+     * intif_parse_checkonline() (0x3804): tendang karakter yang masuk dua
+     * kali — char server menyebarkannya ke semua map server; yang menampung
+     * karakternya yang bertindak.
+     *
+     * <p>⚠️ Stub "no players hosted yet in the skeleton" bertahan sampai
+     * 30 Agu 2026: login ganda dari server lain tidak pernah menendang
+     * siapa pun (Peringatan #167).</p>
+     */
     static int parseCheckOnline(int fd) {
         Session s = net.session(fd);
-        log.info("[MAP] Force-disconnect request for char id {} (no players hosted yet in the skeleton).",
-                s.rfifoL(2));
-        return 0;
+        long id = s.rfifoL(2) & 0xFFFFFFFFL;
+        return tendangKarakter(id) ? 1 : 0;
+    }
+
+    /** Tendang pemain ber-id itu bila ia online di server ini. */
+    static boolean tendangKarakter(long charId) {
+        for (User u : MapServer.onlineChars.values()) {
+            if (u.id == charId) {
+                MapServer.tendang(u, "Karakter ini masuk dari tempat lain; sambungan diputus.");
+                return true;
+            }
+        }
+        log.info("[MAP] permintaan tendang untuk id {} — tidak online di server ini", charId);
+        return false;
+    }
+
+    /**
+     * Minta char server menendang karakter ber-id itu di map server mana pun
+     * (0x3010, tambahan RTK2 — di C login server-lah yang mengirim 0x3804,
+     * dan klien RTK2 tidak pernah lewat sana).
+     */
+    public static void mintaTendang(long charId) {
+        Session s = net.session(charFd);
+        if (s == null) {
+            log.error("[MAP] tidak bisa minta tendang: belum terhubung ke char server");
+            return;
+        }
+        s.wfifoW(0, 0x3010);
+        s.wfifoL(2, (int) charId);
+        s.wfifoSet(6);
     }
 
     /** intif_parse(): dispatcher for packets from the char server. */
@@ -499,6 +680,7 @@ public final class MapIntif {
             case 0x3803: parseCharLoad(fd); break;
             case 0x3804: parseCheckOnline(fd); break;
             case 0x3809: parseBoardList(fd); break;
+            case 0x380A: parseBoardPost(fd); break;
             case 0x380C: parseMailResult(fd); break;
             case 0x380D: parseNewMailFlag(fd); break;
             default:

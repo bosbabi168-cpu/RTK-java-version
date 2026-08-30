@@ -340,7 +340,13 @@ public final class NpcRegistry {
         int fired = 0;
         java.util.List<Npc> kedaluwarsa = null;
 
-        for (Npc nd : npcs) {
+        // ⚠️ Disalin dulu. Skrip yang dipanggil `fire` boleh memunculkan atau
+        // mencabut NPC, dan itu MENGUBAH `npcs` di tengah iterasi: hasilnya
+        // ConcurrentModificationException yang membatalkan SISA tik — seluruh
+        // NPC sesudah yang bersangkutan berhenti bergerak sampai tik
+        // berikutnya. Terlihat di logs/common.log, bukan di map.log; lihat
+        // docs/PERINGATAN.md #125.
+        for (Npc nd : new ArrayList<>(npcs)) {
             // npc_duration(): NPC sementara berumur terbatas memicu
             // `endAction` lalu dicabut dari dunia
             if (nd.temporary && nd.duration > 0) {

@@ -3,6 +3,7 @@ package org.rtk.map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import org.rtk.common.mmo.Point;
 import org.rtk.map.data.MapData;
 import org.rtk.map.data.MapRegistry;
 
@@ -110,8 +111,9 @@ public final class Pc {
      *         sekali — barulah perpindahannya benar-benar gagal
      */
     private static boolean transferKeServerLain(User sd, int m, int x, int y) {
-        Integer server = MapServer.sql == null ? null : MapServer.sql.queryInt(
-                "SELECT `MapServer` FROM `Maps` WHERE `MapId` = ?", m);
+        Integer server = MapServer.sql == null || !MapServer.sql.siap() ? null
+                : MapServer.sql.queryInt(
+                        "SELECT `MapServer` FROM `Maps` WHERE `MapId` = ?", m);
         if (server == null) {
             log.warn("[PC] {} minta pindah ke peta {} yang tidak dikenal tabel Maps",
                     sd.name(), m);
@@ -188,8 +190,18 @@ public final class Pc {
             return false;
         }
 
-        // gambar ulang dunia di sisi klien setelah berpindah
-        MapServer.clientView.playerViewRefreshed(sd);
+        // Gambar ulang dunia di sisi klien setelah berpindah.
+        // ⚠️ Kalau PETANYA yang berganti, menggambar ulang saja TIDAK cukup:
+        // klien memegang berkas `.map` sendiri dan akan terus memakai peta
+        // lama sampai diberi tahu nomor peta yang baru. Sebelum #149, satu-
+        // satunya jalur yang mengirimkannya adalah masuk dunia — sehingga
+        // portal dan mantra gateway memindahkan raga pemain tanpa
+        // memindahkan layarnya.
+        if (mapChanged) {
+            MapServer.clientView.playerMapChanged(sd);
+        } else {
+            MapServer.clientView.playerViewRefreshed(sd);
+        }
 
         if (mapChanged) {
             fireScript(sd, "mapEnter");
@@ -226,8 +238,27 @@ public final class Pc {
             log.warn("[PC] {} tersimpan di peta {} milik map server lain", sd.name(), m);
             if (transferKeServerLain(sd, m, x, y)) {
                 sd.pindahTertunda = true;
+                return false;
             }
-            return false;
+            // ⚠️ #153: TIDAK ADA server yang mengaku memiliki peta itu —
+            // biasanya karena barisnya tidak ada di tabel `Maps` sama sekali
+            // (berkas `.map` ada ≠ peta terdaftar). Menutup sambungan di sini
+            // mengunci karakternya SELAMANYA: ia tidak pernah masuk dunia,
+            // jadi posisinya tidak pernah tersimpan ulang, jadi percobaan
+            // berikutnya gagal dengan cara yang persis sama.
+            Point inn = innKebangsaan(world, sd);
+            if (inn == null) {
+                log.error("[PC] {} terdampar di peta {} dan tidak ada satu pun "
+                        + "inn kebangsaannya yang dimuat server ini", sd.name(), m);
+                return false;
+            }
+            log.warn("[PC] {} diselamatkan dari peta {} ke inn kebangsaannya "
+                    + "({}:{},{})", sd.name(), m, inn.m, inn.x, inn.y);
+            sd.status.lastPos = inn;
+            m = inn.m;
+            x = inn.x;
+            y = inn.y;
+            map = world.get(m);
         }
 
         if (!map.walkable(x, y)) {
@@ -253,6 +284,60 @@ public final class Pc {
         log.info("[PC] {} masuk dunia di {} ({}:{},{}), vita {}/{} mana {}/{}",
                 sd.name(), map.title, m, x, y, sd.status.hp, sd.maxHp, sd.status.mp, sd.maxMp);
         return true;
+    }
+
+    /**
+     * Inn kebangsaan pemain — tempat jatuh bagi yang terdampar (#153).
+     *
+     * <p>Daftarnya CERMIN dari {@code Player.returnToInn} di
+     * {@code luascript/Accepted/player.lua}: itulah "titik bind" yang dipakai
+     * konten setiap kali pemain mati atau dipulangkan. Diulang di Java hanya
+     * karena penyelamatan ini terjadi <b>sebelum</b> pemain ada di dunia,
+     * sehingga {@code player:warp} belum bisa dipanggil sama sekali.</p>
+     *
+     * <pre>
+     *   0 rimba   : 1002 (206..209, 139..142)
+     *   1 Kugnae  : 38 / 37 / 2      di (4,5)
+     *   2 Buya    : 362 / 332 / 361  di (4,5)
+     *   3 Nagnang : 2501..2505       di (4,6)
+     * </pre>
+     *
+     * <p>⚠️ Kebangsaan &gt; 3 dijepit ke 3, persis seperti skripnya
+     * ({@code if country > 3 then country = 3 end}) — cabang "4 Han" di
+     * bawahnya karena itu tidak pernah tercapai, dan itu ditiru apa adanya
+     * supaya perilakunya sama.</p>
+     *
+     * <p>⚠️ Hanya peta yang benar-benar DIMUAT server ini yang dipilih;
+     * menjatuhkan pemain ke peta milik server lain berarti mengulang
+     * masalah yang sama satu tingkat lebih dalam. Pilihannya diacak seperti
+     * skripnya, tetapi di antara yang tersedia saja.</p>
+     *
+     * @return titik jatuh, atau null bila tidak satu pun inn-nya dimuat
+     */
+    static Point innKebangsaan(MapRegistry world, User sd) {
+        int negara = sd.status.country;
+        if (negara > 3) {
+            negara = 3;
+        }
+        int[][] pilihan = switch (negara) {
+            case 0 -> new int[][] {{1002, 206, 139}, {1002, 207, 140},
+                                   {1002, 208, 141}, {1002, 209, 142}};
+            case 1 -> new int[][] {{38, 4, 5}, {37, 4, 5}, {2, 4, 5}};
+            case 2 -> new int[][] {{362, 4, 5}, {332, 4, 5}, {361, 4, 5}};
+            default -> new int[][] {{2501, 4, 6}, {2502, 4, 6}, {2503, 4, 6},
+                                    {2504, 4, 6}, {2505, 4, 6}};
+        };
+        java.util.List<int[]> ada = new java.util.ArrayList<>();
+        for (int[] p : pilihan) {
+            if (world.get(p[0]) != null) {
+                ada.add(p);
+            }
+        }
+        if (ada.isEmpty()) {
+            return null;
+        }
+        int[] pilih = ada.get(new java.util.Random().nextInt(ada.size()));
+        return new Point(pilih[0], pilih[1], pilih[2]);
     }
 
     /**

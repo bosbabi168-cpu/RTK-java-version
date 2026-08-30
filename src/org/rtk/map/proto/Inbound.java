@@ -40,6 +40,20 @@ public final class Inbound {
         /** @return false bila perkenalannya ditolak dan sesinya harus ditutup */
         boolean playerIntroduces(int fd, Session s, String characterName,
                                  String password);
+
+        /**
+         * Masuk dengan akun (K3-lanjutan); daftar karakternya dikirim balik.
+         *
+         * <p>Sesi yang berhasil masuk akun DIINGAT, sehingga perkenalan
+         * karakter miliknya tidak perlu sandi karakter lagi.</p>
+         */
+        default void accountLogs(int fd, Session s, String email, String sandi) { }
+
+        /** Buat karakter baru (K3-lanjutan). */
+        default void createsCharacter(int fd, Session s, String nama, String sandi,
+                                      int sex, int wajah, int rambut,
+                                      int warnaRambut, int warnaWajah,
+                                      int negara) { }
     }
 
     /**
@@ -60,6 +74,11 @@ public final class Inbound {
             // yang bisa dilanggar — tidak ada enkripsi sama sekali.
             if (op == Wire.OP_HELLO) {
                 hello(fd, s, r, handshake);
+            } else if (op == Wire.OP_ACCOUNT_LOGIN) {
+                handshake.accountLogs(fd, s, r.str(), r.str());
+            } else if (op == Wire.OP_CREATE_CHAR) {
+                handshake.createsCharacter(fd, s, r.str(), r.str(), r.u8(),
+                        r.u16(), r.u16(), r.u8(), r.u8(), r.u8());
             } else {
                 log.debug("[RTK2] opcode 0x{} diabaikan: sesi belum terautentikasi",
                         String.format("%04X", op));
@@ -187,6 +206,12 @@ public final class Inbound {
                     teman.add(r.str());
                 }
                 cmd.playerSavesFriends(sd, teman);
+            }
+            case Wire.OP_BOARD_WRITE -> {
+                int papan = r.u16();
+                String topik = r.str();
+                String isi = r.str();
+                cmd.playerWritesBoardPost(sd, papan, topik, isi);
             }
             case Wire.OP_BOARD -> {
                 int aksi = r.u8();

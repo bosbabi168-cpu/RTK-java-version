@@ -16,7 +16,7 @@ Since 26 August 2026 this project **no longer pursues byte-per-byte
 compatibility** with the RetroTK client. What applies now:
 
 - **Our own protocol (RTK2)** — bidirectional, designed from the real
-  needs of the scripts: 43 inbound opcodes, 54 outbound events. Spec:
+  needs of the scripts: 46 inbound opcodes, 57 outbound events (Wire v11). Spec:
   [`docs/PROTOKOL-RTK2.md`](docs/PROTOKOL-RTK2.md).
 - **Our own client (libGDX)** — developed in the separate repo
   `../RTK-client`, not committed until every asset is replaced with our
@@ -44,10 +44,10 @@ writing a new adapter, not touching the logic.
   mutable at runtime.
 - **Scripting**: 906/906 scripts load with 0 errors; binding gaps **0**
   (the only remainder is `testPacket`, deliberately not ported).
-- **Testing**: 8 offline regression gates (903 `cliftest` assertions,
-  234 `dbtest`) + the real-client gate `livetest` (155 checks; **167** on a
-  two-map-server setup, `./tools/uji-dua-server.sh`).
-  36 of 43 RTK2 opcodes have now actually been sent by a real client.
+- **Testing**: 12 offline regression gates (**917** `cliftest` assertions,
+  **235** `dbtest`) + the real-client gate `livetest` (**243** checks;
+  **237** on a two-map-server setup, `./tools/uji-dua-server.sh`).
+  **All 46 RTK2 opcodes have now actually been sent by a real client.**
 - **Indonesian translation**: COMPLETE — 0 of 9,812 dialogue points are
   still English; `livetest` asserts that the dialogue reaching the player
   is Indonesian.
@@ -162,7 +162,7 @@ scripts are identifiers. The dialogue text itself is **fully translated**
 `tools/terjemahan/`, the rules in
 [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
-## Testing — nine gates
+## Testing — twelve offline gates + two live gates
 
 | Gate | Tests | Notes |
 |---|---|---|
@@ -170,14 +170,18 @@ scripts are identifiers. The dialogue text itself is **fully translated**
 | `maptest` | 3,544 map files | |
 | `chartest` | character serialization | |
 | `worldtest` | map world + player placement | |
-| `cliftest` | packets, RTK2 protocol, every subsystem | 903 assertions |
-| `dbtest` | database layer against live MySQL | 234 assertions; needs MySQL |
+| `cliftest` | packets, RTK2 protocol, every subsystem | **917** assertions |
+| `dbtest` | database layer against live MySQL | **235** assertions; needs MySQL |
 | `luaaudit` | static checker for 907 scripts + binding gaps | `-Drtk.audit.penuh=true` for the full list |
 | `wiresync` | `Wire.java` identical to the client repo copy | skips itself if the client repo is absent |
-| `livetest` | a **real RTK2 client** enters the world + 155 checks | run from `../RTK-client` |
-| `tools/uji-dua-server.sh` | player transfer between map servers (R3/C3) | 167 checks; sets up and restores its own fixture |
+| `elixirtest` | **a full Elixir match** on the real server boot | 34 checks; other map servers must be stopped |
+| `carnagetest` | **a full Carnage match** (teams by class path, four colours) | 28 checks; other map servers must be stopped |
+| `sumotest` | **a full Sumo War match** (points by pushing into water) | 21 checks; other map servers must be stopped |
+| `beachtest` | **a full Beach War round** (points by shooting) | 22 checks; other map servers must be stopped |
+| `livetest` | a **real RTK2 client** enters the world + **243** checks | run from `../RTK-client`; let the map server settle first (#163) |
+| `tools/uji-dua-server.sh` | player transfer between map servers (R3/C3) | **237** checks; sets up and restores its own fixture |
 
-The first eight gates are offline — they test the code against itself and
+The first twelve gates are offline — they test the code against itself and
 cannot see "something that did not happen". That is why every new
 subsystem must get checks in both `cliftest` **and** `livetest`, and then
 the code must be deliberately broken once to prove the gate can turn red.
@@ -196,18 +200,53 @@ terminology in [`luascript/GLOSARIUM.md`](luascript/GLOSARIUM.md).
 
 ## Status & roadmap
 
-**Status 28 August 2026:** 8/8 offline gates green, `livetest` 155 checks
-green, RTK2 protocol symmetric in both directions, binding gaps 0,
-`map.log` 0 ERROR/WARN. The main blocker is now on the client side
-(`../RTK-client`) — the server already sends more than the client can
-draw.
+**Status 30 August 2026 (evening):** 12/12 offline gates green, `livetest` **243**
+checks green through the real client, **237** on the two-map-server gate,
+RTK2 protocol symmetric in both directions, opcode coverage **46/46**, zero
+binding gaps.
 
-The roadmap toward "a server that runs normally and smoothly with no
-bugs" — including the table of player actions that still lack an RTK2
-inbound path — is in
+| Stage | Scope | Status |
+|---|---|---|
+| **R1** | Player actions with no RTK2 entry point (16 items from the `clif_parse` audit) | ✅ **DONE** 28 Aug 2026 |
+| **R2** | TODOs in the code — zero left in `src/` | ✅ **DONE** 28 Aug 2026 |
+| **R3** | **C3** cross-map-server travel proven round-trip; **C2** RetroTK meta files deliberately not ported | ✅ **DONE** 28 Aug 2026 |
+| **R4** | Dialogue translation — 0 of **9,812** points still English | ✅ **DONE** 28 Aug 2026 |
+| **R5** | Continuous stabilisation — seven rounds | ⏳ **IN PROGRESS** |
+
+The seven R5 rounds, and what each one uncovered:
+
+| Round | Focus | Biggest find |
+|---|---|---|
+| **1** | Opcode coverage 25 → 36 | **`.ID` was never implemented** — picking items off the ground had never worked, for anyone |
+| **2** | Character creation & sessions | **fds are reused** — a new connection inherited the previous session's account and could log in with no password |
+| **3** | Periodic-event engine | `map_cronjob()` and the world registry **were never ported**: no events, boss spawns, map lighting, or item spawning had ever run |
+| **4** | Elixir & Carnage running end to end | **`hasItem` returned a COUNT** instead of `true` — used 419× with `== true`, so every quest item requirement failed |
+| **5** | Sumo & Beach running; opcode **46/46** | **`player:warp` in scripts never moved the player** — 856 call sites, silent |
+| **6** | Combat & animation | **mobs could not be killed: the chain was broken in six places**, the last being `MobRegistry.kill()` telling the client nothing at all |
+| **7** | Recorded demo cycle through the client (25 checks, MP4 video) | **no mob had ever taken a step or hit back** (`mob.startX`, `mob:move`, `mob:attack` unbound; `speed` 0), **objects entering view while walking were never sent to the RTK2 client**, and **one character could log in from two clients at once** (`ChaOnline` never set, 0x3804 a stub) |
+
+Gates today:
+
+| Gate | Checks | What it defends |
+|---|---|---|
+| `cliftest` | **933** | every protocol path, including mob death being broadcast to the client, objects entering/leaving view while walking, and the double-login kick |
+| `dbtest` | **235** | database contract & `hasItem` matching C |
+| `worldtest` | 53 | world calendar, world registry |
+| `scripttest` | 49 | global Lua hooks & cron hooks are actually callable; mob AI state is bound |
+| `chartest` | 39 | `CharStatus` codec |
+| `elixirtest` · `carnagetest` · `beachtest` · `sumotest` | 34 · 28 · 22 · 21 | one full match of each event |
+| `maptest` · `luaaudit` · `wiresync` | — | every `.map` parses · Lua syntax · the two `Wire.java` copies are identical |
+| **`tools/uji-dua-server.sh`** | **237** | cross-map-server travel, round trip |
+| **`livetest`** (client repo) | **243** | a real server through a real client |
+
+⚠️ Sweep `logs/common.log` too: two real bugs hid there, not in `map.log`
+(Warnings #123, #125). ⚠️ `livetest` against a map server that has only
+been up 30 seconds gives false reds — let it settle first (#163).
+
+The full roadmap with per-stage tables lives in
 **[CLAUDE.md](CLAUDE.md#roadmap--menuju-server-yang-dipakai-normal--lancar-tanpa-bug)**.
-Traps & lessons #1–#122 are in
-**[docs/PERINGATAN.md](docs/PERINGATAN.md)** (Indonesian).
+Pitfalls & lessons #1–#167 in
+**[docs/PERINGATAN.md](docs/PERINGATAN.md)**.
 
 ## Folder structure
 

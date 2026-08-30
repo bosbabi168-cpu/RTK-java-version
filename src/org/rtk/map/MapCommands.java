@@ -228,6 +228,18 @@ public final class MapCommands implements ClientCommands {
         if (bl.id == sd.id) {
             return false;
         }
+        // ⚠️ BARANG DI LANTAI TIDAK MENGHALANGI. C hanya menyapu tiga jenis
+        // blok saat memeriksa langkah (`clif.c:5036-5038`):
+        //     map_foreachincell(clif_canmove_sub, m, dx, dy, BL_PC,  sd);
+        //     map_foreachincell(clif_canmove_sub, m, dx, dy, BL_MOB, sd);
+        //     map_foreachincell(clif_canmove_sub, m, dx, dy, BL_NPC, sd);
+        // BL_ITEM tidak pernah ikut. Port ini menyapu SELURUH isi petak,
+        // sehingga satu barang yang tergeletak berubah jadi tembok — dan
+        // memungut barang jadi mustahil, karena `onPickup.lua` mengambil
+        // barang di petak tempat pemain BERDIRI (Peringatan #154).
+        if (bl.type == org.rtk.map.data.BlockList.Type.ITEM) {
+            return false;
+        }
         if (bl.type == org.rtk.map.data.BlockList.Type.NPC && bl.subtype == 2) {
             return false;
         }
@@ -365,6 +377,7 @@ public final class MapCommands implements ClientCommands {
 
         MapServer.clientView.playerStepSeen(sd, direction, oldX, oldY);
         map.moveBlock(sd, nx, ny);
+        MapServer.clientView.playerViewMoved(sd, oldX, oldY);
 
         // ⚠️ Harus di sini: setelah perpindahan, tetapi SEBELUM kait skrip
         // dan pemeriksaan portal — portal bisa memindahkan pemain ke peta
@@ -643,13 +656,56 @@ public final class MapCommands implements ClientCommands {
                 sd.boardPage = 0;
                 Boards.show(engine, sd, papan, 0, false);
             }
-            case 3, 5 -> mini(sd, "Belum tersedia.");
+            // K2-lanjutan: baca dan hapus kiriman kini punya jalurnya.
+            case 3 -> {
+                sd.board = papan != 0 ? papan : sd.board;
+                MapIntif.requestPost(sd, sd.board, pos, benderaPapan(sd));
+            }
+            case 5 -> MapIntif.deletePost(sd, sd.board, pos, benderaPapan(sd));
             case 9 -> {
                 sd.boardPage = 0;
                 Boards.show(engine, sd, 0, 0, false);
             }
             default -> log.debug("[CMD] aksi papan {} tidak dikenal", aksi);
         }
+    }
+
+    /**
+     * Bendera hak papan milik sesi ini.
+     *
+     * <p>⚠️ Ini yang DIKIRIM ke char server, bukan yang diterima dari
+     * klien. Klien tidak pernah boleh menentukan haknya sendiri, dan char
+     * server memeriksanya sekali lagi terhadap baris di database.</p>
+     */
+    private static int benderaPapan(User sd) {
+        int f = 0;
+        if (sd.boardCanWrite != 0) {
+            f |= Boards.CAN_WRITE;
+        }
+        if (sd.boardCanDel != 0) {
+            f |= Boards.CAN_DEL;
+        }
+        return f;
+    }
+
+    @Override
+    public void playerWritesBoardPost(User sd, int papan, String topik, String isi) {
+        // ⚠️ Topik dan isi DIPOTONG di sini, bukan dipercayakan ke kolom
+        // database: kolom yang meluap ditolak MySQL dan kirimannya hilang
+        // tanpa pemain tahu kenapa.
+        String t = topik == null ? "" : topik.trim();
+        String i = isi == null ? "" : isi;
+        if (t.isEmpty()) {
+            mini(sd, "Kiriman harus punya topik.");
+            return;
+        }
+        if (sd.boardCanWrite == 0) {
+            mini(sd, "Kau tidak boleh menulis di papan ini.");
+            return;
+        }
+        MapIntif.writePost(sd, papan != 0 ? papan : sd.board,
+                t.length() > 250 ? t.substring(0, 250) : t,
+                i.length() > 4000 ? i.substring(0, 4000) : i);
     }
 
     @Override

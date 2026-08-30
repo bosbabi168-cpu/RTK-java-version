@@ -1218,6 +1218,35 @@ public final class ClifTest {
                 fl2 == fl && reg.count() == sebelum && fl.data.amount == 5);
         check("drop: jumlah sebelumnya tercatat di lastAmount", fl.lastAmount == 3);
 
+        // --- nomor opcode & peristiwa harus UNIK (K2-lanjutan) ---
+        // ⚠️ Dua konstanta bernilai sama tidak selalu gagal compile: dua
+        // `case` dengan nilai sama baru merah kalau kebetulan ada di switch
+        // yang sama. Nomor yang bentrok di sisi server bisa lolos sampai
+        // klien membongkar peristiwa yang salah — dan itu terlihat seperti
+        // ladang yang bergeser, bukan seperti nomor yang sama.
+        {
+            java.util.Map<Integer, String> dipakai = new java.util.HashMap<>();
+            java.util.List<String> bentrok = new java.util.ArrayList<>();
+            for (java.lang.reflect.Field f : Wire.class.getDeclaredFields()) {
+                String n = f.getName();
+                if (!n.startsWith("OP_") && !n.startsWith("EV_")) {
+                    continue;
+                }
+                try {
+                    int v = f.getInt(null);
+                    String lama = dipakai.put(v, n);
+                    if (lama != null) {
+                        bentrok.add(lama + " = " + n);
+                    }
+                } catch (IllegalAccessException e) {
+                    // ladang non-publik: tidak relevan
+                }
+            }
+            check("tidak ada nomor opcode/peristiwa yang dipakai dua kali"
+                    + (bentrok.isEmpty() ? "" : " — " + bentrok),
+                    bentrok.isEmpty());
+        }
+
         // --- atribut ID: id BENDA, bukan id jenis barang (R5) ---
         // ⚠️ Skrip memakai `.ID` 1.292 kali di 347 berkas, dan `onPickup.lua`
         // memanggil `player:pickUp(groundItems[i].ID)`. Selama `.ID` menjawab
@@ -4118,6 +4147,12 @@ public final class ClifTest {
     }
 
     private static final class Rekam implements ClientCommands {
+        @Override
+        public void playerWritesBoardPost(User sd, int papan, String topik,
+                                          String isi) {
+            catat("playerWritesBoardPost", papan, topik, isi);
+        }
+
         String terakhir = "";
         final java.util.List<Object> arg = new java.util.ArrayList<>();
 
@@ -4743,6 +4778,38 @@ public final class ClifTest {
         cmd.playerWalks(sd, 3, sd.x, sd.y, null);
         MapServer.world.get(sd.m).delBlock(mbR2);
 
+        // ---- #154: BARANG DI LANTAI TIDAK MENGHALANGI LANGKAH ----
+        // C hanya menyapu BL_PC, BL_MOB, dan BL_NPC saat memeriksa langkah
+        // (clif.c:5036-5038) — BL_ITEM tidak pernah ikut. Port ini menyapu
+        // seluruh isi petak, jadi satu barang yang tergeletak jadi tembok.
+        // ⚠️ Akibatnya bukan cuma "tersangkut": `onPickup.lua` memungut
+        // barang di petak tempat pemain BERDIRI, jadi barang yang tidak
+        // bisa diinjak juga tidak bisa dipungut.
+        int xSblmBarang = sd.x;
+        MapServer.floorItems.drop(sd, 7703, 1, 0, 0, sd.id, sd.m, sd.x + 1, sd.y);
+        check("#154: barangnya benar-benar ada di petak sebelah",
+                !MapServer.world.get(sd.m).objectsAt(sd.x + 1, sd.y).isEmpty());
+        cmd.playerWalks(sd, arahTimur, sd.x, sd.y, null);
+        check("#154: pemain bisa MELANGKAH ke petak berisi barang",
+                sd.x == xSblmBarang + 1);
+        // Kontrol negatif di petak yang sama: NPC biasa TETAP menghalangi,
+        // supaya lulusnya bukan karena pemeriksaan blok mati semuanya.
+        Npc npcHalang = new Npc();
+        npcHalang.id = 777001;
+        npcHalang.name = "uji_npc_halang";
+        npcHalang.m = sd.m;
+        npcHalang.x = sd.x + 1;
+        npcHalang.y = sd.y;
+        npcHalang.subtype = 0;
+        MapServer.world.get(sd.m).addBlock(npcHalang);
+        int xSblmNpc = sd.x;
+        cmd.playerWalks(sd, arahTimur, sd.x, sd.y, null);
+        check("#154 kontrol negatif: NPC biasa TETAP menghalangi",
+                sd.x == xSblmNpc);
+        MapServer.world.get(sd.m).delBlock(npcHalang);
+        // kembalikan posisi
+        cmd.playerWalks(sd, 3, sd.x, sd.y, null);
+
         // ---- R1/K4: berputar, emosi, susun ulang ----
         int xAwal = sd.x, yAwal = sd.y;
         sd.status.side = 0;
@@ -5365,6 +5432,16 @@ public final class ClifTest {
         return new Wire.Reader(org.rtk.map.proto.Inbound.bytesOf(k.sesi()), k.panjang());
     }
 
+    /** Ada bingkai ber-opcode itu yang ladang pertamanya (u64) = id benda? */
+    private static boolean cariBenda(java.util.List<Keluar> daftar, int opcode, long id) {
+        for (Keluar k : daftar) {
+            if (k.opcode() == opcode && baca(k).u64() == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Lewati blok dasar benda; kembalikan namanya.
      *
@@ -5497,6 +5574,114 @@ public final class ClifTest {
         Keluar k = bingkaiRtk2(ka).get(0);
         check("rtk2: panjang bingkai = 4 header + 1 ragam + 2 + 3 teks",
                 k.panjang() == 4 + 1 + 2 + 3);
+
+        // ---- #166: benda yang masuk/keluar pandangan saat BERJALAN ----
+        // Sebelum ini tidak ada jalurnya sama sekali: klien RTK2 hanya
+        // menerima benda dari sapuan masuk-dunia, jadi kelinci lima petak
+        // di sebelah kiri tidak pernah ada di layar (Peringatan #166).
+        // ⚠️ Jaraknya dihitung dari KOTAK area yang sebenarnya
+        // (MapData.areaBox), bukan dari "±9": di tepi peta kotaknya
+        // DIGESER, dan petak uji ini memang dekat tepi kiri.
+        {
+            var jenisJauh = new MobData();
+            jenisJauh.id = 9166;
+            jenisJauh.yname = "uji_mob_jauh";
+            jenisJauh.name = "Mob Jauh";
+            jenisJauh.vita = 10;
+            // ⚠️ Menjauh dari tepi kiri dulu: di tepi kotak area DIGESER dan
+            // sapuan mob→penonton tidak lagi simetris dengan penonton→mob
+            // (perilaku C juga). Sub-uji ini soal masuk/keluar pandangan,
+            // bukan soal tepi peta.
+            int pxAsal = a.x;
+            int tengahX = Math.min(map.xs - 25, px + 25);
+            map.moveBlock(a, tengahX, py);
+            int[] kotak = map.areaBox(a.x, a.y);
+            int tepi = kotak[2];                 // kolom terakhir yang terlihat
+            int luar = tepi + 3;                 // pasti di luar
+            check("#166: peta uji cukup lebar untuk mob di luar area pandang", luar + 1 < map.xs);
+            Mob jauh = new Mob();
+            jauh.data = jenisJauh;
+            jauh.id = Mob.MOB_START_NUM + 4266;
+            jauh.m = map.id;
+            jauh.x = luar;
+            jauh.y = py;
+            MobRegistry.resetStats(jauh);
+            map.addBlock(jauh);
+            jauh.onMap = true;
+            check("#166: mob uji berada di LUAR area pandang petak awal",
+                    !map.areaContains(a.x, a.y, jauh.x, jauh.y));
+            ka.takeOutbound();
+            int dariX = a.x;
+            map.moveBlock(a, tengahX + 3, py);
+            check("#166: sesudah tiga langkah mob itu masuk area pandang",
+                    map.areaContains(a.x, a.y, jauh.x, jauh.y));
+            cv.playerViewMoved(a, dariX, py);
+            check("#166: melangkah mendekat -> EV_OBJECT_APPEARED untuk mob yang baru masuk pandangan",
+                    cariBenda(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARED, jauh.id));
+            ka.takeOutbound();
+            dariX = a.x;
+            map.moveBlock(a, tengahX, py);
+            cv.playerViewMoved(a, dariX, py);
+            check("#166: melangkah menjauh -> EV_OBJECT_REMOVED untuk mob yang keluar pandangan",
+                    cariBenda(bingkaiRtk2(ka), Wire.EV_OBJECT_REMOVED, jauh.id));
+            // Mob yang BERJALAN masuk pandangan: dulu semua penonton di
+            // sekitar petak baru menerima MOVED — termasuk yang belum
+            // pernah diperkenalkan pada mobnya, dan klien membuangnya.
+            ka.takeOutbound();
+            int mobDariX = jauh.x;
+            map.moveBlock(jauh, tepi, py);
+            cv.mobMoved(jauh, map, mobDariX, py, -1, -1, -1, -1);
+            check("#166: mob yang berjalan MASUK pandangan dikirim sebagai APPEARED",
+                    cariBenda(bingkaiRtk2(ka), Wire.EV_OBJECT_APPEARED, jauh.id));
+            check("#166: ... dan BUKAN sebagai MOVED (klien tidak kenal id-nya)",
+                    !cariBenda(bingkaiRtk2(ka), Wire.EV_OBJECT_MOVED, jauh.id));
+            ka.takeOutbound();
+            mobDariX = jauh.x;
+            map.moveBlock(jauh, tepi - 1, py);
+            cv.mobMoved(jauh, map, mobDariX, py, -1, -1, -1, -1);
+            check("#166: langkah berikutnya di dalam pandangan = EV_OBJECT_MOVED",
+                    cariBenda(bingkaiRtk2(ka), Wire.EV_OBJECT_MOVED, jauh.id));
+            ka.takeOutbound();
+            mobDariX = jauh.x;
+            map.moveBlock(jauh, luar, py);
+            cv.mobMoved(jauh, map, mobDariX, py, -1, -1, -1, -1);
+            check("#166: mob yang berjalan KELUAR pandangan = EV_OBJECT_REMOVED",
+                    cariBenda(bingkaiRtk2(ka), Wire.EV_OBJECT_REMOVED, jauh.id));
+            map.delBlock(jauh);
+            map.moveBlock(a, pxAsal, py);
+            ka.takeOutbound();
+            kb.takeOutbound();
+        }
+
+        // ---- #165: pc_calcstat menyetel kecepatan 90 ----
+        // Tanpa ini `hitCritChance.lua` mengalikan peluang kena mob dengan
+        // (speed+10)/100 = 0,1 dan setiap mob dijepit ke 5%.
+        a.recalcStatus();
+        check("#165: kecepatan pemain 90 seperti pc_calcstat (bukan 0)", a.speed == 90);
+        a.status.alignment = 2;
+        check("#165: player.alignment terikat (berserk.lua:33 membacanya)",
+                a.scriptGetAttr("alignment") != null && a.scriptGetAttr("alignment") == 2);
+
+        // ---- #167: login ganda — 0x3804 benar-benar menendang ----
+        // Stub lama hanya mencatat "no players hosted yet in the skeleton";
+        // pemain yang masuk dua kali dari server lain tidak pernah ditendang.
+        {
+            MapServer.onlineChars.put(b.fd, b);
+            b.rtk2 = true;
+            kb.takeOutbound();
+            check("#167: tendang menemukan pemain online ber-id itu",
+                    MapIntif.tendangKarakter(b.id));
+            check("#167: pemain ditandai ditendang", b.ditendang);
+            check("#167: pemain diberi tahu lewat EV_MESSAGE sebelum sambungannya ditutup",
+                    cariOpcode(bingkaiRtk2(kb), Wire.EV_MESSAGE) != null);
+            check("#167: id yang tidak online tidak menendang siapa pun",
+                    !MapIntif.tendangKarakter(b.id + 777_777));
+            b.ditendang = false;
+            MapServer.onlineChars.remove(b.fd);
+            check("#167: onlineByName menemukan pemain menurut nama, tanpa peduli huruf",
+                    MapServer.onlineByName(a.name().toUpperCase()) == a
+                            || MapServer.onlineChars.get(a.fd) != a);
+        }
 
         // ---- blok benda disusun ULANG per penonton ----
         for (FloorItem fi : new java.util.ArrayList<>(MapServer.floorItems.all())) {
@@ -5970,6 +6155,44 @@ public final class ClifTest {
         MapServer.world.put(kembarA);
         MapServer.world.put(kembarB);
 
+        // ---- #153: pemain terdampar dijatuhkan ke inn KEBANGSAANNYA ----
+        // Daftarnya cermin `Player.returnToInn` di player.lua. Yang diuji di
+        // sini murni pemilihannya: hanya peta yang benar-benar DIMUAT boleh
+        // dipilih, karena menjatuhkan pemain ke peta milik server lain
+        // berarti mengulang masalahnya satu tingkat lebih dalam.
+        int negaraAsli = sd.status.country;
+        MapData innBuya = new MapData(332, berkas);      // Spring Tavern
+        MapData innNagnang = new MapData(2503, berkas);  // Tavern of Wind
+        MapServer.world.put(innBuya);
+        MapServer.world.put(innNagnang);
+
+        sd.status.country = 2;
+        org.rtk.common.mmo.Point b2 = Pc.innKebangsaan(MapServer.world, sd);
+        check("#153: kebangsaan Buya jatuh ke salah satu inn Buya yang dimuat",
+                b2 != null && (b2.m == 332 || b2.m == 362 || b2.m == 361));
+        check("#153: dan ke petak (4,5) seperti di player.lua",
+                b2 != null && b2.x == 4 && b2.y == 5);
+
+        // ⚠️ Kebangsaan > 3 dijepit ke 3 — persis `if country > 3 then
+        // country = 3 end` di skripnya, sehingga cabang "4 Han" tidak
+        // pernah tercapai. Ditiru apa adanya.
+        sd.status.country = 7;
+        org.rtk.common.mmo.Point b7 = Pc.innKebangsaan(MapServer.world, sd);
+        check("#153: kebangsaan di luar 0..3 dijepit ke Nagnang (cermin skrip)",
+                b7 != null && b7.m == 2503 && b7.x == 4 && b7.y == 6);
+
+        // KONTROL NEGATIF: kebangsaan yang SATU PUN inn-nya tidak dimuat
+        // harus menjawab null, bukan menebak peta lain.
+        sd.status.country = 1;   // Kugnae: 38 / 37 / 2
+        boolean adaInnKugnae = MapServer.world.get(38) != null
+                || MapServer.world.get(37) != null || MapServer.world.get(2) != null;
+        org.rtk.common.mmo.Point b1 = Pc.innKebangsaan(MapServer.world, sd);
+        check("#153 kontrol negatif: tanpa inn yang dimuat, jawabannya null",
+                adaInnKugnae ? b1 != null : b1 == null);
+        sd.status.country = negaraAsli;
+        MapServer.world.remove(332);
+        MapServer.world.remove(2503);
+
         int asli = kembarA.tile(3, 3);
         check("dunia: dua peta berangkat dari petak yang sama",
                 kembarB.tile(3, 3) == asli);
@@ -6134,6 +6357,36 @@ public final class ClifTest {
         panggilGlobal(engine, "guitext", 0, 58888, "peta lain");
         check("dunia: guitext ke peta lain tidak menyentuh pemain di sini",
                 tertangkap.isEmpty());
+        // ---- #157: mob MATI harus dikabarkan ke klien ----
+        // Sebelum ini `kill()` mencabut mob dari indeks blok tanpa memberi
+        // tahu siapa pun: mob yang mati hilang di server tetapi TETAP
+        // tergambar di layar pemain sampai ia pindah peta. Pertarungan yang
+        // berhasil terlihat persis seperti pertarungan yang tidak terjadi.
+        tertangkap.clear();
+        var jenisMati = new MobData();
+        jenisMati.id = 9101;
+        jenisMati.yname = "uji_mob_mati";
+        jenisMati.name = "Mob Mati";
+        jenisMati.vita = 10;
+        Mob mbMati = new Mob();
+        mbMati.data = jenisMati;
+        mbMati.id = Mob.MOB_START_NUM + 4243;
+        mbMati.m = sd.m;
+        mbMati.x = sd.x + 2;
+        mbMati.y = sd.y;
+        MobRegistry.resetStats(mbMati);
+        MapServer.world.get(sd.m).addBlock(mbMati);
+        mbMati.onMap = true;
+        MapServer.mobs.kill(mbMati, MapServer.world);
+        check("#157: kematian mob menyiarkan objectRemoved ke klien",
+                tertangkap.contains("objectRemoved:" + mbMati.id));
+        check("#157: didahului aksi kematian (aksi 0 = memudar di monster.dna)",
+                tertangkap.contains("objectActed:" + mbMati.id + "/"
+                        + MobRegistry.AKSI_MATI));
+        check("#157: dan mobnya benar-benar tercabut dari petak",
+                MapServer.world.get(sd.m).objectsAt(sd.x + 2, sd.y).stream()
+                        .noneMatch(bl -> bl.id == mbMati.id));
+
         MapServer.clientView = cvLama;
 
         // ---- getXPforLevel: tabelnya memang sudah ada ----
@@ -6173,6 +6426,13 @@ public final class ClifTest {
      * yang diuji di sini siapa yang MENERIMA siaran, bukan bytenya.</p>
      */
     private static final class RekamGuiText implements ClientView {
+        @Override
+        public void boardPostToPlayer(User sd, int board, int pos, int bendera,
+                                      String penulis, String topik, int bulan,
+                                      int hari, String isi) {
+            keluar.add("boardPost:" + board + "/" + pos + " " + topik);
+        }
+
         private final java.util.List<String> keluar;
         private final ClientView sunyi = new ProtocolRouter();
 
@@ -6188,6 +6448,7 @@ public final class ClifTest {
         // Sisanya diteruskan ke penyalur kosong.
         @Override public void playerEnteredWorld(User a) { sunyi.playerEnteredWorld(a); }
         @Override public void playerViewRefreshed(User a) { sunyi.playerViewRefreshed(a); }
+        @Override public void playerMapChanged(User a) { sunyi.playerMapChanged(a); }
         @Override public void playerStatusChanged(User a, int b) { sunyi.playerStatusChanged(a, b); }
         @Override public void playerIdentityChanged(User a) { sunyi.playerIdentityChanged(a); }
         @Override public void playerDurationChanged(User a, int b, int c, String d) { sunyi.playerDurationChanged(a, b, c, d); }
@@ -6226,9 +6487,15 @@ public final class ClifTest {
         @Override public void objectAnimationAt(org.rtk.map.data.BlockList a, int b, int c, int d, int e) { sunyi.objectAnimationAt(a, b, c, d, e); }
         @Override public void soundPlayed(org.rtk.map.data.BlockList a, int b) { sunyi.soundPlayed(a, b); }
         @Override public void objectSpoke(org.rtk.map.data.BlockList a, int b, String c) { sunyi.objectSpoke(a, b, c); }
-        @Override public void objectActed(org.rtk.map.data.BlockList a, int b, int c, int d) { sunyi.objectActed(a, b, c, d); }
+        @Override public void objectActed(org.rtk.map.data.BlockList a, int b, int c, int d) {
+            keluar.add("objectActed:" + a.id + "/" + b);
+            sunyi.objectActed(a, b, c, d);
+        }
         @Override public void objectAppearanceChanged(org.rtk.map.data.BlockList a) { sunyi.objectAppearanceChanged(a); }
-        @Override public void objectRemoved(org.rtk.map.data.BlockList a) { sunyi.objectRemoved(a); }
+        @Override public void objectRemoved(org.rtk.map.data.BlockList a) {
+            keluar.add("objectRemoved:" + a.id);
+            sunyi.objectRemoved(a);
+        }
         @Override public void messageToPlayer(User a, int b, String c) { sunyi.messageToPlayer(a, b, c); }
         @Override public void npcMoved(Npc a, MapData b, int c, int d, int e, int f, int g, int h) { sunyi.npcMoved(a, b, c, d, e, f, g, h); }
         @Override public void npcAppearedTo(User a, Npc b) { sunyi.npcAppearedTo(a, b); }
@@ -6241,6 +6508,7 @@ public final class ClifTest {
         @Override public void playerStepRejected(User a) { sunyi.playerStepRejected(a); }
         @Override public void playerStepped(User a, int b, int c, int d) { sunyi.playerStepped(a, b, c, d); }
         @Override public void playerStepSeen(User a, int b, int c, int d) { sunyi.playerStepSeen(a, b, c, d); }
+        @Override public void playerViewMoved(User a, int b, int c) { sunyi.playerViewMoved(a, b, c); }
         @Override public void areaRedrawRequested(User a, MapData b, int c, int d, int e, int f, int g) { sunyi.areaRedrawRequested(a, b, c, d, e, f, g); }
         @Override public void playerEquipmentChanged(User a, int b) { sunyi.playerEquipmentChanged(a, b); }
         @Override public void playerEquipmentCleared(User a, int b) { sunyi.playerEquipmentCleared(a, b); }
